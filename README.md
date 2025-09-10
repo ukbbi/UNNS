@@ -33,7 +33,7 @@ Then the system exhibits:
  🚀 Quick Start
 
  Interactive Visualization
-1. Download `unns-visualization.html`
+1. Download `unns_many_faces.html`
 2. Open in any modern web browser (Chrome, Firefox, Safari, Edge)
 3. No server or installation required!
 
