@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Visual Engine - Extended Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: white;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 40px rgba(100, 126, 234, 0.8); }
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            color: #ffd700;
+            margin-top: 0.5rem;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 280px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .control-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .control-group select option {
+            background: #333;
+        }
+
+        .value-display {
+            text-align: center;
+            margin-top: 0.3rem;
+            font-size: 1.1rem;
+            color: #00ff88;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 0.4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            color: #333;
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 120px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #canvas {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 280px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: #00ff88;
+        }
+
+        .pattern-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .pattern-active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .pattern-inactive {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .semantic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.5rem;
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #ffd700;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Mode buttons */
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+        }
+
+        .mode-btn {
+            padding: 0.4rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Audio indicator */
+        .audio-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 0.5rem;
+        }
+
+        .audio-bar {
+            width: 4px;
+            height: 20px;
+            background: #00ff88;
+            animation: audioWave 0.5s ease-in-out infinite;
+        }
+
+        .audio-bar:nth-child(2) { animation-delay: 0.1s; }
+        .audio-bar:nth-child(3) { animation-delay: 0.2s; }
+        .audio-bar:nth-child(4) { animation-delay: 0.3s; }
+        .audio-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes audioWave {
+            0%, 100% { height: 10px; }
+            50% { height: 25px; }
+        }
+
+        /* ML Status */
+        .ml-status {
+            padding: 0.5rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UNNS Visual Engine - Extended</h1>
+        <div class="formula" id="formulaDisplay">(M × N) + (M / N) + (M - N) + (M + N)</div>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-group">
+            <label>Formula Type</label>
+            <select id="formulaSelect">
+                <option value="classic">Classic UNNS</option>
+                <option value="fibonacci">Fibonacci Enhanced</option>
+                <option value="prime">Prime Synthesis</option>
+                <option value="harmonic">Harmonic Resonance</option>
+                <option value="exponential">Exponential Growth</option>
+                <option value="trigonometric">Trigonometric Wave</option>
+                <option value="golden">Golden Ratio</option>
+                <option value="fractal">Fractal Recursion</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>M Value</label>
+            <input type="range" id="mSlider" min="1" max="50" value="10">
+            <div class="value-display" id="mValue">10</div>
+        </div>
+        
+        <div class="control-group">
+            <label>N Value</label>
+            <input type="range" id="nSlider" min="1" max="50" value="7">
+            <div class="value-display" id="nValue">7</div>
+        </div>
+
+        <div class="control-group">
+            <label>Node Count</label>
+            <input type="range" id="nodeSlider" min="5" max="30" value="15">
+            <div class="value-display" id="nodeCount">15</div>
+        </div>
+
+        <div class="control-group">
+            <label>3D Rotation</label>
+            <input type="range" id="rotationSlider" min="0" max="360" value="0">
+            <div class="value-display" id="rotationValue">0°</div>
+        </div>
+
+        <button class="btn" onclick="generateVisualization()">Generate</button>
+        <button class="btn" onclick="toggle3D()" id="toggle3DBtn">Enable 3D</button>
+        <button class="btn" onclick="toggleAudio()" id="audioBtn">Enable Audio</button>
+        <button class="btn" onclick="runMLAnalysis()">ML Analysis</button>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('network')">Network</button>
+            <button class="mode-btn" onclick="setMode('spiral')">Spiral</button>
+            <button class="mode-btn" onclick="setMode('tree')">Tree</button>
+            <button class="mode-btn" onclick="setMode('3d')">3D Space</button>
+        </div>
+
+        <div class="audio-indicator" id="audioIndicator" style="display: none;">
+            <span style="font-size: 0.8rem;">Audio:</span>
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <div class="info-item">
+            <div class="info-label">Current Result</div>
+            <div class="info-value" id="resultValue">--</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Pattern Detection</div>
+            <div>
+                <span class="pattern-indicator" id="cycleIndicator"></span>Cycles
+                <span class="pattern-indicator" id="symmetryIndicator"></span>Symmetry
+                <span class="pattern-indicator" id="clusterIndicator"></span>Clusters
+                <span class="pattern-indicator" id="resonanceIndicator"></span>Resonance
+            </div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">Harmonic Ratio</div>
+            <div class="info-value" id="harmonicValue">--</div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">Entropy Level</div>
+            <div class="info-value" id="entropyValue">--</div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">ML Predictions</div>
+            <div class="info-value" id="mlPrediction">Not analyzed</div>
+            <div class="ml-status" id="mlStatus" style="display: none;">
+                Processing neural network...
+            </div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">Semantic Tags</div>
+            <div class="semantic-tags" id="semanticTags"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth - 640;
+            canvas.height = window.innerHeight - 120;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Global variables
+        let nodes = [];
+        let connections = [];
+        let animationId;
+        let isAnimating = true;
+        let mode = 'network';
+        let is3D = false;
+        let audioEnabled = false;
+        let audioContext = null;
+        let oscillators = [];
+        let time = 0;
+        let mouseX = 0;
+        let mouseY = 0;
+        let rotationAngle = 0;
+        let currentFormula = 'classic';
+
+        // Multi-Formula System
+        const formulas = {
+            classic: (m, n) => (m * n) + (m / n) + (m - n) + (m + n),
+            fibonacci: (m, n) => {
+                const fib = (x) => x <= 1 ? x : fib(x - 1) + fib(x - 2);
+                return (m * n) + fib(Math.min(m, 10)) + fib(Math.min(n, 10));
+            },
+            prime: (m, n) => {
+                const isPrime = (num) => {
+                    for(let i = 2; i <= Math.sqrt(num); i++)
+                        if(num % i === 0) return false;
+                    return num > 1;
+                };
+                const nextPrime = (x) => {
+                    while(!isPrime(x)) x++;
+                    return x;
+                };
+                return (m * n) + nextPrime(m) + nextPrime(n);
+            },
+            harmonic: (m, n) => (m * n) + (1/m + 1/n) * 100,
+            exponential: (m, n) => Math.pow(m, n % 5) + Math.pow(n, m % 5),
+            trigonometric: (m, n) => (m * n) + Math.sin(m) * 100 + Math.cos(n) * 100,
+            golden: (m, n) => (m * n) * 1.618033988749895 + (m + n),
+            fractal: (m, n) => {
+                const recurse = (a, b, depth) => {
+                    if (depth === 0) return a + b;
+                    return recurse(a * 1.1, b * 0.9, depth - 1) + a * b;
+                };
+                return recurse(m, n, 3);
+            }
+        };
+
+        // Pattern Recognition System
+        class PatternRecognition {
+            detectCycles(nodes) {
+                const values = nodes.map(n => n.value);
+                const cycleLength = this.findCycleLength(values);
+                return cycleLength > 0;
+            }
+
+            findCycleLength(arr) {
+                for (let len = 2; len <= arr.length / 2; len++) {
+                    let found = true;
+                    for (let i = 0; i < len; i++) {
+                        if (Math.abs(arr[i] - arr[i + len]) > 10) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) return len;
+                }
+                return 0;
+            }
+
+            detectSymmetry(nodes) {
+                const positions = nodes.map(n => ({ x: n.x, y: n.y }));
+                const centerX = canvas.width / 2;
+                let symmetryScore = 0;
+                
+                positions.forEach(pos => {
+                    const mirrorX = centerX * 2 - pos.x;
+                    const hasMirror = positions.some(p => 
+                        Math.abs(p.x - mirrorX) < 50 && Math.abs(p.y - pos.y) < 50
+                    );
+                    if (hasMirror) symmetryScore++;
+                });
+                
+                return symmetryScore > nodes.length / 3;
+            }
+
+            detectClusters(nodes) {
+                const threshold = 100;
+                let clusters = 0;
+                
+                nodes.forEach((node, i) => {
+                    let nearbyCount = 0;
+                    nodes.forEach((other, j) => {
+                        if (i !== j) {
+                            const dist = Math.sqrt(
+                                Math.pow(node.x - other.x, 2) + 
+                                Math.pow(node.y - other.y, 2)
+                            );
+                            if (dist < threshold) nearbyCount++;
+                        }
+                    });
+                    if (nearbyCount >= 3) clusters++;
+                });
+                
+                return clusters > nodes.length / 4;
+            }
+
+            detectResonance(nodes) {
+                const harmonicRatios = [1.618, 2, 3, 1.5, 0.666];
+                let resonanceCount = 0;
+                
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    const ratio = nodes[i].value / nodes[i + 1].value;
+                    if (harmonicRatios.some(hr => Math.abs(ratio - hr) < 0.1)) {
+                        resonanceCount++;
+                    }
+                }
+                
+                return resonanceCount > nodes.length / 3;
+            }
+
+            runAllDetections(nodes) {
+                return {
+                    cycles: this.detectCycles(nodes),
+                    symmetry: this.detectSymmetry(nodes),
+                    clusters: this.detectClusters(nodes),
+                    resonance: this.detectResonance(nodes)
+                };
+            }
+        }
+
+        const patternRecognition = new PatternRecognition();
+
+        // 3D Projection System
+        class ThreeDProjection {
+            constructor() {
+                this.perspective = 500;
+            }
+
+            project3D(node, rotationX, rotationY) {
+                // Convert node to 3D coordinates
+                const x = node.x - canvas.width / 2;
+                const y = node.y - canvas.height / 2;
+                const z = node.z || Math.sin(node.value * 0.1) * 100;
+
+                // Apply rotation
+                const cosX = Math.cos(rotationX);
+                const sinX = Math.sin(rotationX);
+                const cosY = Math.cos(rotationY);
+                const sinY = Math.sin(rotationY);
+
+                // Rotate around Y axis
+                const x1 = x * cosY - z * sinY;
+                const z1 = x * sinY + z * cosY;
+
+                // Rotate around X axis
+                const y1 = y * cosX - z1 * sinX;
+                const z2 = y * sinX + z1 * cosX;
+
+                // Apply perspective
+                const scale = this.perspective / (this.perspective + z2);
+                const projectedX = x1 * scale + canvas.width / 2;
+                const projectedY = y1 * scale + canvas.height / 2;
+
+                return {
+                    x: projectedX,
+                    y: projectedY,
+                    scale: scale,
+                    z: z2
+                };
+            }
+
+            draw3DNode(node, rotationX, rotationY) {
+                const projected = this.project3D(node, rotationX, rotationY);
+                
+                // Draw with depth-based sizing and opacity
+                const radius = node.radius * projected.scale;
+                const opacity = 0.3 + projected.scale * 0.7;
+                
+                ctx.globalAlpha = opacity;
+                ctx.beginPath();
+                ctx.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
+                
+                // Create gradient for 3D effect
+                const gradient = ctx.createRadialGradient(
+                    projected.x - radius/3, projected.y - radius/3, 0,
+                    projected.x, projected.y, radius
+                );
+                gradient.addColorStop(0, node.color);
+                gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2 * projected.scale;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // Draw value
+                ctx.fillStyle = 'white';
+                ctx.font = `${12 * projected.scale}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(Math.floor(node.value), projected.x, projected.y);
+            }
+
+            draw3DConnection(node1, node2, rotationX, rotationY, strength) {
+                const proj1 = this.project3D(node1, rotationX, rotationY);
+                const proj2 = this.project3D(node2, rotationX, rotationY);
+                
+                const avgScale = (proj1.scale + proj2.scale) / 2;
+                const opacity = 0.2 * avgScale;
+                
+                ctx.globalAlpha = opacity;
+                ctx.beginPath();
+                ctx.moveTo(proj1.x, proj1.y);
+                ctx.lineTo(proj2.x, proj2.y);
+                
+                const gradient = ctx.createLinearGradient(
+                    proj1.x, proj1.y, proj2.x, proj2.y
+                );
+                gradient.addColorStop(0, node1.color);
+                gradient.addColorStop(1, node2.color);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = strength * 2 * avgScale;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        const threeDProjection = new ThreeDProjection();
+
+        // Audio Synthesis System
+        class AudioSynthesizer {
+            constructor() {
+                this.baseFrequency = 220;
+                this.scale = [1, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2]; // Just intonation
+            }
+
+            initAudio() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            nodeToFrequency(node) {
+                const scaleIndex = Math.floor(node.value) % this.scale.length;
+                const octave = Math.floor(node.value / 50) + 1;
+                return this.baseFrequency * this.scale[scaleIndex] * octave;
+            }
+
+            playNode(node) {
+                if (!audioEnabled || !audioContext) return;
+
+                const frequency = this.nodeToFrequency(node);
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+
+            playChord(nodes) {
+                if (!audioEnabled || !audioContext) return;
+
+                // Stop existing oscillators
+                this.stopAll();
+
+                nodes.slice(0, 5).forEach((node, i) => {
+                    const frequency = this.nodeToFrequency(node);
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = i === 0 ? 'sine' : 'triangle';
+                    
+                    gainNode.gain.value = 0.05 / (i + 1);
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.start();
+                    oscillators.push({ osc: oscillator, gain: gainNode });
+                });
+            }
+
+            stopAll() {
+                oscillators.forEach(({ osc, gain }) => {
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                    osc.stop(audioContext.currentTime + 0.1);
+                });
+                oscillators = [];
+            }
+
+            modulateByPatterns(patterns) {
+                if (!audioEnabled || oscillators.length === 0) return;
+
+                oscillators.forEach(({ osc, gain }, i) => {
+                    if (patterns.resonance) {
+                        osc.frequency.exponentialRampToValueAtTime(
+                            osc.frequency.value * 1.01,
+                            audioContext.currentTime + 0.1
+                        );
+                    }
+                    if (patterns.cycles) {
+                        gain.gain.value = 0.05 * (1 + Math.sin(time * 0.05) * 0.3);
+                    }
+                });
+            }
+        }
+
+        const audioSynthesizer = new AudioSynthesizer();
+
+        // Machine Learning Integration (Simplified Neural Network)
+        class MLAnalyzer {
+            constructor() {
+                this.weights = this.initializeWeights();
+            }
+
+            initializeWeights() {
+                // Simple random weights for demonstration
+                return {
+                    input: Array(10).fill(0).map(() => Math.random() - 0.5),
+                    hidden: Array(5).fill(0).map(() => Math.random() - 0.5),
+                    output: Math.random() - 0.5
+                };
+            }
+
+            extractFeatures(nodes) {
+                const features = [];
+                
+                // Statistical features
+                const values = nodes.map(n => n.value);
+                features.push(this.mean(values));
+                features.push(this.variance(values));
+                features.push(this.skewness(values));
+                
+                // Spatial features
+                const distances = [];
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    const dist = Math.sqrt(
+                        Math.pow(nodes[i].x - nodes[i+1].x, 2) +
+                        Math.pow(nodes[i].y - nodes[i+1].y, 2)
+                    );
+                    distances.push(dist);
+                }
+                features.push(this.mean(distances));
+                features.push(this.variance(distances));
+                
+                // Pattern features
+                const patterns = patternRecognition.runAllDetections(nodes);
+                features.push(patterns.cycles ? 1 : 0);
+                features.push(patterns.symmetry ? 1 : 0);
+                features.push(patterns.clusters ? 1 : 0);
+                features.push(patterns.resonance ? 1 : 0);
+                
+                // Harmonic features
+                features.push(Math.log(this.mean(values) + 1));
+                
+                return features;
+            }
+
+            mean(arr) {
+                return arr.reduce((a, b) => a + b, 0) / arr.length;
+            }
+
+            variance(arr) {
+                const m = this.mean(arr);
+                return this.mean(arr.map(x => Math.pow(x - m, 2)));
+            }
+
+            skewness(arr) {
+                const m = this.mean(arr);
+                const v = this.variance(arr);
+                const s = Math.sqrt(v);
+                return this.mean(arr.map(x => Math.pow((x - m) / s, 3)));
+            }
+
+            sigmoid(x) {
+                return 1 / (1 + Math.exp(-x));
+            }
+
+            predict(nodes) {
+                const features = this.extractFeatures(nodes);
+                
+                // Simple feedforward network
+                let hidden = [];
+                for (let i = 0; i < 5; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < features.length; j++) {
+                        sum += features[j] * this.weights.input[j % this.weights.input.length];
+                    }
+                    hidden.push(this.sigmoid(sum));
+                }
+                
+                let output = 0;
+                for (let i = 0; i < hidden.length; i++) {
+                    output += hidden[i] * this.weights.hidden[i];
+                }
+                
+                return this.sigmoid(output);
+            }
+
+            classifyPattern(nodes) {
+                const score = this.predict(nodes);
+                
+                if (score > 0.8) return "Highly Ordered Structure";
+                if (score > 0.6) return "Semi-Ordered Pattern";
+                if (score > 0.4) return "Chaotic Harmony";
+                if (score > 0.2) return "Emergent Complexity";
+                return "Random Distribution";
+            }
+
+            detectAnomalies(nodes) {
+                const features = this.extractFeatures(nodes);
+                const threshold = 2; // Standard deviations
+                const anomalies = [];
+                
+                nodes.forEach((node, i) => {
+                    const zScore = Math.abs((node.value - this.mean(nodes.map(n => n.value))) / 
+                                           Math.sqrt(this.variance(nodes.map(n => n.value))));
+                    if (zScore > threshold) {
+                        anomalies.push(i);
+                        node.isAnomaly = true;
+                    }
+                });
+                
+                return anomalies;
+            }
+        }
+
+        const mlAnalyzer = new MLAnalyzer();
+
+        // Track mouse position
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            nodes.forEach(node => {
+                const dist = Math.sqrt(Math.pow(node.x - clickX, 2) + Math.pow(node.y - clickY, 2));
+                if (dist < node.radius + 10) {
+                    audioSynthesizer.playNode(node);
+                    node.pulsePhase = 0;
+                }
+            });
+        });
+
+        // Node class
+        class Node {
+            constructor(x, y, value, index) {
+                this.x = x;
+                this.y = y;
+                this.z = Math.random() * 200 - 100;
+                this.value = value;
+                this.index = index;
+                this.radius = 15 + Math.log(Math.abs(value) + 1) * 2;
+                this.color = this.generateColor(value);
+                this.velocity = { x: 0, y: 0, z: 0 };
+                this.tags = this.generateTags(value);
+                this.pulsePhase = Math.random() * Math.PI * 2;
+                this.active = false;
+                this.isAnomaly = false;
+            }
+
+            generateColor(value) {
+                const hue = (value * 137.5) % 360;
+                return `hsl(${hue}, 70%, 60%)`;
+            }
+
+            generateTags(value) {
+                const tags = [];
+                if (value % 2 === 0) tags.push('even');
+                if (value % 3 === 0) tags.push('trinity');
+                if (value % 5 === 0) tags.push('pentagonal');
+                if (value % 7 === 0) tags.push('resonant');
+                if (Math.sqrt(Math.abs(value)) % 1 === 0) tags.push('perfect-square');
+                if (this.isPrime(Math.floor(Math.abs(value)))) tags.push('prime-nest');
+                if (value > 100) tags.push('high-entropy');
+                if (value < 10) tags.push('low-entropy');
+                if (Math.abs(value - 1.618033988749895) < 0.1) tags.push('golden');
+                return tags;
+            }
+
+            isPrime(n) {
+                if (n <= 1) return false;
+                for (let i = 2; i <= Math.sqrt(n); i++) {
+                    if (n % i === 0) return false;
+                }
+                return true;
+            }
+
+            update() {
+                // Gentle floating animation
+                this.velocity.x += (Math.random() - 0.5) * 0.1;
+                this.velocity.y += (Math.random() - 0.5) * 0.1;
+                this.velocity.z += (Math.random() - 0.5) * 0.05;
+                this.velocity.x *= 0.98;
+                this.velocity.y *= 0.98;
+                this.velocity.z *= 0.98;
+                
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.z += this.velocity.z;
+
+                // Boundary check
+                if (this.x < this.radius) this.x = this.radius;
+                if (this.x > canvas.width - this.radius) this.x = canvas.width - this.radius;
+                if (this.y < this.radius) this.y = this.radius;
+                if (this.y > canvas.height - this.radius) this.y = canvas.height - this.radius;
+                if (this.z < -100) this.z = -100;
+                if (this.z > 100) this.z = 100;
+
+                // Check if mouse is near
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                this.active = dist < this.radius + 20;
+            }
+
+            draw() {
+                if (is3D) return; // Skip 2D drawing in 3D mode
+                
+                const pulseSize = Math.sin(time * 0.02 + this.pulsePhase) * 3;
+                const actualRadius = this.radius + pulseSize;
+
+                // Anomaly glow
+                if (this.isAnomaly) {
+                    ctx.shadowBlur = 40;
+                    ctx.shadowColor = '#ff00ff';
+                }
+                // Active glow
+                else if (this.active) {
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = this.color;
+                }
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, actualRadius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = this.isAnomaly ? '#ff00ff' : 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = this.isAnomaly ? 3 : 2;
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+
+                // Value text
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(Math.floor(this.value), this.x, this.y);
+
+                // Show tags on hover
+                if (this.active && this.tags.length > 0) {
+                    ctx.font = '10px Arial';
+                    ctx.fillStyle = '#ffd700';
+                    this.tags.forEach((tag, i) => {
+                        ctx.fillText(tag, this.x, this.y + actualRadius + 15 + i * 12);
+                    });
+                }
+            }
+        }
+
+        // Connection class
+        class Connection {
+            constructor(node1, node2, strength) {
+                this.node1 = node1;
+                this.node2 = node2;
+                this.strength = strength;
+                this.pulsePosition = 0;
+            }
+
+            update() {
+                this.pulsePosition += 0.02;
+                if (this.pulsePosition > 1) this.pulsePosition = 0;
+            }
+
+            draw() {
+                if (is3D) return; // Skip 2D drawing in 3D mode
+                
+                const dx = this.node2.x - this.node1.x;
+                const dy = this.node2.y - this.node1.y;
+
+                // Draw connection line
+                ctx.beginPath();
+                ctx.moveTo(this.node1.x, this.node1.y);
+                ctx.lineTo(this.node2.x, this.node2.y);
+                
+                const gradient = ctx.createLinearGradient(
+                    this.node1.x, this.node1.y,
+                    this.node2.x, this.node2.y
+                );
+                gradient.addColorStop(0, this.node1.color);
+                gradient.addColorStop(1, this.node2.color);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = this.strength * 2;
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // Draw pulse
+                const pulseX = this.node1.x + dx * this.pulsePosition;
+                const pulseY = this.node1.y + dy * this.pulsePosition;
+                
+                ctx.beginPath();
+                ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffd700';
+                ctx.fill();
+            }
+        }
+
+        // Generate visualization
+        function generateVisualization() {
+            const m = parseInt(document.getElementById('mSlider').value);
+            const n = parseInt(document.getElementById('nSlider').value);
+            const nodeCount = parseInt(document.getElementById('nodeSlider').value);
+
+            nodes = [];
+            connections = [];
+
+            // Generate nodes based on mode
+            if (mode === 'network' || mode === '3d') {
+                generateNetworkNodes(m, n, nodeCount);
+            } else if (mode === 'spiral') {
+                generateSpiralNodes(m, n, nodeCount);
+            } else if (mode === 'tree') {
+                generateTreeNodes(m, n, nodeCount);
+            }
+
+            // Generate connections
+            generateConnections();
+
+            // Update info panel
+            updateInfoPanel(m, n);
+
+            // Play chord if audio enabled
+            if (audioEnabled) {
+                audioSynthesizer.playChord(nodes);
+            }
+
+            // Run ML analysis
+            mlAnalyzer.detectAnomalies(nodes);
+        }
+
+        function generateNetworkNodes(m, n, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                const radius = 150 + Math.random() * 100;
+                const x = canvas.width / 2 + Math.cos(angle) * radius;
+                const y = canvas.height / 2 + Math.sin(angle) * radius;
+                
+                const value = formulas[currentFormula](m + i, n + i);
+                nodes.push(new Node(x, y, value, i));
+            }
+        }
+
+        function generateSpiralNodes(m, n, count) {
+            const goldenRatio = 1.618033988749895;
+            const angleIncrement = Math.PI * 2 * goldenRatio;
+            
+            for (let i = 0; i < count; i++) {
+                const angle = i * angleIncrement;
+                const radius = 20 + i * 15;
+                const x = canvas.width / 2 + Math.cos(angle) * radius;
+                const y = canvas.height / 2 + Math.sin(angle) * radius;
+                
+                const value = formulas[currentFormula](m + i, n + i);
+                nodes.push(new Node(x, y, value, i));
+            }
+        }
+
+        function generateTreeNodes(m, n, count) {
+            const levels = Math.ceil(Math.log2(count + 1));
+            let nodeIndex = 0;
+            
+            for (let level = 0; level < levels && nodeIndex < count; level++) {
+                const nodesInLevel = Math.pow(2, level);
+                const levelY = 50 + level * (canvas.height - 100) / levels;
+                
+                for (let i = 0; i < nodesInLevel && nodeIndex < count; i++) {
+                    const x = (canvas.width / (nodesInLevel + 1)) * (i + 1);
+                    const value = formulas[currentFormula](m + nodeIndex, n + nodeIndex);
+                    nodes.push(new Node(x, levelY, value, nodeIndex));
+                    nodeIndex++;
+                }
+            }
+        }
+
+        function generateConnections() {
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const valueDiff = Math.abs(nodes[i].value - nodes[j].value);
+                    if (valueDiff < 50 || Math.random() < 0.2) {
+                        const strength = 1 / (1 + valueDiff * 0.01);
+                        connections.push(new Connection(nodes[i], nodes[j], strength));
+                    }
+                }
+            }
+        }
+
+        function updateInfoPanel(m, n) {
+            const result = formulas[currentFormula](m, n);
+            document.getElementById('resultValue').textContent = result.toFixed(2);
+            
+            const harmonic = (m / n).toFixed(3);
+            document.getElementById('harmonicValue').textContent = harmonic;
+            
+            const entropy = Math.log2(Math.abs(result) + 1).toFixed(3);
+            document.getElementById('entropyValue').textContent = entropy;
+            
+            // Update pattern indicators
+            const patterns = patternRecognition.runAllDetections(nodes);
+            document.getElementById('cycleIndicator').className = 
+                'pattern-indicator ' + (patterns.cycles ? 'pattern-active' : 'pattern-inactive');
+            document.getElementById('symmetryIndicator').className = 
+                'pattern-indicator ' + (patterns.symmetry ? 'pattern-active' : 'pattern-inactive');
+            document.getElementById('clusterIndicator').className = 
+                'pattern-indicator ' + (patterns.clusters ? 'pattern-active' : 'pattern-inactive');
+            document.getElementById('resonanceIndicator').className = 
+                'pattern-indicator ' + (patterns.resonance ? 'pattern-active' : 'pattern-inactive');
+            
+            // Update semantic tags
+            const allTags = new Set();
+            nodes.forEach(node => node.tags.forEach(tag => allTags.add(tag)));
+            
+            const tagsContainer = document.getElementById('semanticTags');
+            tagsContainer.innerHTML = '';
+            allTags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'tag';
+                tagEl.textContent = tag;
+                tagsContainer.appendChild(tagEl);
+            });
+
+            // Modulate audio based on patterns
+            if (audioEnabled) {
+                audioSynthesizer.modulateByPatterns(patterns);
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (is3D) {
+                // Sort nodes by Z depth for proper rendering
+                const sortedNodes = [...nodes].sort((a, b) => b.z - a.z);
+                
+                // Draw 3D connections
+                connections.forEach(conn => {
+                    threeDProjection.draw3DConnection(
+                        conn.node1, conn.node2,
+                        rotationAngle * 0.01, rotationAngle * 0.005,
+                        conn.strength
+                    );
+                });
+                
+                // Draw 3D nodes
+                sortedNodes.forEach(node => {
+                    node.update();
+                    threeDProjection.draw3DNode(node, rotationAngle * 0.01, rotationAngle * 0.005);
+                });
+            } else {
+                // Update and draw connections
+                connections.forEach(conn => {
+                    conn.update();
+                    conn.draw();
+                });
+
+                // Update and draw nodes
+                nodes.forEach(node => {
+                    node.update();
+                    node.draw();
+                });
+            }
+
+            time++;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Control functions
+        function toggle3D() {
+            is3D = !is3D;
+            document.getElementById('toggle3DBtn').textContent = is3D ? 'Disable 3D' : 'Enable 3D';
+            document.getElementById('toggle3DBtn').classList.toggle('active');
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                audioSynthesizer.initAudio();
+                audioSynthesizer.playChord(nodes);
+                document.getElementById('audioIndicator').style.display = 'flex';
+            } else {
+                audioSynthesizer.stopAll();
+                document.getElementById('audioIndicator').style.display = 'none';
+            }
+            document.getElementById('audioBtn').textContent = audioEnabled ? 'Disable Audio' : 'Enable Audio';
+            document.getElementById('audioBtn').classList.toggle('active');
+        }
+
+        function runMLAnalysis() {
+            document.getElementById('mlStatus').style.display = 'block';
+            document.getElementById('mlStatus').textContent = 'Processing neural network...';
+            
+            setTimeout(() => {
+                const classification = mlAnalyzer.classifyPattern(nodes);
+                const anomalies = mlAnalyzer.detectAnomalies(nodes);
+                
+                document.getElementById('mlPrediction').textContent = classification;
+                document.getElementById('mlStatus').textContent = 
+                    `Found ${anomalies.length} anomalies`;
+                
+                // Highlight anomalies
+                nodes.forEach(node => {
+                    if (node.isAnomaly) {
+                        audioSynthesizer.playNode(node);
+                    }
+                });
+            }, 1000);
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (newMode === '3d') {
+                is3D = true;
+                document.getElementById('toggle3DBtn').textContent = 'Disable 3D';
+                document.getElementById('toggle3DBtn').classList.add('active');
+            } else {
+                is3D = false;
+                document.getElementById('toggle3DBtn').textContent = 'Enable 3D';
+                document.getElementById('toggle3DBtn').classList.remove('active');
+            }
+            
+            generateVisualization();
+        }
+
+        // Update value displays
+        document.getElementById('mSlider').addEventListener('input', (e) => {
+            document.getElementById('mValue').textContent = e.target.value;
+        });
+
+        document.getElementById('nSlider').addEventListener('input', (e) => {
+            document.getElementById('nValue').textContent = e.target.value;
+        });
+
+        document.getElementById('nodeSlider').addEventListener('input', (e) => {
+            document.getElementById('nodeCount').textContent = e.target.value;
+        });
+
+        document.getElementById('rotationSlider').addEventListener('input', (e) => {
+            rotationAngle = parseInt(e.target.value);
+            document.getElementById('rotationValue').textContent = rotationAngle + '°';
+        });
+
+        document.getElementById('formulaSelect').addEventListener('change', (e) => {
+            currentFormula = e.target.value;
+            const formulaTexts = {
+                classic: '(M × N) + (M / N) + (M - N) + (M + N)',
+                fibonacci: '(M × N) + Fib(M) + Fib(N)',
+                prime: '(M × N) + NextPrime(M) + NextPrime(N)',
+                harmonic: '(M × N) + (1/M + 1/N) × 100',
+                exponential: 'M^(N mod 5) + N^(M mod 5)',
+                trigonometric: '(M × N) + Sin(M) × 100 + Cos(N) × 100',
+                golden: '(M × N) × φ + (M + N)',
+                fractal: 'Recursive(M, N, depth=3)'
+            };
+            document.getElementById('formulaDisplay').textContent = formulaTexts[currentFormula];
+            generateVisualization();
+        });
+
+        // Initialize
+        generateVisualization();
+        animate();
+    </script>
+</body>
+</html>
