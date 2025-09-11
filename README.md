@@ -119,3 +119,13 @@ This is an open research project. Contributions are welcome:
 Whether you see it as a *universal framework* or a *philosophical lens*,  
 the aim is the same: **to reveal the hidden harmonies that connect numbers, structures, and meaning**.  
 
+## 🚀 Getting Started
+
+Clone the repo and open any `.html` file in your browser:
+
+```bash
+git clone https://github.com/ukbbi/UNNS.git
+cd UNNS
+
+open unns-many_faces_visualization_2.html
+
