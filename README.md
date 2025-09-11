@@ -1,101 +1,80 @@
+# 🌌 UNNS Framework
 
-🌌 UNNS Framework
+**Unbounded Nested Number Sequences / Universal Network Nexus System**
 
-Unbounded Nested Number Sequences / Universal Network Nexus System
+A universal mathematical substrate for exploring **nested recursions, attractors, and cross-domain homomorphisms**.
 
-A universal mathematical substrate for exploring nested recursions, attractors, and cross-domain homomorphisms.
+---
 
-📖 Introduction
+## 📖 Introduction
 
-The UNNS framework is an experimental mathematical and symbolic system built around the idea of nested sequences and their universal patterns.
+The **UNNS framework** is an experimental mathematical and symbolic system built around the idea of **nested sequences** and their **universal patterns**.
 
-At its core, UNNS provides a way to see how classical sequences (like Fibonacci, Tribonacci, Pell, Padovan, Catalan, etc.) are not isolated curiosities but faces of a single deeper structure. This structure connects algebra, geometry, topology, number theory, and symbolic reasoning into one substrate.
+At its core, UNNS shows how classical sequences (Fibonacci, Tribonacci, Pell, Padovan, Catalan, etc.) are **not isolated curiosities**, but **faces of a single deeper structure**.  
 
-🧩 Core Concepts
+This structure connects **algebra, geometry, topology, number theory, and symbolic reasoning** into one substrate.
 
-Recursive Nests
-Numbers grow by applying combinator rules (a_n = f(a_{n-1}, a_{n-2}, …)), creating infinite unfolding nests.
+---
 
-Attractors & Constants
-Each sequence converges to characteristic constants (e.g., golden ratio, silver ratio, plastic constant), which act as spiral attractors in symbolic space.
+## 🧩 Core Concepts
 
-Prime Filters
-Special residues highlight modular “domains,” revealing deep structure in sequences under modular arithmetic.
+- **Recursive Nests**  
+  Numbers grow by applying combinator rules:  
+  `aₙ = f(aₙ₋₁, aₙ₋₂, …)` → infinite unfolding nests.
 
-Cross-Domain Homomorphism
-Mappings preserve structure across domains (algebraic, geometric, topological, modular). Example: concatenation → addition, or string → residue class.
+- **Attractors & Constants**  
+  Each sequence converges to characteristic constants  
+  (golden ratio φ, silver ratio δ, plastic constant ρ),  
+  acting as **spiral attractors in symbolic space**.
 
-Semantic Overlays
-Nodes and nests can carry symbolic tags like validated, unstable, prime-nest, or entropy node, allowing cognitive-style interpretation.
+- **Prime Filters**  
+  Modular residues highlight **domains**, revealing  
+  structure in sequences under modular arithmetic.
 
-🧪 Hypothesis
+- **Cross-Domain Homomorphism**  
+  Mappings preserve structure across domains:  
+  - concatenation → addition  
+  - string → residue class  
+  - sequence → spiral projection
 
-All linear recurrence sequences and many classical mathematical systems can be re-expressed as nested generators inside the UNNS substrate.
-This suggests UNNS acts as a universal mathematical operating framework, not limited to one branch of math.
+- **Semantic Overlays**  
+  Nests can carry symbolic tags (`validated`, `unstable`, `prime-nest`, `entropy node`)  
+  → enabling **cognitive-style interpretation**.
 
-📊 Features in This Repo
+---
 
-Interactive Explorers (HTML demos)
+## 🧪 Hypothesis
 
-Recursive fractal generators
+> All linear recurrence sequences and many classical mathematical systems  
+> can be re-expressed as **nested generators** inside the UNNS substrate.  
 
-Attractor visualizers (spirals, domains, prime filters)
+This suggests UNNS acts as a **universal mathematical operating framework**,  
+not limited to one branch of math.
 
-Cross-domain homomorphism maps
+---
 
-Research Notes
+## 📊 Features in This Repo
 
-Hypothesis + evidence + implications documents
+- **Interactive Explorers (HTML demos)**  
+  Recursive fractal generators, attractor visualizers (spirals, domains, prime filters).
 
-The UNNS Many-Faces Theorem with proofs and visualizations
+- **Cross-Domain Homomorphism Maps**  
+  Interactive proofs and visual embeddings.
 
-Blogger-Ready Code
-All demos are designed to work inside Blogger posts/pages with isolated CSS and MathJax support.
+- **Research Notes**  
+  - Hypothesis + evidence + implications documents  
+  - *The UNNS Many-Faces Theorem* with proofs & visualizations  
 
-🚀 Getting Started
+- **Blogger-Ready Code**  
+  All demos support **isolated CSS** and **MathJax** for embedding.
 
-Clone the repo and open any .html file directly in your browser:
+---
 
-    git clone https://github.com/your-username/unns-framework.git
-    cd unns-framework
-    open unns_explorer.html
+## 🚀 Getting Started
 
-Or embed the HTML into your Blogger site for interactive publishing.
+Clone the repo and open any `.html` file in your browser:
 
-🔮 Why It Matters
-
-UNNS is not only about abstract math. It hints at:
-
-Natural systems — growth spirals, branching, recurrence patterns in biology.
-
-Computation — resilient protocols, symbolic cognition, cryptographic resonance.
-
-Philosophy of math — shifting from siloed branches to a living, interoperable substrate.
-
-📌 Roadmap
-
- Formalize non-linear nest generators (chunk/shift rules).
-
- Extend proofs and convergence lemmas.
-
- Build interactive UNNS AI engine prototype for recursive symbolic reasoning.
-
- Publish visual research catalog of classical sequences in UNNS.
-
-🤝 Contributing
-
-This is an open research project. Contributions are welcome:
-
-Share visualizations
-
-Propose new nest generators
-
-Explore cross-domain mappings
-
-Extend proofs or create new demos
-
-📜 License
-
-MIT License — free to use, adapt, and build upon.
-
-⚡ UNNS is both a mathematical hypothesis and a visual exploration tool. Whether you see it as a universal framework or a philosophical lens, the aim is the same: to reveal the hidden harmonies that connect numbers, structures, and meaning.
+```bash
+git clone https://github.com/your-username/unns-framework.git
+cd unns-framework
+open unns_explorer.html
