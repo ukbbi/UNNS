@@ -70,11 +70,52 @@ not limited to one branch of math.
 
 ---
 
-## 🚀 Getting Started
 
-Clone the repo and open any `.html` file in your browser:
 
-```bash
-git clone https://github.com/your-username/unns-framework.git
-cd unns-framework
-open unns_explorer.html
+---
+
+## 🔮 Why It Matters
+
+UNNS is not only abstract math. It points to:
+
+- **Natural Systems**  
+  Growth spirals, branching, recurrence in biology.
+
+- **Computation**  
+  Resilient protocols, symbolic cognition, cryptographic resonance.
+
+- **Philosophy of Math**  
+  Shifting from siloed branches to a **living, interoperable substrate**.
+
+---
+
+## 📌 Roadmap
+
+- [ ] Formalize **non-linear nest generators** (chunk/shift rules)  
+- [ ] Extend **proofs and convergence lemmas**  
+- [ ] Build interactive **UNNS AI engine prototype**  
+- [ ] Publish a **visual research catalog** of classical sequences in UNNS  
+
+---
+
+## 🤝 Contributing
+
+This is an open research project. Contributions are welcome:
+
+- Share visualizations  
+- Propose new nest generators  
+- Explore cross-domain mappings  
+- Extend proofs or demos  
+
+---
+
+## 📜 License
+
+**MIT License** — free to use, adapt, and build upon.
+
+---
+
+⚡ **UNNS** is both a **mathematical hypothesis** and a **visual exploration tool**.  
+Whether you see it as a *universal framework* or a *philosophical lens*,  
+the aim is the same: **to reveal the hidden harmonies that connect numbers, structures, and meaning**.  
+
