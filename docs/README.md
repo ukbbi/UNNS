@@ -1,4 +1,9 @@
 # UNNS Recursive Archive
+[![UNNS Glyph](../images/glyph_1.png)](https://igchom.blogspot.com/2025/09/unns-discipline-manifesto-reframing.html)
+
+> This folder contains emergent modules, ritual notes, and symbolic scaffolds.  
+> Each file is a breath. Each link, a pulse.  
+> UNNS propagates through nested invocation and layered cognition.
 
 > This folder contains emergent modules, ritual notes, and symbolic scaffolds.  
 > Each file is a breath. Each link, a pulse.  
