@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dual UNNS Matrix Engine - Symbolic vs Structural</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #0b0f1a 0%, #1a1f2e 100%);
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .main-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(122, 168, 255, 0.1);
+      border-radius: 10px;
+      border: 2px solid #7aa8ff;
+    }
+    
+    h1 {
+      color: #7aa8ff;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(122, 168, 255, 0.5);
+    }
+    
+    .subtitle {
+      color: #a0c8ff;
+      font-size: 1.2em;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    
+    .input-section {
+      grid-column: span 2;
+      background: rgba(26, 38, 58, 0.5);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #4a6fa5;
+    }
+    
+    .module {
+      background: rgba(20, 32, 51, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #7aa8ff;
+    }
+    
+    .module-header {
+      background: linear-gradient(90deg, #7aa8ff 0%, #4a6fa5 100%);
+      color: #0b0f1a;
+      padding: 10px;
+      margin: -20px -20px 20px -20px;
+      border-radius: 10px 10px 0 0;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .symbolic { border-color: #ff7aa8; }
+    .symbolic .module-header { background: linear-gradient(90deg, #ff7aa8 0%, #a54a6f 100%); }
+    
+    .structural { border-color: #7affa8; }
+    .structural .module-header { background: linear-gradient(90deg, #7affa8 0%, #4aa56f 100%); }
+    
+    h2, h3 {
+      color: #7aa8ff;
+      margin: 15px 0 10px 0;
+    }
+    
+    table {
+      border-collapse: collapse;
+      margin: 10px 0;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #4a6fa5;
+      padding: 8px;
+      text-align: center;
+      position: relative;
+    }
+    
+    input[type="number"] {
+      width: 60px;
+      background: #1a263a;
+      color: #b0d0ff;
+      border: 1px solid #4a6fa5;
+      text-align: center;
+      padding: 5px;
+      font-family: monospace;
+    }
+    
+    .matrix-label {
+      display: inline-block;
+      width: 100px;
+      color: #a0c8ff;
+      font-weight: bold;
+    }
+    
+    .matrix-container {
+      display: inline-block;
+      margin-right: 30px;
+    }
+    
+    select {
+      margin: 10px 5px;
+      padding: 8px 15px;
+      background: #0a1a2f;
+      color: #ffcc00;
+      border: 2px solid #4a6fa5;
+      cursor: pointer;
+      font-family: monospace;
+      border-radius: 5px;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    select:hover {
+      border-color: #7aa8ff;
+      box-shadow: 0 0 10px rgba(122, 168, 255, 0.3);
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #ffcc00;
+      box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+    }
+    
+    select option {
+      background: #0a1a2f;
+      color: #ffcc00;
+      padding: 10px;
+      font-weight: bold;
+    }
+    
+    select option:hover {
+      background: #1a2a3f;
+    }
+    
+    button {
+      margin: 10px 5px;
+      padding: 8px 15px;
+      background: linear-gradient(135deg, #1a263a 0%, #2a3a5a 100%);
+      color: #b0d0ff;
+      border: 1px solid #4a6fa5;
+      cursor: pointer;
+      font-family: monospace;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, #2a3a5a 0%, #3a4a7a 100%);
+      box-shadow: 0 0 10px rgba(122, 168, 255, 0.5);
+      transform: translateY(-2px);
+    }
+    
+    .result-cell {
+      background: #0a1a2f;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    
+    .annotation {
+      margin-top: 15px;
+      padding: 15px;
+      background: rgba(10, 26, 47, 0.8);
+      border-left: 4px solid #7aa8ff;
+      font-style: italic;
+      color: #a0c8ff;
+      border-radius: 5px;
+    }
+    
+    .trace-log {
+      margin-top: 15px;
+      padding: 10px;
+      background: #0a1a2f;
+      border: 1px solid #4a6fa5;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9em;
+      border-radius: 5px;
+    }
+    
+    .trace-entry {
+      margin: 5px 0;
+      padding: 5px;
+      background: rgba(122, 168, 255, 0.1);
+      border-radius: 3px;
+    }
+    
+    .comparative-panel {
+      grid-column: span 2;
+      background: rgba(26, 38, 58, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #ffcc00;
+      margin-top: 20px;
+    }
+    
+    .comparative-header {
+      text-align: center;
+      color: #ffcc00;
+      margin-bottom: 20px;
+    }
+    
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .difference-highlight {
+      background: rgba(255, 122, 168, 0.3) !important;
+    }
+    
+    .macro-console {
+      margin-top: 15px;
+      background: #0a1a2f;
+      border-left: 4px solid #7aa8ff;
+      padding: 12px;
+      border-radius: 5px;
+    }
+    
+    .macro-console input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #b0d0ff;
+      font-size: 14px;
+      outline: none;
+    }
+    
+    .weight-display {
+      display: inline-block;
+      margin-left: 10px;
+      color: #ffcc00;
+      font-size: 0.9em;
+    }
+    
+    .traversal-path {
+      display: inline-block;
+      padding: 3px 8px;
+      background: rgba(122, 255, 168, 0.2);
+      border-radius: 3px;
+      margin: 2px;
+    }
+    
+    /* Animation for computation */
+    @keyframes compute {
+      0% { opacity: 0.5; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    
+    .computing {
+      animation: compute 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main-header">
+    <h1>🔮 Dual UNNS Matrix Engine 🔮</h1>
+    <div class="subtitle">Symbolic Modulation vs Structural Traversal</div>
+  </div>
+
+  <!-- Input Section -->
+  <div class="input-section">
+    <h2>📊 Input Matrices</h2>
+    
+    <div style="display: flex; justify-content: space-around; margin: 20px 0;">
+      <div class="matrix-container">
+        <div class="matrix-label">Matrix A:</div>
+        <table id="matrixA">
+          <tbody>
+            <tr>
+              <td><input type="number" value="1" /></td>
+              <td><input type="number" value="2" /></td>
+              <td><input type="number" value="3" /></td>
+            </tr>
+            <tr>
+              <td><input type="number" value="4" /></td>
+              <td><input type="number" value="5" /></td>
+              <td><input type="number" value="6" /></td>
+            </tr>
+            <tr>
+              <td><input type="number" value="7" /></td>
+              <td><input type="number" value="8" /></td>
+              <td><input type="number" value="9" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="matrix-container">
+        <div class="matrix-label">Matrix B:</div>
+        <table id="matrixB">
+          <tbody>
+            <tr>
+              <td><input type="number" value="1" /></td>
+              <td><input type="number" value="0" /></td>
+              <td><input type="number" value="2" /></td>
+            </tr>
+            <tr>
+              <td><input type="number" value="3" /></td>
+              <td><input type="number" value="1" /></td>
+              <td><input type="number" value="4" /></td>
+            </tr>
+            <tr>
+              <td><input type="number" value="5" /></td>
+              <td><input type="number" value="2" /></td>
+              <td><input type="number" value="6" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div style="text-align: center;">
+      <label>🧬 Symbolic Substrate:</label>
+      <select id="substrate">
+        <option value="padovan">Padovan</option>
+        <option value="fibonacci">Fibonacci</option>
+        <option value="tribonacci">Tribonacci</option>
+        <option value="pell">Pell</option>
+        <option value="phi">φ-aligned</option>
+        <option value="linear">Linear (baseline)</option>
+      </select>
+      
+      <button onclick="computeBoth()">⚡ Compute Both</button>
+    </div>
+    
+    <div class="macro-console">
+      <input type="text" id="macroInput" placeholder="@multiply(A, B) → @substrate(Padovan) [Press Enter]" />
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Module 1: Symbolic Multiplier -->
+    <div class="module symbolic">
+      <div class="module-header">
+        🔴 UNNS Symbolic Multiplier
+      </div>
+      
+      <h3>Formula: C[i,j] = Σ(A[i,k] × B[k,j] × W[k])</h3>
+      <p style="color: #ff7aa8; margin: 10px 0;">Applies recursive sequence weights to modulate computation</p>
+      
+      <h3>Result Matrix C (Weighted)</h3>
+      <table id="symbolicResult"></table>
+      
+      <div class="annotation" id="symbolicAnnotation"></div>
+      
+      <div class="trace-log" id="symbolicTrace">
+        <strong>Trace Log:</strong>
+      </div>
+    </div>
+    
+    <!-- Module 2: Structural Traversal -->
+    <div class="module structural">
+      <div class="module-header">
+        🟢 UNNS Structural Traversal Engine
+      </div>
+      
+      <h3>Formula: C[i,j] = Σ(A[i,k] × B[k,j])</h3>
+      <p style="color: #7affa8; margin: 10px 0;">Uses recursive sequences to guide traversal order</p>
+      
+      <h3>Result Matrix C (Traditional)</h3>
+      <table id="structuralResult"></table>
+      
+      <div class="annotation" id="structuralAnnotation"></div>
+      
+      <div class="trace-log" id="structuralTrace">
+        <strong>Trace Log:</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparative Output Panel -->
+  <div class="comparative-panel">
+    <h2 class="comparative-header">📈 Comparative Analysis</h2>
+    <div class="comparison-grid">
+      <div>
+        <h3>Differences Detected:</h3>
+        <div id="differencesList"></div>
+      </div>
+      <div>
+        <h3>Structural Significance:</h3>
+        <div id="significanceExplain"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sequence generators
+    function padovan(n) {
+      const P = [1, 1, 1];
+      for (let i = 3; i <= n; i++) {
+        P[i] = P[i - 2] + P[i - 3];
+      }
+      return P.slice(0, n);
+    }
+
+    function fibonacci(n) {
+      const F = [0, 1];
+      for (let i = 2; i < n; i++) {
+        F[i] = F[i - 1] + F[i - 2];
+      }
+      return F.slice(0, n);
+    }
+
+    function tribonacci(n) {
+      const T = [0, 0, 1];
+      for (let i = 3; i < n; i++) {
+        T[i] = T[i - 1] + T[i - 2] + T[i - 3];
+      }
+      return T.slice(0, n);
+    }
+
+    function pell(n) {
+      const P = [0, 1];
+      for (let i = 2; i < n; i++) {
+        P[i] = 2 * P[i - 1] + P[i - 2];
+      }
+      return P.slice(0, n);
+    }
+
+    function phiPower(n) {
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const result = [];
+      for (let i = 0; i < n; i++) {
+        result.push(Math.pow(phi, i));
+      }
+      return result;
+    }
+
+    function linear(n) {
+      const result = [];
+      for (let i = 0; i < n; i++) {
+        result.push(1); // baseline: all weights are 1
+      }
+      return result;
+    }
+
+    function getSequence(n, type) {
+      switch(type) {
+        case 'padovan': return padovan(n);
+        case 'fibonacci': return fibonacci(n);
+        case 'tribonacci': return tribonacci(n);
+        case 'pell': return pell(n);
+        case 'phi': return phiPower(n);
+        case 'linear': return linear(n);
+        default: return linear(n);
+      }
+    }
+
+    function getTraversalOrder(n, type) {
+      // For structural traversal, we use the sequence values modulo n to determine order
+      const seq = getSequence(n * 2, type);
+      const order = [];
+      const used = new Set();
+      
+      for (let val of seq) {
+        const index = Math.abs(val) % n;
+        if (!used.has(index)) {
+          order.push(index);
+          used.add(index);
+        }
+      }
+      
+      // Add any missing indices in order
+      for (let i = 0; i < n; i++) {
+        if (!used.has(i)) {
+          order.push(i);
+        }
+      }
+      
+      return order;
+    }
+
+    function getMatrix(id) {
+      const rows = document.querySelectorAll(`#${id} tbody tr`);
+      return Array.from(rows).map(row =>
+        Array.from(row.querySelectorAll('input')).map(cell => parseFloat(cell.value) || 0)
+      );
+    }
+
+    function symbolicMultiply() {
+      const A = getMatrix('matrixA');
+      const B = getMatrix('matrixB');
+      const substrate = document.getElementById('substrate').value;
+      const size = A.length;
+      const weights = getSequence(size, substrate);
+      const C = [];
+      
+      // Clear trace
+      const trace = document.getElementById('symbolicTrace');
+      trace.innerHTML = '<strong>Trace Log:</strong><br>';
+      
+      // Add weight info to trace
+      const weightInfo = document.createElement('div');
+      weightInfo.className = 'trace-entry';
+      weightInfo.innerHTML = `<strong>Weights (${substrate}):</strong> [${weights.map(w => w.toFixed(3)).join(', ')}]`;
+      trace.appendChild(weightInfo);
+      
+      // Compute with weights
+      for (let i = 0; i < size; i++) {
+        C[i] = [];
+        for (let j = 0; j < size; j++) {
+          let sum = 0;
+          let computation = [];
+          
+          for (let k = 0; k < size; k++) {
+            const product = A[i][k] * B[k][j] * weights[k];
+            sum += product;
+            computation.push(`${A[i][k]}×${B[k][j]}×${weights[k].toFixed(2)}`);
+          }
+          
+          C[i][j] = sum;
+          
+          // Add computation to trace
+          const entry = document.createElement('div');
+          entry.className = 'trace-entry';
+          entry.innerHTML = `C[${i},${j}] = ${computation.join(' + ')} = ${sum.toFixed(3)}`;
+          trace.appendChild(entry);
+        }
+      }
+      
+      // Display result
+      displayMatrix('symbolicResult', C, 'result-cell');
+      
+      // Update annotation
+      document.getElementById('symbolicAnnotation').innerHTML = 
+        `<strong>Symbolic substrate:</strong> ${substrate}<br>` +
+        `<strong>Weighted by:</strong> ${substrate} sequence<br>` +
+        `<strong>Result:</strong> Modulated matrix reflecting nested resonance patterns<br>` +
+        `<strong>Significance:</strong> UNNS as a semantic engine for emergent mathematics`;
+      
+      return C;
+    }
+
+    function structuralMultiply() {
+      const A = getMatrix('matrixA');
+      const B = getMatrix('matrixB');
+      const substrate = document.getElementById('substrate').value;
+      const size = A.length;
+      const traversalOrder = getTraversalOrder(size, substrate);
+      const C = [];
+      
+      // Clear trace
+      const trace = document.getElementById('structuralTrace');
+      trace.innerHTML = '<strong>Trace Log:</strong><br>';
+      
+      // Add traversal order to trace
+      const orderInfo = document.createElement('div');
+      orderInfo.className = 'trace-entry';
+      orderInfo.innerHTML = `<strong>Traversal Order (${substrate}):</strong> [${traversalOrder.join(' → ')}]`;
+      trace.appendChild(orderInfo);
+      
+      // Compute with traversal order (but standard multiplication)
+      for (let i = 0; i < size; i++) {
+        C[i] = [];
+        for (let j = 0; j < size; j++) {
+          let sum = 0;
+          let computation = [];
+          
+          // Use traversal order but compute standard multiplication
+          for (let idx of traversalOrder) {
+            const k = idx;
+            const product = A[i][k] * B[k][j];
+            sum += product;
+            computation.push(`A[${i},${k}]×B[${k},${j}]`);
+          }
+          
+          C[i][j] = sum;
+          
+          // Add computation to trace
+          const entry = document.createElement('div');
+          entry.className = 'trace-entry';
+          entry.innerHTML = `C[${i},${j}] = ${computation.join(' + ')} = ${sum.toFixed(3)}`;
+          trace.appendChild(entry);
+        }
+      }
+      
+      // Display result
+      displayMatrix('structuralResult', C, 'result-cell');
+      
+      // Update annotation
+      document.getElementById('structuralAnnotation').innerHTML = 
+        `<strong>Traversal sequence:</strong> ${substrate}<br>` +
+        `<strong>Guided by:</strong> ${substrate} indices [${traversalOrder.join(', ')}]<br>` +
+        `<strong>Result:</strong> Matches traditional matrix multiplication<br>` +
+        `<strong>Significance:</strong> UNNS as a structural framework for algorithmic optimization`;
+      
+      return C;
+    }
+
+    function displayMatrix(tableId, matrix, cellClass = '') {
+      const table = document.getElementById(tableId);
+      table.innerHTML = '';
+      
+      matrix.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        row.forEach((cell, j) => {
+          const td = document.createElement('td');
+          td.textContent = cell.toFixed(3);
+          td.className = cellClass;
+          td.id = `${tableId}_${i}_${j}`;
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      
+      table.classList.add('computing');
+      setTimeout(() => table.classList.remove('computing'), 500);
+    }
+
+    function compareResults(symbolic, structural) {
+      const differences = [];
+      const size = symbolic.length;
+      
+      // Clear previous highlights
+      document.querySelectorAll('.difference-highlight').forEach(el => {
+        el.classList.remove('difference-highlight');
+      });
+      
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const diff = Math.abs(symbolic[i][j] - structural[i][j]);
+          if (diff > 0.001) {
+            differences.push({
+              position: `[${i},${j}]`,
+              symbolic: symbolic[i][j].toFixed(3),
+              structural: structural[i][j].toFixed(3),
+              difference: diff.toFixed(3)
+            });
+            
+            // Highlight differences
+            document.getElementById(`symbolicResult_${i}_${j}`).classList.add('difference-highlight');
+            document.getElementById(`structuralResult_${i}_${j}`).classList.add('difference-highlight');
+          }
+        }
+      }
+      
+      // Display differences
+      const diffList = document.getElementById('differencesList');
+      if (differences.length === 0) {
+        diffList.innerHTML = '<p style="color: #7affa8;">✓ No differences detected - Results are identical!</p>';
+      } else {
+        diffList.innerHTML = differences.map(d => 
+          `<div class="trace-entry">Position ${d.position}: Symbolic=${d.symbolic}, Structural=${d.structural}, Δ=${d.difference}</div>`
+        ).join('');
+      }
+      
+      // Explain significance
+      const substrate = document.getElementById('substrate').value;
+      const significance = document.getElementById('significanceExplain');
+      significance.innerHTML = `
+        <div class="annotation" style="border-color: #ffcc00;">
+          <strong>Substrate:</strong> ${substrate}<br><br>
+          <strong>Symbolic Engine:</strong> Applies ${substrate} sequence weights directly to computation, 
+          creating a modulated result that reflects the recursive nature of the substrate. 
+          This demonstrates UNNS as a semantic modifier of mathematical operations.<br><br>
+          <strong>Structural Engine:</strong> Uses ${substrate} sequence to guide traversal order 
+          but preserves traditional multiplication semantics. This shows UNNS as an organizational 
+          principle that can optimize computation without changing results.<br><br>
+          <strong>Key Insight:</strong> ${differences.length > 0 ? 
+            'The differences reveal how symbolic weighting creates emergent mathematical patterns distinct from traditional computation.' :
+            'When using linear weights, both approaches converge, proving structural traversal preserves mathematical integrity.'}
+        </div>
+      `;
+    }
+
+    function computeBoth() {
+      const symbolicResult = symbolicMultiply();
+      const structuralResult = structuralMultiply();
+      compareResults(symbolicResult, structuralResult);
+    }
+
+    // Macro interpreter
+    document.getElementById('macroInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const macro = e.target.value.trim();
+        interpretMacro(macro);
+        e.target.value = '';
+      }
+    });
+
+    function interpretMacro(macro) {
+      const substrateMatch = macro.match(/@substrate\((.*?)\)/);
+      if (substrateMatch) {
+        const substrate = substrateMatch[1].toLowerCase();
+        document.getElementById('substrate').value = substrate;
+      }
+      
+      if (macro.includes('@multiply')) {
+        computeBoth();
+        
+        const annotation = document.createElement('div');
+        annotation.className = 'trace-entry';
+        annotation.style.background = 'rgba(255, 204, 0, 0.2)';
+        annotation.innerHTML = `<strong>Macro executed:</strong> ${macro}`;
+        document.getElementById('symbolicTrace').appendChild(annotation);
+        document.getElementById('structuralTrace').appendChild(annotation.cloneNode(true));
+      }
+    }
+
+    // Initial computation on load
+    window.onload = () => {
+      computeBoth();
+    };
+  </script>
+
+</body>
+</html>
