@@ -1,4 +1,4 @@
-# 🌌 UNNS Framework
+# 🌌 UNNS SUBSTRATE
 
 **Unbounded Nested Number Sequences / Universal Network Nexus System**
 
