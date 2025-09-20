@@ -8,7 +8,7 @@ A universal mathematical substrate for exploring **nested recursions, attractors
 
 ## 📖 Introduction
 
-The **UNNS framework** is an experimental mathematical and symbolic system built around the idea of **nested sequences** and their **universal patterns**.
+The **UNNS SUBSTRATE** is an experimental mathematical and symbolic system built around the idea of **nested sequences** and their **universal patterns**.
 
 At its core, UNNS shows how classical sequences (Fibonacci, Tribonacci, Pell, Padovan, Catalan, etc.) are **not isolated curiosities**, but **faces of a single deeper structure**.  
 
