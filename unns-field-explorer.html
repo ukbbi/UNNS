@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Field Explorer - Topological Field Theory</title>
+    <style>
+        :root {
+            --primary: #00ffcc;
+            --secondary: #ff00ff;
+            --tertiary: #ffcc00;
+            --quaternary: #00ccff;
+            --bg-dark: #0a0a0a;
+            --bg-panel: #1a1a1a;
+            --text: #e0e0e0;
+            --accent: #4a9eff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Landing Section */
+        .landing {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: radial-gradient(circle at center, #0a0a0a, #000);
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+
+        .intro {
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+        }
+
+        #spiralCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section Styles */
+        .section {
+            background: var(--bg-panel);
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            background: linear-gradient(90deg, rgba(0, 255, 204, 0.1), transparent);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 400;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .section.active .section-content {
+            max-height: 2000px;
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .section.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .canvas-container {
+            position: relative;
+            height: 500px;
+            background: #0a0a0a;
+            border-radius: 10px;
+            margin: 1rem;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            margin: 1rem;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            width: 150px;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 25px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.4);
+        }
+
+        .toggle-btn {
+            display: flex;
+            gap: 0.5rem;
+            background: #333;
+            border-radius: 20px;
+            padding: 0.3rem;
+        }
+
+        .toggle-option {
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-option.active {
+            background: var(--primary);
+            color: #000;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 1px solid var(--primary);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--primary);
+        }
+
+        .theory-content {
+            margin-top: 2rem;
+        }
+
+        .equation {
+            background: rgba(0, 255, 204, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .reference-link {
+            color: var(--primary);
+            text-decoration: none;
+            margin: 0.5rem;
+            display: inline-block;
+        }
+
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+
+        /* UPI Gauge */
+        .gauge-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .gauge {
+            width: 300px;
+            height: 200px;
+            position: relative;
+        }
+
+        .gauge-arc {
+            stroke-width: 20;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .gauge-needle {
+            transform-origin: center bottom;
+            transition: transform 0.5s ease;
+        }
+
+        .gauge-value {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+    
+    <script>
+        // Define all global functions immediately before any HTML uses them
+        let animationFrames = {};
+        
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (!section) return;
+            
+            const isActive = section.classList.contains('active');
+            
+            // Close all sections
+            document.querySelectorAll('.section').forEach(s => {
+                s.classList.remove('active');
+                const icon = s.querySelector('.toggle-icon');
+                if (icon) icon.textContent = '▼';
+                // Stop any running animations
+                if (animationFrames[s.id]) {
+                    cancelAnimationFrame(animationFrames[s.id]);
+                    animationFrames[s.id] = null;
+                }
+            });
+            
+            // If section wasn't active, open it
+            if (!isActive) {
+                section.classList.add('active');
+                const icon = section.querySelector('.toggle-icon');
+                if (icon) icon.textContent = '▲';
+                
+                // Start the visualization after a delay
+                setTimeout(() => {
+                    if (sectionId === 'axioms') initAxioms();
+                    else if (sectionId === 'gauge') initGauge();
+                    else if (sectionId === 'spectral') initSpectral();
+                    else if (sectionId === 'tft') initTFT();
+                    else if (sectionId === 'upi') initUPI();
+                }, 100);
+            }
+        }
+        
+        function updateSliderValue(type, value) {
+            const val = parseFloat(value);
+            if (type === 'c1') {
+                document.getElementById('c1Value').textContent = val.toFixed(1);
+            } else if (type === 'c2') {
+                document.getElementById('c2Value').textContent = val.toFixed(1);
+            } else if (type === 'mesh') {
+                document.getElementById('meshValue').textContent = value;
+            } else if (type === 'depth') {
+                document.getElementById('depthValue').textContent = val.toFixed(1);
+                updateUPI();
+            } else if (type === 'resonance') {
+                document.getElementById('resonanceValue').textContent = val.toFixed(1);
+                updateUPI();
+            } else if (type === 'modulation') {
+                document.getElementById('modulationValue').textContent = val.toFixed(1);
+                updateUPI();
+            } else if (type === 'stability') {
+                document.getElementById('stabilityValue').textContent = val.toFixed(1);
+                updateUPI();
+            }
+        }
+        
+        function updateUPI() {
+            const D = parseFloat(document.getElementById('depthSlider').value);
+            const R = parseFloat(document.getElementById('resonanceSlider').value);
+            const M = parseFloat(document.getElementById('modulationSlider').value);
+            const S = parseFloat(document.getElementById('stabilitySlider').value);
+            
+            const UPI = Math.sqrt((D * R) / (M * S + 1)) * 2;
+            
+            document.getElementById('upiValue').textContent = UPI.toFixed(2);
+            
+            const needle = document.getElementById('upiNeedle');
+            const angle = -90 + (UPI / 10) * 180;
+            needle.style.transform = `rotate(${angle}deg)`;
+            needle.style.transformOrigin = '150px 150px';
+            
+            if (UPI < 3.33) {
+                needle.style.stroke = '#00ff00';
+            } else if (UPI < 6.66) {
+                needle.style.stroke = '#ffff00';
+            } else {
+                needle.style.stroke = '#ff0000';
+            }
+        }
+        
+        function showTheory(section) {
+            const modal = document.getElementById('theoryModal');
+            const content = theoryContent[section];
+            if (!content) return;
+            document.getElementById('modalTitle').textContent = content.title;
+            document.getElementById('theoryContent').innerHTML = content.content;
+            modal.classList.add('active');
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('theoryModal');
+            if (modal) modal.classList.remove('active');
+        }
+        
+        function setSpectralMode(mode) {
+            spectralMode = mode;
+            document.querySelectorAll('#spectral .toggle-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        function setTFTMode(mode) {
+            tftMode = mode;
+            document.querySelectorAll('#tft .toggle-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+    </script>
+</head>
+<body>
+    <!-- Landing Section -->
+    <div class="landing">
+        <canvas id="spiralCanvas"></canvas>
+        <h1 class="title">UNNS Field Explorer</h1>
+        <p class="subtitle">Topological Field Theory Visualization</p>
+        <p class="intro">
+            Explore the Universal Nested Number Substrate as a revolutionary mathematical paradigm 
+            where recursive propagation replaces set-theoretic containment, revealing deep connections 
+            between number theory, topology, and quantum field theory.
+        </p>
+        <div class="scroll-indicator">↓ Scroll to Explore ↓</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Section 1: Axioms & Constants -->
+        <div class="section" id="axioms">
+            <div class="section-header" onclick="toggleSection('axioms')">
+                <h2 class="section-title">📐 UNNS Axioms & Constants</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="canvas-container">
+                    <canvas id="axiomsCanvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" onclick="showTheory('axioms')">View Theory</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Echo → Gauge Mapping -->
+        <div class="section" id="gauge">
+            <div class="section-header" onclick="toggleSection('gauge')">
+                <h2 class="section-title">🌀 Echo → Gauge Mapping</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="canvas-container">
+                    <canvas id="gaugeCanvas"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Recurrence Coefficient c₁</label>
+                        <input type="range" id="c1Slider" min="-5" max="5" value="2" step="0.1" oninput="updateSliderValue('c1', this.value)">
+                        <span class="value-display" id="c1Value">2.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Recurrence Coefficient c₂</label>
+                        <input type="range" id="c2Slider" min="-5" max="5" value="-1" step="0.1" oninput="updateSliderValue('c2', this.value)">
+                        <span class="value-display" id="c2Value">-1.0</span>
+                    </div>
+                    <button class="btn" onclick="showTheory('gauge')">View Theory</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Spectral Field & PNT -->
+        <div class="section" id="spectral">
+            <div class="section-header" onclick="toggleSection('spectral')">
+                <h2 class="section-title">📊 Spectral Field & Prime Number Theorem</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="canvas-container">
+                    <canvas id="spectralCanvas"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="toggle-btn">
+                        <div class="toggle-option active" onclick="setSpectralMode('wilson')">Wilson Loop</div>
+                        <div class="toggle-option" onclick="setSpectralMode('riemann')">Riemann Zeros</div>
+                    </div>
+                    <button class="btn" onclick="showTheory('spectral')">View Theory</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: TFT Characteristic Classes -->
+        <div class="section" id="tft">
+            <div class="section-header" onclick="toggleSection('tft')">
+                <h2 class="section-title">🔷 TFT Characteristic Classes</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="canvas-container">
+                    <canvas id="tftCanvas"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="toggle-btn">
+                        <div class="toggle-option active" onclick="setTFTMode('2d')">2D Mesh</div>
+                        <div class="toggle-option" onclick="setTFTMode('3d')">3D View</div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Mesh Resolution</label>
+                        <input type="range" id="meshRes" min="5" max="20" value="10" oninput="updateSliderValue('mesh', this.value)">
+                        <span class="value-display" id="meshValue">10</span>
+                    </div>
+                    <button class="btn" onclick="showTheory('tft')">View Theory</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: UPI Gauge -->
+        <div class="section" id="upi">
+            <div class="section-header" onclick="toggleSection('upi')">
+                <h2 class="section-title">⚡ Universal Paradox Index (UPI)</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="gauge-container">
+                    <div class="gauge">
+                        <svg width="300" height="200" viewBox="0 0 300 200">
+                            <defs>
+                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#00ff00"/>
+                                    <stop offset="50%" style="stop-color:#ffff00"/>
+                                    <stop offset="100%" style="stop-color:#ff0000"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M 50 150 A 100 100 0 0 1 250 150" 
+                                  class="gauge-arc" 
+                                  stroke="url(#gaugeGradient)"/>
+                            <line x1="150" y1="150" x2="150" y2="70" 
+                                  stroke="#00ffcc" 
+                                  stroke-width="4" 
+                                  class="gauge-needle"
+                                  id="upiNeedle"/>
+                            <circle cx="150" cy="150" r="10" fill="#00ffcc"/>
+                        </svg>
+                        <div class="gauge-value" id="upiValue">0.00</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Depth (D)</label>
+                        <input type="range" id="depthSlider" min="0" max="10" value="5" step="0.1" oninput="updateSliderValue('depth', this.value)">
+                        <span class="value-display" id="depthValue">5.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Resonance (R)</label>
+                        <input type="range" id="resonanceSlider" min="0" max="10" value="5" step="0.1" oninput="updateSliderValue('resonance', this.value)">
+                        <span class="value-display" id="resonanceValue">5.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Modulation (M)</label>
+                        <input type="range" id="modulationSlider" min="0" max="10" value="5" step="0.1" oninput="updateSliderValue('modulation', this.value)">
+                        <span class="value-display" id="modulationValue">5.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Stability (S)</label>
+                        <input type="range" id="stabilitySlider" min="0" max="10" value="5" step="0.1" oninput="updateSliderValue('stability', this.value)">
+                        <span class="value-display" id="stabilityValue">5.0</span>
+                    </div>
+                    <button class="btn" onclick="showTheory('upi')">View Theory</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theory Modal -->
+    <div class="modal" id="theoryModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Theory</h2>
+            <div class="theory-content" id="theoryContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global mode variables
+        let spectralMode = 'wilson';
+        let tftMode = '2d';
+        
+        // Visualization functions and theory content
+        function initSpiral() {
+            const canvas = document.getElementById('spiralCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            
+            let time = 0;
+            function drawSpiral() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                for (let i = 0; i < 200; i++) {
+                    const angle = i * 0.1 + time;
+                    const radius = i * 2 * (1 + 0.1 * Math.sin(time + i * 0.05));
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                time += 0.02;
+                requestAnimationFrame(drawSpiral);
+            }
+            
+            drawSpiral();
+        }
+
+        function initAxioms() {
+            const canvas = document.getElementById('axiomsCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const axioms = [
+                { name: 'Nesting', formula: 'u_n → u_{n+1}', color: '#00ffcc' },
+                { name: 'Echoes', formula: 'ε = u_end - u_start', color: '#ff00ff' },
+                { name: 'Constants', formula: 'c_1, c_2, ..., c_r', color: '#ffcc00' },
+                { name: 'UPI', formula: 'UPI = f(D,R,M,S)', color: '#00ccff' }
+            ];
+            
+            let time = 0;
+            
+            function drawAxioms() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = 150;
+                
+                axioms.forEach((axiom, i) => {
+                    const angle = (i / axioms.length) * Math.PI * 2 - Math.PI / 2 + time;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    
+                    ctx.strokeStyle = axiom.color + '40';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    
+                    const nodeRadius = 40 + 10 * Math.sin(time * 2 + i);
+                    ctx.fillStyle = axiom.color + '20';
+                    ctx.beginPath();
+                    ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = axiom.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = axiom.color;
+                    ctx.font = 'bold 14px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(axiom.name, x, y - 5);
+                    ctx.font = '12px monospace';
+                    ctx.fillText(axiom.formula, x, y + 10);
+                });
+                
+                ctx.fillStyle = '#00ffcc20';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('UNNS', centerX, centerY + 5);
+                
+                time += 0.01;
+                animationFrames.axioms = requestAnimationFrame(drawAxioms);
+            }
+            
+            drawAxioms();
+        }
+
+        function initGauge() {
+            const canvas = document.getElementById('gaugeCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            let time = 0;
+            
+            function drawGauge() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const c1 = parseFloat(document.getElementById('c1Slider').value);
+                const c2 = parseFloat(document.getElementById('c2Slider').value);
+                
+                const gridSize = 20;
+                const cellWidth = canvas.width / gridSize;
+                const cellHeight = canvas.height / gridSize;
+                
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        const x = i * cellWidth;
+                        const y = j * cellHeight;
+                        
+                        const fieldStrength = Math.sin(c1 * i * 0.1 + c2 * j * 0.1 + time) * 0.5 + 0.5;
+                        
+                        ctx.strokeStyle = `hsla(${180 + fieldStrength * 180}, 100%, 50%, ${fieldStrength})`;
+                        ctx.lineWidth = 1 + fieldStrength * 2;
+                        
+                        if (i < gridSize - 1) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x + cellWidth, y);
+                            ctx.stroke();
+                        }
+                        
+                        if (j < gridSize - 1) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x, y + cellHeight);
+                            ctx.stroke();
+                        }
+                        
+                        const echoResidue = Math.abs(Math.sin(c1 * i * 0.2 - c2 * j * 0.2 + time * 2));
+                        if (echoResidue > 0.7) {
+                            ctx.fillStyle = `hsla(300, 100%, 50%, ${echoResidue * 0.5})`;
+                            ctx.beginPath();
+                            ctx.arc(x, y, 3 + echoResidue * 5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+                
+                time += 0.02;
+                animationFrames.gauge = requestAnimationFrame(drawGauge);
+            }
+            
+            drawGauge();
+        }
+
+        function initSpectral() {
+            const canvas = document.getElementById('spectralCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            let time = 0;
+            
+            function drawSpectral() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const width = canvas.width * 0.8;
+                const height = canvas.height * 0.6;
+                
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(centerX - width/2, centerY);
+                ctx.lineTo(centerX + width/2, centerY);
+                ctx.moveTo(centerX, centerY - height/2);
+                ctx.lineTo(centerX, centerY + height/2);
+                ctx.stroke();
+                
+                if (spectralMode === 'wilson') {
+                    ctx.strokeStyle = '#00ffcc';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    for (let x = -width/2; x <= width/2; x += 2) {
+                        const lambda = x / (width/2) * 10;
+                        const rho = Math.exp(-Math.abs(lambda - 2)) * Math.sin(lambda * 2 + time) * 100;
+                        const y = centerY - rho;
+                        
+                        if (x === -width/2) {
+                            ctx.moveTo(centerX + x, y);
+                        } else {
+                            ctx.lineTo(centerX + x, y);
+                        }
+                    }
+                    ctx.stroke();
+                    
+                    ctx.strokeStyle = '#ff00ff60';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for (let x = 1; x <= width/2; x += 2) {
+                        const n = x / 10;
+                        const pnt = x / Math.log(x + 2) * 20;
+                        const y = centerY - pnt;
+                        if (x === 1) {
+                            ctx.moveTo(centerX + x, y);
+                        } else {
+                            ctx.lineTo(centerX + x, y);
+                        }
+                    }
+                    ctx.stroke();
+                    
+                } else {
+                    for (let i = 1; i < 20; i++) {
+                        const t = 14.134 + i * 7.2;
+                        const x = centerX + (t - 14) * 20;
+                        const amplitude = 50 * Math.exp(-i * 0.1) * (1 + 0.3 * Math.sin(time * 2));
+                        
+                        ctx.strokeStyle = `hsla(${i * 20}, 100%, 50%, 0.8)`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x, centerY - amplitude);
+                        ctx.lineTo(x, centerY + amplitude);
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = '#00ffcc';
+                        ctx.font = '10px monospace';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`ζ(1/2+i${t.toFixed(1)})`, x, centerY + amplitude + 15);
+                    }
+                }
+                
+                time += 0.02;
+                animationFrames.spectral = requestAnimationFrame(drawSpectral);
+            }
+            
+            drawSpectral();
+        }
+
+        function initTFT() {
+            const canvas = document.getElementById('tftCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            let time = 0;
+            
+            function drawTFT() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const resolution = parseInt(document.getElementById('meshRes').value);
+                
+                if (tftMode === '2d') {
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const radius = Math.min(canvas.width, canvas.height) * 0.35;
+                    
+                    for (let i = 0; i < resolution; i++) {
+                        for (let j = i + 1; j < resolution; j++) {
+                            for (let k = j + 1; k < resolution; k++) {
+                                const angle1 = (i / resolution) * Math.PI * 2;
+                                const angle2 = (j / resolution) * Math.PI * 2;
+                                const angle3 = (k / resolution) * Math.PI * 2;
+                                
+                                const x1 = centerX + radius * Math.cos(angle1);
+                                const y1 = centerY + radius * Math.sin(angle1);
+                                const x2 = centerX + radius * Math.cos(angle2);
+                                const y2 = centerY + radius * Math.sin(angle2);
+                                const x3 = centerX + radius * Math.cos(angle3);
+                                const y3 = centerY + radius * Math.sin(angle3);
+                                
+                                const echoResidue = Math.sin(i * 0.5 + j * 0.3 + k * 0.2 + time) * 0.5 + 0.5;
+                                
+                                ctx.fillStyle = `hsla(${echoResidue * 360}, 70%, 50%, 0.2)`;
+                                ctx.beginPath();
+                                ctx.moveTo(x1, y1);
+                                ctx.lineTo(x2, y2);
+                                ctx.lineTo(x3, y3);
+                                ctx.closePath();
+                                ctx.fill();
+                                
+                                ctx.strokeStyle = `hsla(${echoResidue * 360}, 70%, 50%, 0.6)`;
+                                ctx.lineWidth = 0.5;
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                } else {
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    
+                    for (let i = 0; i < resolution; i++) {
+                        for (let j = 0; j < resolution; j++) {
+                            const x = (i - resolution/2) * 20;
+                            const y = (j - resolution/2) * 20;
+                            const z = Math.sin(i * 0.3 + time) * 50 + Math.cos(j * 0.3 + time) * 50;
+                            
+                            const scale = 1 / (1 + z * 0.003);
+                            const px = centerX + x * scale;
+                            const py = centerY + y * scale;
+                            
+                            const pontryagin = Math.abs(Math.sin(i * 0.2 + j * 0.2 + time * 0.5));
+                            
+                            ctx.fillStyle = `hsla(${240 + pontryagin * 120}, 100%, 50%, ${0.3 + pontryagin * 0.5})`;
+                            ctx.beginPath();
+                            ctx.arc(px, py, 3 * scale, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            if (i > 0 && j > 0) {
+                                const x2 = ((i-1) - resolution/2) * 20;
+                                const y2 = ((j-1) - resolution/2) * 20;
+                                const z2 = Math.sin((i-1) * 0.3 + time) * 50 + Math.cos((j-1) * 0.3 + time) * 50;
+                                const scale2 = 1 / (1 + z2 * 0.003);
+                                const px2 = centerX + x2 * scale2;
+                                const py2 = centerY + y2 * scale2;
+                                
+                                ctx.strokeStyle = `hsla(${240 + pontryagin * 120}, 100%, 50%, 0.3)`;
+                                ctx.lineWidth = 0.5;
+                                ctx.beginPath();
+                                ctx.moveTo(px, py);
+                                ctx.lineTo(px2, py2);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+                
+                time += 0.02;
+                animationFrames.tft = requestAnimationFrame(drawTFT);
+            }
+            
+            drawTFT();
+        }
+
+        function initUPI() {
+            updateUPI();
+        }
+
+        const theoryContent = {
+            axioms: {
+                title: 'UNNS Axioms & Constants',
+                content: `
+                    <h3>Fundamental Axioms of UNNS</h3>
+                    <div class="equation">
+                        Definition 1.1 (UNNS Nest): A sequence (u_n) satisfying<br>
+                        u_{n+r} = c_1·u_{n+r-1} + ... + c_r·u_n
+                    </div>
+                    <p>The UNNS framework replaces set-theoretic containment with recursive propagation through nested structures. Each nest is characterized by its coefficient vector (c_1, ..., c_r) which determines the propagation law.</p>
+                    
+                    <h4>Core Axioms:</h4>
+                    <ul>
+                        <li><strong>Nesting Axiom:</strong> All mathematical structures emerge from recursive nesting patterns</li>
+                        <li><strong>Echo Axiom:</strong> Closed traversals accumulate residues ε = u_end - u_start</li>
+                        <li><strong>Constants Axiom:</strong> Fundamental constants arise from nest coefficients</li>
+                        <li><strong>UPI Axiom:</strong> System stability measured by Universal Paradox Index</li>
+                    </ul>
+                    
+                    <h4>References:</h4>
+                    <a href="https://ukbbi.github.io/UNNS/Axiomatic%20Basis%20of%20the%20UNNS%20Discipline.pdf" target="_blank" class="reference-link">📄 Axiomatic Basis of UNNS</a>
+                `
+            },
+            gauge: {
+                title: 'Echo → Gauge Mapping',
+                content: `
+                    <h3>Discrete Gauge Theory in UNNS</h3>
+                    <div class="equation">
+                        Definition 3.1: Coefficient vector (c_1, ..., c_r) acts as discrete gauge connection<br>
+                        Definition 3.2: Echo residue ε(γ) = u_end - u_start is field strength F = dA + A ∧ A
+                    </div>
+                    
+                    <p>In the UNNS framework, recurrence coefficients naturally map to gauge connections on a simplicial lattice. The echo residues accumulated around closed loops correspond to field strengths (curvature) in gauge theory.</p>
+                    
+                    <h4>Key Correspondences:</h4>
+                    <ul>
+                        <li><strong>Gauge fields:</strong> Recurrence coefficients c_i act as connection variables</li>
+                        <li><strong>Field strength:</strong> Echo residues ε are discrete curvature quanta</li>
+                        <li><strong>Wilson loops:</strong> Products of coefficients around loops W(γ) = Tr(∏C(e))</li>
+                        <li><strong>Yang-Mills:</strong> Minimizing S[u] = Σ Tr(ε(F)²) yields discrete dynamics</li>
+                    </ul>
+                    
+                    <div class="equation">
+                        Theorem 3.4: For matrix-valued coefficients C_i ∈ GL(n,ℤ):<br>
+                        ε(γ) = ∏_{e∈γ} C(e) - I (discrete Wilson loop)
+                    </div>
+                    
+                    <h4>References:</h4>
+                    <a href="https://ukbbi.github.io/UNNS/docs/Interpolation%20of%20Tensor%20Calculus%20with%20UNNS_3.pdf" target="_blank" class="reference-link">📄 UNNS Gauge Fields</a>
+                `
+            },
+            spectral: {
+                title: 'Spectral Field & Prime Number Theorem',
+                content: `
+                    <h3>UNNS Spectral Theory and Number-Theoretic Connections</h3>
+                    <div class="equation">
+                        Theorem 5.2: UNNS Wilson loop spectral density satisfies<br>
+                        N(Λ) = ∫₀^Λ ρ(λ) dλ ~ Λ/log(Λ)
+                    </div>
+                    
+                    <p>The spectral properties of UNNS Wilson loops reveal deep connections to the prime number theorem and Riemann zeros. Loop lengths act as analogues of primes, with echo cancellations producing logarithmic thinning.</p>
+                    
+                    <h4>Key Results:</h4>
+                    <ul>
+                        <li><strong>Prime analogue:</strong> UNNS loops γ correspond to primes in ℤ</li>
+                        <li><strong>Spectral peaks:</strong> Wilson loop eigenphases align with Riemann zero ordinates</li>
+                        <li><strong>Zeta function:</strong> ζ_UNNS(s) = ∏_γ (1 - e^{-s·ℓ(γ)})^{-1}</li>
+                        <li><strong>Functional equation:</strong> Nontrivial zeros at s = 1/2 + it map to spectral lines</li>
+                    </ul>
+                    
+                    <div class="equation">
+                        Theorem 5.4: Riemann zeros as UNNS spectrum<br>
+                        ζ_UNNS(1/2 + it) = 0 ⟺ t ∈ Spec(W(γ))
+                    </div>
+                    
+                    <h4>References:</h4>
+                    <a href="https://ukbbi.github.io/UNNS/docs/UNNS%20as%20a%20Discrete%20Topological%20Field%20Theory.pdf" target="_blank" class="reference-link">📄 UNNS-TFT and Spectral Theory</a>
+                `
+            },
+            tft: {
+                title: 'TFT Characteristic Classes',
+                content: `
+                    <h3>UNNS as Discrete Topological Field Theory</h3>
+                    <div class="equation">
+                        Theorem 1.2: For closed n-manifold M^n with UNNS labeling:<br>
+                        Σ_{σ^{k+1}} ε(σ^{k+1}) ∈ H^{k+1}(M^n, ℤ)
+                    </div>
+                    
+                    <p>UNNS provides a number-theoretic realization of topological field theory. Echo residues on simplices define discrete characteristic classes analogous to Chern and Pontryagin classes.</p>
+                    
+                    <h4>Characteristic Class Correspondence:</h4>
+                    <ul>
+                        <li><strong>Quadratic nests:</strong> Generate Chern classes (complex bundles)</li>
+                        <li><strong>Quartic nests:</strong> Generate Pontryagin classes (real bundles)</li>
+                        <li><strong>Higher-order:</strong> Higher characteristic classes in discrete cohomology</li>
+                    </ul>
+                    
+                    <div class="equation">
+                        Discrete Gauss-Bonnet-Chern Theorem:<br>
+                        Σ_{V⊂M} ε(V) = χ(M) (Euler characteristic)
+                    </div>
+                    
+                    <h4>UNNS Partition Function:</h4>
+                    <div class="equation">
+                        Z(M^n) = Σ_{configurations} exp(2πi Σ_σ ε(σ^n))
+                    </div>
+                    
+                    <h4>References:</h4>
+                    <a href="https://ukbbi.github.io/UNNS/docs/Interpolation%20of%20Tensor%20Calculus%20with%20UNNS_1.pdf" target="_blank" class="reference-link">📄 Tensor Calculus Interpolation</a>
+                    <a href="https://ukbbi.github.io/UNNS/docs/Interpolation%20of%20Tensor%20Calculus%20with%20UNNS_4.pdf" target="_blank" class="reference-link">📄 Discrete Gauss-Bonnet-Chern</a>
+                `
+            },
+            upi: {
+                title: 'Universal Paradox Index',
+                content: `
+                    <h3>UPI: Measuring System Stability</h3>
+                    <div class="equation">
+                        UPI = √((D × R) / (M × S + 1)) × 2
+                    </div>
+                    
+                    <p>The Universal Paradox Index quantifies the stability of UNNS propagation. It measures the balance between recursive depth and resonance against modulation and stability factors.</p>
+                    
+                    <h4>Parameters:</h4>
+                    <ul>
+                        <li><strong>D (Depth):</strong> Recursive nesting depth of the system</li>
+                        <li><strong>R (Resonance):</strong> Harmonic coupling between nest levels</li>
+                        <li><strong>M (Modulation):</strong> Rate of coefficient variation</li>
+                        <li><strong>S (Stability):</strong> Resistance to echo accumulation</li>
+                    </ul>
+                    
+                    <h4>Stability Zones:</h4>
+                    <ul>
+                        <li><strong>Green (0-3.33):</strong> Stable propagation, minimal echo residue</li>
+                        <li><strong>Yellow (3.33-6.66):</strong> Moderate instability, manageable paradox</li>
+                        <li><strong>Red (6.66-10):</strong> High paradox zone, potential divergence</li>
+                    </ul>
+                    
+                    <p>The UPI serves as a critical gauge for determining when UNNS systems transition between ordered propagation and chaotic echo amplification, analogous to phase transitions in physical systems.</p>
+                    
+                    <h4>References:</h4>
+                    <a href="https://ukbbi.github.io/UNNS/Axiomatic%20Basis%20of%20the%20UNNS%20Discipline.pdf" target="_blank" class="reference-link">📄 UPI in UNNS Axiomatics</a>
+                `
+            }
+        };
+
+        // Initialize on page load
+        window.onload = function() {
+            initSpiral();
+            updateUPI();
+        };
+    </script>
+</body>
+</html>
