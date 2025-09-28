@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Recursive Physics & Geometry Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 100%);
+            color: #0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Header */
+        .header {
+            background: linear-gradient(90deg, rgba(0,255,255,0.1) 0%, rgba(255,0,255,0.1) 50%, rgba(0,255,255,0.1) 100%);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 2px solid #0ff;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,255,255,0.3), transparent);
+            animation: sweep 4s infinite;
+        }
+        
+        @keyframes sweep {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .title {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(90deg, #0ff, #f0f, #0ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .subtitle {
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: #f0f;
+            opacity: 0.8;
+        }
+        
+        .ceremonial-forces {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        
+        .force {
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+        
+        .force:nth-child(1) { animation-delay: 0s; }
+        .force:nth-child(2) { animation-delay: 0.7s; }
+        .force:nth-child(3) { animation-delay: 1.4s; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        
+        .force-energy { color: #0ff; }
+        .force-echo { color: #f0f; }
+        .force-recursion { color: #ff0; }
+        
+        /* Module Container */
+        .module-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .module {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #0ff;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .module::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #0ff, #f0f);
+            border-radius: 10px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s;
+        }
+        
+        .module:hover::before {
+            opacity: 0.3;
+        }
+        
+        .module-title {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #f0f;
+            border-bottom: 1px solid #f0f;
+            padding-bottom: 10px;
+        }
+        
+        /* Theory Section */
+        .theory-toggle {
+            background: linear-gradient(45deg, #333, #444);
+            color: #0ff;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .theory-toggle:hover {
+            background: linear-gradient(45deg, #444, #555);
+        }
+        
+        .theory-section {
+            display: none;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .theory-section.active {
+            display: block;
+        }
+        
+        .theory-title {
+            color: #ff0;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .theory-content {
+            line-height: 1.6;
+            color: #ccc;
+            font-size: 0.95em;
+        }
+        
+        .definition {
+            background: rgba(255, 0, 255, 0.1);
+            border-left: 3px solid #f0f;
+            padding: 10px;
+            margin: 15px 0;
+        }
+        
+        .definition-title {
+            color: #f0f;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .theorem {
+            background: rgba(255, 255, 0, 0.1);
+            border-left: 3px solid #ff0;
+            padding: 10px;
+            margin: 15px 0;
+        }
+        
+        .theorem-title {
+            color: #ff0;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .diagram-container {
+            width: 100%;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #0ff;
+            border-radius: 5px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .controls {
+            margin: 15px 0;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        label {
+            flex: 1;
+            color: #0ff;
+        }
+        
+        input[type="range"] {
+            flex: 2;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #0ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .value-display {
+            color: #ff0;
+            min-width: 50px;
+            text-align: right;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #0ff, #f0f);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        .canvas-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #0ff;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Reference Modal */
+        .reference-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #f0f, #0ff);
+            color: #000;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.5);
+            z-index: 1000;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a0a1a, #2a0a2a);
+            border: 2px solid #0ff;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 1.8em;
+            color: #f0f;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f;
+            padding-bottom: 10px;
+        }
+        
+        .reference-list {
+            list-style: none;
+        }
+        
+        .reference-list li {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid #0ff;
+        }
+        
+        .reference-list a {
+            color: #0ff;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+        
+        .reference-list a:hover {
+            color: #f0f;
+            text-decoration: underline;
+        }
+        
+        .reference-description {
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .close-modal {
+            float: right;
+            font-size: 1.5em;
+            color: #f0f;
+            cursor: pointer;
+        }
+        
+        .close-modal:hover {
+            color: #0ff;
+        }
+        
+        /* Equations */
+        .equation {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            color: #ff0;
+        }
+        
+        .math-inline {
+            color: #ff0;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 0, 0.1);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Header -->
+    <div class="header">
+        <h1 class="title">UNNS Recursive Physics & Geometry Explorer</h1>
+        <div class="subtitle">Thermodynamics of Recursion • Spectral Geometry • Non-equilibrium Dynamics</div>
+        <div class="ceremonial-forces">
+            <span class="force force-energy">⚡ ENERGY</span>
+            <span class="force force-echo">◈ ECHO</span>
+            <span class="force force-recursion">∞ RECURSION</span>
+        </div>
+    </div>
+
+    <!-- Module Container -->
+    <div class="module-container">
+        <!-- Module 1: Thermodynamic Ensemble -->
+        <div class="module" id="module1">
+            <h2 class="module-title">Thermodynamic Ensemble Explorer</h2>
+            
+            <div class="theory-toggle" onclick="toggleTheory('theory1')">📖 Theoretical Foundation</div>
+            
+            <div class="theory-section" id="theory1">
+                <div class="theory-title">UNNS Canonical Ensemble</div>
+                <div class="theory-content">
+                    <p>The UNNS thermodynamic framework treats recursive nests as microstates in a statistical ensemble. Each nest N ∈ N_k is characterized by coefficients, echo residues {e_n}, and spectral constants σ(N).</p>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: Energy Functional</div>
+                        <p>An energy functional E: N_k → ℝ≥0 measures instability or complexity:</p>
+                        <div class="equation">
+                            E_echo(N) = Σ w_n|e_n|² <br>
+                            E_spec(N) = dist(σ(N), O_K)² <br>
+                            E_comp(N) = ℓ(N)
+                        </div>
+                    </div>
+                    
+                    <div class="theorem">
+                        <div class="theorem-title">Proposition: Thermodynamic Relation</div>
+                        <p>Entropy satisfies: ∂S/∂⟨E⟩ = 1/T where T = 1/β is the UNNS temperature</p>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <svg width="100%" height="100%" viewBox="0 0 500 200">
+                            <!-- Energy Landscape Diagram -->
+                            <path d="M 50 150 Q 100 50, 150 100 T 250 120 Q 300 80, 350 90 T 450 150" 
+                                  stroke="#0ff" stroke-width="2" fill="none"/>
+                            <text x="50" y="180" fill="#ff0" font-size="12">Low E</text>
+                            <text x="400" y="180" fill="#ff0" font-size="12">High E</text>
+                            <text x="200" y="30" fill="#f0f" font-size="14">Energy Landscape</text>
+                            <!-- Particles at different energy levels -->
+                            <circle cx="100" cy="80" r="4" fill="#0ff" opacity="0.8"/>
+                            <circle cx="200" cy="110" r="4" fill="#f0f" opacity="0.6"/>
+                            <circle cx="350" cy="90" r="4" fill="#ff0" opacity="0.4"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equation">Z(β) = Σ exp(-βE(N))</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Temperature (1/β):</label>
+                    <input type="range" id="temp1" min="0.1" max="5" value="1" step="0.1">
+                    <span class="value-display" id="temp1-val">1.0</span>
+                </div>
+                <div class="control-group">
+                    <label>Echo Weight:</label>
+                    <input type="range" id="echo1" min="0" max="2" value="1" step="0.1">
+                    <span class="value-display" id="echo1-val">1.0</span>
+                </div>
+                <button id="animate1">Animate Ensemble</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas1"></canvas>
+            </div>
+        </div>
+
+        <!-- Module 2: Non-equilibrium Dynamics -->
+        <div class="module" id="module2">
+            <h2 class="module-title">Non-equilibrium Operator Dynamics</h2>
+            
+            <div class="theory-toggle" onclick="toggleTheory('theory2')">📖 Theoretical Foundation</div>
+            
+            <div class="theory-section" id="theory2">
+                <div class="theory-title">Operator-Driven Evolution</div>
+                <div class="theory-content">
+                    <p>Recursive operators act as stochastic maps N → N'. The system evolves under master equations with transition rates W(N → N'), producing entropy through non-equilibrium processes.</p>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: Entropy Production Rate</div>
+                        <p>For operator evolution with transition rates W:</p>
+                        <div class="equation">
+                            σ(t) = dS/dt + Σ J_N→N'(t) ln[W(N→N')/W(N'→N)]
+                        </div>
+                        <p>where J_N→N' is the probability flux between states.</p>
+                    </div>
+                    
+                    <div class="theorem">
+                        <div class="theorem-title">Lemma: Second Law for UNNS</div>
+                        <p>For any operator evolution: ΔS_sys + ΔS_env ≥ 0</p>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <svg width="100%" height="100%" viewBox="0 0 500 200">
+                            <!-- Phase Space Flow -->
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#0ff"/>
+                                </marker>
+                            </defs>
+                            <!-- Stable region -->
+                            <ellipse cx="150" cy="100" rx="60" ry="40" fill="rgba(0,255,255,0.1)" stroke="#0ff"/>
+                            <text x="130" y="100" fill="#0ff" font-size="12">Stable</text>
+                            <!-- Chaotic region -->
+                            <ellipse cx="350" cy="100" rx="60" ry="40" fill="rgba(255,0,255,0.1)" stroke="#f0f"/>
+                            <text x="330" y="100" fill="#f0f" font-size="12">Chaotic</text>
+                            <!-- Flow arrows -->
+                            <path d="M 210 100 L 290 100" stroke="#ff0" stroke-width="2" marker-end="url(#arrowhead)"/>
+                            <text x="225" y="85" fill="#ff0" font-size="11">Inletting T₀</text>
+                            <path d="M 290 100 L 210 100" stroke="#0f0" stroke-width="1" stroke-dasharray="5,5"/>
+                            <text x="225" y="120" fill="#0f0" font-size="11">Repair r</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equation">σ(t) = dS/dt + Σ J ln(W→/W←)</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Inletting Rate T₀:</label>
+                    <input type="range" id="inletting2" min="0" max="2" value="0.5" step="0.05">
+                    <span class="value-display" id="inletting2-val">0.5</span>
+                </div>
+                <div class="control-group">
+                    <label>Repair Strength r:</label>
+                    <input type="range" id="repair2" min="0" max="1" value="0.3" step="0.05">
+                    <span class="value-display" id="repair2-val">0.3</span>
+                </div>
+                <button id="animate2">Start Evolution</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas2"></canvas>
+            </div>
+        </div>
+
+        <!-- Module 3: Mandelbrot Recursion Depth -->
+        <div class="module" id="module3">
+            <h2 class="module-title">Mandelbrot Recursion Axis</h2>
+            
+            <div class="theory-toggle" onclick="toggleTheory('theory3')">📖 Theoretical Foundation</div>
+            
+            <div class="theory-section" id="theory3">
+                <div class="theory-title">Recursion as Orthogonal Dimension</div>
+                <div class="theory-content">
+                    <p>The Mandelbrot set M ⊂ ℂ is reinterpreted through UNNS as having structure along a recursion axis orthogonal to the complex plane. The iteration z_{n+1} = z_n² + c generates a recursive grammar.</p>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: Recursion Axis</div>
+                        <p>For recursive process z_{n+1} = f(z_n, c), the recursion axis is an abstract coordinate measuring iteration depth n, orthogonal to the embedding space ℂ.</p>
+                    </div>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: UNNS Escape Entropy</div>
+                        <p>Let τ(c) be the escape time for parameter c:</p>
+                        <div class="equation">S(c) = log τ(c)</div>
+                        <p>The boundary ∂M corresponds to divergence of S(c), forming an echo surface.</p>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <svg width="100%" height="100%" viewBox="0 0 500 200">
+                            <!-- 3D Mandelbrot visualization -->
+                            <!-- Complex plane -->
+                            <rect x="100" y="120" width="200" height="60" fill="rgba(0,255,255,0.1)" stroke="#0ff"/>
+                            <text x="180" y="155" fill="#0ff" font-size="12">ℂ plane</text>
+                            <!-- Recursion axis -->
+                            <line x1="200" y1="150" x2="200" y2="30" stroke="#ff0" stroke-width="2"/>
+                            <text x="210" y="35" fill="#ff0" font-size="12">Recursion n</text>
+                            <!-- Spiral showing iteration -->
+                            <path d="M 200 150 Q 220 130, 210 110 T 220 70 Q 215 50, 200 30" 
+                                  stroke="#f0f" stroke-width="2" fill="none" stroke-dasharray="2,2"/>
+                            <!-- Labels -->
+                            <text x="50" y="170" fill="#ccc" font-size="11">ℜ(c)</text>
+                            <text x="310" y="150" fill="#ccc" font-size="11">ℑ(c)</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equation">S(c) = log τ(c) • Recursion ⊥ Geometry</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Real Component:</label>
+                    <input type="range" id="real3" min="-2" max="1" value="-0.5" step="0.05">
+                    <span class="value-display" id="real3-val">-0.5</span>
+                </div>
+                <div class="control-group">
+                    <label>Imaginary Component:</label>
+                    <input type="range" id="imag3" min="-1.5" max="1.5" value="0" step="0.05">
+                    <span class="value-display" id="imag3-val">0.0</span>
+                </div>
+                <button id="animate3">Visualize Depth</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas3"></canvas>
+            </div>
+        </div>
+
+        <!-- Module 4: Spectral Geometry -->
+        <div class="module" id="module4">
+            <h2 class="module-title">UNNS Spectral Lattices</h2>
+            
+            <div class="theory-toggle" onclick="toggleTheory('theory4')">📖 Theoretical Foundation</div>
+            
+            <div class="theory-section" id="theory4">
+                <div class="theory-title">Recurrence Coefficients as Spectral Data</div>
+                <div class="theory-content">
+                    <p>UNNS recurrence relations generate algebraic structures that map to spectral operators on lattices. The Fibonacci sequence exemplifies this through its connection to quasicrystals.</p>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: Edge-weighted Lattice Map</div>
+                        <p>Given UNNS coefficients {w_n}, construct discrete Laplacian:</p>
+                        <div class="equation">
+                            (Lψ)_n = w_{n-1}ψ_{n-1} - (w_{n-1} + w_n)ψ_n + w_nψ_{n+1}
+                        </div>
+                        <p>The spectrum reflects UNNS arithmetic structure.</p>
+                    </div>
+                    
+                    <div class="theorem">
+                        <div class="theorem-title">Example: Fibonacci Lattice</div>
+                        <p>For F_{n+1} = F_n + F_{n-1}, eigenvalues are φ = (1+√5)/2 and φ' = (1-√5)/2.</p>
+                        <p>These define the spectral lattice underlying Penrose tilings and quasicrystal diffraction.</p>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <svg width="100%" height="100%" viewBox="0 0 500 200">
+                            <!-- Fibonacci lattice structure -->
+                            <!-- Golden spiral approximation -->
+                            <path d="M 250 100 Q 270 100, 270 120 T 250 140 Q 230 140, 230 120 T 250 100
+                                     M 250 100 Q 290 100, 290 140 T 250 180 Q 210 180, 210 140 T 250 100"
+                                  stroke="#ff0" stroke-width="1" fill="none" opacity="0.6"/>
+                            <!-- Lattice points -->
+                            <circle cx="250" cy="100" r="5" fill="#0ff"/>
+                            <circle cx="270" cy="120" r="4" fill="#0ff"/>
+                            <circle cx="250" cy="140" r="4" fill="#0ff"/>
+                            <circle cx="230" cy="120" r="4" fill="#0ff"/>
+                            <circle cx="290" cy="140" r="3" fill="#f0f"/>
+                            <circle cx="250" cy="180" r="3" fill="#f0f"/>
+                            <circle cx="210" cy="140" r="3" fill="#f0f"/>
+                            <!-- Labels -->
+                            <text x="200" y="30" fill="#ff0" font-size="12">φ = 1.618...</text>
+                            <text x="200" y="50" fill="#f0f" font-size="12">Spectral gaps</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equation">(Lψ)ₙ = wₙ₋₁ψₙ₋₁ - (wₙ₋₁ + wₙ)ψₙ + wₙψₙ₊₁</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Fibonacci Ratio φ:</label>
+                    <input type="range" id="phi4" min="1" max="2" value="1.618" step="0.01">
+                    <span class="value-display" id="phi4-val">1.618</span>
+                </div>
+                <div class="control-group">
+                    <label>Lattice Depth:</label>
+                    <input type="range" id="depth4" min="3" max="20" value="10" step="1">
+                    <span class="value-display" id="depth4-val">10</span>
+                </div>
+                <button id="animate4">Generate Spectrum</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas4"></canvas>
+            </div>
+        </div>
+
+        <!-- Module 5: Phase Transitions -->
+        <div class="module" id="module5">
+            <h2 class="module-title">Phase Transitions & Fluctuations</h2>
+            
+            <div class="theory-toggle" onclick="toggleTheory('theory5')">📖 Theoretical Foundation</div>
+            
+            <div class="theory-section" id="theory5">
+                <div class="theory-title">Critical Phenomena in Recursion</div>
+                <div class="theory-content">
+                    <p>Phase transitions occur when control parameters (inletting rate T₀, repair strength r, noise η) cross critical curves where susceptibilities diverge.</p>
+                    
+                    <div class="theorem">
+                        <div class="theorem-title">Theorem: Critical Regime</div>
+                        <p>There exist curves in parameter space (T₀, r, η) where:</p>
+                        <div class="equation">C(β) = β²(⟨E²⟩ - ⟨E⟩²) → ∞</div>
+                    </div>
+                    
+                    <div class="theorem">
+                        <div class="theorem-title">Jarzynski Equality for UNNS</div>
+                        <p>Let W be operator work and ΔF free energy difference:</p>
+                        <div class="equation">⟨exp(-βW)⟩ = exp(-βΔF)</div>
+                    </div>
+                    
+                    <div class="definition">
+                        <div class="definition-title">Definition: Repair Work</div>
+                        <p>Repair operators reduce system entropy but require work:</p>
+                        <div class="equation">W_repair = d(N, R(N))</div>
+                        <p>where d is a metric on nests and R(N) is the repaired state.</p>
+                    </div>
+                    
+                    <div class="diagram-container">
+                        <svg width="100%" height="100%" viewBox="0 0 500 200">
+                            <!-- Phase diagram -->
+                            <!-- Axes -->
+                            <line x1="50" y1="170" x2="450" y2="170" stroke="#ccc" stroke-width="1"/>
+                            <line x1="50" y1="170" x2="50" y2="30" stroke="#ccc" stroke-width="1"/>
+                            <text x="225" y="190" fill="#ccc" font-size="11">Inletting T₀</text>
+                            <text x="15" y="100" fill="#ccc" font-size="11" transform="rotate(-90 15 100)">Repair r</text>
+                            <!-- Phase regions -->
+                            <path d="M 50 170 Q 150 150, 200 100 T 350 50" stroke="#f0f" stroke-width="2" fill="none"/>
+                            <text x="100" y="140" fill="#0ff" font-size="12">Stable</text>
+                            <text x="300" y="80" fill="#f0f" font-size="12">Chaotic</text>
+                            <!-- Critical line -->
+                            <circle cx="200" cy="100" r="5" fill="#ff0"/>
+                            <text x="210" y="100" fill="#ff0" font-size="11">Critical</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="equation">⟨e^(-βW)⟩ = e^(-β∆F) • C(β) → ∞</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Control Parameter:</label>
+                    <input type="range" id="control5" min="0" max="2" value="1" step="0.05">
+                    <span class="value-display" id="control5-val">1.0</span>
+                </div>
+                <div class="control-group">
+                    <label>Noise Amplitude η:</label>
+                    <input type="range" id="noise5" min="0" max="1" value="0.2" step="0.05">
+                    <span class="value-display" id="noise5-val">0.2</span>
+                </div>
+                <button id="animate5">Observe Transition</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas5"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reference Button -->
+    <div class="reference-btn" onclick="openReferences()">📚 References</div>
+
+    <!-- Reference Modal -->
+    <div class="modal" id="referenceModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeReferences()">×</span>
+            <h2 class="modal-header">UNNS Research Papers</h2>
+            <ul class="reference-list">
+                <li>
+                    <a href="https://ukbbi.github.io/UNNS/docs/thermodynamics/Toward a Thermodynamic Framework for UNNS.pdf" target="_blank">
+                        Toward a Thermodynamic Framework for UNNS
+                    </a>
+                    <div class="reference-description">
+                        Foundational paper establishing energy, entropy, and temperature of recursion with connections to statistical mechanics
+                    </div>
+                </li>
+                <li>
+                    <a href="https://ukbbi.github.io/UNNS/docs/thermodynamics/Thermodynamics of UNNS_Entropy_Energy_and_Non-equilibrium_Recursion.pdf" target="_blank">
+                        Thermodynamics of UNNS: Entropy, Energy, and Non-equilibrium Recursion
+                    </a>
+                    <div class="reference-description">
+                        Extended framework including phase transitions, fluctuation theorems, and repair operators as thermodynamic work
+                    </div>
+                </li>
+                <li>
+                    <a href="https://ukbbi.github.io/UNNS/docs/UNNS_spectral_geometry/UNNS Spectral Geometry.pdf" target="_blank">
+                        UNNS Spectral Geometry
+                    </a>
+                    <div class="reference-description">
+                        Recurrence coefficients as spectral data for lattices, tilings, and waveguides with connections to quasicrystals
+                    </div>
+                </li>
+                <li>
+                    <a href="https://ukbbi.github.io/UNNS/docs/UNNS_spectral_geometry/The Mandelbrot Set in the UNNS Substrate.pdf" target="_blank">
+                        The Mandelbrot Set in the UNNS Substrate
+                    </a>
+                    <div class="reference-description">
+                        Reinterpretation of the Mandelbrot set through recursion depth as an orthogonal dimension to geometry
+                    </div>
+                </li>
+                <li>
+                    <a href="https://ukbbi.github.io/UNNS/docs/UNNS_spectral_geometry/UNNS Spectral Geometry of the Mandelbrot and Beyond_appendix.pdf" target="_blank">
+                        UNNS Spectral Geometry of the Mandelbrot and Beyond (with Appendix)
+                    </a>
+                    <div class="reference-description">
+                        Detailed numerical examples including Fibonacci recurrence, escape entropy, and spectral gap calculations
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Toggle theory sections
+        function toggleTheory(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle('active');
+        }
+
+        // Reference Modal Functions
+        function openReferences() {
+            document.getElementById('referenceModal').style.display = 'flex';
+        }
+
+        function closeReferences() {
+            document.getElementById('referenceModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('referenceModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Module 1: Thermodynamic Ensemble
+        class ThermodynamicEnsemble {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = canvas.width = canvas.offsetWidth;
+                this.height = canvas.height = canvas.offsetHeight;
+                this.particles = [];
+                this.temperature = 1;
+                this.echoWeight = 1;
+                this.animating = false;
+                this.init();
+            }
+
+            init() {
+                for (let i = 0; i < 50; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.width,
+                        y: Math.random() * this.height,
+                        energy: Math.random() * 5,
+                        radius: 3,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2
+                    });
+                }
+            }
+
+            update() {
+                const beta = 1 / this.temperature;
+                
+                this.particles.forEach(p => {
+                    // Boltzmann distribution influence
+                    const boltzmann = Math.exp(-beta * p.energy);
+                    
+                    p.vx *= (0.95 + 0.05 * boltzmann);
+                    p.vy *= (0.95 + 0.05 * boltzmann);
+                    
+                    p.x += p.vx * this.temperature;
+                    p.y += p.vy * this.temperature;
+                    
+                    // Boundary conditions
+                    if (p.x < 0 || p.x > this.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > this.height) p.vy *= -1;
+                    
+                    p.x = Math.max(0, Math.min(this.width, p.x));
+                    p.y = Math.max(0, Math.min(this.height, p.y));
+                    
+                    // Update energy with echo residue
+                    p.energy = Math.abs(p.vx * p.vx + p.vy * p.vy) * this.echoWeight;
+                });
+            }
+
+            draw() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                const beta = 1 / this.temperature;
+                let totalZ = 0;
+                
+                this.particles.forEach(p => {
+                    const boltzmann = Math.exp(-beta * p.energy);
+                    totalZ += boltzmann;
+                    
+                    const intensity = boltzmann;
+                    const hue = 180 + intensity * 120;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius + intensity * 5, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${0.5 + intensity * 0.5})`;
+                    this.ctx.fill();
+                });
+                
+                // Display partition function
+                this.ctx.fillStyle = '#0ff';
+                this.ctx.font = '14px monospace';
+                this.ctx.fillText(`Z(β) = ${totalZ.toFixed(2)}`, 10, 20);
+                
+                // Calculate and display entropy
+                const entropy = beta * this.particles.reduce((sum, p) => sum + p.energy, 0) / this.particles.length + Math.log(totalZ);
+                this.ctx.fillText(`S = ${entropy.toFixed(3)}`, 10, 40);
+                
+                // Display free energy
+                const freeEnergy = -Math.log(totalZ) / beta;
+                this.ctx.fillText(`F = ${freeEnergy.toFixed(3)}`, 10, 60);
+            }
+
+            animate() {
+                if (!this.animating) return;
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animating = true;
+                this.animate();
+            }
+
+            stop() {
+                this.animating = false;
+            }
+        }
+
+        // Module 2: Non-equilibrium Dynamics
+        class NonEquilibriumDynamics {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = canvas.width = canvas.offsetWidth;
+                this.height = canvas.height = canvas.offsetHeight;
+                this.inlettingRate = 0.5;
+                this.repairStrength = 0.3;
+                this.time = 0;
+                this.entropyHistory = [];
+                this.animating = false;
+            }
+
+            update() {
+                this.time += 0.05;
+                
+                // Entropy production with operator dynamics
+                const entropyProduction = this.inlettingRate * Math.sin(this.time) + 
+                                        (1 - this.repairStrength) * Math.cos(this.time * 0.7);
+                
+                this.entropyHistory.push({
+                    time: this.time,
+                    entropy: entropyProduction,
+                    systemEntropy: Math.abs(Math.sin(this.time * this.inlettingRate)),
+                    environmentEntropy: Math.abs(Math.cos(this.time * (1 - this.repairStrength)))
+                });
+                
+                if (this.entropyHistory.length > 100) {
+                    this.entropyHistory.shift();
+                }
+            }
+
+            draw() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                const centerY = this.height / 2;
+                const scale = this.height / 4;
+                
+                // Draw entropy production curve
+                this.ctx.strokeStyle = '#0ff';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                
+                this.entropyHistory.forEach((point, i) => {
+                    const x = (i / 100) * this.width;
+                    const y = centerY - point.entropy * scale;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw system entropy
+                this.ctx.strokeStyle = '#f0f';
+                this.ctx.beginPath();
+                this.entropyHistory.forEach((point, i) => {
+                    const x = (i / 100) * this.width;
+                    const y = centerY - point.systemEntropy * scale;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw environment entropy
+                this.ctx.strokeStyle = '#ff0';
+                this.ctx.beginPath();
+                this.entropyHistory.forEach((point, i) => {
+                    const x = (i / 100) * this.width;
+                    const y = centerY - point.environmentEntropy * scale;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Labels
+                this.ctx.fillStyle = '#0ff';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText('Total σ(t)', 10, 20);
+                this.ctx.fillStyle = '#f0f';
+                this.ctx.fillText('System S', 10, 35);
+                this.ctx.fillStyle = '#ff0';
+                this.ctx.fillText('Environment', 10, 50);
+                
+                // Display second law
+                const totalEntropy = this.entropyHistory.length > 0 ? 
+                    this.entropyHistory[this.entropyHistory.length - 1].systemEntropy + 
+                    this.entropyHistory[this.entropyHistory.length - 1].environmentEntropy : 0;
+                this.ctx.fillStyle = '#0f0';
+                this.ctx.fillText(`ΔS_total ≥ 0: ${totalEntropy.toFixed(3)}`, 10, 70);
+            }
+
+            animate() {
+                if (!this.animating) return;
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animating = true;
+                this.animate();
+            }
+
+            stop() {
+                this.animating = false;
+            }
+        }
+
+        // Module 3: Mandelbrot Recursion
+        class MandelbrotRecursion {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = canvas.width = canvas.offsetWidth;
+                this.height = canvas.height = canvas.offsetHeight;
+                this.real = -0.5;
+                this.imag = 0;
+                this.maxIter = 100;
+                this.animating = false;
+                this.recursionDepth = 0;
+                this.phase = 0;
+                this.iterationTrail = [];
+                this.spiralAngle = 0;
+            }
+
+            mandelbrotIteration(c_real, c_imag, maxIter) {
+                let z_real = 0;
+                let z_imag = 0;
+                
+                for (let i = 0; i < maxIter; i++) {
+                    const z_real_sq = z_real * z_real;
+                    const z_imag_sq = z_imag * z_imag;
+                    
+                    if (z_real_sq + z_imag_sq > 4) {
+                        return i; // Escape time
+                    }
+                    
+                    const new_real = z_real_sq - z_imag_sq + c_real;
+                    const new_imag = 2 * z_real * z_imag + c_imag;
+                    
+                    z_real = new_real;
+                    z_imag = new_imag;
+                }
+                
+                return maxIter;
+            }
+
+            getIterationPath(c_real, c_imag, maxIter) {
+                let z_real = 0;
+                let z_imag = 0;
+                const path = [];
+                
+                for (let i = 0; i < maxIter; i++) {
+                    path.push({x: z_real, y: z_imag, iteration: i});
+                    
+                    const z_real_sq = z_real * z_real;
+                    const z_imag_sq = z_imag * z_imag;
+                    
+                    if (z_real_sq + z_imag_sq > 4) {
+                        break;
+                    }
+                    
+                    const new_real = z_real_sq - z_imag_sq + c_real;
+                    const new_imag = 2 * z_real * z_imag + c_imag;
+                    
+                    z_real = new_real;
+                    z_imag = new_imag;
+                }
+                
+                return path;
+            }
+
+            draw() {
+                // Stronger fade effect for trails
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                const centerX = this.width / 2;
+                const centerY = this.height / 2;
+                
+                // Update animation phase
+                this.phase += 0.05;
+                this.spiralAngle += 0.03;
+                
+                // Get iteration path for current parameters
+                const path = this.getIterationPath(this.real, this.imag, this.recursionDepth);
+                
+                // Draw the complex plane (base layer)
+                this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(centerX - 100, centerY - 50, 200, 100);
+                
+                // Draw recursion axis (vertical)
+                const axisHeight = 150;
+                this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX, centerY);
+                this.ctx.lineTo(centerX, centerY - axisHeight);
+                this.ctx.stroke();
+                
+                // Draw axis label
+                this.ctx.fillStyle = '#ff0';
+                this.ctx.font = '10px monospace';
+                this.ctx.fillText('Recursion n', centerX + 5, centerY - axisHeight + 10);
+                
+                // Draw dynamic iteration path in 3D space
+                this.ctx.beginPath();
+                path.forEach((point, i) => {
+                    const scale = 50;
+                    const x = centerX + point.x * scale;
+                    const y = centerY + point.y * scale - i * 3; // Lift by recursion depth
+                    const z = i * 3; // Depth component
+                    
+                    // Apply perspective transformation
+                    const perspectiveScale = 1 - z / 200;
+                    const projX = centerX + (x - centerX) * perspectiveScale;
+                    const projY = centerY + (y - centerY) * perspectiveScale - z;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(projX, projY);
+                    } else {
+                        this.ctx.lineTo(projX, projY);
+                    }
+                    
+                    // Draw point with size based on depth
+                    const pointSize = 3 * perspectiveScale;
+                    const hue = (i * 10 + this.phase * 100) % 360;
+                    
+                    this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${1 - i / this.maxIter})`;
+                    this.ctx.fillRect(projX - pointSize/2, projY - pointSize/2, pointSize, pointSize);
+                });
+                
+                const pathHue = (this.phase * 100) % 360;
+                this.ctx.strokeStyle = `hsla(${pathHue}, 100%, 50%, 0.6)`;
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+                
+                // Draw spiraling recursion layers
+                for (let depth = 0; depth < this.recursionDepth; depth += 2) {
+                    const escape = this.mandelbrotIteration(this.real, this.imag, depth);
+                    
+                    const layerY = centerY - depth * 3;
+                    const radius = 60 + Math.sin(this.phase + depth * 0.2) * 20;
+                    const opacity = 1 - depth / this.maxIter;
+                    const hue = (escape * 10 + this.phase * 100) % 360;
+                    
+                    // Draw rotating ellipse for each recursion layer
+                    this.ctx.save();
+                    this.ctx.translate(centerX, layerY);
+                    this.ctx.rotate(this.spiralAngle + depth * 0.1);
+                    
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(0, 0, radius, radius * 0.5, 0, 0, Math.PI * 2);
+                    this.ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${opacity * 0.5})`;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+                    
+                    this.ctx.restore();
+                    
+                    // Draw connecting spiral
+                    if (depth > 0 && depth % 3 === 0) {
+                        const prevY = centerY - (depth - 3) * 3;
+                        const angle = this.spiralAngle + depth * 0.1;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(
+                            centerX + Math.cos(angle) * radius,
+                            prevY + Math.sin(angle) * radius * 0.5
+                        );
+                        this.ctx.lineTo(
+                            centerX + Math.cos(angle + 0.3) * radius,
+                            layerY + Math.sin(angle + 0.3) * radius * 0.5
+                        );
+                        this.ctx.strokeStyle = `rgba(255, 0, 255, ${opacity * 0.3})`;
+                        this.ctx.stroke();
+                    }
+                }
+                
+                // Draw echo surfaces (pulsing circles)
+                const pulseRadius = 80 + Math.sin(this.phase * 2) * 10;
+                for (let i = 0; i < 3; i++) {
+                    const echoOpacity = (1 - i / 3) * 0.3 * (0.5 + Math.sin(this.phase * 3) * 0.5);
+                    this.ctx.beginPath();
+                    this.ctx.arc(centerX, centerY, pulseRadius + i * 20, 0, Math.PI * 2);
+                    this.ctx.strokeStyle = `rgba(0, 255, 255, ${echoOpacity})`;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+                }
+                
+                // Display UNNS entropy and metrics
+                const totalEntropy = Math.log(this.mandelbrotIteration(this.real, this.imag, this.maxIter) + 1);
+                this.ctx.fillStyle = '#0ff';
+                this.ctx.font = '14px monospace';
+                this.ctx.fillText(`S(c) = ${totalEntropy.toFixed(3)}`, 10, 20);
+                this.ctx.fillText(`c = ${this.real.toFixed(2)} + ${this.imag.toFixed(2)}i`, 10, 40);
+                this.ctx.fillText(`τ(c) = ${this.mandelbrotIteration(this.real, this.imag, this.maxIter)}`, 10, 60);
+                this.ctx.fillText(`Depth: ${this.recursionDepth}`, 10, 80);
+            }
+
+            animate() {
+                if (!this.animating) return;
+                this.recursionDepth = (this.recursionDepth + 1) % this.maxIter;
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animating = true;
+                this.animate();
+            }
+
+            stop() {
+                this.animating = false;
+            }
+        }
+
+        // Module 4: Spectral Lattices
+        class SpectralLattices {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = canvas.width = canvas.offsetWidth;
+                this.height = canvas.height = canvas.offsetHeight;
+                this.phi = 1.618; // Golden ratio
+                this.depth = 10;
+                this.eigenvalues = [];
+                this.animating = false;
+                this.phase = 0;
+            }
+
+            generateFibonacciLattice() {
+                this.eigenvalues = [];
+                const phi = this.phi;
+                const phiPrime = 1 - phi;
+                
+                for (let n = 0; n < this.depth; n++) {
+                    // Fibonacci spectral eigenvalues
+                    const eigenvalue1 = Math.pow(phi, n);
+                    const eigenvalue2 = Math.pow(phiPrime, n);
+                    
+                    this.eigenvalues.push({
+                        real: eigenvalue1 * Math.cos(n * 0.1),
+                        imag: eigenvalue1 * Math.sin(n * 0.1),
+                        index: n
+                    });
+                }
+            }
+
+            draw() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                const centerX = this.width / 2;
+                const centerY = this.height / 2;
+                const scale = 50;
+                
+                // Draw spectral lattice
+                this.eigenvalues.forEach((ev, i) => {
+                    const x = centerX + ev.real * scale * Math.cos(this.phase);
+                    const y = centerY + ev.imag * scale * Math.sin(this.phase);
+                    
+                    // Draw eigenvalue point
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 3 + i * 0.5, 0, Math.PI * 2);
+                    const hue = (i * 30 + this.phase * 100) % 360;
+                    this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.8)`;
+                    this.ctx.fill();
+                    
+                    // Connect to neighbors
+                    if (i > 0) {
+                        const prev = this.eigenvalues[i - 1];
+                        const prevX = centerX + prev.real * scale * Math.cos(this.phase);
+                        const prevY = centerY + prev.imag * scale * Math.sin(this.phase);
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(prevX, prevY);
+                        this.ctx.lineTo(x, y);
+                        this.ctx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.3)`;
+                        this.ctx.stroke();
+                    }
+                });
+                
+                // Draw quasicrystal-like pattern
+                for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 5) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(centerX, centerY);
+                    const endX = centerX + Math.cos(angle + this.phase) * this.width / 3;
+                    const endY = centerY + Math.sin(angle + this.phase) * this.height / 3;
+                    this.ctx.lineTo(endX, endY);
+                    this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)';
+                    this.ctx.stroke();
+                }
+                
+                // Display spectral gap info
+                this.ctx.fillStyle = '#0ff';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText(`φ = ${this.phi.toFixed(3)}`, 10, 20);
+                this.ctx.fillText(`φ' = ${(1 - this.phi).toFixed(3)}`, 10, 35);
+                this.ctx.fillText(`Lattice depth: ${this.depth}`, 10, 50);
+                this.ctx.fillText(`Spectral dimension: ${Math.log(this.depth).toFixed(2)}`, 10, 65);
+            }
+
+            animate() {
+                if (!this.animating) return;
+                this.phase += 0.02;
+                this.generateFibonacciLattice();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animating = true;
+                this.animate();
+            }
+
+            stop() {
+                this.animating = false;
+            }
+        }
+
+        // Module 5: Phase Transitions
+        class PhaseTransitions {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = canvas.width = canvas.offsetWidth;
+                this.height = canvas.height = canvas.offsetHeight;
+                this.controlParam = 1;
+                this.noiseAmplitude = 0.2;
+                this.susceptibilityHistory = [];
+                this.time = 0;
+                this.animating = false;
+            }
+
+            calculateSusceptibility() {
+                // Critical behavior near phase transition
+                const distance = Math.abs(this.controlParam - 1);
+                const susceptibility = 1 / (distance + 0.01);
+                const noise = (Math.random() - 0.5) * this.noiseAmplitude;
+                
+                return susceptibility * (1 + noise);
+            }
+
+            update() {
+                this.time += 0.05;
+                
+                const chi = this.calculateSusceptibility();
+                
+                this.susceptibilityHistory.push({
+                    time: this.time,
+                    susceptibility: chi,
+                    orderParam: Math.tanh((this.controlParam - 1) * 5),
+                    fluctuation: Math.sqrt(chi) * 0.1,
+                    work: Math.abs(Math.sin(this.time)) * (1 - this.controlParam)
+                });
+                
+                if (this.susceptibilityHistory.length > 150) {
+                    this.susceptibilityHistory.shift();
+                }
+            }
+
+            draw() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                // Draw phase diagram background
+                const criticalX = this.width / 2;
+                
+                // Stable phase (left)
+                const gradient1 = this.ctx.createLinearGradient(0, 0, criticalX, 0);
+                gradient1.addColorStop(0, 'rgba(0, 255, 255, 0.1)');
+                gradient1.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                this.ctx.fillStyle = gradient1;
+                this.ctx.fillRect(0, 0, criticalX, this.height);
+                
+                // Chaotic phase (right)
+                const gradient2 = this.ctx.createLinearGradient(criticalX, 0, this.width, 0);
+                gradient2.addColorStop(0, 'rgba(255, 0, 255, 0)');
+                gradient2.addColorStop(1, 'rgba(255, 0, 255, 0.1)');
+                this.ctx.fillStyle = gradient2;
+                this.ctx.fillRect(criticalX, 0, this.width - criticalX, this.height);
+                
+                // Draw susceptibility curve
+                const maxChi = Math.max(...this.susceptibilityHistory.map(p => p.susceptibility));
+                const scale = this.height / (maxChi + 1);
+                
+                this.ctx.strokeStyle = '#ff0';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                
+                this.susceptibilityHistory.forEach((point, i) => {
+                    const x = (i / 150) * this.width;
+                    const y = this.height - point.susceptibility * scale;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                    
+                    // Draw fluctuations
+                    if (i % 10 === 0) {
+                        const fluctSize = point.fluctuation * scale;
+                        this.ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                        this.ctx.fillRect(x - 2, y - fluctSize, 4, fluctSize * 2);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw work curve
+                this.ctx.strokeStyle = '#0f0';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.susceptibilityHistory.forEach((point, i) => {
+                    const x = (i / 150) * this.width;
+                    const y = this.height - point.work * 100;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw critical point indicator
+                const currentX = (this.controlParam / 2) * this.width;
+                this.ctx.strokeStyle = '#f0f';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(currentX, 0);
+                this.ctx.lineTo(currentX, this.height);
+                this.ctx.stroke();
+                
+                // Labels
+                this.ctx.fillStyle = '#0ff';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText('Stable Phase', 10, 20);
+                this.ctx.fillStyle = '#f0f';
+                this.ctx.fillText('Chaotic Phase', this.width - 100, 20);
+                this.ctx.fillStyle = '#ff0';
+                this.ctx.fillText(`C(β) = ${this.calculateSusceptibility().toFixed(1)}`, 10, this.height - 30);
+                this.ctx.fillStyle = '#0f0';
+                this.ctx.fillText(`W_repair`, 10, this.height - 10);
+            }
+
+            animate() {
+                if (!this.animating) return;
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animating = true;
+                this.animate();
+            }
+
+            stop() {
+                this.animating = false;
+            }
+        }
+
+        // Initialize all modules
+        let module1, module2, module3, module4, module5;
+
+        window.onload = function() {
+            // Initialize canvases
+            module1 = new ThermodynamicEnsemble(document.getElementById('canvas1'));
+            module2 = new NonEquilibriumDynamics(document.getElementById('canvas2'));
+            module3 = new MandelbrotRecursion(document.getElementById('canvas3'));
+            module4 = new SpectralLattices(document.getElementById('canvas4'));
+            module5 = new PhaseTransitions(document.getElementById('canvas5'));
+            
+            // Initial draws
+            module1.draw();
+            module2.draw();
+            module3.draw();
+            module4.generateFibonacciLattice();
+            module4.draw();
+            module5.draw();
+            
+            // Module 1 controls
+            document.getElementById('temp1').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('temp1-val').textContent = val.toFixed(1);
+                module1.temperature = val;
+            });
+            
+            document.getElementById('echo1').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('echo1-val').textContent = val.toFixed(1);
+                module1.echoWeight = val;
+            });
+            
+            document.getElementById('animate1').addEventListener('click', function() {
+                if (module1.animating) {
+                    module1.stop();
+                    this.textContent = 'Animate Ensemble';
+                } else {
+                    module1.start();
+                    this.textContent = 'Stop Animation';
+                }
+            });
+            
+            // Module 2 controls
+            document.getElementById('inletting2').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('inletting2-val').textContent = val.toFixed(2);
+                module2.inlettingRate = val;
+            });
+            
+            document.getElementById('repair2').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('repair2-val').textContent = val.toFixed(2);
+                module2.repairStrength = val;
+            });
+            
+            document.getElementById('animate2').addEventListener('click', function() {
+                if (module2.animating) {
+                    module2.stop();
+                    this.textContent = 'Start Evolution';
+                } else {
+                    module2.start();
+                    this.textContent = 'Stop Evolution';
+                }
+            });
+            
+            // Module 3 controls
+            document.getElementById('real3').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('real3-val').textContent = val.toFixed(2);
+                module3.real = val;
+                if (!module3.animating) module3.draw();
+            });
+            
+            document.getElementById('imag3').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('imag3-val').textContent = val.toFixed(2);
+                module3.imag = val;
+                if (!module3.animating) module3.draw();
+            });
+            
+            document.getElementById('animate3').addEventListener('click', function() {
+                if (module3.animating) {
+                    module3.stop();
+                    this.textContent = 'Visualize Depth';
+                } else {
+                    module3.start();
+                    this.textContent = 'Stop Visualization';
+                }
+            });
+            
+            // Module 4 controls
+            document.getElementById('phi4').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('phi4-val').textContent = val.toFixed(3);
+                module4.phi = val;
+                module4.generateFibonacciLattice();
+                if (!module4.animating) module4.draw();
+            });
+            
+            document.getElementById('depth4').addEventListener('input', function(e) {
+                const val = parseInt(e.target.value);
+                document.getElementById('depth4-val').textContent = val;
+                module4.depth = val;
+                module4.generateFibonacciLattice();
+                if (!module4.animating) module4.draw();
+            });
+            
+            document.getElementById('animate4').addEventListener('click', function() {
+                if (module4.animating) {
+                    module4.stop();
+                    this.textContent = 'Generate Spectrum';
+                } else {
+                    module4.start();
+                    this.textContent = 'Stop Generation';
+                }
+            });
+            
+            // Module 5 controls
+            document.getElementById('control5').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('control5-val').textContent = val.toFixed(2);
+                module5.controlParam = val;
+            });
+            
+            document.getElementById('noise5').addEventListener('input', function(e) {
+                const val = parseFloat(e.target.value);
+                document.getElementById('noise5-val').textContent = val.toFixed(2);
+                module5.noiseAmplitude = val;
+            });
+            
+            document.getElementById('animate5').addEventListener('click', function() {
+                if (module5.animating) {
+                    module5.stop();
+                    this.textContent = 'Observe Transition';
+                } else {
+                    module5.start();
+                    this.textContent = 'Stop Observation';
+                }
+            });
+        };
+    </script>
+</body>
+</html>
