@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Chronotopos Interactive Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6ed;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navigation & Layout */
+        .nav-header {
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0% {
+                filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+            }
+            25% {
+                filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.7));
+            }
+            50% {
+                filter: drop-shadow(0 0 20px rgba(0, 255, 0, 0.5));
+            }
+            75% {
+                filter: drop-shadow(0 0 15px rgba(255, 255, 0, 0.7));
+            }
+            100% {
+                filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+            }
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #00ffff;
+            font-size: 0.9rem;
+        }
+
+        .nav-tab:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 0, 255, 0.2);
+            border-color: #ff00ff;
+            color: #ff00ff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Hub Page Styles */
+        .hub-container {
+            display: none;
+        }
+
+        .hub-container.active {
+            display: block;
+        }
+
+        .chrono-map {
+            position: relative;
+            min-height: 500px;
+            margin: 2rem 0;
+        }
+
+        .paper-node {
+            position: absolute;
+            width: 200px;
+            padding: 1rem;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .paper-node:hover {
+            transform: scale(1.05);
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .paper-node h3 {
+            color: #00ffff;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .paper-node p {
+            font-size: 0.85rem;
+            color: #a0a8b3;
+        }
+
+        /* Paper Content Styles */
+        .paper-container {
+            display: none;
+        }
+
+        .paper-container.active {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 2rem;
+        }
+
+        .side-nav {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .side-nav h3 {
+            color: #00ffff;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .side-nav ul {
+            list-style: none;
+        }
+
+        .side-nav li {
+            padding: 0.5rem 0;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .side-nav li:hover {
+            color: #00ffff;
+        }
+
+        .main-content {
+            background: rgba(26, 31, 58, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 2rem;
+        }
+
+        .main-content h2 {
+            color: #ff00ff;
+            margin: 2rem 0 1rem;
+            font-size: 1.5rem;
+        }
+
+        .main-content h3 {
+            color: #00ffff;
+            margin: 1.5rem 0 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        .main-content p {
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            color: #c0c8d0;
+        }
+
+        .interactive-panel {
+            background: rgba(255, 0, 255, 0.05);
+            border: 1px solid rgba(255, 0, 255, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: fit-content;
+        }
+
+        .interactive-panel h3 {
+            color: #ff00ff;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        /* Math Display */
+        .math-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid #00ffff;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            color: #00ffff;
+            overflow-x: auto;
+        }
+
+        .definition, .theorem {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .definition::before {
+            content: "Definition";
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #1a1f3a;
+            color: #00ffff;
+            padding: 0 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .theorem::before {
+            content: "Theorem";
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #1a1f3a;
+            color: #ff00ff;
+            padding: 0 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        /* Controls */
+        .control-group {
+            margin: 1.5rem 0;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #00ffff;
+            font-size: 0.9rem;
+        }
+
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            outline: none;
+            border-radius: 2px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00ffff;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #00ffff;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #ff00ff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Animation Control Buttons */
+        .control-button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-button.start {
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            color: #0a0e27;
+        }
+
+        .control-button.stop {
+            background: linear-gradient(90deg, #ff0000, #ff00ff);
+            color: #fff;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Visualization Canvas */
+        #latticeCanvas, #plotCanvas {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        /* References Modal */
+        .references-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 14, 39, 0.98);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 2000;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+        }
+
+        .references-modal.active {
+            display: block;
+        }
+
+        .references-modal h2 {
+            color: #00ffff;
+            margin-bottom: 1.5rem;
+        }
+
+        .reference-item {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reference-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .reference-item h4 {
+            color: #ff00ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .reference-item a {
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #ff00ff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .pulsing {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .paper-container.active {
+                grid-template-columns: 1fr;
+            }
+            
+            .side-nav, .interactive-panel {
+                position: static;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 14, 39, 0.98);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            z-index: 1500;
+            max-width: 300px;
+            display: none;
+        }
+
+        .tooltip.visible {
+            display: block;
+        }
+
+        /* Connection lines */
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(0, 255, 255, 0.5), rgba(255, 0, 255, 0.5));
+            transform-origin: left center;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-header">
+        <h1>🌌 UNNS Chronotopos Interactive Explorer</h1>
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="hub">Chrono-Map Hub</div>
+            <div class="nav-tab" data-tab="space-time">Space & Time</div>
+            <div class="nav-tab" data-tab="geometry">Geometry & Metrics</div>
+            <div class="nav-tab" data-tab="worked">Inletting Example</div>
+            <div class="nav-tab" data-tab="time">Time Substrate</div>
+            <div class="nav-tab" onclick="toggleReferences()">📚 References</div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Hub Page -->
+        <div class="hub-container active" id="hub-tab">
+            <h2 style="text-align: center; color: #00ffff; margin: 2rem 0;">UNNS Substrate Papers - Interactive Map</h2>
+            <div class="chrono-map" id="chronoMap">
+                <div class="paper-node" style="left: 20%; top: 20%;" onclick="navigateToTab('space-time')">
+                    <h3>Space & Time</h3>
+                    <p>Orthogonal projections of recursive grammar</p>
+                </div>
+                <div class="paper-node" style="left: 60%; top: 20%;" onclick="navigateToTab('time')">
+                    <h3>Time Substrate</h3>
+                    <p>Recursion depth, echo propagation, repair flow</p>
+                </div>
+                <div class="paper-node" style="left: 20%; top: 60%;" onclick="navigateToTab('geometry')">
+                    <h3>Geometry & Metrics</h3>
+                    <p>UNNS field equations and curvature</p>
+                </div>
+                <div class="paper-node" style="left: 60%; top: 60%;" onclick="navigateToTab('worked')">
+                    <h3>Worked Example</h3>
+                    <p>Inletting-driven expansion</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Space & Time Paper -->
+        <div class="paper-container" id="space-time-tab">
+            <aside class="side-nav">
+                <h3>Sections</h3>
+                <ul>
+                    <li onclick="scrollToSection('intro')">1. Introduction</li>
+                    <li onclick="scrollToSection('unns-time')">2. UNNS Time</li>
+                    <li onclick="scrollToSection('unns-space')">3. UNNS Space</li>
+                    <li onclick="scrollToSection('relation')">4. Space-Time Relation</li>
+                    <li onclick="scrollToSection('applications')">5. Applications</li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <h2 id="intro">Space and Time in the UNNS Substrate</h2>
+                
+                <p>This article develops the UNNS (Unbounded Nested Number Sequences) notions of space and time. In UNNS, space is not a passive continuum but an emergent lattice generated by recursion, while time arises as recursion depth through operator actions.</p>
+
+                <div class="theorem">
+                    <p>Space and time are orthogonal projections of the same recursive grammar.</p>
+                </div>
+
+                <h3 id="unns-time">UNNS Time</h3>
+                
+                <div class="definition">
+                    <strong>Definition 1 (UNNS Time):</strong> Given a recursive nest {u_n}, UNNS time is the recursion depth n.
+                    <div class="math-block">
+                        T_i(u) = min{k | O^k_i(u) stabilizes or exports a percept}
+                    </div>
+                </div>
+
+                <p>Time is operator-specific: Inletting defines absorption time, Inlaying defines stratification time, Repair defines stabilization time, and Trans-Sentifying defines perceptual latency.</p>
+
+                <h3 id="unns-space">UNNS Space</h3>
+                
+                <div class="definition">
+                    <strong>Definition 2 (UNNS Space):</strong> UNNS space is the recursive lattice structure generated by embeddings of number systems.
+                    <div class="math-block">
+                        S = ⋃_k Λ_k, where Λ_k = lattice layer induced by order-k recurrence
+                    </div>
+                </div>
+
+                <p>Echo residues define adjacency, giving a recursion-based metric:</p>
+                <div class="math-block">
+                    d(x, y) = min{k | recursions of x, y align at step k}
+                </div>
+
+                <h3 id="relation">Relation of Space and Time</h3>
+
+                <div class="theorem">
+                    <strong>Lemma 1 (Orthogonality):</strong> In UNNS, time measures recursion depth while space measures recursion spread. These are independent modalities: vertical and horizontal projections of the same substrate.
+                </div>
+
+                <canvas id="spaceTimeCanvas" width="600" height="400"></canvas>
+
+                <h3 id="applications">Applications</h3>
+                
+                <ul style="color: #c0c8d0; line-height: 1.8;">
+                    <li><strong>Mathematics:</strong> Space as recursive lattices links algebraic number theory to geometry.</li>
+                    <li><strong>Physics:</strong> Inletting-space resembles expansion (dark energy), Repair-time resembles entropy decay.</li>
+                    <li><strong>Philosophy:</strong> Space and time are not containers but emergent from recursive grammar.</li>
+                </ul>
+            </main>
+
+            <aside class="interactive-panel">
+                <h3>Visualization Controls</h3>
+                <div class="control-group">
+                    <label>Recursion Depth (n): <span class="value-display" id="depthValue">5</span></label>
+                    <input type="range" class="slider" id="depthSlider" min="1" max="20" value="5">
+                </div>
+                <div class="control-group">
+                    <label>Lattice Spread (k): <span class="value-display" id="spreadValue">3</span></label>
+                    <input type="range" class="slider" id="spreadSlider" min="1" max="10" value="3">
+                </div>
+                <button id="spaceTimeAnimBtn" onclick="toggleSpaceTimeAnimation()" class="control-button start">
+                    Start Animation
+                </button>
+            </aside>
+        </div>
+
+        <!-- Worked Example Paper -->
+        <div class="paper-container" id="worked-tab">
+            <aside class="side-nav">
+                <h3>Sections</h3>
+                <ul>
+                    <li onclick="scrollToSection('overview')">1. Overview</li>
+                    <li onclick="scrollToSection('model')">2. Discrete Layer Model</li>
+                    <li onclick="scrollToSection('curvature')">3. Recursive Curvature</li>
+                    <li onclick="scrollToSection('constant')">4. Constant Inletting</li>
+                    <li onclick="scrollToSection('dark-energy')">5. Dark Energy Analogy</li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <h2 id="overview">UNNS Space-Time Geometry: Worked Example</h2>
+                
+                <p>We present a worked example showing how sustained inletting produces approximately constant recursive curvature and exponential expansion of the lattice scale—behavior formally analogous to dark energy.</p>
+
+                <h3 id="model">Discrete Layer Model</h3>
+                
+                <div class="definition">
+                    <strong>Layer Scale Evolution:</strong>
+                    <div class="math-block">
+                        S_{k+1} = S_k + α T^{in}_k S_k = (1 + α T^{in}_k) S_k
+                    </div>
+                </div>
+
+                <p>Where α > 0 is a dimensionless coupling constant converting inletting time into relative scale growth.</p>
+
+                <h3 id="curvature">Recursive Curvature</h3>
+                
+                <div class="definition">
+                    <strong>Discrete Recursive Curvature:</strong>
+                    <div class="math-block">
+                        κ_k := (S_{k+1} - S_k) / S_k = α T^{in}_k
+                    </div>
+                </div>
+
+                <p>Positive κ_k indicates local expansion; negative values indicate contraction (repair-dominated regime).</p>
+
+                <h3 id="constant">Constant Inletting Rate</h3>
+                
+                <p>Assuming constant inletting rate T^{in}_k ≡ T_0:</p>
+                
+                <div class="math-block">
+                    S_k = S_0 (1 + αT_0)^k ≈ S_0 exp(αT_0 k)
+                </div>
+
+                <canvas id="latticeCanvas" width="600" height="400"></canvas>
+
+                <h3 id="dark-energy">Dark Energy Analogy</h3>
+                
+                <ul style="color: #c0c8d0; line-height: 1.8;">
+                    <li><strong>Constant inletting rate</strong> T_0 ⟹ constant curvature κ = αT_0</li>
+                    <li><strong>Scale factor growth:</strong> S_k ~ e^{λk} means successive layers expand multiplicatively</li>
+                    <li><strong>Operator-time stress as source:</strong> Persistent inletting accumulates multiplicatively</li>
+                </ul>
+
+                <canvas id="plotCanvas" width="600" height="300"></canvas>
+            </main>
+
+            <aside class="interactive-panel">
+                <h3>Inletting Parameters</h3>
+                <div class="control-group">
+                    <label>Inletting Rate (T₀): <span class="value-display" id="t0Value">0.05</span></label>
+                    <input type="range" class="slider" id="t0Slider" min="0.01" max="0.2" step="0.01" value="0.05">
+                </div>
+                <div class="control-group">
+                    <label>Coupling (α): <span class="value-display" id="alphaValue">0.01</span></label>
+                    <input type="range" class="slider" id="alphaSlider" min="0.001" max="0.05" step="0.001" value="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Layers (k): <span class="value-display" id="layersValue">20</span></label>
+                    <input type="range" class="slider" id="layersSlider" min="5" max="100" value="20">
+                </div>
+                <div class="control-group">
+                    <label>Initial Scale (S₀): <span class="value-display" id="s0Value">1.0</span></label>
+                    <input type="range" class="slider" id="s0Slider" min="0.5" max="5" step="0.1" value="1.0">
+                </div>
+                <button id="workedAnimBtn" onclick="toggleWorkedAnimation()" class="control-button start">
+                    Start Simulation
+                </button>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                    <h4 style="color: #00ffff; margin-bottom: 0.5rem;">Results</h4>
+                    <p style="font-size: 0.85rem;">λ = αT₀ = <span id="lambdaResult">0.0005</span></p>
+                    <p style="font-size: 0.85rem;">Final Scale: <span id="finalScale">1.65</span></p>
+                    <p style="font-size: 0.85rem;">Growth: <span id="growthPercent">65%</span></p>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Geometry & Metrics Paper -->
+        <div class="paper-container" id="geometry-tab">
+            <aside class="side-nav">
+                <h3>Sections</h3>
+                <ul>
+                    <li onclick="scrollToSection('geo-intro')">1. Introduction</li>
+                    <li onclick="scrollToSection('substrate')">2. Space-Time Substrate</li>
+                    <li onclick="scrollToSection('metrics')">3. UNNS Metrics</li>
+                    <li onclick="scrollToSection('rec-curvature')">4. Recursive Curvature</li>
+                    <li onclick="scrollToSection('field-eq')">5. Field Equations</li>
+                    <li onclick="scrollToSection('geo-apps')">6. Applications</li>
+                </ul>
+            </aside>
+            
+            <main class="main-content">
+                <h2 id="geo-intro">UNNS Space-Time Geometry: Metrics, Curvature, and Dynamics</h2>
+                
+                <p>We develop a space-time geometry within the UNNS (Unbounded Nested Number Sequences) substrate. In UNNS, space emerges from recursive embeddings of lattices, while time arises as recursion depth governed by operators.</p>
+                
+                <p>Classical geometry treats space-time as a smooth manifold equipped with a metric. In UNNS, both space and time emerge discretely: time as operator recursion depth, space as lattice embedding spread. The challenge is to unify these into a geometric substrate with metric and curvature.</p>
+
+                <h3 id="substrate">UNNS Space-Time Substrate</h3>
+                
+                <div class="definition">
+                    <strong>Definition 1 (UNNS Space-Time):</strong> The UNNS space-time substrate is
+                    <div class="math-block">
+                        ST = {(Λ_k, T_i) | k ∈ ℕ, i ∈ {1, ..., 8}}
+                    </div>
+                    where Λ_k is the k-th lattice layer from recursive embedding and T_i is the temporal measure induced by operator O_i.
+                </div>
+
+                <p>Thus, space is horizontal lattice spread, time is vertical recursion depth. Each operator contributes its own arrow of time.</p>
+
+                <h3 id="metrics">Metrics in UNNS</h3>
+                
+                <div class="definition">
+                    <strong>Definition 2 (UNNS Metric):</strong> Let x, y be two events in ST. Define
+                    <div class="math-block">
+                        d_ST(x, y) = α · d_time(x, y) + β · d_space(x, y)
+                    </div>
+                    where d_time is recursion depth distance, d_space is lattice embedding distance, and α, β are operator-dependent weights.
+                </div>
+
+                <p>This metric generalizes Minkowski distance by combining vertical and horizontal recursion measures.</p>
+
+                <div class="theorem">
+                    <strong>Remark:</strong> Unlike Minkowski space, where the metric is fixed, in UNNS the weights α, β may vary depending on operator choice (inletting, repair, etc.), producing multiple coexisting metrics.
+                </div>
+
+                <canvas id="metricCanvas" width="600" height="400"></canvas>
+
+                <h3 id="rec-curvature">Curvature of Recursive Lattices</h3>
+                
+                <div class="definition">
+                    <strong>Definition 3 (Recursive Curvature):</strong> Given a lattice embedding Λ_k, define curvature at level k as
+                    <div class="math-block">
+                        κ_k = Δd/Δk
+                    </div>
+                    where d measures adjacency distortion as new lattice layers are added.
+                </div>
+
+                <p>Intuitively, κ_k > 0 indicates expansion (as in inletting), while κ_k < 0 indicates contraction (as in repair).</p>
+
+                <h3 id="field-eq">UNNS Einstein Analog</h3>
+                
+                <div class="theorem">
+                    <strong>Theorem 1 (UNNS Field Equation):</strong> Let G denote recursive curvature and T denote operator time stress. Then the UNNS field equation is
+                    <div class="math-block">
+                        G = γ · T
+                    </div>
+                    where γ is a universal scaling constant.
+                </div>
+
+                <p><strong>Sketch:</strong> Recursive curvature measures how embeddings distort adjacency. Operator time stress measures how deep recursion flows. The proportionality reflects conservation: distortion of space arises from operator-time flows.</p>
+
+                <p>In physics language: operator recursion generates curvature in UNNS space, just as energy-momentum generates curvature in Einstein's theory.</p>
+
+                <canvas id="curvatureCanvas" width="600" height="400"></canvas>
+
+                <h3 id="geo-apps">Applications</h3>
+                
+                <ul style="color: #c0c8d0; line-height: 1.8;">
+                    <li><strong>Physics:</strong> Inletting curvature may correspond to dark energy expansion; Repair curvature to entropy-driven contraction.</li>
+                    <li><strong>Mathematics:</strong> Connects algebraic number theory lattices with geometric curvature.</li>
+                    <li><strong>Philosophy:</strong> Suggests that space-time is emergent from recursion rather than fundamental.</li>
+                </ul>
+
+                <div class="theorem">
+                    <strong>Conclusion:</strong> UNNS defines space-time as a duplex of recursion depth and lattice embedding. With metrics and curvature, one obtains a UNNS field equation: recursive time stress generates recursive curvature.
+                </div>
+            </main>
+            
+            <aside class="interactive-panel">
+                <h3>Metric & Curvature Controls</h3>
+                <div class="control-group">
+                    <label>Time Weight (α): <span class="value-display" id="alphaMetricValue">0.5</span></label>
+                    <input type="range" class="slider" id="alphaMetricSlider" min="0" max="1" step="0.05" value="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Space Weight (β): <span class="value-display" id="betaMetricValue">0.5</span></label>
+                    <input type="range" class="slider" id="betaMetricSlider" min="0" max="1" step="0.05" value="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Operator Stress (T): <span class="value-display" id="stressValue">1.0</span></label>
+                    <input type="range" class="slider" id="stressSlider" min="0.1" max="3" step="0.1" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label>Scaling Constant (γ): <span class="value-display" id="gammaValue">0.8</span></label>
+                    <input type="range" class="slider" id="gammaSlider" min="0.1" max="2" step="0.1" value="0.8">
+                </div>
+                <button id="metricAnimBtn" onclick="toggleMetricAnimation()" class="control-button start">
+                    Start Field Equation
+                </button>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                    <h4 style="color: #00ffff; margin-bottom: 0.5rem;">Field Equation</h4>
+                    <p style="font-size: 0.85rem;">Curvature G = <span id="curvatureResult">0.8</span></p>
+                    <p style="font-size: 0.85rem;">Metric Distance = <span id="metricResult">1.0</span></p>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Time Substrate Paper -->
+        <div class="paper-container" id="time-tab">
+            <aside class="side-nav">
+                <h3>Sections</h3>
+                <ul>
+                    <li onclick="scrollToSection('time-intro')">1. Introduction</li>
+                    <li onclick="scrollToSection('recursion-depth')">2. Recursion Depth</li>
+                    <li onclick="scrollToSection('echo-prop')">3. Echo Propagation</li>
+                    <li onclick="scrollToSection('repair-flow')">4. Repair Flow</li>
+                    <li onclick="scrollToSection('op-grammar')">5. Operator Grammar</li>
+                    <li onclick="scrollToSection('philosophical')">6. Philosophy</li>
+                    <li onclick="scrollToSection('time-apps')">7. Applications</li>
+                </ul>
+            </aside>
+            
+            <main class="main-content">
+                <h2 id="time-intro">Time in the UNNS Substrate</h2>
+                
+                <p>In the UNNS framework, time is not an external continuous parameter but an emergent property of recursive depth, echo propagation, and repair flow. This note formalizes the notion of time as it arises in recursion, provides a layered interpretation, and illustrates the role of operator grammar in defining temporal structure.</p>
+
+                <h3 id="recursion-depth">Time as Recursion Depth</h3>
+                
+                <div class="definition">
+                    <strong>Definition 1 (Recursion Depth):</strong> Let {u_n} be a UNNS sequence generated by recurrence u_{n+1} = f(u_n, ..., u_{n-r}). The index n is called the recursion depth and serves as the primary measure of UNNS time.
+                </div>
+
+                <p>Thus, each iteration step corresponds to a "tick" of UNNS time, giving it a discrete and nested character.</p>
+
+                <canvas id="depthCanvas" width="600" height="300"></canvas>
+
+                <h3 id="echo-prop">Time as Echo Propagation</h3>
+                
+                <p>Recursions generate echoes—residual terms that propagate through the lattice of nests. If e_n denotes the echo residue at step n, then time may also be measured by the distance these echoes have traveled:</p>
+
+                <div class="math-block">
+                    T_echo ~ sup{k : e_{n+k} ≠ 0}
+                </div>
+
+                <div class="theorem">
+                    <strong>Remark:</strong> This interpretation views time not only as depth but also as a measure of propagation of instability.
+                </div>
+
+                <canvas id="echoCanvas" width="600" height="300"></canvas>
+
+                <h3 id="repair-flow">Time as Repair Flow</h3>
+                
+                <p>DNA-inspired repair rules in UNNS act to stabilize unstable recursions. Let R denote a repair operator. The repair flow time is given by the trajectory of</p>
+
+                <div class="math-block">
+                    u_{n+1} = R(u_n)
+                </div>
+
+                <p>which moves sequences from unstable to stable configurations. Thus, time becomes the gradient of stabilization.</p>
+
+                <canvas id="repairCanvas" width="600" height="300"></canvas>
+
+                <h3 id="op-grammar">Time as Operator Grammar</h3>
+                
+                <p>UNNS operators (Inletting, Inlaying, Repair/Normalization, Trans-Sentifying) define different orderings that produce different histories.</p>
+
+                <div class="theorem">
+                    <strong>Lemma 1 (Operator Time):</strong> Let O = (O_1, O_2, ..., O_m) be an operator sequence applied to initial nest N_0. Then the temporal structure is defined by the order type of O, not just its length.
+                </div>
+
+                <p>This implies that time in UNNS can branch, fold, or reorder—capturing nonlinearity akin to paradox resolution.</p>
+
+                <h3 id="philosophical">Philosophical Synthesis</h3>
+                
+                <ul style="color: #c0c8d0; line-height: 1.8;">
+                    <li><strong>Physics</strong> views time as a real parameter.</li>
+                    <li><strong>Set theory</strong> avoids time entirely.</li>
+                    <li><strong>UNNS</strong> embeds time in recursion itself:</li>
+                </ul>
+
+                <div class="math-block" style="text-align: center; color: #ff00ff;">
+                    Time = Depth + Propagation + Repair
+                </div>
+
+                <p>Moments appear as fixed points where echoes vanish; the arrow of time emerges from monotonic recursion depth.</p>
+
+                <h3 id="time-apps">Applications</h3>
+                
+                <ul style="color: #c0c8d0; line-height: 1.8;">
+                    <li><strong>Physics:</strong> Provides a discrete tick underlying spacetime curvature.</li>
+                    <li><strong>Logic:</strong> Tames regress paradoxes by embedding them in recursion absorption.</li>
+                    <li><strong>Information:</strong> Defines complexity depth as UNNS-time.</li>
+                </ul>
+
+                <div class="theorem">
+                    <strong>Key Insight:</strong> Figure 1 illustrates three aspects of UNNS time: recursion depth (vertical ladder), echo propagation (arrows radiating outward), and repair flow (horizontal gradient toward equilibrium).
+                </div>
+            </main>
+            
+            <aside class="interactive-panel">
+                <h3>Time Flow Controls</h3>
+                <div class="control-group">
+                    <label>Recursion Steps: <span class="value-display" id="stepsValue">10</span></label>
+                    <input type="range" class="slider" id="stepsSlider" min="5" max="50" value="10">
+                </div>
+                <div class="control-group">
+                    <label>Echo Decay Rate: <span class="value-display" id="decayValue">0.8</span></label>
+                    <input type="range" class="slider" id="decaySlider" min="0.5" max="0.99" step="0.01" value="0.8">
+                </div>
+                <div class="control-group">
+                    <label>Repair Strength: <span class="value-display" id="repairValue">0.3</span></label>
+                    <input type="range" class="slider" id="repairSlider" min="0.1" max="1" step="0.05" value="0.3">
+                </div>
+                <div class="control-group">
+                    <label>Operator Count: <span class="value-display" id="operatorValue">4</span></label>
+                    <input type="range" class="slider" id="operatorSlider" min="1" max="8" value="4">
+                </div>
+                
+                <button id="timeAnimBtn" onclick="toggleTimeAnimation()" class="control-button start">
+                    Start Time Trinity
+                </button>
+                
+                <div style="margin-top: 1.5rem;">
+                    <h4 style="color: #00ffff; margin-bottom: 0.75rem;">Active Operators</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div style="padding: 0.5rem; background: rgba(0, 255, 255, 0.1); border-radius: 4px; font-size: 0.85rem;">Inletting</div>
+                        <div style="padding: 0.5rem; background: rgba(255, 0, 255, 0.1); border-radius: 4px; font-size: 0.85rem;">Inlaying</div>
+                        <div style="padding: 0.5rem; background: rgba(0, 255, 255, 0.1); border-radius: 4px; font-size: 0.85rem;">Repair</div>
+                        <div style="padding: 0.5rem; background: rgba(255, 0, 255, 0.1); border-radius: 4px; font-size: 0.85rem;">Trans-Sentifying</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- References Modal -->
+    <div class="references-modal" id="referencesModal">
+        <button class="close-modal" onclick="toggleReferences()">×</button>
+        <h2>UNNS Chronotopos References</h2>
+        
+        <div class="reference-item" onclick="navigateToTab('space-time')">
+            <h4>Space and Time in the UNNS Substrate</h4>
+            <a href="https://ukbbi.github.io/UNNS/docs/chronotopos/Space and Time in the UNNS Substrate.pdf" target="_blank">
+                View PDF ↗
+            </a>
+            <p style="font-size: 0.85rem; color: #a0a8b3; margin-top: 0.5rem;">
+                Develops orthogonal projections of recursive grammar
+            </p>
+        </div>
+        
+        <div class="reference-item" onclick="navigateToTab('time')">
+            <h4>Time in the UNNS Substrate</h4>
+            <a href="https://ukbbi.github.io/UNNS/docs/chronotopos/Time in the UNNS Substrate.pdf" target="_blank">
+                View PDF ↗
+            </a>
+            <p style="font-size: 0.85rem; color: #a0a8b3; margin-top: 0.5rem;">
+                Formalizes time as recursion depth and echo propagation
+            </p>
+        </div>
+        
+        <div class="reference-item" onclick="navigateToTab('geometry')">
+            <h4>UNNS Space-Time Geometry: Metrics, Curvature, and Dynamics</h4>
+            <a href="https://ukbbi.github.io/UNNS/docs/chronotopos/UNNS_Space_Time_Geometry_Metrics_Curvature_and_Dynamics.pdf" target="_blank">
+                View PDF ↗
+            </a>
+            <p style="font-size: 0.85rem; color: #a0a8b3; margin-top: 0.5rem;">
+                Defines metrics and field equations in UNNS
+            </p>
+        </div>
+        
+        <div class="reference-item" onclick="navigateToTab('worked')">
+            <h4>UNNS Space-Time Geometry: Worked Example</h4>
+            <a href="https://ukbbi.github.io/UNNS/docs/chronotopos/UNNS Space_Time_Geometry_Worked_Example_Inletting_driven_Expansion.pdf" target="_blank">
+                View PDF ↗
+            </a>
+            <p style="font-size: 0.85rem; color: #a0a8b3; margin-top: 0.5rem;">
+                Demonstrates inletting-driven exponential expansion
+            </p>
+        </div>
+    </div>
+
+    <!-- Tooltip for hover effects -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Animation state management
+        const animationStates = {
+            spaceTime: { active: false, animationId: null },
+            worked: { active: false, animationId: null },
+            metric: { active: false, animationId: null },
+            time: { active: false, animationId: null }
+        };
+
+        // Tab Navigation
+        function navigateToTab(tabName) {
+            // Hide all containers
+            document.querySelectorAll('.hub-container, .paper-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // Remove active from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected container
+            const container = document.getElementById(tabName + '-tab');
+            if (container) {
+                container.classList.add('active');
+            }
+            
+            // Mark tab as active
+            const tab = document.querySelector(`[data-tab="${tabName}"]`);
+            if (tab) {
+                tab.classList.add('active');
+            }
+            
+            // Close references modal if open
+            document.getElementById('referencesModal').classList.remove('active');
+            
+            // Initialize visualizations if needed
+            if (tabName === 'worked') {
+                setTimeout(updateVisualization, 100);
+            } else if (tabName === 'space-time') {
+                setTimeout(drawSpaceTimeVisualization, 100);
+            } else if (tabName === 'geometry') {
+                setTimeout(() => {
+                    drawMetricVisualization();
+                    drawCurvatureVisualization();
+                }, 100);
+            } else if (tabName === 'time') {
+                setTimeout(() => {
+                    drawRecursionDepth();
+                    drawEchoPropagation();
+                    drawRepairFlow();
+                }, 100);
+            }
+        }
+
+        // Tab click handlers
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                if (tabName) {
+                    navigateToTab(tabName);
+                }
+            });
+        });
+
+        // References Modal
+        function toggleReferences() {
+            const modal = document.getElementById('referencesModal');
+            modal.classList.toggle('active');
+        }
+
+        // Scroll to section
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Draw connection lines in hub
+        function drawConnections() {
+            const nodes = document.querySelectorAll('.paper-node');
+            const map = document.getElementById('chronoMap');
+            
+            // Clear existing lines
+            document.querySelectorAll('.connection-line').forEach(line => line.remove());
+            
+            // Create connections between nodes
+            for (let i = 0; i < nodes.length - 1; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const line = document.createElement('div');
+                    line.className = 'connection-line pulsing';
+                    
+                    const rect1 = nodes[i].getBoundingClientRect();
+                    const rect2 = nodes[j].getBoundingClientRect();
+                    const mapRect = map.getBoundingClientRect();
+                    
+                    const x1 = rect1.left - mapRect.left + rect1.width / 2;
+                    const y1 = rect1.top - mapRect.top + rect1.height / 2;
+                    const x2 = rect2.left - mapRect.left + rect2.width / 2;
+                    const y2 = rect2.top - mapRect.top + rect2.height / 2;
+                    
+                    const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    
+                    line.style.width = `${length}px`;
+                    line.style.left = `${x1}px`;
+                    line.style.top = `${y1}px`;
+                    line.style.transform = `rotate(${angle}deg)`;
+                    
+                    map.appendChild(line);
+                }
+            }
+        }
+
+        // Toggle animation functions
+        function toggleSpaceTimeAnimation() {
+            const btn = document.getElementById('spaceTimeAnimBtn');
+            const state = animationStates.spaceTime;
+            
+            if (state.active) {
+                state.active = false;
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+                btn.textContent = 'Start Animation';
+                btn.classList.remove('stop');
+                btn.classList.add('start');
+                drawSpaceTimeVisualization();
+            } else {
+                state.active = true;
+                btn.textContent = 'Stop Animation';
+                btn.classList.remove('start');
+                btn.classList.add('stop');
+                animateSpaceTimeContinuous();
+            }
+        }
+
+        function toggleWorkedAnimation() {
+            const btn = document.getElementById('workedAnimBtn');
+            const state = animationStates.worked;
+            
+            if (state.active) {
+                state.active = false;
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+                btn.textContent = 'Start Simulation';
+                btn.classList.remove('stop');
+                btn.classList.add('start');
+                updateVisualization();
+            } else {
+                state.active = true;
+                btn.textContent = 'Stop Simulation';
+                btn.classList.remove('start');
+                btn.classList.add('stop');
+                animateWorkedContinuous();
+            }
+        }
+
+        function toggleMetricAnimation() {
+            const btn = document.getElementById('metricAnimBtn');
+            const state = animationStates.metric;
+            
+            if (state.active) {
+                state.active = false;
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+                btn.textContent = 'Start Field Equation';
+                btn.classList.remove('stop');
+                btn.classList.add('start');
+                drawMetricVisualization();
+                drawCurvatureVisualization();
+            } else {
+                state.active = true;
+                btn.textContent = 'Stop Field Equation';
+                btn.classList.remove('start');
+                btn.classList.add('stop');
+                animateMetricCurvatureContinuous();
+            }
+        }
+
+        function toggleTimeAnimation() {
+            const btn = document.getElementById('timeAnimBtn');
+            const state = animationStates.time;
+            
+            if (state.active) {
+                state.active = false;
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+                btn.textContent = 'Start Time Trinity';
+                btn.classList.remove('stop');
+                btn.classList.add('start');
+                drawRecursionDepth();
+                drawEchoPropagation();
+                drawRepairFlow();
+            } else {
+                state.active = true;
+                btn.textContent = 'Stop Time Trinity';
+                btn.classList.remove('start');
+                btn.classList.add('stop');
+                animateTimeFlowsContinuous();
+            }
+        }
+
+        // Continuous animation functions
+        function animateSpaceTimeContinuous() {
+            let frame = 0;
+            
+            const animate = () => {
+                if (!animationStates.spaceTime.active) return;
+                
+                drawSpaceTimeVisualization();
+                
+                const canvas = document.getElementById('spaceTimeCanvas');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const time = frame * 0.05;
+                
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 * Math.sin(time) + 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let x = 0; x < canvas.width; x += 5) {
+                    const y = canvas.height / 2 + Math.sin((x * 0.02) + time) * 50;
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 * Math.cos(time) + 0.5})`;
+                ctx.beginPath();
+                for (let x = 0; x < canvas.width; x += 5) {
+                    const y = canvas.height / 2 + Math.cos((x * 0.03) + time + Math.PI/4) * 30;
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                frame++;
+                animationStates.spaceTime.animationId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function animateWorkedContinuous() {
+            let frame = 0;
+            
+            const animate = () => {
+                if (!animationStates.worked.active) return;
+                
+                const time = frame * 0.02;
+                
+                const baseT0 = 0.05;
+                const baseAlpha = 0.01;
+                
+                const T0 = baseT0 + Math.sin(time) * 0.02;
+                const alpha = baseAlpha + Math.cos(time * 1.5) * 0.005;
+                
+                document.getElementById('t0Slider').value = T0;
+                document.getElementById('alphaSlider').value = alpha;
+                document.getElementById('t0Value').textContent = T0.toFixed(2);
+                document.getElementById('alphaValue').textContent = alpha.toFixed(3);
+                
+                const maxLayers = parseInt(document.getElementById('layersSlider').value);
+                const S0 = parseFloat(document.getElementById('s0Slider').value);
+                
+                const lambda = alpha * T0;
+                document.getElementById('lambdaResult').textContent = lambda.toFixed(4);
+                
+                drawLatticeExpansion(T0, alpha, maxLayers, S0);
+                drawGrowthPlot(T0, alpha, maxLayers, S0);
+                
+                frame++;
+                animationStates.worked.animationId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function animateMetricCurvatureContinuous() {
+            let frame = 0;
+            
+            const animate = () => {
+                if (!animationStates.metric.active) return;
+                
+                const t = (frame % 120) / 120;
+                
+                const baseStress = 1.0;
+                const stress = baseStress + Math.sin(t * Math.PI * 2) * 0.5;
+                document.getElementById('stressSlider').value = stress;
+                document.getElementById('stressValue').textContent = stress.toFixed(1);
+                
+                const alpha = 0.5 + Math.sin(t * Math.PI * 2 + Math.PI/4) * 0.3;
+                const beta = 0.5 + Math.cos(t * Math.PI * 2) * 0.3;
+                document.getElementById('alphaMetricSlider').value = alpha;
+                document.getElementById('betaMetricSlider').value = beta;
+                document.getElementById('alphaMetricValue').textContent = alpha.toFixed(2);
+                document.getElementById('betaMetricValue').textContent = beta.toFixed(2);
+                
+                drawMetricVisualization();
+                drawCurvatureVisualization();
+                
+                frame++;
+                animationStates.metric.animationId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function animateTimeFlowsContinuous() {
+            let frame = 0;
+            
+            const animate = () => {
+                if (!animationStates.time.active) return;
+                
+                const t = (frame % 150) / 150;
+                
+                drawRecursionDepth();
+                
+                const baseDecay = 0.8;
+                const decay = baseDecay + Math.sin(t * Math.PI * 4) * 0.1;
+                document.getElementById('decaySlider').value = decay;
+                document.getElementById('decayValue').textContent = decay.toFixed(2);
+                drawEchoPropagation();
+                
+                const baseRepair = 0.3;
+                const repair = baseRepair + Math.cos(t * Math.PI * 3) * 0.2;
+                document.getElementById('repairSlider').value = repair;
+                document.getElementById('repairValue').textContent = repair.toFixed(2);
+                drawRepairFlow();
+                
+                frame++;
+                animationStates.time.animationId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // Inletting Visualization
+        function updateVisualization() {
+            const T0 = parseFloat(document.getElementById('t0Slider').value);
+            const alpha = parseFloat(document.getElementById('alphaSlider').value);
+            const maxLayers = parseInt(document.getElementById('layersSlider').value);
+            const S0 = parseFloat(document.getElementById('s0Slider').value);
+            
+            document.getElementById('t0Value').textContent = T0.toFixed(2);
+            document.getElementById('alphaValue').textContent = alpha.toFixed(3);
+            document.getElementById('layersValue').textContent = maxLayers;
+            document.getElementById('s0Value').textContent = S0.toFixed(1);
+            
+            const lambda = alpha * T0;
+            document.getElementById('lambdaResult').textContent = lambda.toFixed(4);
+            
+            drawLatticeExpansion(T0, alpha, maxLayers, S0);
+            drawGrowthPlot(T0, alpha, maxLayers, S0);
+        }
+
+        function drawLatticeExpansion(T0, alpha, layers, S0) {
+            const canvas = document.getElementById('latticeCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const visibleLayers = Math.min(layers, 10);
+            const layerHeight = height / (visibleLayers + 1);
+            
+            for (let k = 0; k < visibleLayers; k++) {
+                const Sk = S0 * Math.pow(1 + alpha * T0, k);
+                const normalizedScale = Math.min(Sk / S0, 5);
+                
+                const y = (k + 1) * layerHeight;
+                const nodeRadius = 10 * normalizedScale;
+                const nodeCount = Math.min(Math.floor(width / (nodeRadius * 3)), 20);
+                
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + k * 0.05})`;
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+                
+                for (let n = 0; n < nodeCount; n++) {
+                    const x = (width / (nodeCount + 1)) * (n + 1);
+                    
+                    ctx.fillStyle = `rgba(0, 255, 255, ${0.5 + k * 0.03})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    if (k < visibleLayers - 1) {
+                        ctx.strokeStyle = `rgba(255, 0, 255, 0.2)`;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, (k + 2) * layerHeight);
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.fillStyle = '#00ffff';
+                ctx.font = '12px monospace';
+                ctx.fillText(`Layer ${k}: S = ${Sk.toFixed(2)}`, 10, y - 5);
+            }
+        }
+
+        function drawGrowthPlot(T0, alpha, layers, S0) {
+            const canvas = document.getElementById('plotCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const data = [];
+            let maxS = S0;
+            
+            for (let k = 0; k <= layers; k++) {
+                const Sk = S0 * Math.pow(1 + alpha * T0, k);
+                data.push(Sk);
+                maxS = Math.max(maxS, Sk);
+            }
+            
+            const finalScale = data[data.length - 1];
+            document.getElementById('finalScale').textContent = finalScale.toFixed(2);
+            document.getElementById('growthPercent').textContent = ((finalScale / S0 - 1) * 100).toFixed(1) + '%';
+            
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (height - 2 * padding) * i / 5;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let k = 0; k < data.length; k++) {
+                const x = padding + (width - 2 * padding) * k / layers;
+                const y = height - padding - (height - 2 * padding) * (data[k] - S0) / (maxS - S0);
+                
+                if (k === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                
+                if (k % Math.max(1, Math.floor(layers / 20)) === 0) {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '11px monospace';
+            ctx.fillText('0', padding - 15, height - padding + 15);
+            ctx.fillText(layers.toString(), width - padding - 10, height - padding + 15);
+            ctx.fillText('k (layers)', width / 2 - 30, height - 10);
+            
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('S_k (scale)', 0, 0);
+            ctx.restore();
+        }
+
+        // Space-Time Orthogonality Visualization
+        function drawSpaceTimeVisualization() {
+            const canvas = document.getElementById('spaceTimeCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, height - 30);
+            ctx.lineTo(centerX, 30);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX - 5, 35);
+            ctx.lineTo(centerX, 30);
+            ctx.lineTo(centerX + 5, 35);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(30, centerY);
+            ctx.lineTo(width - 30, centerY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(width - 35, centerY - 5);
+            ctx.lineTo(width - 30, centerY);
+            ctx.lineTo(width - 35, centerY + 5);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '14px monospace';
+            ctx.fillText('Time (recursion depth)', centerX + 10, 45);
+            ctx.fillText('Space (embedding spread)', width - 200, centerY - 10);
+            
+            const depth = parseInt(document.getElementById('depthSlider').value);
+            const spread = parseInt(document.getElementById('spreadSlider').value);
+            
+            for (let i = 0; i <= depth; i++) {
+                for (let j = 0; j <= spread; j++) {
+                    const x = centerX + (j - spread/2) * 40;
+                    const y = centerY - (i - depth/2) * 25;
+                    
+                    ctx.fillStyle = `rgba(255, 0, 255, ${0.3 + i * 0.05})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4 + i * 0.5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    if (i < depth) {
+                        ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, y - 25);
+                        ctx.stroke();
+                    }
+                    
+                    if (j < spread) {
+                        ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + 40, y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Geometry & Metrics Visualizations
+        function drawMetricVisualization() {
+            const canvas = document.getElementById('metricCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const alpha = parseFloat(document.getElementById('alphaMetricSlider').value);
+            const beta = parseFloat(document.getElementById('betaMetricSlider').value);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let i = -10; i <= 10; i++) {
+                const x = centerX + i * 20;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+                
+                const y = centerY + i * 20;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = `rgba(255, 0, 255, 0.5)`;
+            ctx.lineWidth = 2;
+            
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+                const radius = 100;
+                const x1 = centerX;
+                const y1 = centerY;
+                const x2 = centerX + Math.cos(angle) * radius * beta;
+                const y2 = centerY + Math.sin(angle) * radius * alpha;
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            
+            for (let r = 20; r <= 150; r += 30) {
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 - r / 500})`;
+                ctx.beginPath();
+                ctx.ellipse(centerX, centerY, r * beta, r * alpha, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            const metricDistance = Math.sqrt(alpha * alpha + beta * beta);
+            document.getElementById('metricResult').textContent = metricDistance.toFixed(2);
+        }
+
+        function drawCurvatureVisualization() {
+            const canvas = document.getElementById('curvatureCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const stress = parseFloat(document.getElementById('stressSlider').value);
+            const gamma = parseFloat(document.getElementById('gammaSlider').value);
+            const curvature = gamma * stress;
+            
+            document.getElementById('curvatureResult').textContent = curvature.toFixed(2);
+            
+            const layers = 8;
+            const points = 15;
+            
+            for (let layer = 0; layer < layers; layer++) {
+                const y = (layer + 1) * height / (layers + 1);
+                
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + layer * 0.08})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i <= points; i++) {
+                    const x = (width / points) * i;
+                    const distortion = Math.sin((i / points) * Math.PI) * curvature * 20;
+                    const yOffset = distortion * Math.exp(layer * 0.2);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y + yOffset);
+                    } else {
+                        ctx.lineTo(x, y + yOffset);
+                    }
+                }
+                ctx.stroke();
+                
+                if (layer < layers - 1) {
+                    for (let i = 0; i <= points; i += 3) {
+                        const x = (width / points) * i;
+                        const distortion1 = Math.sin((i / points) * Math.PI) * curvature * 20;
+                        const distortion2 = Math.sin((i / points) * Math.PI) * curvature * 20;
+                        const y1 = y + distortion1 * Math.exp(layer * 0.2);
+                        const y2 = (layer + 2) * height / (layers + 1) + distortion2 * Math.exp((layer + 1) * 0.2);
+                        
+                        ctx.strokeStyle = `rgba(255, 0, 255, 0.2)`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y1);
+                        ctx.lineTo(x, y2);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '14px monospace';
+            ctx.fillText(`κ = ${curvature.toFixed(2)}`, width - 80, 30);
+        }
+
+        // Time Substrate Visualizations
+        function drawRecursionDepth() {
+            const canvas = document.getElementById('depthCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const steps = parseInt(document.getElementById('stepsSlider').value);
+            const stepWidth = width / (steps + 1);
+            
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i <= steps; i++) {
+                const x = stepWidth * (i + 0.5);
+                
+                ctx.beginPath();
+                ctx.moveTo(x, height - 20);
+                ctx.lineTo(x, 20);
+                ctx.stroke();
+                
+                if (i < steps) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, height / 2);
+                    ctx.lineTo(x + stepWidth, height / 2);
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = `rgba(255, 0, 255, ${0.3 + i / steps * 0.7})`;
+                ctx.beginPath();
+                ctx.arc(x, height - 20 - (height - 40) * i / steps, 5 + i * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (i % Math.max(1, Math.floor(steps / 10)) === 0) {
+                    ctx.fillStyle = '#00ffff';
+                    ctx.font = '10px monospace';
+                    ctx.fillText(`n=${i}`, x - 10, height - 5);
+                }
+            }
+            
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '12px monospace';
+            ctx.fillText('Recursion Depth (Primary Time)', 10, 15);
+        }
+
+        function drawEchoPropagation() {
+            const canvas = document.getElementById('echoCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const decay = parseFloat(document.getElementById('decaySlider').value);
+            const steps = parseInt(document.getElementById('stepsSlider').value);
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            for (let i = 0; i < steps; i++) {
+                const radius = (i + 1) * 15;
+                const opacity = Math.pow(decay, i);
+                
+                ctx.strokeStyle = `rgba(0, 255, 255, ${opacity * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                if (i % 2 === 0) {
+                    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) {
+                        const x1 = centerX + Math.cos(angle) * radius * 0.8;
+                        const y1 = centerY + Math.sin(angle) * radius * 0.8;
+                        const x2 = centerX + Math.cos(angle) * radius * 1.2;
+                        const y2 = centerY + Math.sin(angle) * radius * 1.2;
+                        
+                        ctx.strokeStyle = `rgba(255, 0, 255, ${opacity * 0.3})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            ctx.fillStyle = '#ff00ff';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '12px monospace';
+            ctx.fillText('Echo Propagation (T_echo)', 10, 15);
+        }
+
+        function drawRepairFlow() {
+            const canvas = document.getElementById('repairCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const repairStrength = parseFloat(document.getElementById('repairSlider').value);
+            const steps = parseInt(document.getElementById('stepsSlider').value);
+            
+            const gridSize = 20;
+            const cols = Math.floor(width / gridSize);
+            const rows = Math.floor(height / gridSize);
+            
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const x = (i + 0.5) * gridSize;
+                    const y = (j + 0.5) * gridSize;
+                    
+                    const dx = (width - x) / width;
+                    const dy = (height / 2 - y) / height;
+                    const magnitude = Math.sqrt(dx * dx + dy * dy) * repairStrength;
+                    
+                    ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + magnitude})`;
+                    ctx.lineWidth = 1;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + dx * gridSize * repairStrength, y + dy * gridSize * repairStrength);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = `rgba(255, 0, 255, ${0.2 + magnitude * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(x + dx * gridSize * repairStrength, y + dy * gridSize * repairStrength, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 0.2)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 255, 0, 0.2)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, height - 30, width, 30);
+            
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '10px monospace';
+            ctx.fillText('Unstable', 10, height - 10);
+            ctx.fillText('Stable', width - 50, height - 10);
+            
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '12px monospace';
+            ctx.fillText('Repair Flow (Stabilization Gradient)', 10, 15);
+        }
+
+        // Update sliders
+        document.getElementById('depthSlider').addEventListener('input', function() {
+            document.getElementById('depthValue').textContent = this.value;
+            drawSpaceTimeVisualization();
+        });
+
+        document.getElementById('spreadSlider').addEventListener('input', function() {
+            document.getElementById('spreadValue').textContent = this.value;
+            drawSpaceTimeVisualization();
+        });
+
+        // Initialize sliders for worked example
+        ['t0Slider', 'alphaSlider', 'layersSlider', 's0Slider'].forEach(id => {
+            const slider = document.getElementById(id);
+            if (slider) {
+                slider.addEventListener('input', updateVisualization);
+            }
+        });
+
+        // Initialize geometry controls
+        document.getElementById('alphaMetricSlider')?.addEventListener('input', function() {
+            document.getElementById('alphaMetricValue').textContent = this.value;
+            drawMetricVisualization();
+        });
+
+        document.getElementById('betaMetricSlider')?.addEventListener('input', function() {
+            document.getElementById('betaMetricValue').textContent = this.value;
+            drawMetricVisualization();
+        });
+
+        document.getElementById('stressSlider')?.addEventListener('input', function() {
+            document.getElementById('stressValue').textContent = this.value;
+            drawCurvatureVisualization();
+        });
+
+        document.getElementById('gammaSlider')?.addEventListener('input', function() {
+            document.getElementById('gammaValue').textContent = this.value;
+            drawCurvatureVisualization();
+        });
+
+        // Initialize time controls
+        document.getElementById('stepsSlider')?.addEventListener('input', function() {
+            document.getElementById('stepsValue').textContent = this.value;
+            drawRecursionDepth();
+            drawEchoPropagation();
+            drawRepairFlow();
+        });
+
+        document.getElementById('decaySlider')?.addEventListener('input', function() {
+            document.getElementById('decayValue').textContent = this.value;
+            drawEchoPropagation();
+        });
+
+        document.getElementById('repairSlider')?.addEventListener('input', function() {
+            document.getElementById('repairValue').textContent = this.value;
+            drawRepairFlow();
+        });
+
+        document.getElementById('operatorSlider')?.addEventListener('input', function() {
+            document.getElementById('operatorValue').textContent = this.value;
+        });
+
+        // Initial setup
+        setTimeout(() => {
+            drawConnections();
+            if (document.getElementById('worked-tab').classList.contains('active')) {
+                updateVisualization();
+            }
+        }, 100);
+    </script>
+</body>
+</html>
