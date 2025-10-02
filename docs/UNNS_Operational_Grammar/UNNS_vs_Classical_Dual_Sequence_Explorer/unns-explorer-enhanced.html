@@ -1,0 +1,2361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS vs Classical — Advanced Sequence Explorer with Operator Mapping</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f1b;
+            --bg-secondary: #0d1929;
+            --bg-panel: #111a2e;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #ffa500;
+            --accent-tertiary: #ff6b6b;
+            --accent-quaternary: #4ade80;
+            --text-primary: #e8f0ff;
+            --text-secondary: #a8c0e0;
+            --text-muted: #6b8ab8;
+            --border: rgba(255, 255, 255, 0.06);
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(13, 25, 41, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: var(--bg-primary);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .header-content h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-content p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        /* Control Panels */
+        .control-section {
+            background: rgba(17, 26, 46, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-section h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-primary);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .form-group textarea {
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), #0099cc);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent-quaternary), #22d3ee);
+            color: var(--bg-primary);
+            font-weight: 700;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 222, 128, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(255, 165, 0, 0.1));
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Operator Mapping Table */
+        .operator-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+        }
+
+        .operator-row {
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .operator-row:hover {
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .operator-row.active {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .operator-row td {
+            padding: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .operator-row:first-child td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .operator-row:first-child td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .operator-code {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+        }
+
+        .operator-grammar {
+            color: var(--accent-secondary);
+            font-weight: 600;
+        }
+
+        .operator-role {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .operator-viz {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Operator Categories */
+        .operator-category {
+            margin-bottom: 2rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .category-icon.collapse {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .category-icon.projection {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .category-icon.normalization {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .category-icon.adoption {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        /* Visualization Overlays */
+        .viz-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .lattice-overlay {
+            background-image: 
+                repeating-linear-gradient(0deg, rgba(0, 212, 255, 0.1) 0px, transparent 1px, transparent 9px, rgba(0, 212, 255, 0.1) 10px),
+                repeating-linear-gradient(90deg, rgba(0, 212, 255, 0.1) 0px, transparent 1px, transparent 9px, rgba(0, 212, 255, 0.1) 10px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .lattice-overlay.active {
+            opacity: 1;
+        }
+
+        /* Animation Controls */
+        .animation-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .speed-control input[type="range"] {
+            flex: 1;
+        }
+
+        /* Visualization Area */
+        .viz-container {
+            background: rgba(17, 26, 46, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        canvas {
+            width: 100%;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .canvas-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Metrics Display */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-top: 0.25rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes collapse-animation {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes lattice-snap {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(5px, 5px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Operator Visual Effects */
+        .operator-effect {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .operator-effect.active {
+            opacity: 1;
+        }
+
+        .collapse-effect {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent, rgba(239, 68, 68, 0.3));
+            animation: collapse-animation 1s infinite;
+        }
+
+        .lattice-effect {
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 212, 255, 0.1) 10px, rgba(0, 212, 255, 0.1) 20px);
+            animation: lattice-snap 1s infinite;
+        }
+
+        /* Documentation Panel */
+        .doc-panel {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.05), rgba(0, 212, 255, 0.05));
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .doc-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .doc-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .doc-link:hover {
+            color: var(--accent-secondary);
+            transform: translateX(5px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 40vh;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">UNNS</div>
+                <div class="header-content">
+                    <h1>Unbounded Nested Number Sequences (UNNS) Substrate Explorer</h1>
+                    <p>Compare classical sequences with UNNS-repaired variants • Visualize operator grammar</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-accent" onclick="openOperatorMapping()">
+                    <span>🔄</span> Operator → UNNS Mapping
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar Controls -->
+            <aside class="sidebar" role="complementary" aria-label="Sequence Controls">
+                <!-- Tabs for different control sections -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(event, 'presets-tab')" aria-selected="true">Presets</button>
+                    <button class="tab" onclick="switchTab(event, 'custom-tab')" aria-selected="false">Custom</button>
+                    <button class="tab" onclick="switchTab(event, 'operators-tab')" aria-selected="false">Operators</button>
+                    <button class="tab" onclick="switchTab(event, 'lessons-tab')" aria-selected="false">Lessons</button>
+                </div>
+
+                <!-- Presets Tab -->
+                <div id="presets-tab" class="tab-content active">
+                    <div class="control-section">
+                        <h3>Sequence Library</h3>
+                        
+                        <div class="form-group">
+                            <label>Category Filter</label>
+                            <select id="category-filter" onchange="filterPresets()">
+                                <option value="all">All Categories</option>
+                                <option value="linear">Linear Recurrences</option>
+                                <option value="polynomial">Polynomial/Rational</option>
+                                <option value="number-theoretic">Number Theoretic</option>
+                                <option value="chaotic">Chaotic/Nonlinear</option>
+                                <option value="complex">Complex Sequences</option>
+                                <option value="stochastic">Stochastic</option>
+                            </select>
+                        </div>
+
+                        <div class="preset-grid" id="preset-grid">
+                            <!-- Presets will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Tab -->
+                <div id="custom-tab" class="tab-content">
+                    <div class="control-section">
+                        <h3>Custom Recurrence</h3>
+                        
+                        <div class="form-group">
+                            <label for="recurrence-expr">Recurrence Expression</label>
+                            <textarea id="recurrence-expr" placeholder="a[n-1] + a[n-2]">a[n-1] + a[n-2]</textarea>
+                            <div class="form-hint">Use a[n-k] for previous terms. Supports: +, -, *, /, ^, Math.sin, Math.cos, Math.abs</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="initial-terms">Initial Terms (comma-separated)</label>
+                            <input type="text" id="initial-terms" value="0, 1" placeholder="0, 1">
+                            <div class="form-hint">Supports real numbers and complex (e.g., 1+2i)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="num-steps">Number of Steps (N)</label>
+                            <input type="number" id="num-steps" value="200" min="10" max="10000">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="compileAndRun()">
+                            <span>⚡</span> Compile & Run
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Operators Tab -->
+                <div id="operators-tab" class="tab-content">
+                    <div class="control-section">
+                        <h3>UNNS Operators</h3>
+                        
+                        <div class="form-group">
+                            <label for="operator-select">Repair/Normalization Operator</label>
+                            <select id="operator-select" onchange="updateOperatorParams()">
+                                <optgroup label="Collapse">
+                                    <option value="none">None (No repair)</option>
+                                    <option value="threshold_zero">Threshold to Zero</option>
+                                    <option value="merge_close">Merge Close Values</option>
+                                    <option value="equivalence">Equivalence Collapse</option>
+                                </optgroup>
+                                <optgroup label="Projection (Inlaying)">
+                                    <option value="gaussian">Gaussian Integer (Z[i])</option>
+                                    <option value="eisenstein">Eisenstein Integer (Z[ω])</option>
+                                    <option value="cyclotomic">Cyclotomic Projection</option>
+                                </optgroup>
+                                <optgroup label="Normalization">
+                                    <option value="round_int">Round to Integer</option>
+                                    <option value="round_fixed">Round to Fixed Decimals</option>
+                                    <option value="clamp">Clamp Magnitude</option>
+                                    <option value="damping">Exponential Damping</option>
+                                    <option value="normalize_l2">L2 Normalization</option>
+                                    <option value="normalize_lp">Lp Normalization</option>
+                                </optgroup>
+                                <optgroup label="Adoption (Experimental)">
+                                    <option value="adopt_shift">Adoption Shift</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div id="operator-params" class="form-group">
+                            <!-- Dynamic parameter inputs based on selected operator -->
+                        </div>
+
+                        <div class="form-group">
+                            <label>Operator Description</label>
+                            <div id="operator-description" class="form-hint" style="padding: 0.75rem; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                                Select an operator to see its description
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>UNNS Grammar Classification</label>
+                            <div id="operator-grammar-class" style="padding: 0.75rem; background: rgba(0,212,255,0.1); border-radius: 6px; border: 1px solid rgba(0,212,255,0.3);">
+                                <span style="color: var(--accent-secondary); font-weight: 600;">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lessons Tab -->
+                <div id="lessons-tab" class="tab-content">
+                    <div class="control-section">
+                        <h3>Guided Examples</h3>
+                        
+                        <div class="lesson-card" onclick="loadLesson('fibonacci-drift')">
+                            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Lesson 1: Fibonacci Drift</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                                See how integer rounding creates bounded but accumulating errors in the Fibonacci sequence.
+                            </p>
+                        </div>
+
+                        <div class="lesson-card" onclick="loadLesson('chaos-control')">
+                            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Lesson 2: Chaos Control</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                                Watch the logistic map's sensitive dependence on initial conditions with threshold operators.
+                            </p>
+                        </div>
+
+                        <div class="lesson-card" onclick="loadLesson('lattice-stability')">
+                            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Lesson 3: Lattice Stability</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                                Explore how Gaussian/Eisenstein projections create stable lattice behaviors.
+                            </p>
+                        </div>
+
+                        <div class="lesson-card" onclick="loadLesson('exponential-collapse')">
+                            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Lesson 4: Exponential Collapse</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                                Observe exponential growth controlled by damping and threshold operators.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animation Controls -->
+                <div class="control-section">
+                    <h3>Animation Controls</h3>
+                    
+                    <div class="animation-controls">
+                        <button class="btn btn-primary" id="play-btn" onclick="togglePlay()">
+                            <span id="play-icon">▶</span> <span id="play-text">Play</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="stepOnce()">
+                            <span>⏭</span> Step
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetAnimation()">
+                            <span>↺</span> Reset
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Animation Speed</label>
+                        <div class="speed-control">
+                            <input type="range" id="speed-slider" min="10" max="500" value="50">
+                            <span id="speed-value">50ms</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Current Step: <span id="current-step" style="color: var(--accent-primary);">0</span> / <span id="total-steps">200</span></label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content-area" role="main">
+                <!-- Metrics Dashboard -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Max Error</div>
+                        <div class="metric-value" id="metric-max-error">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">RMS Error</div>
+                        <div class="metric-value" id="metric-rms-error">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Divergence Rate</div>
+                        <div class="metric-value" id="metric-div-rate">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">First Difference</div>
+                        <div class="metric-value" id="metric-first-diff">—</div>
+                    </div>
+                </div>
+
+                <!-- Main Visualization -->
+                <div class="viz-container">
+                    <div class="viz-header">
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-primary);"></div>
+                                <span>Classical</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-secondary);"></div>
+                                <span>UNNS</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-tertiary);"></div>
+                                <span>Divergence</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="canvas-row">
+                        <canvas id="main-plot" width="800" height="400"></canvas>
+                        <canvas id="div-plot" width="400" height="400"></canvas>
+                    </div>
+                    
+                    <!-- Operator Effect Overlay -->
+                    <div id="operator-overlay" class="viz-overlay lattice-overlay"></div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="viz-container">
+                    <h3 style="margin-bottom: 1rem;">Sequence Values</h3>
+                    <div class="data-table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: rgba(0, 0, 0, 0.3);">
+                        <table id="data-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="position: sticky; top: 0; background: var(--bg-panel); color: var(--text-secondary); font-weight: 600; text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">n</th>
+                                    <th style="position: sticky; top: 0; background: var(--bg-panel); color: var(--text-secondary); font-weight: 600; text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Classical</th>
+                                    <th style="position: sticky; top: 0; background: var(--bg-panel); color: var(--text-secondary); font-weight: 600; text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">UNNS</th>
+                                    <th style="position: sticky; top: 0; background: var(--bg-panel); color: var(--text-secondary); font-weight: 600; text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Absolute Diff</th>
+                                    <th style="position: sticky; top: 0; background: var(--bg-panel); color: var(--text-secondary); font-weight: 600; text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Relative Diff</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-tbody">
+                                <!-- Data rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Operator Mapping Modal -->
+    <div id="operator-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Operator → UNNS Grammar Mapping</h2>
+                <button class="close-modal" onclick="closeOperatorMapping()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Collapse Operators -->
+                <div class="operator-category">
+                    <div class="category-header">
+                        <div class="category-icon collapse">⬇</div>
+                        <div>
+                            <h3 style="margin: 0;">Collapse Operators</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">Absorb instabilities into substrate</p>
+                        </div>
+                    </div>
+                    <table class="operator-table">
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('threshold_zero')">
+                            <td style="width: 60px;">
+                                <div class="operator-viz">
+                                    <div class="operator-effect collapse-effect"></div>
+                                    <span style="color: #ef4444; font-size: 1.5rem;">•</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">threshold_zero</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Collapse</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Absorbs small echoes into substrate zero</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('merge_close')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #ef4444; font-size: 1.2rem;">••</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">merge_close</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Collapse / Normalize</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Forces near-equal states to converge</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('equivalence')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #ef4444;">≡</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">equivalence</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Collapse</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Map to canonical representative</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Projection Operators -->
+                <div class="operator-category">
+                    <div class="category-header">
+                        <div class="category-icon projection">⊞</div>
+                        <div>
+                            <h3 style="margin: 0;">Projection Operators (Inlaying)</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">Snap to lattice structures</p>
+                        </div>
+                    </div>
+                    <table class="operator-table">
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('gaussian')">
+                            <td>
+                                <div class="operator-viz">
+                                    <div class="operator-effect lattice-effect"></div>
+                                    <span style="color: #3b82f6;">⊞</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">gaussian</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Inlaying (Z[i])</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Snap to Gaussian integer lattice</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('eisenstein')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #3b82f6;">⬡</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">eisenstein</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Inlaying (Z[ω])</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Snap to hexagonal lattice</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('cyclotomic')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #3b82f6;">⬟</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">cyclotomic_proj(p)</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Inlaying / Inletting</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Embed into pth root of unity lattice</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Normalization Operators -->
+                <div class="operator-category">
+                    <div class="category-header">
+                        <div class="category-icon normalization">⟳</div>
+                        <div>
+                            <h3 style="margin: 0;">Normalization Operators</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">Stabilize and evaluate recursion</p>
+                        </div>
+                    </div>
+                    <table class="operator-table">
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('round_int')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #10b981;">⌊⌋</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">roundInt</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Evaluate</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Snap to discrete integer states</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('damping')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #10b981;">∿</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">damp(α)</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Normalize</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Dissipates recursive energy</span>
+                            </td>
+                        </tr>
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('normalize_l2')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #10b981;">○</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">normalize_l2</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Normalize</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Project to unit sphere</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Adoption Operators -->
+                <div class="operator-category">
+                    <div class="category-header">
+                        <div class="category-icon adoption">⤴</div>
+                        <div>
+                            <h3 style="margin: 0;">Adoption Operators (Experimental)</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">Import states from deeper nests</p>
+                        </div>
+                    </div>
+                    <table class="operator-table">
+                        <tr class="operator-row" onclick="selectOperatorFromMapping('adopt_shift')">
+                            <td>
+                                <div class="operator-viz">
+                                    <span style="color: #f59e0b;">⤴</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="operator-code">adopt_shift(k)</span>
+                            </td>
+                            <td>
+                                <span class="operator-grammar">Adoption</span>
+                            </td>
+                            <td>
+                                <span class="operator-role">Imports new states from k-depth nest</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Documentation Panel -->
+                <div class="doc-panel">
+                    <h3>📚 UNNS Theory Documentation</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        Explore the theoretical foundations of UNNS operators and their role in recursive substrate dynamics.
+                    </p>
+                    <div class="doc-links">
+                        <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/Operator-to-UNNS%20Mapping.pdf" target="_blank" class="doc-link">
+                            <span>📄</span> Operator-to-UNNS Mapping Reference
+                        </a>
+                        <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/UNNS%20Operators%20From%20Grammar%20to%20Implementation.pdf" target="_blank" class="doc-link">
+                            <span>📄</span> UNNS Operators: From Grammar to Implementation
+                        </a>
+                        <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/On%20the%20Significance%20of%20Classical%20Sequence%20Dynamics.pdf" target="_blank" class="doc-link">
+                            <span>📄</span> Significance of Classical Sequence Dynamics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Enhanced State Management ====================
+        const AppState = {
+            sequences: {
+                classical: [],
+                unns: [],
+                divergence: []
+            },
+            config: {
+                expression: 'a[n-1] + a[n-2]',
+                initialTerms: [0, 1],
+                numSteps: 200,
+                operator: 'none',
+                operatorParams: {}
+            },
+            animation: {
+                playing: false,
+                currentStep: 0,
+                speed: 50,
+                interval: null,
+                rafId: null
+            },
+            compiled: {
+                fn: null,
+                isValid: false
+            },
+            metrics: {
+                maxError: 0,
+                rmsError: 0,
+                divergenceRate: 0,
+                firstDiff: -1
+            },
+            operatorVisualization: {
+                active: false,
+                type: null
+            }
+        };
+
+        // ==================== Sequence Presets Library ====================
+        const PRESETS = {
+            'fibonacci': {
+                name: 'Fibonacci',
+                category: 'linear',
+                expression: 'a[n-1] + a[n-2]',
+                initial: [0, 1],
+                steps: 200,
+                description: 'Classic Fibonacci sequence: F(n) = F(n-1) + F(n-2)'
+            },
+            'lucas': {
+                name: 'Lucas',
+                category: 'linear',
+                expression: 'a[n-1] + a[n-2]',
+                initial: [2, 1],
+                steps: 200,
+                description: 'Lucas sequence: L(n) = L(n-1) + L(n-2) with L(0)=2, L(1)=1'
+            },
+            'logistic': {
+                name: 'Logistic Map',
+                category: 'chaotic',
+                expression: '3.9 * a[n-1] * (1 - a[n-1])',
+                initial: [0.3],
+                steps: 500,
+                description: 'Logistic map in chaotic regime (r=3.9)'
+            },
+            'exponential': {
+                name: 'Exponential',
+                category: 'linear',
+                expression: '2 * a[n-1]',
+                initial: [1],
+                steps: 30,
+                description: 'Exponential growth: a(n) = 2 * a(n-1)'
+            },
+            'complex_fib': {
+                name: 'Complex Fibonacci',
+                category: 'complex',
+                expression: 'a[n-1] + a[n-2]',
+                initial: [{re: 0, im: 1}, {re: 1, im: 0}],
+                steps: 100,
+                description: 'Fibonacci with complex initial values'
+            }
+        };
+
+        // ==================== Complex Number Support ====================
+        class Complex {
+            constructor(re = 0, im = 0) {
+                this.re = re;
+                this.im = im;
+            }
+
+            static from(value) {
+                if (value instanceof Complex) return value;
+                if (typeof value === 'object' && value !== null && 're' in value) {
+                    return new Complex(value.re || 0, value.im || 0);
+                }
+                if (typeof value === 'string') {
+                    return Complex.parse(value);
+                }
+                if (typeof value === 'number' && !isNaN(value)) {
+                    return new Complex(value, 0);
+                }
+                return new Complex(0, 0);
+            }
+
+            static parse(str) {
+                str = str.trim();
+                
+                if (str.includes('{')) {
+                    try {
+                        const obj = eval('(' + str + ')');
+                        return new Complex(obj.re || 0, obj.im || 0);
+                    } catch {
+                        return new Complex(0, 0);
+                    }
+                }
+                
+                if (!str.includes('i')) {
+                    return new Complex(parseFloat(str) || 0, 0);
+                }
+                
+                if (!str.match(/[+-]/g) || (str.match(/[+-]/g).length === 1 && str[0] === '-')) {
+                    const im = parseFloat(str.replace('i', '') || '1') || 1;
+                    return new Complex(0, im);
+                }
+                
+                const parts = str.split(/(?=[+-])/);
+                let real = 0, imag = 0;
+                
+                for (const part of parts) {
+                    if (part.includes('i')) {
+                        const num = part.replace('i', '').replace('+', '');
+                        imag += parseFloat(num || (part.startsWith('-') ? '-1' : '1'));
+                    } else {
+                        real += parseFloat(part);
+                    }
+                }
+                
+                return new Complex(real, imag);
+            }
+
+            add(other) {
+                other = Complex.from(other);
+                return new Complex(this.re + other.re, this.im + other.im);
+            }
+
+            sub(other) {
+                other = Complex.from(other);
+                return new Complex(this.re - other.re, this.im - other.im);
+            }
+
+            mul(other) {
+                other = Complex.from(other);
+                return new Complex(
+                    this.re * other.re - this.im * other.im,
+                    this.re * other.im + this.im * other.re
+                );
+            }
+
+            div(other) {
+                other = Complex.from(other);
+                const denom = other.re * other.re + other.im * other.im;
+                if (denom === 0) return new Complex(Infinity, Infinity);
+                return new Complex(
+                    (this.re * other.re + this.im * other.im) / denom,
+                    (this.im * other.re - this.re * other.im) / denom
+                );
+            }
+
+            abs() {
+                return Math.hypot(this.re, this.im);
+            }
+
+            toString() {
+                if (this.im === 0) return this.re.toString();
+                if (this.re === 0) return this.im + 'i';
+                return this.re + (this.im >= 0 ? '+' : '') + this.im + 'i';
+            }
+        }
+
+        // ==================== Enhanced UNNS Operators with Grammar Mapping ====================
+        const OPERATORS = {
+            none: {
+                name: 'None',
+                grammar: 'Identity',
+                description: 'No repair applied - pure classical evaluation',
+                params: [],
+                apply: (value) => value,
+                visualEffect: 'none'
+            },
+            
+            threshold_zero: {
+                name: 'Threshold to Zero',
+                grammar: 'Collapse',
+                description: 'Set values with magnitude below threshold to zero - absorbs small echoes into substrate',
+                params: [
+                    { name: 'epsilon', label: 'Threshold (ε)', type: 'number', default: 0.001, min: 0, step: 0.001 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const eps = params.epsilon || 0.001;
+                    return c.abs() < eps ? new Complex(0, 0) : c;
+                },
+                visualEffect: 'collapse'
+            },
+            
+            merge_close: {
+                name: 'Merge Close Values',
+                grammar: 'Collapse / Normalize',
+                description: 'Merge values within epsilon distance - forces near-equal states to converge',
+                params: [
+                    { name: 'epsilon', label: 'Merge Distance', type: 'number', default: 0.1, min: 0, step: 0.01 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const eps = params.epsilon || 0.1;
+                    const gridSize = eps;
+                    return new Complex(
+                        Math.round(c.re / gridSize) * gridSize,
+                        Math.round(c.im / gridSize) * gridSize
+                    );
+                },
+                visualEffect: 'collapse'
+            },
+            
+            equivalence: {
+                name: 'Equivalence Collapse',
+                grammar: 'Collapse',
+                description: 'Map to canonical representative of equivalence class',
+                params: [
+                    { name: 'modulus', label: 'Modulus', type: 'number', default: 10, min: 2 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const mod = params.modulus || 10;
+                    return new Complex(
+                        ((c.re % mod) + mod) % mod,
+                        ((c.im % mod) + mod) % mod
+                    );
+                },
+                visualEffect: 'collapse'
+            },
+            
+            gaussian: {
+                name: 'Gaussian Integer',
+                grammar: 'Inlaying (Z[i])',
+                description: 'Project to nearest Gaussian integer (Z[i] lattice) - snap recursion to square lattice',
+                params: [],
+                apply: (value) => {
+                    const c = Complex.from(value);
+                    return new Complex(Math.round(c.re), Math.round(c.im));
+                },
+                visualEffect: 'lattice-square'
+            },
+            
+            eisenstein: {
+                name: 'Eisenstein Integer',
+                grammar: 'Inlaying (Z[ω])',
+                description: 'Project to nearest Eisenstein integer (Z[ω] lattice) - snap to hexagonal lattice',
+                params: [],
+                apply: (value) => {
+                    const c = Complex.from(value);
+                    const omega = new Complex(-0.5, Math.sqrt(3) / 2);
+                    const det = omega.im;
+                    const a = (c.re * omega.im - omega.re * c.im) / det;
+                    const b = c.im / det;
+                    const aRound = Math.round(a);
+                    const bRound = Math.round(b);
+                    return new Complex(
+                        aRound + bRound * omega.re,
+                        bRound * omega.im
+                    );
+                },
+                visualEffect: 'lattice-hex'
+            },
+            
+            cyclotomic: {
+                name: 'Cyclotomic Projection',
+                grammar: 'Inlaying / Inletting',
+                description: 'Project to cyclotomic integer lattice Z[ζ_n] - embed into roots of unity',
+                params: [
+                    { name: 'n', label: 'Cyclotomic Order', type: 'number', default: 5, min: 3, max: 12 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const n = params.n || 5;
+                    const angle = Math.atan2(c.im, c.re);
+                    const mag = c.abs();
+                    const quantizedAngle = Math.round(angle * n / (2 * Math.PI)) * (2 * Math.PI) / n;
+                    const quantizedMag = Math.round(mag);
+                    return new Complex(
+                        quantizedMag * Math.cos(quantizedAngle),
+                        quantizedMag * Math.sin(quantizedAngle)
+                    );
+                },
+                visualEffect: 'lattice-cyclo'
+            },
+            
+            round_int: {
+                name: 'Round to Integer',
+                grammar: 'Evaluate',
+                description: 'Round real and imaginary parts to nearest integer - snap to discrete states',
+                params: [],
+                apply: (value) => {
+                    const c = Complex.from(value);
+                    return new Complex(Math.round(c.re), Math.round(c.im));
+                },
+                visualEffect: 'discrete'
+            },
+            
+            round_fixed: {
+                name: 'Round to Fixed Decimals',
+                grammar: 'Evaluate',
+                description: 'Round to specified number of decimal places',
+                params: [
+                    { name: 'decimals', label: 'Decimal Places', type: 'number', default: 3, min: 0, max: 10 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const d = params.decimals || 3;
+                    const scale = Math.pow(10, d);
+                    return new Complex(
+                        Math.round(c.re * scale) / scale,
+                        Math.round(c.im * scale) / scale
+                    );
+                },
+                visualEffect: 'discrete'
+            },
+            
+            clamp: {
+                name: 'Clamp Magnitude',
+                grammar: 'Normalize',
+                description: 'Limit the magnitude of values to a maximum',
+                params: [
+                    { name: 'max', label: 'Maximum Magnitude', type: 'number', default: 1000, min: 1 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const mag = c.abs();
+                    const maxMag = params.max || 1000;
+                    if (mag > maxMag) {
+                        const scale = maxMag / mag;
+                        return new Complex(c.re * scale, c.im * scale);
+                    }
+                    return c;
+                },
+                visualEffect: 'normalize'
+            },
+            
+            damping: {
+                name: 'Exponential Damping',
+                grammar: 'Normalize',
+                description: 'Multiply by damping factor (1-α) at each step - dissipates recursive energy',
+                params: [
+                    { name: 'alpha', label: 'Damping Factor (α)', type: 'number', default: 0.01, min: 0, max: 1, step: 0.01 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const factor = 1 - (params.alpha || 0.01);
+                    return new Complex(c.re * factor, c.im * factor);
+                },
+                visualEffect: 'damping'
+            },
+            
+            normalize_l2: {
+                name: 'L2 Normalization',
+                grammar: 'Normalize',
+                description: 'Normalize to unit L2 norm - project to unit sphere',
+                params: [],
+                apply: (value) => {
+                    const c = Complex.from(value);
+                    const norm = c.abs();
+                    if (norm === 0) return c;
+                    return new Complex(c.re / norm, c.im / norm);
+                },
+                visualEffect: 'normalize'
+            },
+            
+            normalize_lp: {
+                name: 'Lp Normalization',
+                grammar: 'Normalize',
+                description: 'Normalize to unit Lp norm',
+                params: [
+                    { name: 'p', label: 'Norm Order (p)', type: 'number', default: 2, min: 1, max: 10 }
+                ],
+                apply: (value, params) => {
+                    const c = Complex.from(value);
+                    const p = params.p || 2;
+                    const norm = Math.pow(Math.pow(Math.abs(c.re), p) + Math.pow(Math.abs(c.im), p), 1/p);
+                    if (norm === 0) return c;
+                    return new Complex(c.re / norm, c.im / norm);
+                },
+                visualEffect: 'normalize'
+            },
+            
+            adopt_shift: {
+                name: 'Adoption Shift',
+                grammar: 'Adoption',
+                description: 'Import states from deeper nested levels (experimental)',
+                params: [
+                    { name: 'k', label: 'Nest Depth', type: 'number', default: 2, min: 1, max: 5 }
+                ],
+                apply: (value, params, context) => {
+                    const c = Complex.from(value);
+                    const k = params.k || 2;
+                    // Experimental: shift by importing from deeper recursion
+                    const shift = context && context.history && context.history[Math.max(0, context.history.length - k)] 
+                        ? Complex.from(context.history[Math.max(0, context.history.length - k)])
+                        : new Complex(0, 0);
+                    return c.add(shift.mul(0.1)); // Blend with 10% of historical value
+                },
+                visualEffect: 'adoption'
+            }
+        };
+
+        // ==================== Operator Mapping Modal Functions ====================
+        function openOperatorMapping() {
+            document.getElementById('operator-modal').classList.add('active');
+            
+            // Highlight current operator
+            const currentOp = AppState.config.operator;
+            document.querySelectorAll('.operator-row').forEach(row => {
+                row.classList.remove('active');
+            });
+            
+            // Find and highlight the row for current operator
+            document.querySelectorAll('.operator-row').forEach(row => {
+                if (row.getAttribute('onclick').includes(currentOp)) {
+                    row.classList.add('active');
+                }
+            });
+        }
+
+        function closeOperatorMapping() {
+            document.getElementById('operator-modal').classList.remove('active');
+        }
+
+        function selectOperatorFromMapping(operatorKey) {
+            // Update the operator select
+            document.getElementById('operator-select').value = operatorKey;
+            
+            // Update parameters
+            updateOperatorParams();
+            
+            // Highlight selected row
+            document.querySelectorAll('.operator-row').forEach(row => {
+                row.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Apply visual effect
+            applyOperatorVisualEffect(operatorKey);
+            
+            // Close modal after a short delay
+            setTimeout(() => {
+                closeOperatorMapping();
+                compileAndRun();
+            }, 500);
+        }
+
+        function applyOperatorVisualEffect(operatorKey) {
+            const operator = OPERATORS[operatorKey];
+            if (!operator) return;
+            
+            const overlay = document.getElementById('operator-overlay');
+            overlay.className = 'viz-overlay';
+            
+            switch(operator.visualEffect) {
+                case 'collapse':
+                    // Add collapse animation
+                    overlay.style.background = 'radial-gradient(circle at center, rgba(239, 68, 68, 0.3), transparent)';
+                    overlay.classList.add('active');
+                    break;
+                case 'lattice-square':
+                    overlay.classList.add('lattice-overlay', 'active');
+                    break;
+                case 'lattice-hex':
+                    // Hexagonal pattern would need custom SVG
+                    overlay.classList.add('lattice-overlay', 'active');
+                    break;
+                case 'normalize':
+                    overlay.style.background = 'radial-gradient(circle at center, transparent, rgba(16, 185, 129, 0.2))';
+                    overlay.classList.add('active');
+                    break;
+                default:
+                    overlay.classList.remove('active');
+            }
+            
+            // Remove effect after animation
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 2000);
+        }
+
+        // ==================== Enhanced UI Functions ====================
+        function updateOperatorParams() {
+            const operatorKey = document.getElementById('operator-select').value;
+            const operator = OPERATORS[operatorKey];
+            const paramsDiv = document.getElementById('operator-params');
+            const descDiv = document.getElementById('operator-description');
+            const grammarDiv = document.getElementById('operator-grammar-class');
+            
+            // Update description
+            descDiv.textContent = operator.description;
+            
+            // Update grammar classification
+            grammarDiv.innerHTML = `<span style="color: var(--accent-secondary); font-weight: 600;">${operator.grammar}</span>`;
+            
+            // Clear existing params
+            paramsDiv.innerHTML = '';
+            AppState.config.operatorParams = {};
+            
+            // Add parameter inputs
+            if (operator.params && operator.params.length > 0) {
+                operator.params.forEach(param => {
+                    const group = document.createElement('div');
+                    group.className = 'form-group';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = param.label;
+                    group.appendChild(label);
+                    
+                    const input = document.createElement('input');
+                    input.type = param.type || 'number';
+                    input.value = param.default || '';
+                    input.dataset.param = param.name;
+                    
+                    if (param.min !== undefined) input.min = param.min;
+                    if (param.max !== undefined) input.max = param.max;
+                    if (param.step !== undefined) input.step = param.step;
+                    
+                    input.addEventListener('change', (e) => {
+                        AppState.config.operatorParams[param.name] = 
+                            param.type === 'number' ? parseFloat(e.target.value) : e.target.value;
+                    });
+                    
+                    group.appendChild(input);
+                    paramsDiv.appendChild(group);
+                    
+                    // Set initial value
+                    AppState.config.operatorParams[param.name] = 
+                        param.type === 'number' ? parseFloat(input.value) : input.value;
+                });
+            }
+        }
+
+        // ==================== Expression Parser & Evaluator ====================
+        function compileExpression(expr) {
+            const forbidden = ['eval', 'Function', 'constructor', 'prototype', '__proto__', 
+                               'window', 'document', 'alert', 'fetch', 'import', 'require'];
+            
+            for (const word of forbidden) {
+                if (expr.includes(word)) {
+                    throw new Error(`Forbidden token "${word}" in expression`);
+                }
+            }
+            
+            let code = expr;
+            code = code.replace(/a\[n-(\d+)\]/g, (match, k) => `_getA(a, n-${k})`);
+            
+            try {
+                const fn = new Function('a', 'n', '_getA', 'Complex', 'Math', `
+                    "use strict";
+                    try {
+                        let result = ${code};
+                        if (typeof result === 'number') {
+                            return new Complex(result, 0);
+                        }
+                        if (result instanceof Complex) {
+                            return result;
+                        }
+                        if (result && typeof result === 'object' && 're' in result) {
+                            return new Complex(result.re || 0, result.im || 0);
+                        }
+                        return new Complex(0, 0);
+                    } catch (e) {
+                        console.error('Expression evaluation error:', e);
+                        return new Complex(0, 0);
+                    }
+                `);
+                
+                return (a, n) => {
+                    const _getA = (arr, idx) => {
+                        if (idx < 0 || idx >= arr.length) {
+                            return new Complex(0, 0);
+                        }
+                        const val = arr[idx];
+                        if (val instanceof Complex) {
+                            return val;
+                        }
+                        return new Complex(val || 0, 0);
+                    };
+                    
+                    const safeMath = {
+                        sin: (x) => Math.sin(typeof x === 'number' ? x : x.re),
+                        cos: (x) => Math.cos(typeof x === 'number' ? x : x.re),
+                        abs: (x) => x instanceof Complex ? x.abs() : Math.abs(x),
+                        sqrt: (x) => Math.sqrt(typeof x === 'number' ? x : x.re),
+                        min: (...args) => Math.min(...args.map(x => typeof x === 'number' ? x : x.re)),
+                        max: (...args) => Math.max(...args.map(x => typeof x === 'number' ? x : x.re)),
+                        random: Math.random,
+                        PI: Math.PI,
+                        E: Math.E
+                    };
+                    
+                    return fn(a, n, _getA, Complex, safeMath);
+                };
+            } catch (e) {
+                throw new Error(`Failed to compile expression: ${e.message}`);
+            }
+        }
+
+        // ==================== Sequence Evaluation ====================
+        function evaluateSequences() {
+            const expr = document.getElementById('recurrence-expr').value;
+            const initialStr = document.getElementById('initial-terms').value;
+            const numSteps = parseInt(document.getElementById('num-steps').value) || 200;
+            const operator = document.getElementById('operator-select').value;
+            
+            const initialTerms = initialStr.split(',').map(term => {
+                const trimmed = term.trim();
+                return Complex.from(trimmed);
+            });
+            
+            let compiledFn;
+            try {
+                compiledFn = compileExpression(expr);
+            } catch (e) {
+                alert(`Expression error: ${e.message}`);
+                return false;
+            }
+            
+            const classical = [...initialTerms];
+            const unns = [...initialTerms];
+            const divergence = new Array(initialTerms.length).fill(0);
+            
+            AppState.sequences.classical = classical;
+            AppState.sequences.unns = unns;
+            AppState.sequences.divergence = divergence;
+            AppState.config.expression = expr;
+            AppState.config.initialTerms = initialTerms;
+            AppState.config.numSteps = numSteps;
+            AppState.config.operator = operator;
+            AppState.compiled.fn = compiledFn;
+            AppState.compiled.isValid = true;
+            AppState.animation.currentStep = initialTerms.length - 1;
+            
+            document.getElementById('total-steps').textContent = numSteps;
+            document.getElementById('current-step').textContent = AppState.animation.currentStep;
+            
+            updateVisualizations();
+            updateMetrics();
+            updateDataTable();
+            
+            return true;
+        }
+
+        function stepOnce() {
+            if (!AppState.compiled.isValid || !AppState.compiled.fn) {
+                if (!evaluateSequences()) return;
+            }
+            
+            const n = AppState.sequences.classical.length;
+            if (n >= AppState.config.numSteps) return;
+            
+            let classicalNext;
+            try {
+                const result = AppState.compiled.fn(AppState.sequences.classical, n);
+                classicalNext = result instanceof Complex ? result : Complex.from(result);
+            } catch (e) {
+                console.error('Classical evaluation error:', e);
+                classicalNext = new Complex(0, 0);
+            }
+            
+            let unnsNext;
+            try {
+                const result = AppState.compiled.fn(AppState.sequences.unns, n);
+                unnsNext = result instanceof Complex ? result : Complex.from(result);
+            } catch (e) {
+                console.error('UNNS evaluation error:', e);
+                unnsNext = new Complex(0, 0);
+            }
+            
+            const operator = OPERATORS[AppState.config.operator];
+            if (operator && operator.apply) {
+                const context = { history: AppState.sequences.unns };
+                unnsNext = operator.apply(unnsNext, AppState.config.operatorParams, context);
+            }
+            
+            AppState.sequences.classical.push(classicalNext);
+            AppState.sequences.unns.push(unnsNext);
+            
+            const div = classicalNext.sub(unnsNext).abs();
+            AppState.sequences.divergence.push(div);
+            
+            AppState.animation.currentStep = n;
+            document.getElementById('current-step').textContent = n;
+            
+            updateVisualizations();
+            updateMetrics();
+            
+            // Update table periodically for performance
+            if (n % 5 === 0 || n === AppState.config.numSteps - 1) {
+                updateDataTable();
+            }
+        }
+
+        // ==================== Data Table ====================
+        function updateDataTable() {
+            const tbody = document.getElementById('data-tbody');
+            tbody.innerHTML = '';
+            
+            const classical = AppState.sequences.classical;
+            const unns = AppState.sequences.unns;
+            const n = Math.max(classical.length, unns.length);
+            
+            // Show last 100 rows for performance
+            const startIdx = Math.max(0, n - 100);
+            
+            for (let i = startIdx; i < n; i++) {
+                const tr = document.createElement('tr');
+                
+                const classicalVal = classical[i] || new Complex(0, 0);
+                const unnsVal = unns[i] || new Complex(0, 0);
+                const absDiff = classicalVal.sub(unnsVal).abs();
+                const relDiff = classicalVal.abs() > 0 ? absDiff / classicalVal.abs() : 0;
+                
+                tr.style = 'border-bottom: 1px solid var(--border);';
+                tr.innerHTML = `
+                    <td style="padding: 0.75rem; color: var(--text-primary); font-size: 0.9rem;">${i}</td>
+                    <td style="padding: 0.75rem; color: var(--text-primary); font-size: 0.9rem;">${formatComplexValue(classicalVal)}</td>
+                    <td style="padding: 0.75rem; color: var(--text-primary); font-size: 0.9rem;">${formatComplexValue(unnsVal)}</td>
+                    <td style="padding: 0.75rem; color: var(--text-primary); font-size: 0.9rem;">${formatNumber(absDiff)}</td>
+                    <td style="padding: 0.75rem; color: var(--text-primary); font-size: 0.9rem;">${formatNumber(relDiff * 100)}%</td>
+                `;
+                
+                tbody.appendChild(tr);
+            }
+        }
+
+        function formatComplexValue(c) {
+            if (!c) return '—';
+            if (c.im === 0) return formatNumber(c.re);
+            if (c.re === 0) return formatNumber(c.im) + 'i';
+            return formatNumber(c.re) + (c.im >= 0 ? '+' : '') + formatNumber(c.im) + 'i';
+        }
+
+        function formatNumber(n) {
+            if (Math.abs(n) < 1e-10) return '0';
+            if (Math.abs(n) < 0.01 || Math.abs(n) > 1e6) {
+                return n.toExponential(3);
+            }
+            return n.toFixed(4);
+        }
+
+        // ==================== Visualization ====================
+        function updateVisualizations() {
+            drawMainPlot();
+            drawDivergencePlot();
+        }
+
+        function drawMainPlot() {
+            const canvas = document.getElementById('main-plot');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, width, height);
+            
+            const classical = AppState.sequences.classical;
+            const unns = AppState.sequences.unns;
+            const n = Math.max(classical.length, unns.length);
+            
+            if (n === 0) return;
+            
+            let minVal = Infinity, maxVal = -Infinity;
+            for (let i = 0; i < n; i++) {
+                if (classical[i]) {
+                    const mag = classical[i].abs();
+                    minVal = Math.min(minVal, -mag, classical[i].re);
+                    maxVal = Math.max(maxVal, mag, classical[i].re);
+                }
+                if (unns[i]) {
+                    const mag = unns[i].abs();
+                    minVal = Math.min(minVal, -mag, unns[i].re);
+                    maxVal = Math.max(maxVal, mag, unns[i].re);
+                }
+            }
+            
+            const range = maxVal - minVal || 1;
+            minVal -= range * 0.1;
+            maxVal += range * 0.1;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = (height / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            const mapX = (i) => (i / (n - 1)) * (width - 40) + 20;
+            const mapY = (val) => height - 20 - ((val - minVal) / (maxVal - minVal)) * (height - 40);
+            
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < classical.length; i++) {
+                const x = mapX(i);
+                const y = mapY(classical[i].re);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#ffa500';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < unns.length; i++) {
+                const x = mapX(i);
+                const y = mapY(unns[i].re);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawDivergencePlot() {
+            const canvas = document.getElementById('div-plot');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, width, height);
+            
+            const divergence = AppState.sequences.divergence;
+            const n = divergence.length;
+            
+            if (n === 0) return;
+            
+            const maxDiv = Math.max(...divergence, 1e-9);
+            
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+                const x = (i / (n - 1)) * (width - 20) + 10;
+                const y = height - 10 - (divergence[i] / maxDiv) * (height - 20);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(10, height - 10);
+            for (let i = 0; i < n; i++) {
+                const x = (i / (n - 1)) * (width - 20) + 10;
+                const y = height - 10 - (divergence[i] / maxDiv) * (height - 20);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(width - 10, height - 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Absolute Divergence', 10, 20);
+        }
+
+        // ==================== Metrics Calculation ====================
+        function updateMetrics() {
+            const classical = AppState.sequences.classical;
+            const unns = AppState.sequences.unns;
+            const n = Math.min(classical.length, unns.length);
+            
+            if (n === 0) {
+                AppState.metrics = {
+                    maxError: 0,
+                    rmsError: 0,
+                    divergenceRate: 0,
+                    firstDiff: -1
+                };
+            } else {
+                const errors = [];
+                let firstDiff = -1;
+                
+                for (let i = 0; i < n; i++) {
+                    const error = classical[i].sub(unns[i]).abs();
+                    errors.push(error);
+                    
+                    if (firstDiff === -1 && error > 1e-10) {
+                        firstDiff = i;
+                    }
+                }
+                
+                const maxError = Math.max(...errors);
+                const rmsError = Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / n);
+                
+                let divergenceRate = 0;
+                if (errors.length > 1) {
+                    let product = 1;
+                    let count = 0;
+                    for (let i = 1; i < errors.length; i++) {
+                        if (errors[i] > 0 && errors[i-1] > 0) {
+                            product *= errors[i] / errors[i-1];
+                            count++;
+                        }
+                    }
+                    divergenceRate = count > 0 ? Math.pow(product, 1/count) : 0;
+                }
+                
+                AppState.metrics = { maxError, rmsError, divergenceRate, firstDiff };
+            }
+            
+            document.getElementById('metric-max-error').textContent = 
+                AppState.metrics.maxError < 1e-6 ? '< 1e-6' : 
+                AppState.metrics.maxError > 1e6 ? AppState.metrics.maxError.toExponential(2) :
+                AppState.metrics.maxError.toFixed(6);
+            
+            document.getElementById('metric-rms-error').textContent = 
+                AppState.metrics.rmsError < 1e-6 ? '< 1e-6' :
+                AppState.metrics.rmsError > 1e6 ? AppState.metrics.rmsError.toExponential(2) :
+                AppState.metrics.rmsError.toFixed(6);
+            
+            document.getElementById('metric-div-rate').textContent = 
+                AppState.metrics.divergenceRate.toFixed(4);
+            
+            document.getElementById('metric-first-diff').textContent = 
+                AppState.metrics.firstDiff === -1 ? 'None' : `n = ${AppState.metrics.firstDiff}`;
+        }
+
+        // ==================== UI Event Handlers ====================
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                tab.setAttribute('aria-selected', 'false');
+            });
+            event.target.classList.add('active');
+            event.target.setAttribute('aria-selected', 'true');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function filterPresets() {
+            const category = document.getElementById('category-filter').value;
+            populatePresets(category);
+        }
+
+        function populatePresets(category = 'all') {
+            const grid = document.getElementById('preset-grid');
+            grid.innerHTML = '';
+            
+            for (const [key, preset] of Object.entries(PRESETS)) {
+                if (category !== 'all' && preset.category !== category) continue;
+                
+                const card = document.createElement('div');
+                card.className = 'preset-card';
+                card.onclick = (e) => loadPreset(key, e);
+                card.style = `
+                    padding: 0.75rem;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    text-align: center;
+                    margin-bottom: 0.5rem;
+                `;
+                
+                card.innerHTML = `
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">${preset.category}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 500;">${preset.name}</div>
+                `;
+                
+                grid.appendChild(card);
+            }
+        }
+
+        function loadPreset(presetKey, event) {
+            const preset = PRESETS[presetKey];
+            if (!preset) return;
+            
+            document.getElementById('recurrence-expr').value = preset.expression;
+            document.getElementById('initial-terms').value = 
+                preset.initial.map(v => {
+                    if (typeof v === 'object') {
+                        return `{re:${v.re}, im:${v.im}}`;
+                    }
+                    return v.toString();
+                }).join(', ');
+            document.getElementById('num-steps').value = preset.steps;
+            
+            compileAndRun();
+        }
+
+        function loadLesson(lessonId) {
+            const lessons = {
+                'fibonacci-drift': {
+                    preset: 'fibonacci',
+                    operator: 'round_fixed',
+                    operatorParams: { decimals: 2 },
+                    description: 'Watch how rounding to 2 decimal places causes drift in Fibonacci sequence'
+                },
+                'chaos-control': {
+                    preset: 'logistic',
+                    operator: 'threshold_zero',
+                    operatorParams: { epsilon: 0.001 },
+                    description: 'Small threshold dramatically changes chaotic behavior'
+                },
+                'lattice-stability': {
+                    preset: 'complex_fib',
+                    operator: 'gaussian',
+                    operatorParams: {},
+                    description: 'Gaussian integer projection creates stable lattice pattern'
+                },
+                'exponential-collapse': {
+                    preset: 'exponential',
+                    operator: 'damping',
+                    operatorParams: { alpha: 0.02 },
+                    description: 'Damping controls exponential growth'
+                }
+            };
+            
+            const lesson = lessons[lessonId];
+            if (!lesson) return;
+            
+            const preset = PRESETS[lesson.preset];
+            document.getElementById('recurrence-expr').value = preset.expression;
+            document.getElementById('initial-terms').value = 
+                preset.initial.map(v => {
+                    if (typeof v === 'object') {
+                        return `{re:${v.re}, im:${v.im}}`;
+                    }
+                    return v.toString();
+                }).join(', ');
+            document.getElementById('num-steps').value = preset.steps;
+            
+            document.getElementById('operator-select').value = lesson.operator;
+            updateOperatorParams();
+            
+            for (const [key, value] of Object.entries(lesson.operatorParams)) {
+                const input = document.querySelector(`[data-param="${key}"]`);
+                if (input) input.value = value;
+                AppState.config.operatorParams[key] = value;
+            }
+            
+            alert(lesson.description);
+            compileAndRun();
+        }
+
+        function compileAndRun() {
+            resetAnimation();
+            if (evaluateSequences()) {
+                // Optionally start animation
+            }
+        }
+
+        function togglePlay() {
+            if (AppState.animation.playing) {
+                pauseAnimation();
+            } else {
+                playAnimation();
+            }
+        }
+
+        function playAnimation() {
+            if (!AppState.compiled.isValid) {
+                if (!evaluateSequences()) return;
+            }
+            
+            AppState.animation.playing = true;
+            document.getElementById('play-icon').textContent = '⏸';
+            document.getElementById('play-text').textContent = 'Pause';
+            
+            const speed = parseInt(document.getElementById('speed-slider').value);
+            
+            const animate = () => {
+                if (!AppState.animation.playing) return;
+                
+                stepOnce();
+                
+                if (AppState.sequences.classical.length >= AppState.config.numSteps) {
+                    pauseAnimation();
+                    return;
+                }
+                
+                AppState.animation.interval = setTimeout(animate, speed);
+            };
+            
+            animate();
+        }
+
+        function pauseAnimation() {
+            AppState.animation.playing = false;
+            document.getElementById('play-icon').textContent = '▶';
+            document.getElementById('play-text').textContent = 'Play';
+            
+            if (AppState.animation.interval) {
+                clearTimeout(AppState.animation.interval);
+                AppState.animation.interval = null;
+            }
+        }
+
+        function resetAnimation() {
+            pauseAnimation();
+            AppState.sequences.classical = [];
+            AppState.sequences.unns = [];
+            AppState.sequences.divergence = [];
+            AppState.animation.currentStep = 0;
+            AppState.compiled.isValid = false;
+            
+            document.getElementById('current-step').textContent = '0';
+            
+            updateVisualizations();
+            updateMetrics();
+            updateDataTable();
+        }
+
+        // ==================== Initialization ====================
+        function init() {
+            populatePresets();
+            
+            document.getElementById('speed-slider').addEventListener('input', (e) => {
+                document.getElementById('speed-value').textContent = e.target.value + 'ms';
+            });
+            
+            updateOperatorParams();
+            
+            const preset = PRESETS['fibonacci'];
+            document.getElementById('recurrence-expr').value = preset.expression;
+            document.getElementById('initial-terms').value = preset.initial.join(', ');
+            document.getElementById('num-steps').value = preset.steps;
+            compileAndRun();
+            
+            // Close modal on click outside
+            document.getElementById('operator-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'operator-modal') {
+                    closeOperatorMapping();
+                }
+            });
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
