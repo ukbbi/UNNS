@@ -209,17 +209,22 @@
     font-weight: 500;
   }
   
+  input[type="text"],
   input[type="number"] {
     background: rgba(14, 17, 32, 0.6);
     color: var(--ink);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 10px 14px;
-    width: 120px;
     transition: all 0.3s ease;
     font-family: 'Courier New', monospace;
   }
   
+  input[type="number"] {
+    width: 120px;
+  }
+  
+  input[type="text"]:focus,
   input[type="number"]:focus {
     outline: none;
     border-color: var(--accent);
@@ -345,7 +350,28 @@
   
   .hidden { display: none; }
   
-  /* Modal */
+  .sparkline-container {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(14, 17, 32, 0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .sparkline-title {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  
+  .sparkline {
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+    background: rgba(10, 14, 26, 0.6);
+  }
+  
   .modal {
     display: none;
     position: fixed;
@@ -421,28 +447,6 @@
   .full-width {
     grid-column: 1 / -1;
   }
-  
-  .sparkline-container {
-    margin-top: 16px;
-    padding: 16px;
-    background: rgba(14, 17, 32, 0.4);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  
-  .sparkline-title {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-  
-  .sparkline {
-    width: 100%;
-    height: 100px;
-    border-radius: 8px;
-    background: rgba(10, 14, 26, 0.6);
-  }
 </style>
 </head>
 <body>
@@ -462,12 +466,18 @@
   </div>
 
   <div class="grid">
-    <!-- Controls -->
     <section class="card">
       <h2>Inputs</h2>
       <div class="body">
-        <!-- Quadratic controls -->
         <div id="ctrl-quad">
+          <div class="row">
+            <label for="eqInput" style="min-width: 60px;">Equation:</label>
+            <input id="eqInput" type="text" style="width: 280px; font-family: 'Courier New', monospace;" placeholder="e.g., x^2 + 4x + 5 = 0">
+            <button class="btn secondary" id="parseBtn" style="padding: 10px 16px;">Parse</button>
+          </div>
+          <div class="row" style="justify-content: center; color: var(--muted); font-size: 0.85rem;">
+            <span>— or enter coefficients directly —</span>
+          </div>
           <div class="row">
             <label for="a">a</label><input id="a" type="number" step="any" value="1">
             <label for="b">b</label><input id="b" type="number" step="any" value="4">
@@ -489,7 +499,6 @@
           </div>
         </div>
 
-        <!-- Oscillator controls -->
         <div id="ctrl-osc" class="hidden">
           <div class="row">
             <label>ω</label><input id="omega" type="number" step="any" value="1.0">
@@ -507,14 +516,12 @@
           </div>
           <div class="note">Rotation-dilation: s = [x, v/ω] with ρ = e^(-ζωh)</div>
           
-          <!-- Sparkline for Oscillator -->
           <div class="sparkline-container">
             <div class="sparkline-title">📈 Displacement x(t) over time</div>
             <canvas class="sparkline" id="sparkOsc" width="500" height="100"></canvas>
           </div>
         </div>
 
-        <!-- Phasor controls -->
         <div id="ctrl-phasor" class="hidden">
           <div class="row">
             <label>θ</label><input id="theta" type="number" step="any" value="0.314159">
@@ -531,7 +538,6 @@
           </div>
           <div class="note">Real recursion for Fourier mode: [y, q] rotation by θ</div>
           
-          <!-- Sparkline for Phasor -->
           <div class="sparkline-container">
             <div class="sparkline-title">📈 Cosine component y(n) over steps</div>
             <canvas class="sparkline" id="sparkPh" width="500" height="100"></canvas>
@@ -540,7 +546,6 @@
       </div>
     </section>
 
-    <!-- Output -->
     <section class="card">
       <h2>Results</h2>
       <div class="body out">
@@ -549,7 +554,6 @@
       </div>
     </section>
 
-    <!-- Canvas -->
     <section class="card full-width">
       <h2>Visualization</h2>
       <div class="body">
@@ -562,7 +566,6 @@
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal" id="refModal">
   <div class="modal-content">
     <span class="close-modal" onclick="closeModal()">&times;</span>
@@ -591,7 +594,7 @@
   const summaryEl = $('summary'), detailsEl = $('details');
 
   const ctrlQuad = $('ctrl-quad'), ctrlOsc = $('ctrl-osc'), ctrlPh = $('ctrl-phasor');
-  const aEl=$('a'), bEl=$('b'), cEl=$('c');
+  const aEl=$('a'), bEl=$('b'), cEl=$('c'), eqInputEl=$('eqInput'), parseBtn=$('parseBtn');
   const solveBtn=$('solveBtn'), animateBtn=$('animateBtn'), resetBtn=$('resetBtn');
   const omegaEl=$('omega'), zetaEl=$('zeta'), stepHEl=$('stepH');
   const x0El=$('x0'), v0El=$('v0');
@@ -599,11 +602,9 @@
   const thetaEl=$('theta'), rhoPhEl=$('rhoPh'), y0El=$('y0'), q0El=$('q0');
   const phRun=$('phRun'), phStep=$('phStep'), phReset=$('phReset');
 
-  // Sparkline canvases
   const sparkOsc = $('sparkOsc'), ctxOsc = sparkOsc ? sparkOsc.getContext('2d') : null;
   const sparkPh = $('sparkPh'), ctxPh = sparkPh ? sparkPh.getContext('2d') : null;
   
-  // Data buffers for sparklines
   const maxPoints = 200;
   let oscData = [];
   let phData = [];
@@ -633,6 +634,65 @@
     ctrlPh.classList.toggle('hidden', mode !== 'phasor');
     summaryEl.innerHTML = 'Ready.';
     detailsEl.textContent = '';
+  }
+
+  function parseEquation() {
+    let eq = eqInputEl.value.trim();
+    
+    if (!eq) {
+      summaryEl.innerHTML = '<span class="bad">Please enter an equation.</span>';
+      return;
+    }
+    
+    eq = eq.replace(/\s+/g, '').toLowerCase();
+    eq = eq.replace(/=0$/, '');
+    eq = eq.replace(/\*\*/g, '^');
+    
+    let a = 0, b = 0, c = 0;
+    
+    try {
+      const terms = eq.match(/[+-]?[^+-]+/g) || [];
+      
+      for (let term of terms) {
+        term = term.trim();
+        
+        if (term.includes('x^2') || term.includes('x²')) {
+          let coef = term.replace(/x\^?2|x²/g, '').trim();
+          if (coef === '' || coef === '+') coef = '1';
+          if (coef === '-') coef = '-1';
+          a += parseFloat(coef);
+        }
+        else if (term.includes('x') && !term.includes('^')) {
+          let coef = term.replace(/x/g, '').trim();
+          if (coef === '' || coef === '+') coef = '1';
+          if (coef === '-') coef = '-1';
+          b += parseFloat(coef);
+        }
+        else if (term && !term.includes('x')) {
+          c += parseFloat(term);
+        }
+      }
+      
+      if (isNaN(a) || isNaN(b) || isNaN(c)) {
+        throw new Error('Invalid equation format');
+      }
+      
+      if (a === 0) {
+        summaryEl.innerHTML = '<span class="warn">Not a quadratic equation (a = 0).</span>';
+        return;
+      }
+      
+      aEl.value = a;
+      bEl.value = b;
+      cEl.value = c;
+      
+      summaryEl.innerHTML = '<span class="ok">Equation parsed successfully!</span>';
+      detailsEl.textContent = `Extracted coefficients:\na = ${a}\nb = ${b}\nc = ${c}`;
+      
+    } catch (error) {
+      summaryEl.innerHTML = '<span class="bad">Could not parse equation. Use format like: x^2 + 4x + 5 = 0</span>';
+      detailsEl.textContent = `Examples:\nx^2 + 4x + 5 = 0\n2x^2 - 3x + 1 = 0\nx^2 + 5 = 0\n-x^2 + 2x = 0`;
+    }
   }
 
   function solveQuad() {
@@ -682,7 +742,7 @@
     updateOscParams();
     stateOsc.X = parseFloat(x0El.value);
     stateOsc.U = parseFloat(v0El.value) / stateOsc.omega;
-    oscData = []; // Clear sparkline data
+    oscData = [];
     drawSparkline(ctxOsc, sparkOsc, oscData, '#2dd4bf');
     summaryEl.innerHTML = 'Oscillator reset.';
     detailsEl.textContent = `State: s = [X, U] where U = v/ω\nρ = ${stateOsc.rho.toFixed(6)}, θ = ${stateOsc.theta_d.toFixed(6)}`;
@@ -694,7 +754,6 @@
     const Un = ρ * (-s * stateOsc.X + c * stateOsc.U);
     stateOsc.X = Xn; stateOsc.U = Un;
     
-    // Update sparkline data
     oscData.push(Xn);
     if (oscData.length > maxPoints) oscData.shift();
     drawSparkline(ctxOsc, sparkOsc, oscData, '#2dd4bf');
@@ -705,7 +764,7 @@
     statePh.rho = parseFloat(rhoPhEl.value);
     statePh.y = parseFloat(y0El.value);
     statePh.q = parseFloat(q0El.value);
-    phData = []; // Clear sparkline data
+    phData = [];
     drawSparkline(ctxPh, sparkPh, phData, '#6ae3ff');
     summaryEl.innerHTML = 'Phasor reset.';
     detailsEl.textContent = `θ = ${statePh.theta.toFixed(6)}, ρ = ${statePh.rho.toFixed(6)}\nState: [y, q]`;
@@ -717,7 +776,6 @@
     const qn = ρ * (-s * statePh.y + c * statePh.q);
     statePh.y = yn; statePh.q = qn;
     
-    // Update sparkline data
     phData.push(yn);
     if (phData.length > maxPoints) phData.shift();
     drawSparkline(ctxPh, sparkPh, phData, '#6ae3ff');
@@ -734,12 +792,10 @@
     
     if (data.length < 2) return;
     
-    // Calculate min/max for scaling
     const minVal = Math.min(...data);
     const maxVal = Math.max(...data);
-    const range = maxVal - minVal || 1; // Avoid division by zero
+    const range = maxVal - minVal || 1;
     
-    // Draw zero line if it's in range
     if (minVal <= 0 && maxVal >= 0) {
       const zeroY = padding + (H - 2 * padding) * (1 - (0 - minVal) / range);
       ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
@@ -752,7 +808,6 @@
       ctx.setLineDash([]);
     }
     
-    // Draw the sparkline
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.shadowColor = color;
@@ -773,7 +828,6 @@
     ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // Draw gradient fill
     ctx.globalAlpha = 0.15;
     const gradient = ctx.createLinearGradient(0, 0, 0, H);
     gradient.addColorStop(0, color);
@@ -785,7 +839,6 @@
     ctx.fill();
     ctx.globalAlpha = 1.0;
     
-    // Draw current value indicator
     if (data.length > 0) {
       const lastVal = data[data.length - 1];
       const lastX = ((data.length - 1) / (maxPoints - 1)) * W;
@@ -828,7 +881,6 @@
     drawAxes(X, Y, W, H);
 
     if (mode === 'quad') {
-      // Draw center
       ctx.fillStyle = '#f59e0b';
       ctx.shadowColor = '#f59e0b';
       ctx.shadowBlur = 15;
@@ -849,7 +901,6 @@
         ctx.shadowBlur = 0;
       } else if (stateQuad.disc < 0) {
         const r = stateQuad.radius;
-        // Orbit
         ctx.strokeStyle = 'rgba(106, 227, 255, 0.6)';
         ctx.lineWidth = 2;
         ctx.shadowColor = '#6ae3ff';
@@ -859,7 +910,6 @@
         ctx.stroke();
         ctx.shadowBlur = 0;
         
-        // Echo vector
         const theta = t;
         const vx = r * Math.cos(theta), vy = r * Math.sin(theta);
         ctx.strokeStyle = '#2dd4bf';
@@ -881,14 +931,12 @@
       const vx = stateOsc.X, vy = stateOsc.U;
       const r = Math.hypot(vx, vy);
       
-      // Orbit trail
       ctx.strokeStyle = 'rgba(106, 227, 255, 0.25)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(X(0), Y(0), r * scale, 0, Math.PI * 2);
       ctx.stroke();
       
-      // Vector
       ctx.strokeStyle = '#2dd4bf';
       ctx.lineWidth = 4;
       ctx.shadowColor = '#2dd4bf';
@@ -956,10 +1004,16 @@
   };
   resetBtn.onclick = () => {
     aEl.value = 1; bEl.value = 4; cEl.value = 5;
+    eqInputEl.value = '';
     anim = false; t = 0;
     animateBtn.textContent = 'Animate Echo';
     solveQuad(); draw();
   };
+  
+  parseBtn.onclick = () => parseEquation();
+  eqInputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') parseEquation();
+  });
 
   ['input', 'change'].forEach(ev => {
     omegaEl.addEventListener(ev, () => { updateOscParams(); draw(); });
@@ -1003,7 +1057,6 @@
   solveQuad(); updateOscParams(); resetOsc(); resetPh(); draw();
 })();
 
-// Modal functions
 function openModal() {
   document.getElementById('refModal').classList.add('show');
 }
