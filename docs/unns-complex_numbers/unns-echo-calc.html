@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>UNNS Echo Calculator – Real Rotation Echoes Without Complex Numbers</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --card: #161b2e;
+    --card-hover: #1a2035;
+    --ink: #e8ecff;
+    --muted: #9aa3c7;
+    --accent: #6ae3ff;
+    --accent-glow: rgba(106, 227, 255, 0.3);
+    --good: #2dd4bf;
+    --warn: #f59e0b;
+    --bad: #fb7185;
+    --axis: #64748b;
+    --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  * { box-sizing: border-box; }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+  
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 50%, rgba(106, 227, 255, 0.08), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(251, 113, 133, 0.08), transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.08), transparent 50%);
+    animation: gradientShift 15s ease infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  @keyframes gradientShift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(5%, 5%) rotate(120deg); }
+    66% { transform: translate(-5%, 5%) rotate(240deg); }
+  }
+  
+  header {
+    position: relative;
+    padding: 48px 24px 36px;
+    text-align: center;
+    z-index: 1;
+  }
+  
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #6ae3ff 0%, #a78bfa 50%, #fb7185 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer {
+    0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+    50% { filter: brightness(1.2) hue-rotate(10deg); }
+  }
+  
+  header p {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  
+  .ref-btn {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: rgba(106, 227, 255, 0.1);
+    border: 1px solid rgba(106, 227, 255, 0.3);
+    border-radius: 20px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .ref-btn:hover {
+    background: rgba(106, 227, 255, 0.2);
+    box-shadow: 0 0 20px rgba(106, 227, 255, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  .wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .tabs {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  
+  .tab {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(22, 27, 46, 0.6);
+    backdrop-filter: blur(10px);
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .tab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(102, 227, 255, 0.2), rgba(167, 139, 250, 0.2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .tab:hover::before {
+    opacity: 1;
+  }
+  
+  .tab.active {
+    background: linear-gradient(135deg, #2b86ff, #6ae3ff);
+    color: #001527;
+    border: none;
+    box-shadow: 0 4px 20px rgba(106, 227, 255, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  
+  @media (max-width: 1024px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  
+  .card {
+    background: rgba(22, 27, 46, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .card:hover {
+    border-color: rgba(106, 227, 255, 0.3);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  .card h2 {
+    margin: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 1.2rem;
+    color: #cfe0ff;
+    font-weight: 700;
+  }
+  
+  .card .body {
+    padding: 24px;
+  }
+  
+  .row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 16px 0;
+  }
+  
+  label {
+    font-size: 0.95rem;
+    color: var(--muted);
+    min-width: 24px;
+    font-weight: 500;
+  }
+  
+  input[type="number"] {
+    background: rgba(14, 17, 32, 0.6);
+    color: var(--ink);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    width: 120px;
+    transition: all 0.3s ease;
+    font-family: 'Courier New', monospace;
+  }
+  
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(106, 227, 255, 0.1);
+  }
+  
+  .btn {
+    background: linear-gradient(135deg, #2b86ff, #6ae3ff);
+    color: #001827;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+  
+  .btn:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(106, 227, 255, 0.4);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn.secondary {
+    background: rgba(35, 41, 74, 0.8);
+    color: var(--ink);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .btn.secondary:hover {
+    background: rgba(45, 51, 84, 0.9);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  .pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(22, 27, 46, 0.5);
+    color: var(--muted);
+    margin: 4px;
+  }
+  
+  canvas {
+    width: 100%;
+    height: 500px;
+    border-radius: 12px;
+    background: radial-gradient(circle at 30% 30%, rgba(106, 227, 255, 0.05), transparent 70%);
+  }
+  
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  
+  .key {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+  
+  .k-center { background: var(--warn); }
+  .k-orbit { background: var(--accent); }
+  .k-echo { background: var(--good); }
+  .k-axis { background: var(--axis); }
+  
+  .note {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  .ok { color: var(--good); font-weight: 600; }
+  .bad { color: var(--bad); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  
+  .out pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: rgba(14, 17, 32, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  .hidden { display: none; }
+  
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .modal.show { display: flex; align-items: center; justify-content: center; }
+  
+  .modal-content {
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.4s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  @keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .modal-content h3 {
+    margin: 0 0 20px 0;
+    color: var(--accent);
+    font-size: 1.5rem;
+  }
+  
+  .modal-content a {
+    display: block;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 10px;
+    background: rgba(106, 227, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .modal-content a:hover {
+    background: rgba(106, 227, 255, 0.2);
+    transform: translateX(8px);
+  }
+  
+  .close-modal {
+    float: right;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--muted);
+    transition: color 0.3s ease;
+  }
+  
+  .close-modal:hover {
+    color: var(--bad);
+  }
+  
+  .full-width {
+    grid-column: 1 / -1;
+  }
+  
+  .sparkline-container {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(14, 17, 32, 0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .sparkline-title {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  
+  .sparkline {
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+    background: rgba(10, 14, 26, 0.6);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>UNNS Echo Calculator</h1>
+  <p>Real Rotation Echoes Without Complex Numbers</p>
+  <p style="font-size: 0.9rem; margin-top: 8px;">Quadratic Solutions • Oscillator Dynamics • Fourier Phasors</p>
+  <button class="ref-btn" onclick="openModal()">📚 View Reference Papers</button>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-mode="quad">Quadratic Solver</div>
+    <div class="tab" data-mode="osc">Oscillator</div>
+    <div class="tab" data-mode="phasor">Fourier Phasor</div>
+  </div>
+
+  <div class="grid">
+    <!-- Controls -->
+    <section class="card">
+      <h2>Inputs</h2>
+      <div class="body">
+        <!-- Quadratic controls -->
+        <div id="ctrl-quad">
+          <div class="row">
+            <label for="a">a</label><input id="a" type="number" step="any" value="1">
+            <label for="b">b</label><input id="b" type="number" step="any" value="4">
+            <label for="c">c</label><input id="c" type="number" step="any" value="5">
+          </div>
+          <div class="row">
+            <span class="pill">ax² + bx + c = 0</span>
+          </div>
+          <div class="row">
+            <button class="btn" id="solveBtn">Solve</button>
+            <button class="btn secondary" id="animateBtn">Animate Echo</button>
+            <button class="btn secondary" id="resetBtn">Reset</button>
+          </div>
+          <div class="legend">
+            <div class="key"><span class="dot k-axis"></span><span>Axes</span></div>
+            <div class="key"><span class="dot k-center"></span><span>Center</span></div>
+            <div class="key"><span class="dot k-orbit"></span><span>Echo Orbit</span></div>
+            <div class="key"><span class="dot k-echo"></span><span>Echo Vector</span></div>
+          </div>
+        </div>
+
+        <!-- Oscillator controls -->
+        <div id="ctrl-osc" class="hidden">
+          <div class="row">
+            <label>ω</label><input id="omega" type="number" step="any" value="1.0">
+            <label>ζ</label><input id="zeta" type="number" step="any" value="0.05">
+            <label>h</label><input id="stepH" type="number" step="any" value="0.1">
+          </div>
+          <div class="row">
+            <label>x₀</label><input id="x0" type="number" step="any" value="1.0">
+            <label>v₀</label><input id="v0" type="number" step="any" value="0.0">
+          </div>
+          <div class="row">
+            <button class="btn" id="oscRun">Run / Animate</button>
+            <button class="btn secondary" id="oscStep">Step</button>
+            <button class="btn secondary" id="oscReset">Reset</button>
+          </div>
+          <div class="note">Rotation-dilation: s = [x, v/ω] with ρ = e^(-ζωh)</div>
+          
+          <!-- Sparkline for Oscillator -->
+          <div class="sparkline-container">
+            <div class="sparkline-title">📈 Displacement x(t) over time</div>
+            <canvas class="sparkline" id="sparkOsc" width="500" height="100"></canvas>
+          </div>
+        </div>
+
+        <!-- Phasor controls -->
+        <div id="ctrl-phasor" class="hidden">
+          <div class="row">
+            <label>θ</label><input id="theta" type="number" step="any" value="0.314159">
+            <label>ρ</label><input id="rhoPh" type="number" step="any" value="1.0">
+          </div>
+          <div class="row">
+            <label>y₀</label><input id="y0" type="number" step="any" value="1.0">
+            <label>q₀</label><input id="q0" type="number" step="any" value="0.0">
+          </div>
+          <div class="row">
+            <button class="btn" id="phRun">Run / Animate</button>
+            <button class="btn secondary" id="phStep">Step</button>
+            <button class="btn secondary" id="phReset">Reset</button>
+          </div>
+          <div class="note">Real recursion for Fourier mode: [y, q] rotation by θ</div>
+          
+          <!-- Sparkline for Phasor -->
+          <div class="sparkline-container">
+            <div class="sparkline-title">📈 Cosine component y(n) over steps</div>
+            <canvas class="sparkline" id="sparkPh" width="500" height="100"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Output -->
+    <section class="card">
+      <h2>Results</h2>
+      <div class="body out">
+        <div id="summary" class="note">Select a mode and solve.</div>
+        <pre id="details"></pre>
+      </div>
+    </section>
+
+    <!-- Canvas -->
+    <section class="card full-width">
+      <h2>Visualization</h2>
+      <div class="body">
+        <canvas id="viz" width="1200" height="500"></canvas>
+        <div class="note" style="margin-top: 16px;" id="vizNote">
+          Visualizing real 2D rotation echoes as an alternative to complex numbers.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="refModal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeModal()">&times;</span>
+    <h3>📚 Reference Papers</h3>
+    <p style="color: var(--muted); margin-bottom: 20px;">Learn more about the UNNS substrate and real rotation echoes:</p>
+    <a href="https://ukbbi.github.io/UNNS/docs/unns-complex_numbers/Complex Numbers in the UNNS Substrate.pdf" target="_blank">
+      📄 Complex Numbers in the UNNS Substrate
+    </a>
+    <a href="https://ukbbi.github.io/UNNS/docs/unns-complex_numbers/Quadratic Roots Without Complex Numbers via UNNS Echo Cycles.pdf" target="_blank">
+      📄 Quadratic Roots Without Complex Numbers
+    </a>
+    <a href="https://ukbbi.github.io/UNNS/docs/unns-complex_numbers/A Concrete_Applied Example.pdf" target="_blank">
+      📄 A Concrete Applied Example
+    </a>
+    <a href="https://ukbbi.github.io/UNNS/docs/unns-complex_numbers/The UNNS Calculator Exploring Recursion Geometry and Dynamicstex.pdf" target="_blank">
+      📄 The UNNS Calculator: Exploring Recursion, Geometry, and Dynamics
+    </a>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const tabs = document.querySelectorAll('.tab');
+  const canvas = $('viz'), ctx = canvas.getContext('2d');
+  const summaryEl = $('summary'), detailsEl = $('details');
+
+  const ctrlQuad = $('ctrl-quad'), ctrlOsc = $('ctrl-osc'), ctrlPh = $('ctrl-phasor');
+  const aEl=$('a'), bEl=$('b'), cEl=$('c');
+  const solveBtn=$('solveBtn'), animateBtn=$('animateBtn'), resetBtn=$('resetBtn');
+  const omegaEl=$('omega'), zetaEl=$('zeta'), stepHEl=$('stepH');
+  const x0El=$('x0'), v0El=$('v0');
+  const oscRun=$('oscRun'), oscStep=$('oscStep'), oscReset=$('oscReset');
+  const thetaEl=$('theta'), rhoPhEl=$('rhoPh'), y0El=$('y0'), q0El=$('q0');
+  const phRun=$('phRun'), phStep=$('phStep'), phReset=$('phReset');
+
+  // Sparkline canvases
+  const sparkOsc = $('sparkOsc'), ctxOsc = sparkOsc ? sparkOsc.getContext('2d') : null;
+  const sparkPh = $('sparkPh'), ctxPh = sparkPh ? sparkPh.getContext('2d') : null;
+  
+  // Data buffers for sparklines
+  const maxPoints = 200;
+  let oscData = [];
+  let phData = [];
+
+  let mode = 'quad';
+  let anim = false;
+  let t = 0;
+
+  const stateQuad = { a:1,b:4,c:5, disc:0, center:0, radius:0, roots:[] };
+  const stateOsc = { omega:1.0,zeta:0.05,h:0.1, rho:0.995, theta_d:0.1, X:1.0, U:0.0 };
+  const statePh = { theta:0.314159, rho:1.0, y:1.0, q:0.0 };
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      mode = tab.getAttribute('data-mode');
+      switchPanels();
+      anim = false;
+      draw();
+    });
+  });
+
+  function switchPanels() {
+    ctrlQuad.classList.toggle('hidden', mode !== 'quad');
+    ctrlOsc.classList.toggle('hidden', mode !== 'osc');
+    ctrlPh.classList.toggle('hidden', mode !== 'phasor');
+    summaryEl.innerHTML = 'Ready.';
+    detailsEl.textContent = '';
+  }
+
+  function solveQuad() {
+    const a = parseFloat(aEl.value), b = parseFloat(bEl.value), c = parseFloat(cEl.value);
+    if (!isFinite(a) || a === 0 || !isFinite(b) || !isFinite(c)) {
+      summaryEl.innerHTML = '<span class="bad">Invalid coefficients.</span>';
+      return;
+    }
+    const disc = b * b - 4 * a * c;
+    const center = -b / (2 * a);
+    stateQuad.a = a; stateQuad.b = b; stateQuad.c = c;
+    stateQuad.disc = disc; stateQuad.center = center;
+
+    let s = `Quadratic: ${a}x² + ${b}x + ${c} = 0\nΔ = ${disc.toFixed(4)}\nCenter: ${center.toFixed(4)}\n\n`;
+
+    if (disc > 0) {
+      const r1 = (-b + Math.sqrt(disc)) / (2 * a);
+      const r2 = (-b - Math.sqrt(disc)) / (2 * a);
+      stateQuad.radius = 0; stateQuad.roots = [r1, r2];
+      summaryEl.innerHTML = '<span class="ok">Two real roots (no echo needed)</span>';
+      s += `x₁ = ${r1.toFixed(6)}\nx₂ = ${r2.toFixed(6)}`;
+    } else if (disc === 0) {
+      const r = -b / (2 * a);
+      stateQuad.radius = 0; stateQuad.roots = [r, r];
+      summaryEl.innerHTML = '<span class="ok">Repeated real root</span>';
+      s += `x = ${r.toFixed(6)}`;
+    } else {
+      const radius = Math.sqrt((4 * a * c - b * b) / (4 * a * a));
+      stateQuad.radius = radius; stateQuad.roots = [];
+      summaryEl.innerHTML = '<span class="warn">Δ < 0 → UNNS echo (real 2D rotation)</span>';
+      s += `Echo radius: ${radius.toFixed(6)}\n\nClassical: x = ${center.toFixed(4)} ± ${radius.toFixed(4)}i\nUNNS: x = center ± ⟨r·R(θ)⟩\n\n(Rotation echo in ℝ² instead of imaginary unit)`;
+    }
+    detailsEl.textContent = s;
+  }
+
+  function updateOscParams() {
+    const ω = parseFloat(omegaEl.value), ζ = parseFloat(zetaEl.value), h = parseFloat(stepHEl.value);
+    if (!isFinite(ω) || ω <= 0 || !isFinite(ζ) || ζ < 0 || !isFinite(h) || h <= 0) return false;
+    const rho = Math.exp(-ζ * ω * h);
+    const θd = ω * Math.sqrt(Math.max(0, 1 - ζ * ζ)) * h;
+    stateOsc.omega = ω; stateOsc.zeta = ζ; stateOsc.h = h;
+    stateOsc.rho = rho; stateOsc.theta_d = θd;
+    return true;
+  }
+
+  function resetOsc() {
+    updateOscParams();
+    stateOsc.X = parseFloat(x0El.value);
+    stateOsc.U = parseFloat(v0El.value) / stateOsc.omega;
+    oscData = []; // Clear sparkline data
+    drawSparkline(ctxOsc, sparkOsc, oscData, '#2dd4bf');
+    summaryEl.innerHTML = 'Oscillator reset.';
+    detailsEl.textContent = `State: s = [X, U] where U = v/ω\nρ = ${stateOsc.rho.toFixed(6)}, θ = ${stateOsc.theta_d.toFixed(6)}`;
+  }
+
+  function stepOsc() {
+    const c = Math.cos(stateOsc.theta_d), s = Math.sin(stateOsc.theta_d), ρ = stateOsc.rho;
+    const Xn = ρ * (c * stateOsc.X + s * stateOsc.U);
+    const Un = ρ * (-s * stateOsc.X + c * stateOsc.U);
+    stateOsc.X = Xn; stateOsc.U = Un;
+    
+    // Update sparkline data
+    oscData.push(Xn);
+    if (oscData.length > maxPoints) oscData.shift();
+    drawSparkline(ctxOsc, sparkOsc, oscData, '#2dd4bf');
+  }
+
+  function resetPh() {
+    statePh.theta = parseFloat(thetaEl.value);
+    statePh.rho = parseFloat(rhoPhEl.value);
+    statePh.y = parseFloat(y0El.value);
+    statePh.q = parseFloat(q0El.value);
+    phData = []; // Clear sparkline data
+    drawSparkline(ctxPh, sparkPh, phData, '#6ae3ff');
+    summaryEl.innerHTML = 'Phasor reset.';
+    detailsEl.textContent = `θ = ${statePh.theta.toFixed(6)}, ρ = ${statePh.rho.toFixed(6)}\nState: [y, q]`;
+  }
+
+  function stepPh() {
+    const c = Math.cos(statePh.theta), s = Math.sin(statePh.theta), ρ = statePh.rho;
+    const yn = ρ * (c * statePh.y + s * statePh.q);
+    const qn = ρ * (-s * statePh.y + c * statePh.q);
+    statePh.y = yn; statePh.q = qn;
+    
+    // Update sparkline data
+    phData.push(yn);
+    if (phData.length > maxPoints) phData.shift();
+    drawSparkline(ctxPh, sparkPh, phData, '#6ae3ff');
+  }
+
+  function drawSparkline(ctx, canvas, data, color) {
+    if (!ctx || !canvas) return;
+    
+    const W = canvas.width;
+    const H = canvas.height;
+    const padding = 10;
+    
+    ctx.clearRect(0, 0, W, H);
+    
+    if (data.length < 2) return;
+    
+    // Calculate min/max for scaling
+    const minVal = Math.min(...data);
+    const maxVal = Math.max(...data);
+    const range = maxVal - minVal || 1; // Avoid division by zero
+    
+    // Draw zero line if it's in range
+    if (minVal <= 0 && maxVal >= 0) {
+      const zeroY = padding + (H - 2 * padding) * (1 - (0 - minVal) / range);
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, zeroY);
+      ctx.lineTo(W, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    
+    // Draw the sparkline
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    
+    data.forEach((val, i) => {
+      const x = (i / (maxPoints - 1)) * W;
+      const y = padding + (H - 2 * padding) * (1 - (val - minVal) / range);
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // Draw gradient fill
+    ctx.globalAlpha = 0.15;
+    const gradient = ctx.createLinearGradient(0, 0, 0, H);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = gradient;
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+    
+    // Draw current value indicator
+    if (data.length > 0) {
+      const lastVal = data[data.length - 1];
+      const lastX = ((data.length - 1) / (maxPoints - 1)) * W;
+      const lastY = padding + (H - 2 * padding) * (1 - (lastVal - minVal) / range);
+      
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawAxes(X, Y, W, H) {
+    ctx.strokeStyle = 'rgba(100, 116, 139, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, Y(0)); ctx.lineTo(W, Y(0));
+    ctx.moveTo(X(0), 0); ctx.lineTo(X(0), H);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(154, 163, 199, 0.6)';
+    ctx.font = '11px Inter, sans-serif';
+    for (let k = -5; k <= 5; k++) {
+      if (k === 0) continue;
+      const tx = X(k);
+      ctx.fillText(k.toString(), tx - 4, Y(0) + 16);
+    }
+  }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const ox = W * 0.5, oy = H * 0.55, scale = 100;
+    const X = x => ox + x * scale;
+    const Y = y => oy - y * scale;
+
+    drawAxes(X, Y, W, H);
+
+    if (mode === 'quad') {
+      // Draw center
+      ctx.fillStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(X(stateQuad.center), Y(0), 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (stateQuad.disc >= 0 && stateQuad.roots.length) {
+        ctx.fillStyle = '#2dd4bf';
+        ctx.shadowColor = '#2dd4bf';
+        ctx.shadowBlur = 15;
+        stateQuad.roots.forEach(r => {
+          ctx.beginPath();
+          ctx.arc(X(r), Y(0), 7, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.shadowBlur = 0;
+      } else if (stateQuad.disc < 0) {
+        const r = stateQuad.radius;
+        // Orbit
+        ctx.strokeStyle = 'rgba(106, 227, 255, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#6ae3ff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(X(stateQuad.center), Y(0), r * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Echo vector
+        const theta = t;
+        const vx = r * Math.cos(theta), vy = r * Math.sin(theta);
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#2dd4bf';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(X(stateQuad.center), Y(0));
+        ctx.lineTo(X(stateQuad.center + vx), Y(vy));
+        ctx.stroke();
+        
+        ctx.fillStyle = '#2dd4bf';
+        ctx.beginPath();
+        ctx.arc(X(stateQuad.center + vx), Y(vy), 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    } else if (mode === 'osc') {
+      const vx = stateOsc.X, vy = stateOsc.U;
+      const r = Math.hypot(vx, vy);
+      
+      // Orbit trail
+      ctx.strokeStyle = 'rgba(106, 227, 255, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(X(0), Y(0), r * scale, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Vector
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#2dd4bf';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.moveTo(X(0), Y(0));
+      ctx.lineTo(X(vx), Y(vy));
+      ctx.stroke();
+      
+      ctx.fillStyle = '#2dd4bf';
+      ctx.beginPath();
+      ctx.arc(X(vx), Y(vy), 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (mode === 'phasor') {
+      const vx = statePh.y, vy = statePh.q;
+      const r = Math.hypot(vx, vy);
+      
+      ctx.strokeStyle = 'rgba(106, 227, 255, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(X(0), Y(0), r * scale, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#2dd4bf';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.moveTo(X(0), Y(0));
+      ctx.lineTo(X(vx), Y(vy));
+      ctx.stroke();
+      
+      ctx.fillStyle = '#2dd4bf';
+      ctx.beginPath();
+      ctx.arc(X(vx), Y(vy), 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function loop() {
+    if (anim) {
+      if (mode === 'quad' && stateQuad.disc < 0) {
+        t += 0.025;
+      } else if (mode === 'osc') {
+        stepOsc();
+      } else if (mode === 'phasor') {
+        stepPh();
+      }
+      draw();
+      requestAnimationFrame(loop);
+    }
+  }
+
+  solveBtn.onclick = () => { anim = false; t = Math.PI / 2; solveQuad(); draw(); };
+  animateBtn.onclick = () => {
+    if (stateQuad.disc < 0) {
+      anim = !anim;
+      animateBtn.textContent = anim ? 'Pause' : 'Animate Echo';
+      if (anim) requestAnimationFrame(loop);
+    } else {
+      summaryEl.innerHTML = '<span class="note">Echo animation only when Δ < 0</span>';
+    }
+  };
+  resetBtn.onclick = () => {
+    aEl.value = 1; bEl.value = 4; cEl.value = 5;
+    anim = false; t = 0;
+    animateBtn.textContent = 'Animate Echo';
+    solveQuad(); draw();
+  };
+
+  ['input', 'change'].forEach(ev => {
+    omegaEl.addEventListener(ev, () => { updateOscParams(); draw(); });
+    zetaEl.addEventListener(ev, () => { updateOscParams(); draw(); });
+    stepHEl.addEventListener(ev, () => { updateOscParams(); draw(); });
+  });
+
+  oscRun.onclick = () => {
+    if (!updateOscParams()) {
+      summaryEl.innerHTML = '<span class="bad">Check ω, ζ, h</span>';
+      return;
+    }
+    if (stateOsc.X === undefined) resetOsc();
+    anim = !anim;
+    oscRun.textContent = anim ? 'Pause' : 'Run / Animate';
+    if (anim) requestAnimationFrame(loop);
+  };
+  oscStep.onclick = () => {
+    if (updateOscParams()) {
+      if (stateOsc.X === undefined) resetOsc();
+      stepOsc(); draw();
+    }
+  };
+  oscReset.onclick = () => { resetOsc(); draw(); };
+
+  ['input', 'change'].forEach(ev => {
+    thetaEl.addEventListener(ev, () => { statePh.theta = parseFloat(thetaEl.value); draw(); });
+    rhoPhEl.addEventListener(ev, () => { statePh.rho = parseFloat(rhoPhEl.value); draw(); });
+    y0El.addEventListener(ev, () => { statePh.y = parseFloat(y0El.value); draw(); });
+    q0El.addEventListener(ev, () => { statePh.q = parseFloat(q0El.value); draw(); });
+  });
+
+  phRun.onclick = () => {
+    anim = !anim;
+    phRun.textContent = anim ? 'Pause' : 'Run / Animate';
+    if (anim) requestAnimationFrame(loop);
+  };
+  phStep.onclick = () => { stepPh(); draw(); };
+  phReset.onclick = () => { resetPh(); draw(); };
+
+  solveQuad(); updateOscParams(); resetOsc(); resetPh(); draw();
+})();
+
+// Modal functions
+function openModal() {
+  document.getElementById('refModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('refModal').classList.remove('show');
+}
+
+window.onclick = function(event) {
+  const modal = document.getElementById('refModal');
+  if (event.target === modal) {
+    closeModal();
+  }
+};
+</script>
+</body>
+</html>
