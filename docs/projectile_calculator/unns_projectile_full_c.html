@@ -196,11 +196,11 @@
   </header>
 
   <!-- Tabs -->
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('single')">Single Shot</div>
-    <div class="tab" onclick="switchTab('compare')">Side-by-Side</div>
-    <div class="tab" onclick="switchTab('optimizer')">Angle Optimizer</div>
-    <div class="tab" onclick="switchTab('fan')">Fan View (Multi-Shot)</div>
+  <div class="tabs" role="tablist" aria-label="Calculator modes">
+    <div class="tab active" role="tab" aria-selected="true" aria-controls="tab-single" onclick="switchTab('single')">Single Shot</div>
+    <div class="tab" role="tab" aria-selected="false" aria-controls="tab-compare" onclick="switchTab('compare')">Side-by-Side</div>
+    <div class="tab" role="tab" aria-selected="false" aria-controls="tab-optimizer" onclick="switchTab('optimizer')">Angle Optimizer</div>
+    <div class="tab" role="tab" aria-selected="false" aria-controls="tab-fan" onclick="switchTab('fan')">Fan View (Multi-Shot)</div>
   </div>
 
   <!-- Tab: Single Shot -->
@@ -315,7 +315,7 @@
       <p style="color:var(--muted)">Direct side-by-side comparison with shared parameters</p>
       
       <div style="margin:20px 0">
-        <button class="btn" onclick="computeCompare()">Compare Trajectories</button>
+        <button class="btn" onclick="computeCompare()" aria-label="Compare classical and UNNS trajectories">Compare Trajectories</button>
       </div>
       
       <canvas id="cvCompare" width="1200" height="500"></canvas>
@@ -412,27 +412,34 @@
   
   // Tab switching
   window.switchTab = (tab) => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     event.target.classList.add('active');
+    event.target.setAttribute('aria-selected', 'true');
     $('tab-' + tab).classList.add('active');
   };
   
   // Presets with environment-scaled UNNS parameters
   window.applyPreset = (preset) => {
     const gEarth = 9.80665;
+    const dt = 0.01; // timestep in seconds
     
-    // Environment scaling functions
+    // Environment scaling functions - TIME-NORMALIZED
     const scaleAlpha = (alphaEarth, g) => {
-      // α' = 1 - (1-α) * (g/g_earth)
-      // Less gravity → less damping per step to maintain constant damping per second
-      return 1 - (1 - alphaEarth) * (g / gEarth);
+      // α_step = exp(ln(α_Earth) × (g/g_E) × dt)
+      // This ensures cumulative damping per second remains constant across environments
+      // After 1 second (100 steps): α_step^100 = α_Earth^(g/g_E)
+      const dampingPerSecond = Math.log(alphaEarth) * (g / gEarth);
+      return Math.exp(dampingPerSecond * dt);
     };
     
     const scaleDelta = (deltaEarth, g) => {
-      // δ' = δ * (g_earth/g)
-      // Less gravity → higher drift coefficient to maintain constant drift per second
-      return deltaEarth * (gEarth / g);
+      // δ' = δ × sqrt(g_earth/g)
+      // Nonlinear scaling reduces drift accumulation in long-duration flights
+      return deltaEarth * Math.sqrt(gEarth / g);
     };
     
     const presets = {
@@ -588,7 +595,8 @@
         const xi = x1 + lam * (x2 - x1);
         return {path, energies, impact: {t: t1 + lam*(t2-t1), x: xi, ymax, tmax}};
       }
-      if(Math.abs(x) > 1e6 || Math.abs(y) > 1e6) break;
+      // Edge case guards
+      if(Math.abs(x) > 1e6 || Math.abs(y) > 1e6 || y > 1e5) break;
     }
     return {path, energies, impact: null};
   }
@@ -638,7 +646,8 @@
         const xi = x1 + lam * (x2 - x1);
         return {path, energies, impact: {t: t1 + lam*(t2-t1), x: xi, ymax, tmax}};
       }
-      if(Math.abs(x) > 1e6 || Math.abs(y) > 1e6) break;
+      // Edge case guards - protect against infinite flight if drift cancels gravity
+      if(Math.abs(x) > 1e6 || Math.abs(y) > 1e6 || y > 1e5) break;
     }
     return {path, energies, impact: null};
   }
