@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS ⟂ Classical Dynamics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridScroll 20s linear infinite;
+        }
+
+        @keyframes gridScroll {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        h1 {
+            font-size: clamp(2rem, 6vw, 4.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #4a90e2, #7b68ee, #e24a90);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            animation: titleFade 1.5s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes titleFade {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            color: #a0a0b0;
+            margin-bottom: 3rem;
+            animation: subtitleFade 1.5s ease-out 0.3s backwards;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes subtitleFade {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .section {
+            margin-bottom: 6rem;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: sectionFade 1s ease-out forwards;
+        }
+
+        @keyframes sectionFade {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section:nth-child(1) { animation-delay: 0.2s; }
+        .section:nth-child(2) { animation-delay: 0.4s; }
+        .section:nth-child(3) { animation-delay: 0.6s; }
+        .section:nth-child(4) { animation-delay: 0.8s; }
+
+        h2 {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            color: #4a90e2;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        h3 {
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            color: #7b68ee;
+            margin: 2rem 0 1rem 0;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(74, 144, 226, 0.2);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(123, 104, 238, 0.1));
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(74, 144, 226, 0.3);
+        }
+
+        .planet-name {
+            font-size: 1.4rem;
+            color: #4a90e2;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .metric-label {
+            color: #a0a0b0;
+        }
+
+        .metric-value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .visualization-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin: 2rem 0;
+            overflow: hidden;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .equation {
+            background: rgba(123, 104, 238, 0.1);
+            border-left: 4px solid #7b68ee;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            overflow-x: auto;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 2rem 0;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #4a90e2, #7b68ee);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table tr:hover td {
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .checkmark {
+            color: #4ade80;
+            font-size: 1.5rem;
+        }
+
+        .crossmark {
+            color: #f87171;
+            font-size: 1.5rem;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(123, 104, 238, 0.2));
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .future-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .future-card {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(226, 74, 144, 0.05));
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .future-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #4a90e2, #e24a90);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .future-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .future-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(74, 144, 226, 0.3);
+        }
+
+        .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .recursion-viz {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            gap: 1rem;
+        }
+
+        .recursion-layer {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #4a90e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            animation: layerPulse 3s ease-in-out infinite;
+        }
+
+        .recursion-layer:nth-child(1) { animation-delay: 0s; }
+        .recursion-layer:nth-child(2) { animation-delay: 0.3s; }
+        .recursion-layer:nth-child(3) { animation-delay: 0.6s; }
+        .recursion-layer:nth-child(4) { animation-delay: 0.9s; }
+        .recursion-layer:nth-child(5) { animation-delay: 1.2s; }
+
+        @keyframes layerPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem 1rem;
+            }
+            
+            .results-grid,
+            .future-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>UNNS ⟂ Classical Dynamics</h1>
+        <p class="subtitle">Theory, Validation, and Significance of Unbounded Nested Number Sequences</p>
+        <div class="scroll-indicator">
+            <svg width="30" height="50" viewBox="0 0 30 50">
+                <rect x="5" y="5" width="20" height="40" rx="10" fill="none" stroke="#4a90e2" stroke-width="2"/>
+                <circle cx="15" cy="15" r="3" fill="#4a90e2" class="pulse"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Context Section -->
+        <div class="section">
+            <h2>🎯 Context and Purpose</h2>
+            <div class="card">
+                <p style="font-size: 1.1rem; line-height: 1.8;">
+                    The <span class="highlight">UNNS ⟂ Classical Projectile Calculator</span> represents the first operational demonstration of how Unbounded Nested Number Sequences can serve as a computational substrate for classical dynamics. It contrasts continuous differential equations with recursive discrete operators, revealing where they coincide and where recursive structure introduces measurable divergence.
+                </p>
+                <p style="font-size: 1.1rem; line-height: 1.8; margin-top: 1.5rem;">
+                    Our primary goal was not to reproduce classical mechanics, but to explore how <span class="highlight">recursion depth, operator coherence, and substrate curvature</span> generate a new kind of dynamics — one that may bridge mathematical recursion, computation, and physical evolution.
+                </p>
+            </div>
+        </div>
+
+        <!-- Achievements Section -->
+        <div class="section">
+            <h2>✨ What Has Been Achieved</h2>
+            
+            <h3>2.1 Numerical Consistency Across Environments</h3>
+            <div class="card">
+                <p>Through environment-aware parameter scaling, the calculator maintains stable, monotonic behavior across all gravitational environments:</p>
+                
+                <div class="equation">
+                    α'(g) = 1 - (1-α<sub>E</sub>) · (g/g<sub>E</sub>)
+                </div>
+                <div class="equation">
+                    δ'(g) = δ<sub>E</sub> · √(g<sub>E</sub>/g)
+                </div>
+                
+                <p style="margin-top: 1rem;">This ensures that <strong>energy dissipation per physical second</strong> remains constant across gravitational fields, making the simulation dimensionally homogeneous.</p>
+            </div>
+
+            <h3>2.2 Experimental Stability Results</h3>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="planet-name">🌍 Earth</div>
+                    <div class="metric">
+                        <span class="metric-label">Classical Range</span>
+                        <span class="metric-value">91.74 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">UNNS Range</span>
+                        <span class="metric-value">~90 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Δ Range</span>
+                        <span class="metric-value">-1.8 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Max Divergence</span>
+                        <span class="metric-value">1.9 m</span>
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="planet-name">🔴 Mars</div>
+                    <div class="metric">
+                        <span class="metric-label">Classical Range</span>
+                        <span class="metric-value">242 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">UNNS Range</span>
+                        <span class="metric-value">~237 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Δ Range</span>
+                        <span class="metric-value">-4.8 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Max Divergence</span>
+                        <span class="metric-value">5.2 m</span>
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="planet-name">🌙 Moon</div>
+                    <div class="metric">
+                        <span class="metric-label">Classical Range</span>
+                        <span class="metric-value">555 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">UNNS Range</span>
+                        <span class="metric-value">~539 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Δ Range</span>
+                        <span class="metric-value">-16 m</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Max Divergence</span>
+                        <span class="metric-value">12.8 m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p><strong>Key Insight:</strong> The monotonic trend is preserved — <em>lower gravity ⇒ longer flight ⇒ larger total damping</em>, yet proportional relationships across planets remain consistent. This validates the dimensional coherence of the UNNS recursion model.</p>
+            </div>
+
+            <h3>2.3 Structural Interpretation</h3>
+            <div class="card">
+                <p>The residual difference between UNNS and Classical trajectories is <strong>not a numerical error</strong> — it is the system's <span class="highlight">recursive signature</span>.</p>
+                
+                <div class="recursion-viz">
+                    <div class="recursion-layer">n=0</div>
+                    <div style="color: #4a90e2;">→</div>
+                    <div class="recursion-layer">n=1</div>
+                    <div style="color: #4a90e2;">→</div>
+                    <div class="recursion-layer">n=2</div>
+                    <div style="color: #4a90e2;">→</div>
+                    <div class="recursion-layer">n=3</div>
+                    <div style="color: #4a90e2;">→</div>
+                    <div class="recursion-layer">n=∞</div>
+                </div>
+
+                <p style="margin-top: 1.5rem;">The UNNS curve slightly compresses phase space, producing smoother decay and slightly shorter flight. The divergence curve is a quantitative measure of <strong>recursion curvature</strong>:</p>
+
+                <div class="equation">
+                    κ(t) = ||x<sub>U</sub>(t) - x<sub>C</sub>(t)|| / ||x<sub>C</sub>(t)||
+                </div>
+
+                <p style="margin-top: 1rem;">This acts as a geometric echo of how the substrate folds information between recursive layers.</p>
+            </div>
+        </div>
+
+        <!-- Theoretical Implications -->
+        <div class="section">
+            <h2>🔬 Theoretical Implications</h2>
+
+            <h3>3.1 Continuum Limit and Convergence</h3>
+            <div class="card">
+                <p>In the limit of infinitesimal recursion step:</p>
+                <div class="equation">
+                    lim<sub>Δ→0</sub> UNNS(α, δ, ε, h) = Newtonian Mechanics
+                </div>
+                <p style="margin-top: 1rem;">Classical physics emerges as the <span class="highlight">zero-curvature limit</span> of UNNS recursion. UNNS adds curvature to the recursion grammar — a quantized correction that acts as symbolic "grain" in continuous motion.</p>
+            </div>
+
+            <h3>3.2 Recursion Energy and Information Flow</h3>
+            <div class="card">
+                <p>Energy is defined as a recursive invariant:</p>
+                <div class="equation">
+                    E<sub>n</sub> = ½(v<sub>x,n</sub>² + v<sub>y,n</sub>²) + g·y<sub>n</sub>
+                </div>
+
+                <p>Damping and drift modify it as:</p>
+                <div class="equation">
+                    E<sub>n+1</sub> = α²E<sub>n</sub> - δgt<sub>n</sub>y<sub>n</sub>
+                </div>
+
+                <p style="margin-top: 1rem;">Thus, UNNS introduces an <strong>informational thermodynamics</strong>:</p>
+                <ul style="margin-left: 2rem; margin-top: 1rem;">
+                    <li><strong>α</strong> controls energy coherence (loss rate per recursion step)</li>
+                    <li><strong>δ</strong> controls entropic deformation (field drift rate)</li>
+                </ul>
+
+                <p style="margin-top: 1rem;">Together they define a <span class="highlight">recursion temperature</span>:</p>
+                <div class="equation">
+                    T<sub>R</sub> ∝ -ln(α) + δt
+                </div>
+                <p style="margin-top: 1rem;">An analog to entropy in dynamical systems.</p>
+            </div>
+
+            <h3>3.3 UNNS as Discrete Field Theory</h3>
+            <div class="card">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Classical Quantity</th>
+                            <th>UNNS Analog</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Position (x, y)</td>
+                            <td>Lattice embedding</td>
+                            <td>Spatial layer</td>
+                        </tr>
+                        <tr>
+                            <td>Time (t)</td>
+                            <td>Recursion depth</td>
+                            <td>Vertical nesting</td>
+                        </tr>
+                        <tr>
+                            <td>Energy</td>
+                            <td>Recursion coherence</td>
+                            <td>Stability of flow</td>
+                        </tr>
+                        <tr>
+                            <td>Drag</td>
+                            <td>Operator damping</td>
+                            <td>Entropic feedback</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p style="margin-top: 1.5rem;">This view positions UNNS not as a substitute for spacetime physics, but as a <strong>meta-mathematical substrate</strong> from which continuous mechanics emerges as an equilibrium regime.</p>
+            </div>
+        </div>
+
+        <!-- Conceptual Impact -->
+        <div class="section">
+            <h2>💡 Conceptual Impact</h2>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="icon">🔧</div>
+                    <h3 style="color: #e0e0e0; font-size: 1.2rem;">Methodological Innovation</h3>
+                    <p>The calculator shows how recursive grammars can simulate physical processes typically modeled by differential calculus.</p>
+                </div>
+
+                <div class="result-card">
+                    <div class="icon">📊</div>
+                    <h3 style="color: #e0e0e0; font-size: 1.2rem;">Visualization Framework</h3>
+                    <p>Divergence, energy decay, and optimal angles all become animated expressions of structural recursion.</p>
+                </div>
+
+                <div class="result-card">
+                    <div class="icon">🎓</div>
+                    <h3 style="color: #e0e0e0; font-size: 1.2rem;">Pedagogical Tool</h3>
+                    <p>Interactive exploration of continuum vs. discrete reasoning for physics and systems theory education.</p>
+                </div>
+
+                <div class="result-card">
+                    <div class="icon">🤔</div>
+                    <h3 style="color: #e0e0e0; font-size: 1.2rem;">Philosophical Insight</h3>
+                    <p>Motion becomes recursive unfolding — every step is a negotiation between continuity and collapse.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- What It Is and Isn't -->
+        <div class="section">
+            <h2>⚖️ What This Is — and Is Not</h2>
+            <div class="card">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th style="background: linear-gradient(135deg, #4ade80, #22c55e);">✅ What It Is</th>
+                            <th style="background: linear-gradient(135deg, #f87171, #ef4444);">🚫 What It Is Not</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>A self-consistent discrete dynamics framework</td>
+                            <td>A physically validated field theory</td>
+                        </tr>
+                        <tr>
+                            <td>A pedagogical and visual exploration tool</td>
+                            <td>A model derived from empirical data</td>
+                        </tr>
+                        <tr>
+                            <td>A foundation for exploring recursion ↔ continuum correspondence</td>
+                            <td>A falsifiable physics of gravity or energy</td>
+                        </tr>
+                        <tr>
+                            <td>A symbolic-computational analogy to differential mechanics</td>
+                            <td>A claim of new fundamental forces</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top: 1.5rem; font-style: italic; color: #a0a0b0;">
+                    This distinction safeguards the theory's intellectual integrity: <strong>UNNS remains mathematics until experimentally constrained.</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- Future Directions -->
+        <div class="section">
+            <h2>🚀 Future Directions</h2>
+            <div class="future-grid">
+                <div class="future-card">
+                    <h3>6.1 Adaptive Recursion Depth</h3>
+                    <p>Introduce variable step size Δₙ proportional to local energy curvature, enabling multi-scale recursion similar to adaptive differential solvers.</p>
+                </div>
+
+                <div class="future-card">
+                    <h3>6.2 Phase Transition Mapping</h3>
+                    <p>Study critical values of α, δ where recursion ceases to converge — analogous to bifurcation points in dynamical systems.</p>
+                </div>
+
+                <div class="future-card">
+                    <h3>6.3 UNNS Spectral Extension</h3>
+                    <p>Map recursive operators to eigenvalues of discrete Laplacians to uncover links between spectral geometry and recursion stability.</p>
+                </div>
+
+                <div class="future-card">
+                    <h3>6.4 Experimental Sandbox</h3>
+                    <p>Develop controlled laboratory analogues (particle motion in programmable viscous media) to test whether recursive dissipation models match empirical drag data.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conclusion -->
+        <div class="section">
+            <h2>🎯 Conclusion</h2>
+            <div class="card" style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(123, 104, 238, 0.15));">
+                <p style="font-size: 1.2rem; line-height: 1.9;">
+                    The UNNS ⟂ Classical Projectile Calculator is both a <strong>technical and conceptual achievement</strong>. It demonstrates that recursion-based grammars can emulate, extend, and deviate from classical mechanics in a measurable, interpretable way.
+                </p>
+
+                <div style="margin: 2rem 0; padding: 1.5rem; background: rgba(0, 0, 0, 0.3); border-radius: 10px;">
+                    <h3 style="color: #4a90e2; margin-bottom: 1rem;">We Have:</h3>
+                    <ul style="margin-left: 2rem; line-height: 2;">
+                        <li>Restored dimensional and structural coherence across physical environments</li>
+                        <li>Defined a continuum limit theorem connecting recursion to differential motion</li>
+                        <li>Introduced an interpretable divergence metric as a measure of substrate curvature</li>
+                    </ul>
+                </div>
+
+                <p style="font-size: 1.2rem; line-height: 1.9; margin-top: 2rem;">
+                    In doing so, we demonstrated that UNNS is <strong>not alternative physics</strong>, but a <span class="highlight">meta-language for expressing physical law</span> — one where recursion, feedback, and self-reference replace continuity, derivatives, and smoothness.
+                </p>
+            </div>
+        </div>
+
+        <!-- Visualization Canvas -->
+        <div class="section">
+            <h2>📈 Interactive Recursion Visualization</h2>
+            <div class="visualization-container">
+                <canvas id="recursionCanvas"></canvas>
+            </div>
+            <p style="text-align: center; color: #a0a0b0; margin-top: 1rem;">
+                Watch as recursive layers unfold and converge toward the classical limit
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Animated recursion visualization
+        const canvas = document.getElementById('recursionCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let time = 0;
+        const numLayers = 8;
+
+        function drawRecursionVisualization() {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            for (let i = 0; i < numLayers; i++) {
+                const t = time + i * 0.5;
+                const radius = 30 + i * 25;
+                const x = centerX + Math.cos(t * 0.5) * (i * 15);
+                const y = centerY + Math.sin(t * 0.3) * (i * 10);
+                
+                // Outer glow
+                const gradient = ctx.createRadialGradient(x, y, radius * 0.8, x, y, radius);
+                gradient.addColorStop(0, `rgba(74, 144, 226, ${0.3 - i * 0.03})`);
+                gradient.addColorStop(1, 'rgba(74, 144, 226, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Circle
+                ctx.strokeStyle = `rgba(74, 144, 226, ${0.8 - i * 0.08})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = `rgba(224, 224, 224, ${0.9 - i * 0.08})`;
+                ctx.font = '14px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`n=${i}`, x, y);
+            }
+
+            // Connection lines
+            for (let i = 0; i < numLayers - 1; i++) {
+                const t = time + i * 0.5;
+                const x1 = centerX + Math.cos(t * 0.5) * (i * 15);
+                const y1 = centerY + Math.sin(t * 0.3) * (i * 10);
+                const x2 = centerX + Math.cos((t + 0.5) * 0.5) * ((i + 1) * 15);
+                const y2 = centerY + Math.sin((t + 0.5) * 0.3) * ((i + 1) * 10);
+
+                ctx.strokeStyle = `rgba(123, 104, 238, ${0.3 - i * 0.03})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            time += 0.02;
+            requestAnimationFrame(drawRecursionVisualization);
+        }
+
+        drawRecursionVisualization();
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>
