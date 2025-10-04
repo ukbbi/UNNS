@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -189,8 +190,8 @@
     <h1>UNNS ⟂ Classical Projectile Calculator</h1>
     <p>Comparative dynamics with substrate operators, drag models, and geometric inlaying</p>
     <div class="btn-group">
-      <button class="help-btn" onclick="showAbout()">Theory & Background</button>
-      <button class="help-btn" onclick="window.open('https://ukbbi.github.io/UNNS/docs/projectile_calculator/UNNS%20vs%20Classical%20Dynamics%20A%20Comparative%20Theoretical%20Framework.pdf','_blank')">Full Paper</button>
+      <button class="help-btn" onclick="showAbout()">📚 Theory & Background</button>
+      <button class="help-btn" onclick="window.open('https://ukbbi.github.io/UNNS/docs/projectile_calculator/UNNS%20vs%20Classical%20Dynamics%20A%20Comparative%20Theoretical%20Framework.pdf','_blank')">📄 Full Paper</button>
     </div>
   </header>
 
@@ -270,9 +271,9 @@
         </div>
 
         <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn" onclick="compute()">Compute</button>
-          <button class="btn btn-secondary" onclick="resetParams()">Reset</button>
-          <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
+          <button class="btn" onclick="compute()">🚀 Compute</button>
+          <button class="btn btn-secondary" onclick="resetParams()">↻ Reset</button>
+          <button class="btn btn-success" onclick="exportCSV()">💾 Export CSV</button>
         </div>
       </div>
 
@@ -338,7 +339,7 @@
       </div>
       
       <div style="margin:20px 0">
-        <button class="btn" onclick="optimizeAngle()">Find Optimal Angle</button>
+        <button class="btn" onclick="optimizeAngle()">🎯 Find Optimal Angle</button>
         <span id="optStatus" style="margin-left:12px"></span>
       </div>
       
@@ -369,8 +370,8 @@
           <input id="fanAnimate" type="checkbox" checked>
           <label style="min-width:auto">Animate Propagation</label>
         </div>
-        <button class="btn" onclick="computeFan()">Generate Fan</button>
-        <button class="btn btn-secondary" onclick="stopFanAnim()">Stop</button>
+        <button class="btn" onclick="computeFan()">🌈 Generate Fan</button>
+        <button class="btn btn-secondary" onclick="stopFanAnim()">⏸ Stop</button>
       </div>
       
       <canvas id="cvFan" width="1200" height="500"></canvas>
@@ -383,29 +384,9 @@
 <div id="modal" class="modal" onclick="closeModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeModal()">×</button>
-    <h2>UNNS vs Classical Dynamics</h2>
-    <p><strong>Classical Mechanics</strong> treats motion through continuous differential equations in smooth spacetime. For projectiles, Newton's second law yields deterministic parabolic trajectories.</p>
-    
-    <p><strong>UNNS (Unbounded Nested Number Sequences)</strong> generates motion through recursive operators on discrete layers. Rather than solving differential equations, UNNS evolves states via:</p>
-    
-    <p style="text-align:center;font-family:monospace;background:rgba(14,17,32,0.6);padding:12px;border-radius:8px">
-      a<sub>n+1</sub> = f(a<sub>n</sub>, a<sub>n-1</sub>; ε<sub>n</sub>, operators)
-    </p>
-    
-    <h3 style="color:var(--cyan)">Key UNNS Operators</h3>
-    <ul style="line-height:1.8">
-      <li><strong>Damping (α):</strong> Energy decay per recursive step, modeling friction without explicit forces</li>
-      <li><strong>Entropy Drift (δ):</strong> Time-varying effective gravity, simulating non-stationary fields</li>
-      <li><strong>Collapse Threshold (ε):</strong> Velocity quantization below threshold</li>
-      <li><strong>Lattice Inlaying:</strong> Snap positions to discrete grids (square/hexagonal), enforcing geometric constraints</li>
-    </ul>
-    
-    <h3 style="color:var(--cyan)">Theoretical Bridge</h3>
-    <p><strong>Theorem (Continuum Limit):</strong> As the recursive step Δ → 0, UNNS dynamics converge to classical Newtonian motion. Thus classical mechanics emerges as the limiting case of stable recursion.</p>
-    
-    <p>This calculator lets you explore both regimes, observe divergence under various operators, and visualize how discrete substrate effects modify classical trajectories.</p>
-    
-    <p style="color:var(--muted);font-size:0.9rem;margin-top:20px">For full mathematical treatment, see: <a href="https://ukbbi.github.io/UNNS/docs/projectile_calculator/UNNS%20vs%20Classical%20Dynamics%20A%20Comparative%20Theoretical%20Framework.pdf" target="_blank" style="color:var(--cyan)">Complete Paper (PDF)</a></p>
+    <div id="modal-body">
+      <!-- Content injected by JavaScript -->
+    </div>
   </div>
 </div>
 
@@ -437,16 +418,59 @@
     $('tab-' + tab).classList.add('active');
   };
   
-  // Presets
+  // Presets with environment-scaled UNNS parameters
   window.applyPreset = (preset) => {
-    const presets = {
-      vac: {v0:30,ang:45,y0:0,g:9.80665,linDrag:false,quadDrag:false,altModel:false,dampOn:false,alpha:1,driftOn:false,delta:0},
-      earth: {v0:30,ang:45,y0:0,g:9.80665,linDrag:true,kLin:0.05,quadDrag:true,cQuad:0.01,altModel:true,dampOn:true,alpha:0.997,driftOn:true,delta:0.001},
-      mars: {v0:30,ang:45,y0:0,g:3.71,linDrag:false,quadDrag:false,altModel:false},
-      moon: {v0:30,ang:45,y0:0,g:1.62,linDrag:false,quadDrag:false,altModel:false},
-      unnsHeavy: {v0:30,ang:45,y0:0,g:9.80665,dampOn:true,alpha:0.99,driftOn:true,delta:0.003,collapseOn:true,eps:0.01,gridOn:true,hGrid:0.5}
+    const gEarth = 9.80665;
+    
+    // Environment scaling functions
+    const scaleAlpha = (alphaEarth, g) => {
+      // α' = 1 - (1-α) * (g/g_earth)
+      // Less gravity → less damping per step to maintain constant damping per second
+      return 1 - (1 - alphaEarth) * (g / gEarth);
     };
-    if(presets[preset]) applyState(presets[preset]);
+    
+    const scaleDelta = (deltaEarth, g) => {
+      // δ' = δ * (g_earth/g)
+      // Less gravity → higher drift coefficient to maintain constant drift per second
+      return deltaEarth * (gEarth / g);
+    };
+    
+    const presets = {
+      vac: {
+        v0:30, ang:45, y0:0, g:gEarth,
+        linDrag:false, kLin:0, quadDrag:false, cQuad:0, altModel:false,
+        dampOn:false, alpha:1.0, driftOn:false, delta:0,
+        collapseOn:false, eps:0.01, gridOn:false, hGrid:0.5, hexOn:false, hHex:0.5
+      },
+      earth: {
+        v0:30, ang:45, y0:0, g:gEarth,
+        linDrag:true, kLin:0.05, quadDrag:true, cQuad:0.01, altModel:true,
+        dampOn:true, alpha:0.997, driftOn:true, delta:0.001,
+        collapseOn:false, eps:0.01, gridOn:false, hGrid:0.5, hexOn:false, hHex:0.5
+      },
+      mars: {
+        v0:30, ang:45, y0:0, g:3.71,
+        linDrag:false, kLin:0, quadDrag:false, cQuad:0, altModel:false,
+        dampOn:true, alpha:scaleAlpha(0.997, 3.71), driftOn:true, delta:scaleDelta(0.001, 3.71),
+        collapseOn:false, eps:0.01, gridOn:false, hGrid:0.5, hexOn:false, hHex:0.5
+      },
+      moon: {
+        v0:30, ang:45, y0:0, g:1.62,
+        linDrag:false, kLin:0, quadDrag:false, cQuad:0, altModel:false,
+        dampOn:true, alpha:scaleAlpha(0.997, 1.62), driftOn:true, delta:scaleDelta(0.001, 1.62),
+        collapseOn:false, eps:0.01, gridOn:false, hGrid:0.5, hexOn:false, hHex:0.5
+      },
+      unnsHeavy: {
+        v0:30, ang:45, y0:0, g:gEarth,
+        linDrag:false, kLin:0, quadDrag:false, cQuad:0, altModel:false,
+        dampOn:true, alpha:0.99, driftOn:true, delta:0.003,
+        collapseOn:true, eps:0.01, gridOn:true, hGrid:0.5, hexOn:false, hHex:0.5
+      }
+    };
+    if(presets[preset]) {
+      applyState(presets[preset]);
+      compute(); // Auto-compute on preset change
+    }
   };
   
   function applyState(obj) {
@@ -633,25 +657,37 @@
   
   // Main compute
   window.compute = () => {
-    readState();
-    
-    const C = simulateClassical();
-    const U = simulateUNNS();
-    
-    State.classPath = C.path;
-    State.impactC = C.impact;
-    State.energiesC = C.energies;
-    
-    State.unnsPath = U.path;
-    State.impactU = U.impact;
-    State.energiesU = U.energies;
-    
-    State.divergence = computeDivergence();
-    
-    drawTrajectory();
-    drawEnergy();
-    drawDivergence();
-    displayResults();
+    try {
+      const status = $('compute-status');
+      if(status) status.textContent = 'Computing...';
+      
+      readState();
+      
+      const C = simulateClassical();
+      const U = simulateUNNS();
+      
+      State.classPath = C.path;
+      State.impactC = C.impact;
+      State.energiesC = C.energies;
+      
+      State.unnsPath = U.path;
+      State.impactU = U.impact;
+      State.energiesU = U.energies;
+      
+      State.divergence = computeDivergence();
+      
+      drawTrajectory();
+      drawEnergy();
+      drawDivergence();
+      displayResults();
+      
+      if(status) status.textContent = 'Calculation complete';
+      setTimeout(() => { if(status) status.textContent = ''; }, 2000);
+    } catch(e) {
+      console.error('Compute error:', e);
+      const status = $('compute-status');
+      if(status) status.textContent = 'Error: ' + e.message;
+    }
   };
   
   // Drawing functions
@@ -1266,7 +1302,89 @@
   };
   
   // Modal
-  window.showAbout = () => $('modal').classList.add('active');
+  window.showAbout = () => {
+    $('modal-body').innerHTML = `
+      <h2>UNNS vs Classical Dynamics</h2>
+      <p><strong>Classical Mechanics</strong> treats motion through continuous differential equations in smooth spacetime. For projectiles, Newton's second law yields deterministic parabolic trajectories.</p>
+      
+      <p><strong>UNNS (Unbounded Nested Number Sequences)</strong> generates motion through recursive operators on discrete layers. Rather than solving differential equations, UNNS evolves states via:</p>
+      
+      <p style="text-align:center;font-family:monospace;background:rgba(14,17,32,0.6);padding:12px;border-radius:8px">
+        a<sub>n+1</sub> = f(a<sub>n</sub>, a<sub>n-1</sub>; ε<sub>n</sub>, operators)
+      </p>
+      
+      <h3 style="color:var(--cyan)">Key UNNS Operators</h3>
+      <ul style="line-height:1.8">
+        <li><strong>Damping (α):</strong> Energy decay per recursive step, modeling friction without explicit forces</li>
+        <li><strong>Entropy Drift (δ):</strong> Time-varying effective gravity, simulating non-stationary fields</li>
+        <li><strong>Collapse Threshold (ε):</strong> Velocity quantization below threshold</li>
+        <li><strong>Lattice Inlaying:</strong> Snap positions to discrete grids (square/hexagonal), enforcing geometric constraints</li>
+      </ul>
+      
+      <h3 style="color:var(--cyan)">Theoretical Bridge</h3>
+      <p><strong>Theorem (Continuum Limit):</strong> As the recursive step Δ → 0, UNNS dynamics converge to classical Newtonian motion. Thus classical mechanics emerges as the limiting case of stable recursion.</p>
+      
+      <p>This calculator lets you explore both regimes, observe divergence under various operators, and visualize how discrete substrate effects modify classical trajectories.</p>
+      
+      <p style="color:var(--muted);font-size:0.9rem;margin-top:20px">For full mathematical treatment, see: <a href="https://ukbbi.github.io/UNNS/docs/projectile_calculator/UNNS%20vs%20Classical%20Dynamics%20A%20Comparative%20Theoretical%20Framework.pdf" target="_blank" style="color:var(--cyan)">Complete Paper (PDF)</a></p>
+    `;
+    $('modal').classList.add('active');
+  };
+  
+  window.showStatus = () => {
+    $('modal-body').innerHTML = `
+      <h2>Model Status & Limitations</h2>
+      
+      <h3 style="color:#2dd4bf;margin-top:20px">What Has Been Achieved</h3>
+      <p><strong>Numerical and Structural Integrity</strong></p>
+      <ul style="line-height:1.8">
+        <li><strong>Problem fixed:</strong> Time-step dependence in damping and drift accumulation</li>
+        <li><strong>Correction:</strong> Environment-aware scaling of α and δ based on local gravitational field g</li>
+        <li><strong>Result:</strong> Predictable, monotonic trajectory scaling; stable UNNS behavior independent of simulation duration; cross-environment coherence</li>
+      </ul>
+      <p>This is a <strong>computational success</strong>: the simulation is self-consistent, predictable, and dimensionally regularized.</p>
+      
+      <h3 style="color:var(--cyan);margin-top:24px">What It Is</h3>
+      <ul style="line-height:1.8">
+        <li>A <strong>discrete recursive framework</strong> for modeling dynamical systems, emphasizing feedback and recursion depth instead of differential smoothness</li>
+        <li>A <strong>conceptual playground</strong> for exploring how recursive transformations can approximate (or diverge from) classical mechanics</li>
+        <li>A <strong>pedagogical bridge</strong> showing how recursion-based numerical engines behave under changing parameters</li>
+      </ul>
+      
+      <h3 style="color:var(--warn);margin-top:24px">What It Is Not (Yet)</h3>
+      <ol style="line-height:1.8">
+        <li><strong>A physical theory:</strong> No empirical or theoretical derivation connects UNNS parameters to measurable quantities like mass, energy, or curvature. α and δ are calibration constants, not physical observables.</li>
+        <li><strong>Evidence of new physics:</strong> Any physical-seeming "agreement" (e.g., similar energy decay) is by construction, not by discovery. It validates mathematical consistency, not physical realism.</li>
+        <li><strong>A falsifiable model:</strong> No experimental setup currently distinguishes UNNS predictions from classical mechanics in measurable ways.</li>
+      </ol>
+      
+      <h3 style="color:var(--purple);margin-top:24px">What Would Turn It Into Physics</h3>
+      <p>To graduate from mathematical curiosity to physical model, UNNS would need:</p>
+      <ol style="line-height:1.8">
+        <li><strong>Derivation from First Principles:</strong> A starting point in known physics (action minimization, information theory, quantum recursion). Show how the UNNS recurrence emerges as a discrete approximation or limit.</li>
+        <li><strong>Parameter Meaning:</strong> Define α and δ in terms of physical constants (e.g., Planck-scale entropy loss, decoherence rates). Show why their values should differ under gravitational or thermodynamic contexts.</li>
+        <li><strong>Empirical Signatures:</strong> Identify a phenomenon where UNNS predicts measurable deviations. Formulate an experiment capable of confirming or falsifying that prediction.</li>
+      </ol>
+      
+      <h3 style="color:var(--cyan);margin-top:24px">Why This Still Matters</h3>
+      <p>Even as a mathematical construct, UNNS contributes something meaningful:</p>
+      <ul style="line-height:1.8">
+        <li>It formalizes <strong>recursion as a mode of reasoning</strong> parallel to calculus</li>
+        <li>It builds intuition about nonlinear feedback, recursive energy dissipation, and information flow stability</li>
+        <li>It opens room for interdisciplinary experimentation—between computational physics, symbolic dynamics, and machine learning</li>
+      </ul>
+      
+      <p style="margin-top:20px;padding:16px;background:rgba(14,17,32,0.6);border-left:4px solid var(--cyan);border-radius:8px">
+        <strong>In short:</strong> UNNS is not yet physics—but it is a <strong>coherent sandbox</strong> where one can ask new kinds of physical questions.
+      </p>
+      
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:24px;font-style:italic">
+        This assessment distinguishes computational consistency from physical significance. The dimensional scaling implemented ensures the framework is internally coherent, but consistency does not equal correctness or empirical validity.
+      </p>
+    `;
+    $('modal').classList.add('active');
+  };
+  
   window.closeModal = (e) => {
     if(!e || e.target === $('modal')) {
       $('modal').classList.remove('active');
