@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beyond Shannon: A Comprehensive Journey Through Information Geometry</title>
+    <title>Beyond Shannon: Information Geometry Showcase</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,13 +18,14 @@
             0%, 100% { filter: drop-shadow(0 0 5px currentColor); }
             50% { filter: drop-shadow(0 0 20px currentColor); }
         }
-        @keyframes rotate3d {
-            0% { transform: rotateY(0deg) rotateX(10deg); }
-            100% { transform: rotateY(360deg) rotateX(10deg); }
-        }
         .float-animation { animation: float 3s ease-in-out infinite; }
         .glow-animation { animation: pulse-glow 2s ease-in-out infinite; }
-        .scroll-smooth { scroll-behavior: smooth; }
+        svg, canvas {
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.15));
+        }
+        .energy-bar {
+            transition: opacity 0.2s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -67,10 +69,11 @@
             </svg>
         );
 
-        const ArrowRight = ({ size = 20 }) => (
+        const ExternalLink = ({ size = 16 }) => (
             <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
             </svg>
         );
 
@@ -79,10 +82,18 @@
             const [time, setTime] = useState(0);
             const [activeSection, setActiveSection] = useState('overview');
             const [showReferences, setShowReferences] = useState(false);
-            const [showModal, setShowModal] = useState(null);
+            const [showPhilosophy, setShowPhilosophy] = useState(false);
             const [particles, setParticles] = useState([]);
             const [kleinParticles, setKleinParticles] = useState([]);
             const [entanglementParticles, setEntanglementParticles] = useState([]);
+            const animationFrameRef = useRef();
+            const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+            useEffect(() => {
+                const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
 
             useEffect(() => {
                 const initParticles = Array.from({ length: 60 }, (_, i) => ({
@@ -116,31 +127,33 @@
             }, []);
 
             useEffect(() => {
-                if (!isPlaying) return;
+                const animate = () => {
+                    if (isPlaying) {
+                        setTime(prev => prev + 0.016);
+                        
+                        setParticles(prev => prev.map(p => ({
+                            ...p,
+                            x: (p.x + p.speed) % 100,
+                            y: 50 + Math.sin(p.phase + time * 2) * 15
+                        })));
 
-                const interval = setInterval(() => {
-                    setTime(t => t + 0.016);
+                        setKleinParticles(prev => prev.map(p => ({
+                            ...p,
+                            u: (p.u + p.speed) % (Math.PI * 2),
+                            v: (p.v + p.speed * 0.7) % (Math.PI * 2)
+                        })));
 
-                    setParticles(prev => prev.map(p => ({
-                        ...p,
-                        x: (p.x + p.speed) % 100,
-                        y: 50 + Math.sin(p.phase + time * 2) * 15
-                    })));
+                        setEntanglementParticles(prev => prev.map(p => ({
+                            ...p,
+                            angle: p.angle + 0.01,
+                            radius: 30 + 20 * Math.sin(time + p.phase)
+                        })));
+                    }
+                    animationFrameRef.current = requestAnimationFrame(animate);
+                };
 
-                    setKleinParticles(prev => prev.map(p => ({
-                        ...p,
-                        u: (p.u + p.speed) % (Math.PI * 2),
-                        v: (p.v + p.speed * 0.7) % (Math.PI * 2)
-                    })));
-
-                    setEntanglementParticles(prev => prev.map(p => ({
-                        ...p,
-                        angle: p.angle + 0.01,
-                        radius: 30 + 20 * Math.sin(time + p.phase)
-                    })));
-                }, 16);
-
-                return () => clearInterval(interval);
+                animationFrameRef.current = requestAnimationFrame(animate);
+                return () => cancelAnimationFrame(animationFrameRef.current);
             }, [isPlaying, time]);
 
             const kleinPoint = (u, v) => {
@@ -151,7 +164,8 @@
                 return { x, y, z };
             };
 
-            const project = (x, y, z, scale = 12) => {
+            const project = (x, y, z) => {
+                const scale = Math.min(dimensions.width, dimensions.height) / 80;
                 const rotY = time * 0.3;
                 const cosY = Math.cos(rotY);
                 const sinY = Math.sin(rotY);
@@ -172,6 +186,15 @@
                 { id: 'philosophy', name: 'Philosophy', icon: '💭' },
                 { id: 'applications', name: 'Applications', icon: '🚀' }
             ];
+
+            const sectionPapers = {
+                'overview': ['UNNS and Shannon Entropy.pdf'],
+                'comparison': ['Beyond Shannon Recursive Information and the Non-Orientable Geometry of Time.pdf', 'Reinterpreting Shannon Entropy under Recursive Temporal Geometry.pdf'],
+                'klein': ['Beyond Shannon Recursive Information and the Non-Orientable Geometry of Time.pdf'],
+                'entanglement': ['Entanglement Entropy and Non-Orientable Coupling in the UNNS Substrate.pdf'],
+                'philosophy': ['Beyond Shannon Recursive Information and the Non-Orientable Geometry of Time.pdf'],
+                'applications': ['UNNS and Shannon Entropy.pdf']
+            };
 
             const keyDifferences = [
                 {
@@ -282,6 +305,26 @@
                 { name: 'Visual Companion: Shannon Flow vs UNNS Curvature', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/Visual Companion Shannon Flow vs UNNS Curvature.pdf' }
             ];
 
+            const EnergyBar = ({ count = 10, colorFrom = 'cyan', colorTo = 'blue' }) => (
+                <div className="flex gap-1 mt-3">
+                    {Array.from({ length: count }).map((_, i) => {
+                        const active = Math.sin(time * 2 + i * 0.5) > 0;
+                        return (
+                            <div
+                                key={i}
+                                className={`h-2 w-4 rounded energy-bar bg-gradient-to-r from-${colorFrom}-500 to-${colorTo}-600`}
+                                style={{ opacity: active ? 1 : 0.2 }}
+                            />
+                        );
+                    })}
+                </div>
+            );
+
+            const getCurrentPapers = () => {
+                const papers = sectionPapers[activeSection] || [];
+                return papers.map(name => references.find(r => r.url.includes(name))).filter(Boolean);
+            };
+
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white">
                     {/* Header */}
@@ -293,7 +336,7 @@
                             <p className="text-gray-400 mb-4">A Comprehensive Exploration of Recursive Temporal Topology</p>
                             
                             {/* Controls */}
-                            <div className="flex gap-3 flex-wrap">
+                            <div className="flex gap-3 flex-wrap items-center">
                                 <button
                                     onClick={() => setIsPlaying(!isPlaying)}
                                     className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
@@ -313,7 +356,14 @@
                                     className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
                                 >
                                     <BookOpen size={18} />
-                                    References
+                                    All References
+                                </button>
+                                <button
+                                    onClick={() => setShowPhilosophy(true)}
+                                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
+                                >
+                                    <Info size={18} />
+                                    Philosophy of Information
                                 </button>
                             </div>
                         </div>
@@ -336,6 +386,25 @@
                                     </button>
                                 ))}
                             </div>
+                            
+                            {/* Related Papers for Current Section */}
+                            {getCurrentPapers().length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className="text-xs text-gray-500">Related papers:</span>
+                                    {getCurrentPapers().map((ref, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={ref.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs px-2 py-1 bg-purple-900/30 rounded border border-purple-500/30 hover:border-purple-500/60 transition-colors flex items-center gap-1"
+                                        >
+                                            <span className="truncate max-w-xs">{ref.name.split('.pdf')[0].substring(0, 40)}...</span>
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -397,6 +466,7 @@
                                             <div>• Maximized by uniform distribution</div>
                                             <div>• Units: bits (binary logarithm)</div>
                                         </div>
+                                        <EnergyBar colorFrom="cyan" colorTo="blue" />
                                     </div>
                                     <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl p-6 border border-purple-500/30">
                                         <h3 className="text-2xl font-bold text-purple-400 mb-4">UNNS Recursive Entropy</h3>
@@ -410,6 +480,7 @@
                                             <div>• Oscillates with recursive depth</div>
                                             <div>• Units: curvature × measure</div>
                                         </div>
+                                        <EnergyBar colorFrom="purple" colorTo="pink" />
                                     </div>
                                 </div>
                             </div>
@@ -431,26 +502,29 @@
                                                     </linearGradient>
                                                 </defs>
                                                 <line x1="0" y1="50%" x2="100%" y2="50%" stroke="url(#shannonGrad)" strokeWidth="2" opacity="0.3" />
-                                                {particles.map(p => (
-                                                    <g key={p.id}>
-                                                        <circle
-                                                            cx={`${p.x}%`}
-                                                            cy={`${p.y}%`}
-                                                            r="3"
-                                                            fill={`hsl(${180 + p.entropy * 60}, 100%, ${50 + Math.sin(time * 3 + p.phase) * 20}%)`}
-                                                            opacity="0.8"
-                                                        />
-                                                        <circle
-                                                            cx={`${p.x}%`}
-                                                            cy={`${p.y}%`}
-                                                            r="8"
-                                                            fill="none"
-                                                            stroke={`hsl(${180 + p.entropy * 60}, 100%, 60%)`}
-                                                            strokeWidth="0.5"
-                                                            opacity="0.3"
-                                                        />
-                                                    </g>
-                                                ))}
+                                                {particles.map(p => {
+                                                    const brightness = 50 + Math.sin(time * 3 + p.phase) * 20;
+                                                    return (
+                                                        <g key={p.id}>
+                                                            <circle
+                                                                cx={`${p.x}%`}
+                                                                cy={`${p.y}%`}
+                                                                r="3"
+                                                                fill={`hsl(${180 + p.entropy * 60}, 100%, ${brightness}%)`}
+                                                                opacity="0.8"
+                                                            />
+                                                            <circle
+                                                                cx={`${p.x}%`}
+                                                                cy={`${p.y}%`}
+                                                                r="8"
+                                                                fill="none"
+                                                                stroke={`hsl(${180 + p.entropy * 60}, 100%, 60%)`}
+                                                                strokeWidth="0.5"
+                                                                opacity="0.3"
+                                                            />
+                                                        </g>
+                                                    );
+                                                })}
                                                 <text x="5%" y="20%" fill="cyan" fontSize="14" fontWeight="bold">Source</text>
                                                 <text x="50%" y="85%" fill="cyan" fontSize="12" textAnchor="middle">Channel + Noise</text>
                                                 <text x="90%" y="20%" fill="cyan" fontSize="14" fontWeight="bold" textAnchor="end">Receiver</text>
@@ -470,6 +544,7 @@
                                                 <div><strong>Entropy Growth:</strong> Monotonic increase with time</div>
                                             </div>
                                         </div>
+                                        <EnergyBar colorFrom="cyan" colorTo="blue" />
                                     </div>
 
                                     {/* UNNS Visualization */}
@@ -529,6 +604,7 @@
                                                 <div><strong>Entropy Behavior:</strong> Oscillatory, bounded by topology</div>
                                             </div>
                                         </div>
+                                        <EnergyBar colorFrom="purple" colorTo="pink" />
                                     </div>
                                 </div>
 
@@ -624,10 +700,11 @@
                                                     const projected = project(pt3d.x, pt3d.y, pt3d.z);
                                                     const hue = 260 + (p.depth * 15) + Math.sin(time + p.phase) * 30;
                                                     const brightness = 50 + projected.depth * 2;
+                                                    const opacity = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(projected.depth / 5));
                                                     return (
                                                         <g key={p.id}>
-                                                            <circle cx={projected.x} cy={projected.y} r="2.5" fill={`hsl(${hue}, 100%, ${brightness}%)`} opacity="0.8" />
-                                                            <circle cx={projected.x} cy={projected.y} r="6" fill="none" stroke={`hsl(${hue}, 100%, ${brightness}%)`} strokeWidth="0.5" opacity="0.4" />
+                                                            <circle cx={projected.x} cy={projected.y} r="2.5" fill={`hsl(${hue}, 100%, ${brightness}%)`} opacity={opacity} />
+                                                            <circle cx={projected.x} cy={projected.y} r="6" fill="none" stroke={`hsl(${hue}, 100%, ${brightness}%)`} strokeWidth="0.5" opacity={opacity * 0.5} />
                                                         </g>
                                                     );
                                                 })}
@@ -675,6 +752,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <EnergyBar count={15} colorFrom="pink" colorTo="purple" />
                                 </div>
                             </div>
                         )}
@@ -826,6 +904,7 @@
                                             Klein surface, their futures remain coupled not through signals, but through shared topology."
                                         </p>
                                     </div>
+                                    <EnergyBar count={12} colorFrom="cyan" colorTo="purple" />
                                 </div>
                             </div>
                         )}
@@ -960,6 +1039,76 @@
                             </div>
                         )}
                     </div>
+
+                    {/* Philosophy of Information Modal */}
+                    {showPhilosophy && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-4xl w-full border border-purple-500/30 shadow-2xl max-h-[80vh] overflow-y-auto">
+                                <h3 className="text-3xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                                    The Philosophy of Information: Shannon → UNNS → Entanglement
+                                </h3>
+                                <div className="space-y-6 text-gray-300">
+                                    <div className="bg-slate-950/50 rounded-xl p-6 border-l-4 border-cyan-500">
+                                        <h4 className="text-xl font-bold text-cyan-400 mb-3">Shannon (1948): Information as Thermodynamics</h4>
+                                        <p className="leading-relaxed">
+                                            Shannon's revolution was recognizing information as a physical quantity obeying statistical laws. 
+                                            Entropy measures disorder; communication reduces uncertainty. But this framework assumes separability: 
+                                            the message exists independently of the medium, the observer stands apart from the system.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="bg-slate-950/50 rounded-xl p-6 border-l-4 border-purple-500">
+                                        <h4 className="text-xl font-bold text-purple-400 mb-3">UNNS (2025): Information as Geometry</h4>
+                                        <p className="leading-relaxed">
+                                            UNNS dissolves the observer-system boundary. Information is not carried by the substrate—it IS 
+                                            the substrate's recursive self-transformation. Time is not external but emerges as depth. 
+                                            The Klein topology reveals that what appears as irreversible loss is actually topological folding.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="bg-slate-950/50 rounded-xl p-6 border-l-4 border-pink-500">
+                                        <h4 className="text-xl font-bold text-pink-400 mb-3">Entanglement: Information as Unity</h4>
+                                        <p className="leading-relaxed">
+                                            Quantum entanglement becomes less mysterious when seen through UNNS: it's the natural consequence 
+                                            of two recursion paths sharing non-orientable topology. "Spooky action" is simply our misperception 
+                                            of separate entities when we're observing different aspects of a single topological structure.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-orange-900/20 to-purple-900/20 rounded-xl p-6 border border-orange-500/30 mt-6">
+                                        <h4 className="text-xl font-bold text-orange-400 mb-3">The Conceptual Evolution</h4>
+                                        <div className="space-y-3 text-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-cyan-400 font-mono">Shannon:</div>
+                                                <div>Information reduces uncertainty → Entropy increases → Time flows forward</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-purple-400 font-mono">UNNS:</div>
+                                                <div>Information IS transformation → Entropy oscillates → Time is recursion depth</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-pink-400 font-mono">Result:</div>
+                                                <div>Observer and observed are different recursion depths of one process</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 bg-slate-950/50 rounded-lg border border-purple-500/30 italic text-purple-200">
+                                        <p className="text-center text-lg">
+                                            "Entropy is not decay—it is awareness folded upon itself. The boundary between information 
+                                            and geometry vanishes when recursion replaces time."
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowPhilosophy(false)}
+                                    className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg hover:scale-105 transition-transform"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* References Modal */}
                     {showReferences && (
