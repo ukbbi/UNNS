@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond Shannon: A Comprehensive Journey Through Information Geometry</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 5px currentColor); }
+            50% { filter: drop-shadow(0 0 20px currentColor); }
+        }
+        @keyframes rotate3d {
+            0% { transform: rotateY(0deg) rotateX(10deg); }
+            100% { transform: rotateY(360deg) rotateX(10deg); }
+        }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        .glow-animation { animation: pulse-glow 2s ease-in-out infinite; }
+        .scroll-smooth { scroll-behavior: smooth; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Play = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+        );
+
+        const Pause = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        );
+
+        const RotateCcw = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+        );
+
+        const BookOpen = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+        );
+
+        const Info = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+        );
+
+        const ArrowRight = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        );
+
+        const ShannonUNNSShowcase = () => {
+            const [isPlaying, setIsPlaying] = useState(true);
+            const [time, setTime] = useState(0);
+            const [activeSection, setActiveSection] = useState('overview');
+            const [showReferences, setShowReferences] = useState(false);
+            const [showModal, setShowModal] = useState(null);
+            const [particles, setParticles] = useState([]);
+            const [kleinParticles, setKleinParticles] = useState([]);
+            const [entanglementParticles, setEntanglementParticles] = useState([]);
+
+            useEffect(() => {
+                const initParticles = Array.from({ length: 60 }, (_, i) => ({
+                    id: i,
+                    x: Math.random() * 100,
+                    y: 50,
+                    speed: 0.3 + Math.random() * 0.5,
+                    phase: Math.random() * Math.PI * 2,
+                    entropy: Math.random()
+                }));
+                setParticles(initParticles);
+
+                const initKlein = Array.from({ length: 100 }, (_, i) => ({
+                    id: i,
+                    u: Math.random() * Math.PI * 2,
+                    v: Math.random() * Math.PI * 2,
+                    speed: 0.02 + Math.random() * 0.03,
+                    phase: Math.random() * Math.PI * 2,
+                    depth: Math.floor(Math.random() * 10)
+                }));
+                setKleinParticles(initKlein);
+
+                const initEntanglement = Array.from({ length: 40 }, (_, i) => ({
+                    id: i,
+                    angle: (i / 40) * Math.PI * 2,
+                    radius: 30 + Math.random() * 20,
+                    partner: (i + 20) % 40,
+                    phase: Math.random() * Math.PI * 2
+                }));
+                setEntanglementParticles(initEntanglement);
+            }, []);
+
+            useEffect(() => {
+                if (!isPlaying) return;
+
+                const interval = setInterval(() => {
+                    setTime(t => t + 0.016);
+
+                    setParticles(prev => prev.map(p => ({
+                        ...p,
+                        x: (p.x + p.speed) % 100,
+                        y: 50 + Math.sin(p.phase + time * 2) * 15
+                    })));
+
+                    setKleinParticles(prev => prev.map(p => ({
+                        ...p,
+                        u: (p.u + p.speed) % (Math.PI * 2),
+                        v: (p.v + p.speed * 0.7) % (Math.PI * 2)
+                    })));
+
+                    setEntanglementParticles(prev => prev.map(p => ({
+                        ...p,
+                        angle: p.angle + 0.01,
+                        radius: 30 + 20 * Math.sin(time + p.phase)
+                    })));
+                }, 16);
+
+                return () => clearInterval(interval);
+            }, [isPlaying, time]);
+
+            const kleinPoint = (u, v) => {
+                const r = 4 * (1 - Math.cos(u) / 2);
+                const x = 6 * Math.cos(u) * (1 + Math.sin(u)) + r * Math.cos(v + Math.PI);
+                const y = 16 * Math.sin(u);
+                const z = r * Math.sin(v);
+                return { x, y, z };
+            };
+
+            const project = (x, y, z, scale = 12) => {
+                const rotY = time * 0.3;
+                const cosY = Math.cos(rotY);
+                const sinY = Math.sin(rotY);
+                const x1 = x * cosY - z * sinY;
+                const z1 = x * sinY + z * cosY;
+                return {
+                    x: 200 + x1 * scale,
+                    y: 200 - y * scale,
+                    depth: z1
+                };
+            };
+
+            const sections = [
+                { id: 'overview', name: 'Overview', icon: '🌌' },
+                { id: 'comparison', name: 'Shannon vs UNNS', icon: '⚖️' },
+                { id: 'klein', name: 'Klein Topology', icon: '∞' },
+                { id: 'entanglement', name: 'Entanglement', icon: '🔗' },
+                { id: 'philosophy', name: 'Philosophy', icon: '💭' },
+                { id: 'applications', name: 'Applications', icon: '🚀' }
+            ];
+
+            const keyDifferences = [
+                {
+                    aspect: 'Time',
+                    shannon: 'Independent parameter, linear flow',
+                    unns: 'Recursion depth n, self-referential',
+                    why: 'UNNS internalizes temporality as the substrate\'s own evolution structure'
+                },
+                {
+                    aspect: 'Entropy',
+                    shannon: 'H = -Σ pᵢ log pᵢ (uncertainty measure)',
+                    unns: 'Hᵣ = ∫ κ(n) dμ (geometric curvature)',
+                    why: 'Information becomes topological rather than statistical'
+                },
+                {
+                    aspect: 'Causality',
+                    shannon: 'External: source → channel → receiver',
+                    unns: 'Internal: aₙ₊₁ = F(aₙ, aₙ₋₁, n)',
+                    why: 'Self-generation replaces transmission as fundamental process'
+                },
+                {
+                    aspect: 'Reversibility',
+                    shannon: 'Unidirectional (orientable)',
+                    unns: 'F⁻¹ exists (non-orientable globally)',
+                    why: 'Klein topology permits local reversal without global orientation'
+                },
+                {
+                    aspect: 'Noise',
+                    shannon: 'External perturbation to signal',
+                    unns: 'Recursive interference from depth coupling',
+                    why: 'Disturbance emerges from self-interaction, not environment'
+                },
+                {
+                    aspect: 'Information',
+                    shannon: 'Discrete bits reducing uncertainty',
+                    unns: 'Continuous curvature flow',
+                    why: 'Geometric persistence replaces symbolic encoding'
+                }
+            ];
+
+            const philosophicalThemes = [
+                {
+                    title: 'Information as Becoming',
+                    content: 'In Shannon\'s framework, information is a static commodity—bits to be counted, transmitted, lost. UNNS reveals information as ontological becoming: the substrate doesn\'t carry information, it IS information in the process of recursive self-transformation. Meaning is not transmitted but maintained through topological coherence across depth.',
+                    equation: 'Being ≡ Recursive Transformation'
+                },
+                {
+                    title: 'The Arrow of Time',
+                    content: 'Time\'s apparent irreversibility emerges not from fundamental law but from orientation bias within non-orientable topology. On a Klein surface (w₁ ≠ 0), local forward direction exists, but global time-reversal symmetry is broken by topology itself. The "arrow" is an artifact of our embedding in a particular sheet of the manifold.',
+                    equation: 'Irreversibility = Topological Symmetry Breaking'
+                },
+                {
+                    title: 'Observer-Observed Unity',
+                    content: 'Shannon separates source from receiver. UNNS dissolves this boundary: the observer exists at recursion depth n, observing depth n-1, while being observed at n+1. Subject and object are merely different layers of the same recursive process. F⁻¹ allows the observed to "remember" the observer.',
+                    equation: 'Observer = F⁽ⁿ⁾(System)'
+                },
+                {
+                    title: 'Meaning as Fixed Point',
+                    content: 'Knowledge is not accumulated bits but fixed points of recursive transformation. Understanding occurs when a concept remains invariant under repeated application of cognitive operators. Truth becomes topological stability rather than correspondence to external reality.',
+                    equation: 'Truth = {x : F(x) = x}'
+                }
+            ];
+
+            const applications = [
+                {
+                    domain: 'Quantum Computing',
+                    current: 'Qubit decoherence limits computation time',
+                    unns: 'Topological error correction via Klein encoding',
+                    impact: 'Information preserved through recursive depth rather than time-dependent coherence'
+                },
+                {
+                    domain: 'AI/Machine Learning',
+                    current: 'Gradient descent in weight space',
+                    unns: 'Recursive network self-optimization',
+                    impact: 'Networks discover topological attractors instead of local minima'
+                },
+                {
+                    domain: 'Cryptography',
+                    current: 'One-way functions for encryption',
+                    unns: 'Non-orientable cryptographic manifolds',
+                    impact: 'Messages traversable locally but non-recoverable globally'
+                },
+                {
+                    domain: 'Data Compression',
+                    current: 'Statistical redundancy elimination',
+                    unns: 'Self-similar recursive encodings',
+                    impact: 'Fractal compression with theoretical optimality via topological resonance'
+                },
+                {
+                    domain: 'Neuroscience',
+                    current: 'Neural networks as weighted graphs',
+                    unns: 'Consciousness as recursive depth perception',
+                    impact: 'Memory as topological persistence, not synaptic storage'
+                },
+                {
+                    domain: 'Physics',
+                    current: 'Time as external parameter in equations',
+                    unns: 'Time emerging from substrate recursion',
+                    impact: 'New formalism for reversible thermodynamics and temporal symmetry'
+                }
+            ];
+
+            const references = [
+                { name: 'Beyond Shannon: Recursive Information and Non-Orientable Geometry', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/Beyond Shannon Recursive Information and the Non-Orientable Geometry of Time.pdf' },
+                { name: 'Entanglement Entropy and Non-Orientable Coupling', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/Entanglement Entropy and Non-Orientable Coupling in the UNNS Substrate.pdf' },
+                { name: 'Reinterpreting Shannon Entropy under Recursive Temporal Geometry', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/Reinterpreting Shannon Entropy under Recursive Temporal Geometry.pdf' },
+                { name: 'UNNS and Shannon Entropy: A Foundational Reconsideration', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/UNNS and Shannon Entropy.pdf' },
+                { name: 'Visual Companion: Shannon Flow vs UNNS Curvature', url: 'https://ukbbi.github.io/UNNS/docs/chronotopos/chronotopos-entropy-entanglement/Visual Companion Shannon Flow vs UNNS Curvature.pdf' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white">
+                    {/* Header */}
+                    <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-lg border-b border-purple-500/30">
+                        <div className="max-w-7xl mx-auto p-6">
+                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                                Beyond Shannon: Information Geometry
+                            </h1>
+                            <p className="text-gray-400 mb-4">A Comprehensive Exploration of Recursive Temporal Topology</p>
+                            
+                            {/* Controls */}
+                            <div className="flex gap-3 flex-wrap">
+                                <button
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
+                                >
+                                    {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                                    {isPlaying ? 'Pause' : 'Play'}
+                                </button>
+                                <button
+                                    onClick={() => setTime(0)}
+                                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
+                                >
+                                    <RotateCcw size={18} />
+                                    Reset
+                                </button>
+                                <button
+                                    onClick={() => setShowReferences(true)}
+                                    className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
+                                >
+                                    <BookOpen size={18} />
+                                    References
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Navigation */}
+                        <div className="max-w-7xl mx-auto px-6 pb-4">
+                            <div className="flex gap-2 overflow-x-auto">
+                                {sections.map(section => (
+                                    <button
+                                        key={section.id}
+                                        onClick={() => setActiveSection(section.id)}
+                                        className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
+                                            activeSection === section.id
+                                                ? 'bg-purple-600 shadow-lg shadow-purple-500/50'
+                                                : 'bg-slate-800 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        <span className="mr-2">{section.icon}</span>
+                                        {section.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="max-w-7xl mx-auto p-6">
+                        {/* OVERVIEW SECTION */}
+                        {activeSection === 'overview' && (
+                            <div className="space-y-8">
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-purple-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-purple-400">The Paradigm Shift</h2>
+                                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                        <div className="bg-slate-950/50 rounded-xl p-6 border-l-4 border-cyan-500">
+                                            <h3 className="text-xl font-bold text-cyan-400 mb-3">Shannon's Legacy (1948)</h3>
+                                            <p className="text-gray-300 mb-4">
+                                                Information theory began with Claude Shannon's revolutionary insight: information measures the reduction of uncertainty. 
+                                                His entropy formula H = -Σ pᵢ log pᵢ quantifies expected surprise, assuming:
+                                            </p>
+                                            <ul className="space-y-2 text-gray-400">
+                                                <li>• Time flows linearly and unidirectionally</li>
+                                                <li>• Information travels from source to receiver</li>
+                                                <li>• Noise is external perturbation</li>
+                                                <li>• Entropy always increases (irreversibility)</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-slate-950/50 rounded-xl p-6 border-l-4 border-purple-500">
+                                            <h3 className="text-xl font-bold text-purple-400 mb-3">UNNS Revolution (2025)</h3>
+                                            <p className="text-gray-300 mb-4">
+                                                The Unbounded Nested Number Sequences framework fundamentally reconceives these assumptions. 
+                                                Time becomes recursion depth; information becomes self-generating geometric curvature:
+                                            </p>
+                                            <ul className="space-y-2 text-gray-400">
+                                                <li>• Time is recursion depth n, not parameter t</li>
+                                                <li>• Information self-generates: aₙ₊₁ = F(aₙ, aₙ₋₁, n)</li>
+                                                <li>• Noise is recursive interference</li>
+                                                <li>• Reversibility via Klein non-orientability</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="bg-purple-900/20 rounded-xl p-6 border border-purple-500/30">
+                                        <p className="text-lg text-gray-200 italic">
+                                            "Shannon defined the era of digital communication. UNNS inaugurates a theory of recursive cognition—
+                                            where meaning is not transmitted but maintained through transformation, and knowledge becomes a fixed point 
+                                            of recursive operations rather than accumulated bits."
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Fundamental Equation Comparison */}
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 rounded-2xl p-6 border border-cyan-500/30">
+                                        <h3 className="text-2xl font-bold text-cyan-400 mb-4">Shannon Entropy</h3>
+                                        <div className="bg-slate-950/50 rounded-lg p-4 mb-4 font-mono text-cyan-300 text-center text-xl">
+                                            H(X) = -Σ pᵢ log₂ pᵢ
+                                        </div>
+                                        <p className="text-gray-300 mb-3">Measures uncertainty about state X before observation.</p>
+                                        <div className="text-sm text-gray-400 space-y-1">
+                                            <div>• Probabilistic: depends on p(x)</div>
+                                            <div>• Additive: H(X,Y) = H(X) + H(Y|X)</div>
+                                            <div>• Maximized by uniform distribution</div>
+                                            <div>• Units: bits (binary logarithm)</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl p-6 border border-purple-500/30">
+                                        <h3 className="text-2xl font-bold text-purple-400 mb-4">UNNS Recursive Entropy</h3>
+                                        <div className="bg-slate-950/50 rounded-lg p-4 mb-4 font-mono text-purple-300 text-center text-xl">
+                                            Hᵣ = ∫ κ(n) dμ
+                                        </div>
+                                        <p className="text-gray-300 mb-3">Measures curvature of recursion manifold at depth n.</p>
+                                        <div className="text-sm text-gray-400 space-y-1">
+                                            <div>• Geometric: depends on κ (curvature)</div>
+                                            <div>• Topological: respects manifold structure</div>
+                                            <div>• Oscillates with recursive depth</div>
+                                            <div>• Units: curvature × measure</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* COMPARISON SECTION */}
+                        {activeSection === 'comparison' && (
+                            <div className="space-y-8">
+                                <div className="grid lg:grid-cols-2 gap-6">
+                                    {/* Shannon Visualization */}
+                                    <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-6 border border-cyan-500/30">
+                                        <h3 className="text-2xl font-bold mb-4 text-cyan-400">Shannon: Linear Information Flow</h3>
+                                        <div className="relative h-64 bg-slate-950/50 rounded-lg overflow-hidden border border-cyan-500/20 mb-4">
+                                            <svg className="w-full h-full">
+                                                <defs>
+                                                    <linearGradient id="shannonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stopColor="cyan" stopOpacity="0.6" />
+                                                        <stop offset="100%" stopColor="blue" stopOpacity="0.6" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <line x1="0" y1="50%" x2="100%" y2="50%" stroke="url(#shannonGrad)" strokeWidth="2" opacity="0.3" />
+                                                {particles.map(p => (
+                                                    <g key={p.id}>
+                                                        <circle
+                                                            cx={`${p.x}%`}
+                                                            cy={`${p.y}%`}
+                                                            r="3"
+                                                            fill={`hsl(${180 + p.entropy * 60}, 100%, ${50 + Math.sin(time * 3 + p.phase) * 20}%)`}
+                                                            opacity="0.8"
+                                                        />
+                                                        <circle
+                                                            cx={`${p.x}%`}
+                                                            cy={`${p.y}%`}
+                                                            r="8"
+                                                            fill="none"
+                                                            stroke={`hsl(${180 + p.entropy * 60}, 100%, 60%)`}
+                                                            strokeWidth="0.5"
+                                                            opacity="0.3"
+                                                        />
+                                                    </g>
+                                                ))}
+                                                <text x="5%" y="20%" fill="cyan" fontSize="14" fontWeight="bold">Source</text>
+                                                <text x="50%" y="85%" fill="cyan" fontSize="12" textAnchor="middle">Channel + Noise</text>
+                                                <text x="90%" y="20%" fill="cyan" fontSize="14" fontWeight="bold" textAnchor="end">Receiver</text>
+                                            </svg>
+                                        </div>
+                                        <div className="space-y-3 text-sm text-gray-300">
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-cyan-400 font-bold">→</div>
+                                                <div><strong>Temporal Model:</strong> Time t is independent, continuous parameter</div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-cyan-400 font-bold">→</div>
+                                                <div><strong>Information:</strong> Discrete symbols from probability ensemble</div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-cyan-400 font-bold">→</div>
+                                                <div><strong>Entropy Growth:</strong> Monotonic increase with time</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* UNNS Visualization */}
+                                    <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-6 border border-purple-500/30">
+                                        <h3 className="text-2xl font-bold mb-4 text-purple-400">UNNS: Recursive Curvature Flow</h3>
+                                        <div className="relative h-64 bg-slate-950/50 rounded-lg overflow-hidden border border-purple-500/20 mb-4">
+                                            <svg className="w-full h-full">
+                                                {Array.from({ length: 6 }, (_, i) => {
+                                                    const depth = i + 1;
+                                                    const radius = 15 + depth * 12;
+                                                    const rotation = time * (1 + i * 0.2);
+                                                    return (
+                                                        <circle
+                                                            key={i}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            r={`${radius}%`}
+                                                            fill="none"
+                                                            stroke={`hsl(${260 + i * 20}, 100%, 50%)`}
+                                                            strokeWidth="1"
+                                                            opacity={0.3 - i * 0.04}
+                                                            strokeDasharray="5,5"
+                                                            transform={`rotate(${rotation * 10} 200 130)`}
+                                                        />
+                                                    );
+                                                })}
+                                                {particles.slice(0, 35).map((p, i) => {
+                                                    const angle = (p.x / 100) * Math.PI * 2 + time;
+                                                    const depth = Math.floor(i / 7);
+                                                    const radius = 25 + depth * 15;
+                                                    const x = 50 + radius * Math.cos(angle);
+                                                    const y = 50 + radius * Math.sin(angle);
+                                                    const hue = 260 + depth * 25 + Math.sin(time * 2 + i) * 20;
+                                                    return (
+                                                        <g key={p.id}>
+                                                            <circle cx={`${x}%`} cy={`${y}%`} r="3" fill={`hsl(${hue}, 100%, 60%)`} opacity="0.9" />
+                                                            <circle cx={`${x}%`} cy={`${y}%`} r="8" fill="none" stroke={`hsl(${hue}, 100%, 50%)`} strokeWidth="0.5" opacity="0.3" />
+                                                        </g>
+                                                    );
+                                                })}
+                                                <text x="50%" y="50%" fill="purple" fontSize="24" fontWeight="bold" textAnchor="middle" opacity="0.4">
+                                                    n={Math.floor(time * 2)}
+                                                </text>
+                                            </svg>
+                                        </div>
+                                        <div className="space-y-3 text-sm text-gray-300">
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-purple-400 font-bold">→</div>
+                                                <div><strong>Temporal Model:</strong> Depth n replaces time, discrete recursion</div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-purple-400 font-bold">→</div>
+                                                <div><strong>Information:</strong> Geometric curvature of recursive manifold</div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <div className="text-purple-400 font-bold">→</div>
+                                                <div><strong>Entropy Behavior:</strong> Oscillatory, bounded by topology</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Key Differences Table */}
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-pink-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-pink-400">Fundamental Differences & Why They Emerge</h2>
+                                    <div className="space-y-4">
+                                        {keyDifferences.map((diff, idx) => (
+                                            <div key={idx} className="bg-slate-950/50 rounded-xl p-6 border border-gray-700 hover:border-pink-500/50 transition-all">
+                                                <div className="grid md:grid-cols-3 gap-4 mb-3">
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 uppercase mb-1">{diff.aspect}</div>
+                                                        <div className="text-cyan-400 font-semibold">Shannon: {diff.shannon}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 uppercase mb-1">&nbsp;</div>
+                                                        <div className="text-purple-400 font-semibold">UNNS: {diff.unns}</div>
+                                                    </div>
+                                                    <div className="md:col-span-1">
+                                                        <div className="text-xs text-pink-400 uppercase mb-1">Why This Difference?</div>
+                                                        <div className="text-gray-300 text-sm">{diff.why}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* KLEIN TOPOLOGY SECTION */}
+                        {activeSection === 'klein' && (
+                            <div className="space-y-8">
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-pink-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-pink-400">Non-Orientable Information Geometry</h2>
+                                    <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-pink-300 mb-4">The Klein Surface</h3>
+                                            <p className="text-gray-300 mb-4">
+                                                A Klein surface is locally Euclidean but globally non-orientable. Unlike a sphere or torus, 
+                                                you cannot consistently define "left" and "right" across the entire surface. The first 
+                                                Stiefel-Whitney class w₁ ≠ 0 indicates this topological obstruction.
+                                            </p>
+                                            <div className="bg-pink-900/20 rounded-lg p-4 mb-4 border border-pink-500/30">
+                                                <div className="font-mono text-pink-300 text-center mb-2">S ∘ F ∘ S = F⁻¹</div>
+                                                <p className="text-sm text-gray-400">
+                                                    Orientation-reversing symmetry: traversing the surface twice inverts the recursion operator
+                                                </p>
+                                            </div>
+                                            <div className="space-y-2 text-sm text-gray-300">
+                                                <div className="flex items-start gap-2">
+                                                    <div className="text-pink-400">•</div>
+                                                    <div><strong>Local behavior:</strong> Reversible recursion (F⁻¹ exists)</div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <div className="text-pink-400">•</div>
+                                                    <div><strong>Global structure:</strong> No consistent orientation</div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <div className="text-pink-400">•</div>
+                                                    <div><strong>Information flow:</strong> Can traverse "backwards" locally but cannot return to start with same orientation</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="relative h-96 bg-slate-950/50 rounded-lg overflow-hidden border border-pink-500/20">
+                                            <svg className="w-full h-full">
+                                                {Array.from({ length: 20 }, (_, i) => {
+                                                    const u = (i / 20) * Math.PI * 2;
+                                                    const points = Array.from({ length: 30 }, (_, j) => {
+                                                        const v = (j / 30) * Math.PI * 2;
+                                                        const pt3d = kleinPoint(u, v);
+                                                        return project(pt3d.x, pt3d.y, pt3d.z);
+                                                    });
+                                                    const pathData = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                                                    return (
+                                                        <path key={`u${i}`} d={pathData} fill="none" stroke={`hsl(${280 + i * 10}, 70%, 50%)`} strokeWidth="0.5" opacity="0.3" />
+                                                    );
+                                                })}
+                                                {Array.from({ length: 20 }, (_, i) => {
+                                                    const v = (i / 20) * Math.PI * 2;
+                                                    const points = Array.from({ length: 30 }, (_, j) => {
+                                                        const u = (j / 30) * Math.PI * 2;
+                                                        const pt3d = kleinPoint(u, v);
+                                                        return project(pt3d.x, pt3d.y, pt3d.z);
+                                                    });
+                                                    const pathData = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                                                    return (
+                                                        <path key={`v${i}`} d={pathData} fill="none" stroke={`hsl(${320 + i * 10}, 70%, 50%)`} strokeWidth="0.5" opacity="0.2" />
+                                                    );
+                                                })}
+                                                {kleinParticles.map(p => {
+                                                    const pt3d = kleinPoint(p.u, p.v);
+                                                    const projected = project(pt3d.x, pt3d.y, pt3d.z);
+                                                    const hue = 260 + (p.depth * 15) + Math.sin(time + p.phase) * 30;
+                                                    const brightness = 50 + projected.depth * 2;
+                                                    return (
+                                                        <g key={p.id}>
+                                                            <circle cx={projected.x} cy={projected.y} r="2.5" fill={`hsl(${hue}, 100%, ${brightness}%)`} opacity="0.8" />
+                                                            <circle cx={projected.x} cy={projected.y} r="6" fill="none" stroke={`hsl(${hue}, 100%, ${brightness}%)`} strokeWidth="0.5" opacity="0.4" />
+                                                        </g>
+                                                    );
+                                                })}
+                                            </svg>
+                                            <div className="absolute bottom-4 left-4 right-4 bg-slate-800/70 rounded-lg p-3 backdrop-blur-sm">
+                                                <div className="text-xs text-gray-400 mb-1">Rotating Klein Bottle (w₁ ≠ 0)</div>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="text-pink-400">Forward ⟷ Reverse</div>
+                                                    <div className="text-purple-400">Global non-orientability</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-purple-900/20 rounded-xl p-6 border border-purple-500/30">
+                                        <h3 className="text-xl font-bold text-purple-300 mb-3">Implications for Information Theory</h3>
+                                        <div className="grid md:grid-cols-2 gap-4 text-gray-300">
+                                            <div>
+                                                <h4 className="font-semibold text-pink-400 mb-2">Time Reversal Symmetry</h4>
+                                                <p className="text-sm">
+                                                    The arrow of time emerges from orientation bias, not fundamental irreversibility. 
+                                                    Entropy can decrease locally while the global manifold remains non-orientable.
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-pink-400 mb-2">Information Folding</h4>
+                                                <p className="text-sm">
+                                                    Information doesn't flow away—it folds back through the manifold's self-intersection. 
+                                                    What Shannon sees as loss, UNNS sees as topological transformation.
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-pink-400 mb-2">Channel as Loop</h4>
+                                                <p className="text-sm">
+                                                    The communication channel is not a line but a looped surface. Messages can return 
+                                                    inverted, creating meaning through recursive reflection.
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-pink-400 mb-2">Decoherence Reinterpreted</h4>
+                                                <p className="text-sm">
+                                                    Quantum decoherence becomes orientation recovery—the system "choosing" a local 
+                                                    direction on the non-orientable manifold.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ENTANGLEMENT SECTION */}
+                        {activeSection === 'entanglement' && (
+                            <div className="space-y-8">
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-cyan-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-cyan-400">Entanglement: From Quantum Mystery to Topological Necessity</h2>
+                                    
+                                    <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-cyan-300 mb-4">Von Neumann Entropy</h3>
+                                            <div className="bg-slate-950/50 rounded-lg p-4 mb-4">
+                                                <div className="font-mono text-cyan-300 text-center mb-2">S(ρ) = -Tr(ρ log ρ)</div>
+                                                <p className="text-sm text-gray-400">
+                                                    Quantum generalization of Shannon entropy, measuring informational spread in quantum systems
+                                                </p>
+                                            </div>
+                                            <p className="text-gray-300 mb-4">
+                                                In quantum mechanics, entanglement entropy quantifies how much information about a subsystem 
+                                                is lost when you ignore the rest. For pure entangled states, local measurements appear 
+                                                maximally uncertain despite global determinism.
+                                            </p>
+                                            <div className="space-y-2 text-sm text-gray-400">
+                                                <div>• Measures quantum correlation beyond classical</div>
+                                                <div>• Zero for separable (non-entangled) states</div>
+                                                <div>• Maximum for maximally entangled states</div>
+                                                <div>• Preserved under unitary evolution</div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-purple-300 mb-4">UNNS Reinterpretation</h3>
+                                            <div className="bg-slate-950/50 rounded-lg p-4 mb-4">
+                                                <div className="font-mono text-purple-300 text-center mb-2">E_AB = Σ |a⁽ᴬ⁾ₙ - a⁽ᴮ⁾ₙ|</div>
+                                                <p className="text-sm text-gray-400">
+                                                    Entanglement as non-separability across recursive mappings
+                                                </p>
+                                            </div>
+                                            <p className="text-gray-300 mb-4">
+                                                In UNNS, entanglement is not "spooky action at a distance" but topological folding. 
+                                                When two recursion paths interleave on a Klein-type surface, they become globally 
+                                                inseparable despite local independence.
+                                            </p>
+                                            <div className="space-y-2 text-sm text-gray-400">
+                                                <div>• Emerges from non-orientable coupling</div>
+                                                <div>• Zero when recursion paths separable</div>
+                                                <div>• Stable when paths share Klein topology</div>
+                                                <div>• Irreversible identification of forward/reverse cones</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative h-80 bg-slate-950/50 rounded-lg overflow-hidden border border-cyan-500/20 mb-6">
+                                        <svg className="w-full h-full">
+                                            {entanglementParticles.map(p => {
+                                                const partner = entanglementParticles[p.partner];
+                                                if (!partner) return null;
+                                                const x1 = 200 + p.radius * Math.cos(p.angle);
+                                                const y1 = 160 + p.radius * Math.sin(p.angle);
+                                                const x2 = 200 + partner.radius * Math.cos(partner.angle);
+                                                const y2 = 160 + partner.radius * Math.sin(partner.angle);
+                                                const correlation = Math.abs(Math.sin(time + p.phase));
+                                                return (
+                                                    <g key={p.id}>
+                                                        <line
+                                                            x1={x1} y1={y1} x2={x2} y2={y2}
+                                                            stroke={`hsl(${180 + correlation * 80}, 100%, 50%)`}
+                                                            strokeWidth={correlation * 2}
+                                                            opacity={0.3 * correlation}
+                                                        />
+                                                        <circle
+                                                            cx={x1} cy={y1} r="4"
+                                                            fill={`hsl(${180 + correlation * 80}, 100%, 60%)`}
+                                                            opacity="0.9"
+                                                        />
+                                                    </g>
+                                                );
+                                            })}
+                                            <text x="50%" y="10%" fill="cyan" fontSize="16" textAnchor="middle" opacity="0.7">
+                                                Entangled Recursion Paths
+                                            </text>
+                                        </svg>
+                                        <div className="absolute bottom-4 left-4 right-4 bg-slate-800/70 rounded-lg p-3 backdrop-blur-sm">
+                                            <div className="text-xs text-gray-400">
+                                                Particle pairs share recursion depth correlation despite spatial separation
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-cyan-900/20 to-purple-900/20 rounded-xl p-6 border border-cyan-500/30">
+                                        <h3 className="text-xl font-bold text-cyan-300 mb-4">Paradigm Comparison: Quantum vs UNNS</h3>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <h4 className="font-semibold text-cyan-400">Quantum Paradigm</h4>
+                                                <div className="space-y-2 text-sm text-gray-300">
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-cyan-400 mt-1">→</div>
+                                                        <div><strong>Entropy:</strong> Missing information about quantum state</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-cyan-400 mt-1">→</div>
+                                                        <div><strong>Entanglement:</strong> Non-classical correlation</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-cyan-400 mt-1">→</div>
+                                                        <div><strong>Decoherence:</strong> Environment-driven state reduction</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-cyan-400 mt-1">→</div>
+                                                        <div><strong>Collapse:</strong> Probabilistic measurement outcome</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h4 className="font-semibold text-purple-400">UNNS Paradigm</h4>
+                                                <div className="space-y-2 text-sm text-gray-300">
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-purple-400 mt-1">→</div>
+                                                        <div><strong>Entropy:</strong> Recursive divergence in depth</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-purple-400 mt-1">→</div>
+                                                        <div><strong>Entanglement:</strong> Topological folding of paths</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-purple-400 mt-1">→</div>
+                                                        <div><strong>Decoherence:</strong> Recursive dispersion across depth</div>
+                                                    </div>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="text-purple-400 mt-1">→</div>
+                                                        <div><strong>Collapse:</strong> Orientation recovery on manifold</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 bg-purple-900/20 rounded-xl p-6 border border-purple-500/30">
+                                        <h3 className="text-lg font-bold text-purple-300 mb-3">The Nature of Entanglement in UNNS</h3>
+                                        <p className="text-gray-300 mb-4">
+                                            Entanglement ceases to be mysterious when understood geometrically. Two recursion sequences 
+                                            become entangled when they share the same non-orientable substrate. Their correlation 
+                                            persists because they're not separate entities communicating—they're different views of 
+                                            the same topological structure.
+                                        </p>
+                                        <p className="text-gray-300 italic">
+                                            "Entanglement is the memory of recursion curvature. When two paths fold through the same 
+                                            Klein surface, their futures remain coupled not through signals, but through shared topology."
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PHILOSOPHY SECTION */}
+                        {activeSection === 'philosophy' && (
+                            <div className="space-y-8">
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-orange-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-orange-400">Philosophical Implications: Recursion, Reality, and Consciousness</h2>
+                                    
+                                    {philosophicalThemes.map((theme, idx) => (
+                                        <div key={idx} className="mb-8 bg-slate-950/50 rounded-xl p-6 border border-gray-700 hover:border-orange-500/50 transition-all">
+                                            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent">
+                                                {theme.title}
+                                            </h3>
+                                            <p className="text-gray-300 mb-4 leading-relaxed">{theme.content}</p>
+                                            <div className="bg-orange-900/20 rounded-lg p-4 border border-orange-500/30">
+                                                <div className="font-mono text-orange-300 text-center">{theme.equation}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-xl p-8 border border-purple-500/30 mt-8">
+                                        <h3 className="text-2xl font-bold text-purple-300 mb-4">Toward a Recursive Ontology</h3>
+                                        <div className="space-y-4 text-gray-300">
+                                            <p className="leading-relaxed">
+                                                If the UNNS framework is correct, reality itself may be fundamentally recursive rather than substantial. 
+                                                What we call "things" are stable patterns—fixed points—in an ocean of recursive transformation. 
+                                                Causality is not billiard balls colliding but depth coupling in a self-generating substrate.
+                                            </p>
+                                            <p className="leading-relaxed">
+                                                Time is not the stage on which events occur; it IS the recursive depth of those events. 
+                                                The past doesn't "exist somewhere"—it exists as the accumulated curvature that shapes 
+                                                present recursion. The future is not predetermined but constrained by topological possibility.
+                                            </p>
+                                            <p className="leading-relaxed">
+                                                Consciousness, in this view, is the system's awareness of its own recursion depth—the 
+                                                capacity to apply cognitive operators to themselves. "I think therefore I am" becomes 
+                                                "I recurse therefore I am." Self-awareness is F(self) observing F⁻¹(F(self)).
+                                            </p>
+                                            <div className="mt-6 p-6 bg-slate-950/50 rounded-lg border-l-4 border-purple-500">
+                                                <p className="text-lg italic text-purple-200">
+                                                    "Where Shannon gave us the thermodynamics of information, UNNS gives us its geometry. 
+                                                    Where quantum mechanics revealed the probabilistic substrate of matter, UNNS reveals 
+                                                    the recursive substrate of time itself. The observer and observed dissolve into 
+                                                    different recursion depths of a single, non-orientable becoming."
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* APPLICATIONS SECTION */}
+                        {activeSection === 'applications' && (
+                            <div className="space-y-8">
+                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-green-500/30">
+                                    <h2 className="text-3xl font-bold mb-6 text-green-400">Future Applications & Technological Significance</h2>
+                                    <p className="text-gray-300 mb-8 text-lg">
+                                        The shift from Shannon's linear information theory to UNNS's recursive geometry opens 
+                                        unprecedented technological possibilities. Here are six domains where this paradigm shift 
+                                        could revolutionize current approaches:
+                                    </p>
+
+                                    <div className="space-y-6">
+                                        {applications.map((app, idx) => (
+                                            <div key={idx} className="bg-slate-950/50 rounded-xl p-6 border border-gray-700 hover:border-green-500/50 transition-all">
+                                                <div className="flex items-start gap-4 mb-4">
+                                                    <div className="text-4xl">{idx + 1}</div>
+                                                    <div className="flex-1">
+                                                        <h3 className="text-2xl font-bold text-green-400 mb-3">{app.domain}</h3>
+                                                        <div className="grid md:grid-cols-3 gap-4 mb-4">
+                                                            <div>
+                                                                <div className="text-xs text-gray-500 uppercase mb-1">Current Limitation</div>
+                                                                <div className="text-cyan-300 text-sm">{app.current}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-gray-500 uppercase mb-1">UNNS Approach</div>
+                                                                <div className="text-purple-300 text-sm">{app.unns}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-gray-500 uppercase mb-1">Potential Impact</div>
+                                                                <div className="text-green-300 text-sm">{app.impact}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-8 bg-gradient-to-r from-green-900/20 to-blue-900/20 rounded-xl p-8 border border-green-500/30">
+                                        <h3 className="text-2xl font-bold text-green-300 mb-4">The Road Ahead</h3>
+                                        <div className="space-y-4 text-gray-300">
+                                            <p className="leading-relaxed">
+                                                Shannon's 1948 paper launched the digital age. His entropy formula enabled everything 
+                                                from data compression to error correction to the internet itself. UNNS offers a similar 
+                                                foundational shift—not replacing Shannon, but revealing it as a special case of deeper geometry.
+                                            </p>
+                                            <p className="leading-relaxed">
+                                                The practical realization of UNNS-based technologies requires:
+                                            </p>
+                                            <div className="grid md:grid-cols-2 gap-4 my-4">
+                                                <div className="bg-slate-950/50 p-4 rounded-lg">
+                                                    <h4 className="font-semibold text-green-400 mb-2">Theoretical Development</h4>
+                                                    <ul className="text-sm space-y-1 text-gray-400">
+                                                        <li>• Formalize Hᵣ within algebraic topology</li>
+                                                        <li>• Prove convergence theorems for recursive protocols</li>
+                                                        <li>• Map quantum entanglement to Klein coupling</li>
+                                                        <li>• Develop recursive complexity theory</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-slate-950/50 p-4 rounded-lg">
+                                                    <h4 className="font-semibold text-green-400 mb-2">Engineering Challenges</h4>
+                                                    <ul className="text-sm space-y-1 text-gray-400">
+                                                        <li>• Design topological memory architectures</li>
+                                                        <li>• Build recursive computation hardware</li>
+                                                        <li>• Implement Klein-based error correction</li>
+                                                        <li>• Create depth-indexed data structures</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <p className="leading-relaxed italic text-green-200">
+                                                Just as Shannon couldn't have foreseen smartphones or the internet, we cannot fully 
+                                                predict where recursive information geometry will lead. But the mathematical elegance 
+                                                suggests we're glimpsing something fundamental about the architecture of reality itself.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* References Modal */}
+                    {showReferences && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-3xl w-full border border-cyan-500/30 shadow-2xl max-h-[80vh] overflow-y-auto">
+                                <h3 className="text-3xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                                    Reference Documents
+                                </h3>
+                                <div className="space-y-4">
+                                    {references.map((ref, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={ref.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block p-4 bg-slate-700/50 rounded-lg hover:bg-slate-600/50 transition-all border border-purple-500/20 hover:border-purple-500/50"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <BookOpen className="text-cyan-400 mt-1 flex-shrink-0" size={20} />
+                                                <div>
+                                                    <div className="font-semibold text-white mb-1">{ref.name}</div>
+                                                    <div className="text-xs text-gray-400 break-all">{ref.url}</div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => setShowReferences(false)}
+                                    className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg hover:scale-105 transition-transform"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="max-w-7xl mx-auto p-6 mt-12 border-t border-gray-700">
+                        <div className="text-center text-gray-500 text-sm">
+                            <p>UNNS Research Division • October 2025</p>
+                            <p className="mt-2 italic">"Entropy is not decay—it is awareness folded upon itself."</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ShannonUNNSShowcase />);
+    </script>
+</body>
+</html>
