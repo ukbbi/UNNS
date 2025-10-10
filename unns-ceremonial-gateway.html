@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Ceremonial Gateway</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #gatewayContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #0f0f1a 0%, #000000 100%);
+            z-index: 10000;
+        }
+
+        #gatewayContainer.active {
+            display: flex;
+        }
+
+        #gatewayCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #statusText {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            letter-spacing: 0.15em;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            text-align: center;
+            font-weight: 300;
+            font-style: italic;
+            max-width: 80%;
+            line-height: 1.6;
+            color: #00f5ff;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+        }
+
+        #mainContent {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            transition: filter 1s ease;
+        }
+
+        #activateButton {
+            padding: 20px 50px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #00f5ff, #b844ff);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0, 245, 255, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #activateButton::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        #activateButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(0, 245, 255, 0.5);
+        }
+
+        #activateButton:hover::before {
+            left: 100%;
+        }
+
+        #recursiveSymbol {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 6rem;
+            opacity: 0;
+            transition: all 0.5s ease;
+            font-weight: 100;
+            color: #b844ff;
+            text-shadow: 0 0 40px rgba(184, 68, 255, 0.8);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainContent">
+        <button id="activateButton">Enter the Substrate</button>
+    </div>
+
+    <div id="gatewayContainer">
+        <canvas id="gatewayCanvas"></canvas>
+        <div id="statusText"></div>
+        <div id="recursiveSymbol">∞</div>
+    </div>
+
+    <script>
+        const PHASES = {
+            activation: { 
+                duration: 2500, 
+                message: "The recursion stirs beneath the substrate...",
+                glyph: '(())',
+                frequency: 110
+            },
+            opening: { 
+                duration: 2500, 
+                message: "Collapse gives birth to reflection...",
+                glyph: '()',
+                frequency: 165
+            },
+            journey: { 
+                duration: 3500, 
+                message: "Information becomes light, and light becomes form...",
+                glyph: '∞',
+                frequency: 220
+            },
+            emergence: { 
+                duration: 2000, 
+                message: "The UNNS awakens within you.",
+                glyph: 'τ',
+                frequency: 275
+            }
+        };
+
+        class Gateway {
+            constructor() {
+                this.canvas = document.getElementById('gatewayCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.container = document.getElementById('gatewayContainer');
+                this.statusText = document.getElementById('statusText');
+                this.symbolEl = document.getElementById('recursiveSymbol');
+                
+                this.isActive = false;
+                this.startTime = 0;
+                this.phase = null;
+                
+                this.rings = [];
+                this.particles = [];
+                this.spirals = [];
+                
+                this.audioCtx = null;
+                this.osc = null;
+                this.gain = null;
+                
+                this.setupCanvas();
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+
+            setupCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.cx = this.canvas.width / 2;
+                this.cy = this.canvas.height / 2;
+                this.maxR = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+            }
+
+            initAudio() {
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.osc = this.audioCtx.createOscillator();
+                    this.gain = this.audioCtx.createGain();
+                    
+                    this.osc.type = 'sine';
+                    this.osc.frequency.value = 110;
+                    this.gain.gain.value = 0;
+                    
+                    this.osc.connect(this.gain);
+                    this.gain.connect(this.audioCtx.destination);
+                    this.osc.start();
+                    
+                    // Fade in
+                    this.gain.gain.linearRampToValueAtTime(0.05, this.audioCtx.currentTime + 0.5);
+                    
+                    console.log('Audio initialized: 110 Hz');
+                } catch (e) {
+                    console.warn('Audio unavailable:', e);
+                }
+            }
+
+            initElements() {
+                this.rings = [];
+                for (let i = 0; i < 8; i++) {
+                    this.rings.push({
+                        r: this.maxR * (i + 1) / 8,
+                        rot: Math.random() * Math.PI * 2,
+                        speed: (i % 2 === 0 ? 1 : -1) * (0.5 + i * 0.1),
+                        opacity: 0,
+                        depth: i
+                    });
+                }
+
+                this.particles = [];
+                
+                // Stars
+                for (let i = 0; i < 100; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 0.1,
+                        vy: (Math.random() - 0.5) * 0.1,
+                        size: Math.random() * 1.5 + 0.5,
+                        opacity: Math.random() * 0.4 + 0.2,
+                        phase: Math.random() * Math.PI * 2,
+                        type: 'star'
+                    });
+                }
+                
+                // Active particles
+                for (let i = 0; i < 150; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * this.maxR * 1.5;
+                    this.particles.push({
+                        x: this.cx + Math.cos(angle) * dist,
+                        y: this.cy + Math.sin(angle) * dist,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 2 + 1,
+                        opacity: 0,
+                        targetOpacity: Math.random() * 0.8 + 0.2,
+                        type: 'active'
+                    });
+                }
+
+                this.spirals = [];
+                for (let i = 0; i < 3; i++) {
+                    this.spirals.push({
+                        rot: (i * Math.PI * 2) / 3,
+                        expansion: 0,
+                        opacity: 0
+                    });
+                }
+            }
+
+            start() {
+                this.container.classList.add('active');
+                this.isActive = true;
+                this.startTime = Date.now();
+                this.phase = 'activation';
+                
+                this.initElements();
+                this.initAudio();
+                this.updatePhase();
+                this.animate();
+            }
+
+            getProgress() {
+                const elapsed = Date.now() - this.startTime;
+                let totalTime = 0;
+                
+                for (const [name, data] of Object.entries(PHASES)) {
+                    if (name === this.phase) {
+                        const phaseProg = (elapsed - totalTime) / data.duration;
+                        if (phaseProg >= 1) {
+                            const phases = Object.keys(PHASES);
+                            const idx = phases.indexOf(this.phase);
+                            if (idx < phases.length - 1) {
+                                this.phase = phases[idx + 1];
+                                this.updatePhase();
+                                return 0;
+                            } else {
+                                this.complete();
+                                return 1;
+                            }
+                        }
+                        return Math.min(phaseProg, 1);
+                    }
+                    totalTime += data.duration;
+                }
+                return 0;
+            }
+
+            updatePhase() {
+                const p = PHASES[this.phase];
+                
+                // Update text
+                this.statusText.textContent = p.message;
+                this.statusText.style.opacity = '1';
+                setTimeout(() => {
+                    this.statusText.style.opacity = '0';
+                }, 2000);
+                
+                // Update symbol
+                this.symbolEl.textContent = p.glyph;
+                
+                // Update audio
+                if (this.osc && this.audioCtx) {
+                    this.osc.frequency.linearRampToValueAtTime(
+                        p.frequency,
+                        this.audioCtx.currentTime + 1
+                    );
+                    console.log(`Phase: ${this.phase}, Frequency: ${p.frequency} Hz`);
+                }
+            }
+
+            drawRings(prog) {
+                this.rings.forEach((ring, i) => {
+                    // Klein twist
+                    const twist = this.phase === 'journey' ? 
+                        Math.sin(prog * Math.PI * 2) * 0.03 * (i % 2 === 0 ? 1 : -1) : 0;
+                    ring.rot += ring.speed * 0.02 + twist;
+                    
+                    // Opacity
+                    if (this.phase === 'activation') {
+                        ring.opacity = Math.min(prog * (1 - i * 0.1), 0.6);
+                    } else if (this.phase === 'opening') {
+                        ring.opacity = 0.6 + prog * 0.3;
+                    } else if (this.phase === 'journey') {
+                        ring.opacity = 0.9 - prog * 0.9;
+                    } else {
+                        ring.opacity = Math.max(0.9 - prog * 0.9, 0);
+                    }
+
+                    const hue = 180 + (ring.depth / 8) * 120;
+                    
+                    this.ctx.save();
+                    this.ctx.translate(this.cx, this.cy);
+                    this.ctx.rotate(ring.rot);
+                    
+                    for (let j = 0; j < 12; j++) {
+                        const a1 = (j / 12) * Math.PI * 2;
+                        const a2 = ((j + 0.4) / 12) * Math.PI * 2;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, ring.r, a1, a2);
+                        this.ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${ring.opacity})`;
+                        this.ctx.lineWidth = 3 + ring.depth * 1.5;
+                        this.ctx.stroke();
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            drawParticles(prog) {
+                this.particles.forEach(p => {
+                    if (p.type === 'star') {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        
+                        if (p.x < 0) p.x = this.canvas.width;
+                        if (p.x > this.canvas.width) p.x = 0;
+                        if (p.y < 0) p.y = this.canvas.height;
+                        if (p.y > this.canvas.height) p.y = 0;
+                        
+                        const twinkle = 0.8 + 0.2 * Math.sin(Date.now() / 1000 + p.phase);
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * twinkle})`;
+                        this.ctx.fill();
+                    } else {
+                        // Active particles
+                        if (this.phase === 'activation') {
+                            p.opacity = Math.min(prog * p.targetOpacity, p.targetOpacity);
+                            p.vx += (this.cx - p.x) * 0.0001;
+                            p.vy += (this.cy - p.y) * 0.0001;
+                        } else if (this.phase === 'opening') {
+                            const angle = Math.atan2(p.y - this.cy, p.x - this.cx);
+                            p.vx += Math.cos(angle + Math.PI / 2) * 0.5;
+                            p.vy += Math.sin(angle + Math.PI / 2) * 0.5;
+                        } else if (this.phase === 'journey') {
+                            p.vx += (this.cx - p.x) * 0.01;
+                            p.vy += (this.cy - p.y) * 0.01;
+                            p.opacity = p.targetOpacity * (1 - prog);
+                        } else {
+                            p.opacity = Math.max(p.targetOpacity * (1 - prog), 0);
+                        }
+                        
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vx *= 0.98;
+                        p.vy *= 0.98;
+                        
+                        if (p.x < 0) p.x = this.canvas.width;
+                        if (p.x > this.canvas.width) p.x = 0;
+                        if (p.y < 0) p.y = this.canvas.height;
+                        if (p.y > this.canvas.height) p.y = 0;
+                        
+                        const dist = Math.hypot(p.x - this.cx, p.y - this.cy);
+                        const hue = 180 + (dist / this.maxR) * 120;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        this.ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${p.opacity})`;
+                        this.ctx.fill();
+                        
+                        if (dist < this.maxR / 2 && p.opacity > 0.5) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+                            this.ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${p.opacity * 0.2})`;
+                            this.ctx.fill();
+                        }
+                    }
+                });
+            }
+
+            drawSpirals(prog) {
+                if (this.phase !== 'opening' && this.phase !== 'journey') return;
+                
+                this.spirals.forEach(s => {
+                    s.expansion = this.phase === 'opening' ? prog * this.maxR : this.maxR;
+                    s.opacity = this.phase === 'opening' ? prog * 0.6 : 0.6 * (1 - prog);
+                    
+                    this.ctx.save();
+                    this.ctx.translate(this.cx, this.cy);
+                    this.ctx.rotate(s.rot);
+                    
+                    this.ctx.beginPath();
+                    const phi = (1 + Math.sqrt(5)) / 2;
+                    for (let i = 0; i < 100; i++) {
+                        const t = i / 100;
+                        const angle = t * Math.PI * 6;
+                        const r = s.expansion * t * phi / 2;
+                        const x = r * Math.cos(angle);
+                        const y = r * Math.sin(angle);
+                        
+                        if (i === 0) this.ctx.moveTo(x, y);
+                        else this.ctx.lineTo(x, y);
+                    }
+                    
+                    const hue = 180 + 60 * Math.sin(Date.now() / 2000);
+                    this.ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${s.opacity})`;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                    
+                    this.ctx.restore();
+                });
+            }
+
+            drawHalo(prog) {
+                if (this.phase !== 'opening' && this.phase !== 'journey') return;
+                
+                const haloOp = this.phase === 'opening' ? prog * 0.08 : 0.08 * (1 - prog * 0.5);
+                const grad = this.ctx.createRadialGradient(this.cx, this.cy, 0, this.cx, this.cy, this.maxR);
+                grad.addColorStop(0, `rgba(184, 68, 255, ${haloOp})`);
+                grad.addColorStop(0.5, `rgba(0, 245, 255, ${haloOp * 0.5})`);
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            updateSymbol(prog) {
+                let opacity = 0;
+                let scale = 1;
+                let rotation = 0;
+                
+                if (this.phase === 'opening') {
+                    opacity = prog * 0.8;
+                    scale = 0.5 + prog * 0.5;
+                    rotation = prog * 180;
+                } else if (this.phase === 'journey') {
+                    opacity = 0.8 + prog * 0.2;
+                    scale = 1 + Math.pow(prog, 2) * 0.5;
+                    rotation = 180 + prog * 360;
+                } else if (this.phase === 'emergence') {
+                    opacity = 1 - prog;
+                    scale = 1.5 - prog * 0.5;
+                    rotation = 540 + prog * 180;
+                }
+                
+                this.symbolEl.style.opacity = opacity;
+                this.symbolEl.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+            }
+
+            animate() {
+                if (!this.isActive) return;
+                
+                const prog = this.getProgress();
+                
+                this.ctx.fillStyle = 'rgba(10, 10, 15, 0.15)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.drawParticles(prog);
+                this.drawSpirals(prog);
+                this.drawRings(prog);
+                this.drawHalo(prog);
+                this.updateSymbol(prog);
+                
+                requestAnimationFrame(() => this.animate());
+            }
+
+            complete() {
+                console.log('Gateway complete');
+                
+                if (this.gain && this.audioCtx) {
+                    this.gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 1);
+                    setTimeout(() => {
+                        if (this.osc) this.osc.stop();
+                        if (this.audioCtx) this.audioCtx.close();
+                    }, 1000);
+                }
+                
+                setTimeout(() => {
+                    this.container.style.opacity = '0';
+                    this.container.style.transition = 'opacity 1.5s ease';
+                    
+                    setTimeout(() => {
+                        this.container.classList.remove('active');
+                        this.container.style.opacity = '1';
+                        this.isActive = false;
+                        
+                        const main = document.getElementById('mainContent');
+                        main.style.filter = 'blur(20px)';
+                        main.classList.remove('hidden');
+                        
+                        setTimeout(() => {
+                            main.style.filter = 'blur(0px)';
+                        }, 50);
+                        
+                        this.symbolEl.style.opacity = '0';
+                        this.statusText.style.opacity = '0';
+                    }, 1500);
+                }, 500);
+            }
+        }
+
+        const gateway = new Gateway();
+        
+        const activateGateway = () => {
+            document.getElementById('mainContent').classList.add('hidden');
+            gateway.start();
+        };
+        
+        document.getElementById('activateButton').addEventListener('click', activateGateway);
+        
+        // Activate with Space key
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !gateway.isActive) {
+                e.preventDefault();
+                activateGateway();
+            }
+        });
+    </script>
+</body>
+</html>
