@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UNNS MCMC Calculator v3 — Recursive Curvature Sampler</title>
+<style>
+  :root {
+    --bg0: #0f172a;
+    --bg1: #111827;
+    --panel: rgba(17, 24, 39, 0.6);
+    --teal: #14b8a6;
+    --teal-soft: rgba(20, 184, 166, 0.25);
+    --violet: #8b5cf6;
+    --violet-soft: rgba(139, 92, 246, 0.25);
+    --cyan: #22d3ee;
+    --muted: #94a3b8;
+    --ink: #e2e8f0;
+    --accent: #a855f7;
+    --gold: #ffd700;
+    --pink: #ff69b4;
+  }
+  
+  body.light-mode {
+    --bg0: #f1f5f9;
+    --bg1: #e2e8f0;
+    --panel: rgba(255, 255, 255, 0.8);
+    --ink: #1e293b;
+    --muted: #64748b;
+  }
+  
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--ink);
+    background: linear-gradient(135deg, #0f172a 0%, #3b1a6e 50%, #0f172a 100%);
+    min-height: 100vh;
+    transition: all 0.3s ease;
+  }
+  
+  body.light-mode {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 50%, #f1f5f9 100%);
+  }
+  
+  .container { max-width: 1800px; margin: 0 auto; }
+  
+  .title-row {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 6px;
+  }
+  
+  .unns-logo {
+    width: 60px; height: 60px; object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+  }
+  
+  h1 {
+    font-size: 2.2rem; margin: 0;
+    background: linear-gradient(to right, var(--teal), var(--violet));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--muted); margin-bottom: 16px; }
+  .grid {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px;
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--violet-soft); border-radius: 12px; padding: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .panel h3 { margin: 0 0 10px 0; color: var(--teal); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .col { flex: 1 1 260px; min-width: 240px; }
+  label { display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 4px; }
+  select, input[type="number"], input[type="text"] {
+    width: 100%; background: #1f2937; color: var(--ink);
+    border: 1px solid #334155; border-radius: 8px; padding: 8px; font: inherit;
+  }
+  body.light-mode select, body.light-mode input[type="number"], body.light-mode input[type="text"] {
+    background: white; border-color: #cbd5e1;
+  }
+  input[type="range"] { width: 100%; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  button {
+    background: #334155; border: 1px solid #475569; color: var(--ink);
+    border-radius: 8px; padding: 10px 12px; cursor: pointer; font: inherit;
+    transition: all 0.15s ease;
+  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost:hover { background: #1f2937; }
+  body.light-mode .btn-ghost:hover { background: #e2e8f0; }
+  .badge {
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--violet);
+    color: var(--violet); background: rgba(139, 92, 246, 0.1);
+  }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .metric {
+    background: #0b1220; border: 1px solid #22304a; border-radius: 10px; padding: 10px;
+  }
+  body.light-mode .metric {
+    background: rgba(255, 255, 255, 0.6); border-color: #cbd5e1;
+  }
+  .metric .title { font-size: 0.8rem; color: var(--muted); }
+  .metric .value { font-size: 1.1rem; margin-top: 4px; }
+  .legend { display: flex; gap: 16px; align-items: center; font-size: 0.9rem; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .dot-rwm { background: var(--pink); }
+  .dot-rhmc { background: var(--cyan); }
+  .dot-klein { background: var(--gold); }
+  canvas {
+    width: 100%; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.35); display: block;
+    cursor: grab;
+  }
+  canvas:active { cursor: grabbing; }
+  .hr-bar { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--teal), var(--violet)); margin-top: 8px; }
+  .hr-bar.warn { background: linear-gradient(90deg, #ffb703, #fb7185); animation: pulse 0.6s infinite; }
+  @keyframes pulse { 0% { opacity:1; } 50% { opacity: .65; } 100% { opacity:1; } }
+  .hint { color: var(--muted); font-size: 0.8rem; }
+  .kbd { border:1px solid #475569; border-bottom-width:2px; background:#0b1220; padding:2px 6px; border-radius:6px; }
+  .stack { display: grid; gap: 16px; }
+  .help-btn {
+    position: fixed; top: 20px; right: 80px; width: 40px; height: 40px;
+    background: var(--accent); border: 2px solid var(--violet); border-radius: 50%;
+    color: white; font-size: 1.4rem; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 1000;
+  }
+  .help-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+  
+  .theme-toggle {
+    position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
+    background: var(--violet); border: 2px solid var(--teal); border-radius: 50%;
+    color: white; font-size: 1.2rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 1000;
+  }
+  .theme-toggle:hover { transform: scale(1.1); filter: brightness(1.2); }
+  
+  .canvas-overlay {
+    position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85);
+    border: 1px solid var(--violet-soft); border-radius: 8px; padding: 8px 12px;
+    font-size: 0.85rem; pointer-events: none; backdrop-filter: blur(5px);
+  }
+  body.light-mode .canvas-overlay {
+    background: rgba(255, 255, 255, 0.9); border-color: #cbd5e1;
+  }
+  
+  .curvature-legend {
+    position: absolute; top: 10px; right: 10px; background: rgba(17, 24, 39, 0.85);
+    border: 1px solid var(--violet-soft); border-radius: 8px; padding: 8px 12px;
+    font-size: 0.75rem; pointer-events: none; backdrop-filter: blur(5px);
+  }
+  body.light-mode .curvature-legend {
+    background: rgba(255, 255, 255, 0.9); border-color: #cbd5e1;
+  }
+  
+  .tau-compass {
+    width: 50px; height: 50px; border: 2px solid var(--cyan);
+    border-radius: 50%; position: relative; margin: 6px auto;
+  }
+  .tau-arrow {
+    position: absolute; width: 2px; height: 20px; background: var(--cyan);
+    left: 50%; top: 50%; transform-origin: bottom center;
+  }
+  
+  .sparkline {
+    width: 100%; height: 40px; margin-top: 4px;
+  }
+  
+  .histogram-bar {
+    display: inline-block; width: 30%; height: 100%; margin: 0 1%;
+    background: var(--violet); border-radius: 2px 2px 0 0;
+    vertical-align: bottom;
+  }
+  
+  .freeze-banner {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(139, 92, 246, 0.95); color: white; padding: 20px 40px;
+    border-radius: 12px; font-size: 1.2rem; z-index: 999;
+    display: none; pointer-events: none;
+  }
+  
+  .inspect-tooltip {
+    position: absolute; background: rgba(17, 24, 39, 0.95); color: var(--ink);
+    border: 2px solid var(--cyan); border-radius: 8px; padding: 10px;
+    font-size: 0.85rem; pointer-events: none; z-index: 998;
+    display: none;
+  }
+  
+  dialog {
+    max-width: 800px; max-height: 85vh; padding: 0;
+    border: 2px solid var(--violet); border-radius: 12px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: var(--ink); backdrop-filter: blur(10px);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); }
+  .dialog-header {
+    background: linear-gradient(to right, var(--teal), var(--violet));
+    padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+    border-radius: 10px 10px 0 0;
+  }
+  .dialog-header h2 { margin: 0; font-size: 1.3rem; color: white; }
+  .dialog-close {
+    background: rgba(255,255,255,0.2); border: none; color: white;
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  }
+  .dialog-close:hover { background: rgba(255,255,255,0.3); }
+  .dialog-content {
+    padding: 24px; overflow-y: auto; max-height: calc(85vh - 70px);
+    line-height: 1.7; font-size: 0.95rem;
+  }
+  .dialog-content h3 { color: var(--teal); margin-top: 20px; margin-bottom: 10px; }
+  .dialog-content h4 { color: var(--cyan); margin-top: 16px; margin-bottom: 8px; font-size: 1rem; }
+  .dialog-content table {
+    width: 100%; border-collapse: collapse; margin: 12px 0;
+    background: rgba(17, 24, 39, 0.5); border-radius: 8px; overflow: hidden;
+  }
+  .dialog-content th, .dialog-content td {
+    padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155;
+  }
+  .dialog-content th { background: rgba(139, 92, 246, 0.2); color: var(--violet); font-weight: 600; }
+  .dialog-content tr:last-child td { border-bottom: none; }
+  .dialog-content code {
+    background: rgba(20, 184, 166, 0.15); padding: 2px 6px; border-radius: 4px;
+    color: var(--cyan); font-size: 0.9em;
+  }
+  .dialog-content ul { margin: 10px 0; padding-left: 24px; }
+  .dialog-content li { margin: 6px 0; }
+  
+  .canvas-wrapper {
+    position: relative;
+  }
+</style>
+</head>
+<body>
+<button class="help-btn" id="helpBtn" title="Open Guide">?</button>
+<button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">◐</button>
+
+<div class="freeze-banner" id="freezeBanner">⏸ FROZEN — Click point to inspect</div>
+<div class="inspect-tooltip" id="inspectTooltip"></div>
+
+<dialog id="guideDialog">
+  <div class="dialog-header">
+    <h2>🧭 Guide to the UNNS MCMC Calculator v3</h2>
+    <button class="dialog-close" id="closeDialog">×</button>
+  </div>
+  <div class="dialog-content">
+    <p style="text-align: center; color: var(--muted); font-style: italic;">Recursive Curvature Sampler — Research Grade</p>
+    
+    <h3>What's New in v3</h3>
+    <ul>
+      <li><strong>Fading trajectory trails</strong> — Visual persistence of recursive paths</li>
+      <li><strong>τ-on phase compass</strong> — Real-time display of recursive substrate orientation</li>
+      <li><strong>Curvature metrics</strong> — ⟨κ⟩ average and Var(κ) variance tracking</li>
+      <li><strong>Pan & Zoom</strong> — Mouse wheel to zoom, click-drag to explore phase space</li>
+      <li><strong>Dark/Light mode</strong> — Toggle visual theme for presentations</li>
+      <li><strong>Freeze & Inspect</strong> — Click any point to examine local properties</li>
+      <li><strong>Enhanced analytics</strong> — Entropy sparklines, acceptance histograms</li>
+    </ul>
+    
+    <h3>1. Purpose</h3>
+    <p>This simulator extends classical Markov Chain Monte Carlo (MCMC) into the UNNS substrate, where probability is treated as <strong>recursive curvature</strong> rather than a flat energy surface. Each sampler (RWM, τRHMC, Klein) explores the information manifold by folding, reflecting, and rebalancing curvature.</p>
+    
+    <h3>2. The Three Samplers</h3>
+    <table>
+      <tr>
+        <th>Sampler</th>
+        <th>Role</th>
+        <th>UNNS Analogue</th>
+      </tr>
+      <tr>
+        <td><strong>RWM</strong> (Random-Walk Metropolis)</td>
+        <td>Classical baseline: explores local entropy.</td>
+        <td>Flat-space diffusion; "pre-recursive" mode.</td>
+      </tr>
+      <tr>
+        <td><strong>τRHMC</strong> (τ-on Hamiltonian MCMC)</td>
+        <td>Adds τ-field coupling and recursive metric.</td>
+        <td>Flow through curved recursion channels; captures harmonic motion of information.</td>
+      </tr>
+      <tr>
+        <td><strong>Klein-Flip</strong></td>
+        <td>Introduces non-orientable flips (like Möbius inversions).</td>
+        <td>Simulates topological jumps in recursion depth; resembles UNNS Collapse–Repair phases.</td>
+      </tr>
+    </table>
+    
+    <h3>3. Controls & Interactions</h3>
+    <ul>
+      <li><strong>Mouse Wheel</strong> — Zoom in/out on phase space</li>
+      <li><strong>Click + Drag</strong> — Pan around to explore different regions</li>
+      <li><strong>Keyboard: S</strong> — Start/Pause simulation</li>
+      <li><strong>Keyboard: R</strong> — Reset (stops simulation, clears canvas, resets all state, generates new Run ID)</li>
+      <li><strong>Keyboard: F</strong> — Freeze & Inspect mode (click points to inspect)</li>
+      <li><strong>↻ Reset Button</strong> — Stops simulation if running, exits freeze mode, fully clears canvas and resets all chains</li>
+      <li><strong>Target Distribution</strong> — switch between test surfaces</li>
+      <li><strong>RWM σ</strong> — proposal width</li>
+      <li><strong>τRHMC ε / L</strong> — integration parameters</li>
+      <li><strong>α (Metric weight)</strong> — τ-field coupling strength</li>
+    </ul>
+    
+    <h3>4. Visual Layers</h3>
+    <ul>
+      <li><strong>Fading Trails</strong> — Motion memory showing recursive persistence</li>
+      <li><strong>Curvature Heatmap</strong> — color encodes Φ-field curvature</li>
+      <li><strong>τ-on Field Lines</strong> — arrows show recursive flow direction</li>
+      <li><strong>Seed & Phase Display</strong> — Shows current UNNS seed and τ-phase</li>
+      <li><strong>Curvature Legend</strong> — κ < 0 (concave/collapse) vs κ > 0 (convex/expansion)</li>
+    </ul>
+    
+    <h3>5. Enhanced Diagnostics</h3>
+    <table>
+      <tr>
+        <th>Metric</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>⟨κ⟩ (Avg Curvature)</td>
+        <td>Mean curvature across recent samples</td>
+      </tr>
+      <tr>
+        <td>Var(κ)</td>
+        <td>Curvature variance — measure of stability</td>
+      </tr>
+      <tr>
+        <td>ρ(κ,Hᵣ)</td>
+        <td>Correlation between curvature and recursive entropy</td>
+      </tr>
+      <tr>
+        <td>τ-phase (φ)</td>
+        <td>Current recursive substrate orientation</td>
+      </tr>
+      <tr>
+        <td>Run ID</td>
+        <td>Unique reproducibility stamp for this simulation</td>
+      </tr>
+    </table>
+    
+    <h3>6. Scientific Features</h3>
+    <ul>
+      <li><strong>Deterministic RNG</strong> — Mulberry32 PRNG ensures perfect reproducibility</li>
+      <li><strong>Adaptive Tuning</strong> — Self-adjusts toward optimal acceptance rates</li>
+      <li><strong>Curvature-Entropy Tracking</strong> — Monitors correlation between geometry and information</li>
+      <li><strong>Run ID Stamping</strong> — Each simulation gets unique identifier for experiments</li>
+    </ul>
+    
+    <h3>7. Understanding the UNNS Seed</h3>
+    <p>The seed label <strong>"UNNS-####"</strong> combines classical randomness with recursive substrate initialization. The numeric part controls the RNG, while also defining a τ-on phase:</p>
+    <p style="text-align: center;"><code>τ₀ = e^(i·2π·(seed mod 10000)/10000)</code></p>
+    <p>This phase determines initial curvature basin and topological symmetry.</p>
+    
+    <h3>8. 🧪 Example UNNS Seeds to Try</h3>
+    <p>Here are experimental UNNS seed examples you can try in the calculator to explore different recursive and curvature behaviors. Each seed encodes both a numeric random source and a τ<sub>on</sub>-phase initialization.</p>
+    
+    <h4>🧩 Canonical Seeds (Baseline)</h4>
+    <table>
+      <tr>
+        <th>Seed</th>
+        <th>Description</th>
+        <th>Expected Behavior</th>
+      </tr>
+      <tr>
+        <td><code>UNNS-0001</code></td>
+        <td>Neutral flat origin</td>
+        <td>Starts near zero curvature; behaves like standard MCMC</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-0420</code></td>
+        <td>Low recursive curvature</td>
+        <td>τ<sub>on</sub> field is shallow; slower mixing, rhythmic oscillation</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-1234</code></td>
+        <td>Balanced harmonic mode</td>
+        <td>Smooth convergence, good metric stability (default)</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-3141</code></td>
+        <td>π-phase seed</td>
+        <td>Alternating τ<sub>on</sub> resonance; slight spiral trajectories</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-2718</code></td>
+        <td>e-phase seed</td>
+        <td>Asymmetric growth, tends toward one curvature well</td>
+      </tr>
+    </table>
+    
+    <h4>🔮 Curvature-Dominant Seeds (Deep Recursive Flow)</h4>
+    <table>
+      <tr>
+        <th>Seed</th>
+        <th>Description</th>
+        <th>Behavior</th>
+      </tr>
+      <tr>
+        <td><code>UNNS-8888</code></td>
+        <td>High τ<sub>on</sub> magnitude</td>
+        <td>Deep curvature wells; strong field pull, chaotic yet rich</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-9999</code></td>
+        <td>Collapse-rebirth cycle</td>
+        <td>Causes quasi-periodic resets (Klein-Flip dominance)</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-2025</code></td>
+        <td>Future harmonic</td>
+        <td>Stable rhythm, small ΔH<sub>r</sub> drift — near harmonic equilibrium</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-7777</code></td>
+        <td>Resonant attractor</td>
+        <td>Self-tuned feedback loops, rhythmic τ<sub>on</sub> oscillation</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-4040</code></td>
+        <td>Null-curvature offset</td>
+        <td>τ<sub>on</sub> field cancellation; flat diffusion, almost classical</td>
+      </tr>
+    </table>
+    
+    <h4>🌀 Topological / Klein-Phase Seeds</h4>
+    <table>
+      <tr>
+        <th>Seed</th>
+        <th>Description</th>
+        <th>Behavior</th>
+      </tr>
+      <tr>
+        <td><code>UNNS-1313</code></td>
+        <td>Dual-fold Möbius start</td>
+        <td>Alternating inversion every ~100 steps</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-6666</code></td>
+        <td>Negative recursion depth</td>
+        <td>Begins in inverted τ<sub>on</sub> phase (anti-harmonic drift)</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-8181</code></td>
+        <td>Bi-curved offset</td>
+        <td>Competing τ<sub>on</sub> channels; two attractor loops appear</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-5050</code></td>
+        <td>Half-phase resonance</td>
+        <td>Balanced, but often exhibits slow Klein coupling</td>
+      </tr>
+      <tr>
+        <td><code>UNNS-9990</code></td>
+        <td>Collapse pre-cursor</td>
+        <td>Early drift toward recursive singularity (edge of chaos)</td>
+      </tr>
+    </table>
+    
+    <h4>⚙️ Practical Tips for Experiments</h4>
+    <ul>
+      <li>Compare trajectories by fixing all parameters except the seed.</li>
+      <li>Plot ΔH<sub>r</sub> drift over time — some seeds stabilize (harmonic), others diverge (chaotic).</li>
+      <li>Turn on audio mode — each seed yields a distinct harmonic signature due to its τ<sub>on</sub>-phase.</li>
+      <li>Use the Freeze & Inspect mode (press <strong>F</strong>) to examine specific points in phase space.</li>
+      <li>Export your results with the unique Run ID for perfect reproducibility.</li>
+    </ul>
+    
+    <h3>9. Export & Reproducibility</h3>
+    <ul>
+      <li><strong>Export JSON</strong> — Saves complete state including Run ID</li>
+      <li><strong>Import JSON</strong> — Restores exact simulation state</li>
+      <li><strong>Run ID</strong> — Unique identifier combines seed + timestamp for perfect reproducibility</li>
+    </ul>
+    
+    <h3>10. Applications & Use Cases</h3>
+    <p>The UNNS MCMC Calculator is more than a visual demo—it's an experimental, exploratory research tool that sits between computational physics, information geometry, and recursive mathematics. Its applicability spans both didactic purposes (teaching recursion–curvature relationships) and theoretical research (probing curvature-based stochastic models).</p>
+    
+    <h4>🧮 1. Scientific Modeling & Simulation</h4>
+    <ul>
+      <li><strong>Recursive Markov Processes</strong> — Extends standard MCMC by embedding recursion depth <code>n</code> and curvature <code>κ</code>, providing a framework for self-referential probability distributions.</li>
+      <li><strong>τ-on Field Dynamics</strong> — Simulates how sampling in curved information space may behave differently from Euclidean spaces, relevant for quantum information geometry, gravitational stochastic fields, and adaptive manifolds.</li>
+      <li><strong>Adaptive Diagnostics</strong> — Displays acceptance rates, ESS, curvature–entropy correlations—useful for studying convergence and "field coherence" across nested sampling layers.</li>
+    </ul>
+    
+    <h4>🎨 2. Educational and Explanatory Tool</h4>
+    <ul>
+      <li>Visualizes concepts like <strong>recursion depth</strong>, <strong>phase coupling</strong>, and <strong>curvature propagation</strong> in an intuitive way.</li>
+      <li>Acts as an <strong>interactive textbook</strong> for students learning about Markov processes, Hamiltonian dynamics, and recursive systems.</li>
+      <li>The color, sound, and τ-phase representations link math with sensory feedback, ideal for <strong>cross-disciplinary education</strong> (mathematics, art, computation).</li>
+    </ul>
+    
+    <h4>🧠 3. Algorithmic Experimentation</h4>
+    <ul>
+      <li>Serves as a <strong>sandbox for non-linear MCMC development</strong>—researchers can modify kernels, curvature mappings, or τ-field equations.</li>
+      <li>Offers a basis for <strong>curvature-aware optimizers</strong>, bridging Bayesian inference and UNNS recursion.</li>
+      <li>Enables testing of <strong>τ-on–guided sampling</strong>: potentially better mixing in multimodal distributions with recursive coherence.</li>
+    </ul>
+    
+    <h4>🌌 4. Conceptual & Theoretical Insight</h4>
+    <ul>
+      <li>Translates Shannon-style linear information flow into <strong>curvature-recursive geometries</strong>, allowing study of how information itself curves and repairs.</li>
+      <li>Demonstrates how <strong>collapse and reflection cycles</strong> (τ-on loops) might generalize equilibrium sampling beyond classical thermodynamic assumptions.</li>
+      <li>Acts as a <strong>bridge model</strong> for UNNS extensions toward cosmological analogs (recursive substrate fields, dark-energy-like potential flattening).</li>
+    </ul>
+    
+    <h4>🔧 In Practical Terms</h4>
+    <p>You can use this calculator to:</p>
+    <ul>
+      <li>Compare classical and recursive samplers side-by-side</li>
+      <li>Measure curvature effects on convergence or entropy in real time</li>
+      <li>Generate reproducible τ-seeded experiments with unique Run IDs</li>
+      <li>Educate students or colleagues about recursion, τ-fields, and stochastic geometry through immediate visual and sonic feedback</li>
+      <li>Prototype new curvature-aware algorithms or adaptive sampling methods</li>
+      <li>Explore connections between information geometry and recursive substrate theory</li>
+    </ul>
+    
+    <p style="margin-top: 24px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--violet); border-radius: 4px;">
+      <strong>Research Note:</strong> This v3 calculator is designed as a research-grade tool. All metrics are scientifically grounded, and simulations are perfectly reproducible given the same seed and parameters.
+    </p>
+  </div>
+</dialog>
+
+<div class="container">
+  <div class="title-row">
+    <svg class="unns-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Outer recursive ring -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="url(#logoGrad)" stroke-width="3" opacity="0.6" filter="url(#glow)"/>
+      <!-- Middle ring -->
+      <circle cx="50" cy="50" r="28" fill="none" stroke="url(#logoGrad)" stroke-width="2.5" opacity="0.8" filter="url(#glow)"/>
+      <!-- Inner curvature spiral -->
+      <path d="M 50 30 Q 65 35, 68 50 Q 65 65, 50 70 Q 35 65, 32 50 Q 35 35, 50 30" 
+            fill="none" stroke="url(#logoGrad)" stroke-width="2" opacity="1" filter="url(#glow)"/>
+      <!-- Central τ symbol -->
+      <text x="50" y="58" font-family="serif" font-size="24" fill="url(#logoGrad)" 
+            text-anchor="middle" font-weight="bold" filter="url(#glow)">τ</text>
+      <!-- Recursion dots -->
+      <circle cx="50" cy="10" r="3" fill="#14b8a6" opacity="0.8"/>
+      <circle cx="90" cy="50" r="3" fill="#8b5cf6" opacity="0.8"/>
+      <circle cx="50" cy="90" r="3" fill="#14b8a6" opacity="0.8"/>
+      <circle cx="10" cy="50" r="3" fill="#8b5cf6" opacity="0.8"/>
+    </svg>
+    <h1>UNNS MCMC Calculator v3</h1>
+  </div>
+  <div class="subtitle">Information → Curvature • Computation → Recursion • Mixing → Harmony</div>
+
+  <div class="grid">
+    <!-- Left: Visualization -->
+    <div class="stack">
+      <div class="panel">
+        <div class="legend" style="margin-bottom:10px;">
+          <span><span class="dot dot-rwm"></span>RWM</span>
+          <span><span class="dot dot-rhmc"></span>τon-RHMC</span>
+          <span><span class="dot dot-klein"></span>Klein-Flip</span>
+          <span class="badge">v3 Research Grade</span>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="view2d" width="1000" height="700"></canvas>
+          <div class="canvas-overlay" id="canvasOverlay">
+            <div>Seed: <span id="seedDisplay">UNNS-1234</span></div>
+            <div>τ-phase: <span id="tauPhase">0.000</span></div>
+            <div>Run ID: <span id="runID">---</span></div>
+          </div>
+          <div class="curvature-legend" id="curvLegend" style="display:none;">
+            <div style="color: var(--violet);">κ > 0: Convex (expansion)</div>
+            <div style="color: var(--cyan);">κ < 0: Concave (collapse)</div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <label><input type="checkbox" id="chkCurv" /> Curvature heatmap</label>
+          &nbsp;&nbsp;
+          <label><input type="checkbox" id="chkField" /> τon field lines</label>
+          &nbsp;&nbsp;
+          <label><input type="checkbox" id="chkGrid" /> grid</label>
+          &nbsp;&nbsp;
+          <label><input type="checkbox" id="chkTrails" checked /> fading trails</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Enhanced Diagnostics</h3>
+        <div class="metrics" style="margin-bottom:10px;">
+          <div class="metric">
+            <div class="title">⟨κ⟩ Avg Curvature</div>
+            <div class="value" id="m-kavg">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="title">Var(κ) Curvature Var</div>
+            <div class="value" id="m-kvar">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="title">ρ(κ,Hᵣ) Correlation</div>
+            <div class="value" id="m-corr">0.000</div>
+          </div>
+        </div>
+        
+        <div class="metrics" style="margin-bottom:10px;">
+          <div class="metric">
+            <div class="title">ΔHᵣ drift</div>
+            <div class="value" id="m-hr">0.000</div>
+            <canvas class="sparkline" id="sparkHr"></canvas>
+          </div>
+          <div class="metric">
+            <div class="title">KL (empirical ‖ target)</div>
+            <div class="value" id="m-kl">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="title">Iterations</div>
+            <div class="value" id="m-iters">0</div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="title"><span class="dot dot-rwm"></span>RWM accept</div>
+            <div class="value" id="m-rwm-acc">0%</div>
+            <div style="height:30px; margin-top:4px; background:#1f2937; border-radius:4px; overflow:hidden;">
+              <div id="hist-rwm" style="height:100%; background:var(--pink); width:0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="title"><span class="dot dot-rhmc"></span>τRHMC accept</div>
+            <div class="value" id="m-rhmc-acc">0%</div>
+            <div style="height:30px; margin-top:4px; background:#1f2937; border-radius:4px; overflow:hidden;">
+              <div id="hist-rhmc" style="height:100%; background:var(--cyan); width:0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="title"><span class="dot dot-klein"></span>Klein accept</div>
+            <div class="value" id="m-klein-acc">0%</div>
+            <div style="height:30px; margin-top:4px; background:#1f2937; border-radius:4px; overflow:hidden;">
+              <div id="hist-klein" style="height:100%; background:var(--gold); width:0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="hint" style="margin-top:8px;">
+          <span class="kbd">S</span> start/pause • <span class="kbd">R</span> reset (stops & clears) • <span class="kbd">F</span> freeze & inspect • <span class="kbd">Wheel</span> zoom
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="stack">
+      <div class="panel">
+        <h3>Setup & Parameters</h3>
+        <div class="row">
+          <div class="col">
+            <label>Target distribution</label>
+            <select id="target">
+              <option value="bimodal">Bimodal Gaussian</option>
+              <option value="banana">Rosenbrock Banana</option>
+              <option value="funnel">Neal's Funnel</option>
+              <option value="mixture4">4-Mode Mixture</option>
+            </select>
+          </div>
+          <div class="col">
+            <label>UNNS Seed</label>
+            <input type="text" id="seed" value="unns-1234" />
+          </div>
+          <div class="col">
+            <label>Steps / tick</label>
+            <input type="number" id="stepsPer" value="2" min="1" max="50" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div class="col">
+            <label>RWM σ: <span id="rwmVal">0.35</span></label>
+            <input type="range" id="rwmSigma" value="0.35" step="0.05" min="0.05" max="2" />
+          </div>
+          <div class="col">
+            <label>τRHMC ε: <span id="epsVal">0.05</span></label>
+            <input type="range" id="eps" value="0.05" step="0.01" min="0.005" max="0.5" />
+          </div>
+          <div class="col">
+            <label>τRHMC L: <span id="leapsVal">10</span></label>
+            <input type="range" id="leaps" value="10" min="1" max="50" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div class="col">
+            <label>Metric α: <span id="alphaVal">0.25</span></label>
+            <input type="range" id="alpha" value="0.25" step="0.05" min="0" max="2" />
+          </div>
+          <div class="col">
+            <label>Klein flip: <span id="flipVal">0.10</span></label>
+            <input type="range" id="flipProb" value="0.10" step="0.01" min="0" max="1" />
+          </div>
+          <div class="col">
+            <label>Adaptive tuning</label>
+            <select id="adapt">
+              <option value="on">On (aim ~0.65)</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="controls" style="margin-top:10px;">
+          <button class="btn-primary" id="btnStart">▶ Start</button>
+          <button class="btn-ghost" id="btnStep">Step</button>
+          <button class="btn-ghost" id="btnReset">↻ Reset</button>
+          <button class="btn-ghost" id="btnFreeze">❄ Freeze</button>
+          <button class="btn-ghost" id="btnExport">⭳ Export</button>
+          <button class="btn-ghost" id="btnImport">⭱ Import</button>
+          <button class="btn-ghost" id="btnAudio">🔇 Audio</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>τ-on Phase & Recursion</h3>
+        <div style="text-align: center;">
+          <div class="tau-compass">
+            <div class="tau-arrow" id="tauArrow"></div>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--muted);">
+            τ = e^(iφ) where φ = <span id="tauAngle">0.00</span>°
+          </div>
+        </div>
+        
+        <div style="margin-top: 12px; font-size: .9rem; line-height: 1.6;">
+          <div><span style="color:var(--teal)">Recursive metric:</span> <code>G(x,n) = I + α·F<sup>(τ)</sup>·F<sup>(τ)ᵀ</sup></code></div>
+          <div><span style="color:var(--violet)">Curvature:</span> <code>κ(x) ≈ ∇²(−log π)</code></div>
+          <div><span style="color:var(--cyan)">Klein-Flip:</span> <code>(x,y,n) → (−x+ξ, −y+ξ, n±1)</code></div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h3>Session Info</h3>
+        <div style="font-size: 0.85rem; line-height: 1.6; color: var(--muted);">
+          <div>ESS: RWM=<span id="ess-rwm">0</span>, τRHMC=<span id="ess-rhmc">0</span>, Klein=<span id="ess-klein">0</span></div>
+          <div>Depth: RWM=<span id="n-rwm">0</span>, τRHMC=<span id="n-rhmc">0</span>, Klein=<span id="n-klein">0</span></div>
+          <div>Klein flips: <span id="flips-klein">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= Seedable PRNG (Mulberry32) ========= */
+function mulberry32(a) {
+  return function() {
+    var t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+function strHash(s) {
+  let h = 2166136261 >>> 0;
+  for (let i=0;i<s.length;i++){
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/* ========= Helpers ========= */
+const $ = (id) => document.getElementById(id);
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+/* ========= State ========= */
+let rng = mulberry32(strHash($('seed').value));
+let runID = '';
+let running = false, frozen = false, iter=0;
+let settings = {
+  target: 'bimodal',
+  rwmSigma: 0.35,
+  eps: 0.05,
+  L: 10,
+  alpha: 0.25,
+  flipProb: 0.10,
+  adapt: 'on',
+  stepsPer: 2
+};
+let flags = {
+  curv: false, field: false, grid: false, trails: true
+};
+let proc = {
+  rwm: { x:-1.5, y:0.0, n:0, acc:0, tot:0, flips:0, samples:[] },
+  rhmc: { x:-1.0, y:0.5, n:0, acc:0, tot:0, px:0, py:0, samples:[] },
+  klein:{ x: 1.5, y:0.0, n:0, acc:0, tot:0, flips:0, samples:[] }
+};
+const MAX_TRACE = 800;
+
+// Pan & Zoom
+let viewOffset = {x: 0, y: 0};
+let viewScale = 1.0;
+
+// Enhanced metrics
+let hrHistory = [];
+let curvatureHistory = [];
+const MAX_HISTORY = 200;
+
+/* ========= Targets ========= */
+function logp(x, y){
+  const t = settings.target;
+  if (t==='bimodal'){
+    const p1 = Math.exp(-((x+1.5)**2 + y**2)/0.5);
+    const p2 = Math.exp(-((x-1.5)**2 + y**2)/0.5);
+    return Math.log(p1+p2+1e-12);
+  } else if (t==='banana'){
+    const a=1, b=0.1;
+    const yt = y - b*(x*x - a*a);
+    return -0.5*((x*x)/(a*a) + (yt*yt)/(b*b*a*a));
+  } else if (t==='funnel'){
+    const v = y; const log_sigma = v/3;
+    let lp = -0.5 * v*v;
+    lp += (-log_sigma - 0.5 * (x*x) * Math.exp(-2*log_sigma));
+    return lp;
+  } else {
+    const s=0.3;
+    const p1 = Math.exp(-((x+1.5)**2 + (y+1.5)**2)/s);
+    const p2 = Math.exp(-((x-1.5)**2 + (y+1.5)**2)/s);
+    const p3 = Math.exp(-((x+1.5)**2 + (y-1.5)**2)/s);
+    const p4 = Math.exp(-((x-1.5)**2 + (y-1.5)**2)/s);
+    return Math.log(p1+p2+p3+p4+1e-12);
+  }
+}
+
+function gradLogp(x,y){
+  const e=0.001;
+  const gx = (logp(x+e,y)-logp(x-e,y))/(2*e);
+  const gy = (logp(x,y+e)-logp(x,y-e))/(2*e);
+  return {gx, gy};
+}
+
+function curvatureK(x,y,n=0){
+  const e=0.01;
+  const phi = -logp(x,y);
+  const phixp = -logp(x+e,y);
+  const phixm = -logp(x-e,y);
+  const phiyp = -logp(x,y+e);
+  const phiym = -logp(x,y-e);
+  const d2 = (phixp+phixm+phiyp+phiym-4*phi)/(e*e);
+  return Math.tanh(Math.abs(d2))*(1+0.05*n);
+}
+
+function tauField(x,y,n=0){
+  const {gx,gy} = gradLogp(x,y);
+  return {Fx: gx, Fy: gy};
+}
+
+function metricG(x,y,n, alpha){
+  if (alpha<=0) return {gxx:1, gyy:1};
+  const F = tauField(x,y,n);
+  const s = (F.Fx*F.Fx + F.Fy*F.Fy);
+  const g = 1 + alpha*s;
+  return {gxx:g, gyy:g};
+}
+
+/* ========= Samplers ========= */
+function stepRWM(){
+  const s = proc.rwm;
+  const sig = settings.rwmSigma;
+  const xn = s.x + (rng()-0.5)*2*sig;
+  const yn = s.y + (rng()-0.5)*2*sig;
+  const a = logp(xn,yn) - logp(s.x,s.y);
+  s.tot++;
+  if (Math.log(rng()) < a){
+    s.x=xn; s.y=yn; s.acc++;
+  }
+  s.samples.push({x:s.x,y:s.y,n:s.n});
+  if (s.samples.length>MAX_TRACE) s.samples.shift();
+}
+
+function stepRHMC(){
+  const s = proc.rhmc;
+  const eps = settings.eps, L = settings.L;
+  const G = metricG(s.x, s.y, s.n, settings.alpha);
+  let px = (rng()-0.5)*Math.sqrt(G.gxx);
+  let py = (rng()-0.5)*Math.sqrt(G.gyy);
+  const H0 = -logp(s.x,s.y) + 0.5*(px*px/G.gxx + py*py/G.gyy);
+
+  let x=s.x, y=s.y;
+  for (let i=0;i<L;i++){
+    const g1 = gradLogp(x,y);
+    px += 0.5*eps*g1.gx;
+    py += 0.5*eps*g1.gy;
+
+    x += eps*px/G.gxx;
+    y += eps*py/G.gyy;
+
+    const g2 = gradLogp(x,y);
+    px += 0.5*eps*g2.gx;
+    py += 0.5*eps*g2.gy;
+  }
+  const G2 = metricG(x,y,s.n, settings.alpha);
+  const H1 = -logp(x,y) + 0.5*(px*px/G2.gxx + py*py/G2.gyy);
+
+  s.tot++;
+  if (Math.log(rng()) < (H0-H1)){
+    s.x=x; s.y=y; s.px=px; s.py=py; s.acc++;
+    if (settings.adapt==='on' && rng()<0.10) s.n = Math.min(6, s.n+1);
+  }
+  s.samples.push({x:s.x,y:s.y,n:s.n});
+  if (s.samples.length>MAX_TRACE) s.samples.shift();
+}
+
+function stepKlein(){
+  const s = proc.klein;
+  if (rng()>settings.flipProb){
+    const sig = 0.3;
+    const xn = s.x + (rng()-0.5)*2*sig;
+    const yn = s.y + (rng()-0.5)*2*sig;
+    const a = logp(xn,yn) - logp(s.x,s.y);
+    s.tot++;
+    if (Math.log(rng())<a){ s.x=xn; s.y=yn; s.acc++; }
+  } else {
+    let xn = -s.x + (rng()-0.5)*0.5;
+    let yn = -s.y + (rng()-0.5)*0.5;
+    let nn = s.n + (rng()>0.5?1:-1); nn = Math.max(0, Math.min(6, nn));
+    const A = logp(xn,yn) - logp(s.x,s.y);
+    const pen = 0.12 * (curvatureK(xn,yn,nn) - curvatureK(s.x,s.y,s.n));
+    s.tot++;
+    if (Math.log(rng()) < (A - pen)){
+      s.x=xn; s.y=yn; s.n=nn; s.acc++; s.flips++;
+    }
+  }
+  s.samples.push({x:s.x,y:s.y,n:s.n});
+  if (s.samples.length>MAX_TRACE) s.samples.shift();
+}
+
+/* ========= Adaptive tuning ========= */
+function adaptTuning(){
+  if (settings.adapt!=='on') return;
+  if (proc.rwm.tot>50){
+    const ar = proc.rwm.acc/proc.rwm.tot;
+    settings.rwmSigma *= (ar>0.7?1.05 : (ar<0.5?0.96:1.0));
+    settings.rwmSigma = clamp(settings.rwmSigma, 0.05, 2.0);
+    proc.rwm.tot=0; proc.rwm.acc=0;
+  }
+  if (proc.rhmc.tot>50){
+    const ar = proc.rhmc.acc/proc.rhmc.tot;
+    settings.eps *= (ar>0.85?1.05 : (ar<0.6?0.96:1.0));
+    settings.eps = clamp(settings.eps, 0.01, 0.35);
+    proc.rhmc.tot=0; proc.rhmc.acc=0;
+  }
+  if (proc.klein.tot>50){
+    const ar = proc.klein.acc/proc.klein.tot;
+    settings.flipProb *= (ar>0.7?1.05 : (ar<0.4?0.96:1.0));
+    settings.flipProb = clamp(settings.flipProb, 0.02, 0.35);
+    proc.klein.tot=0; proc.klein.acc=0;
+  }
+}
+
+/* ========= Metrics ========= */
+function essLag1(trace){
+  if (trace.length<8) return 0;
+  const xs = trace.map(p=>p.x);
+  const mean = xs.reduce((a,b)=>a+b,0)/xs.length;
+  let v=0; for (let i=0;i<xs.length;i++){ const d=xs[i]-mean; v+=d*d; }
+  v/= (xs.length-1||1);
+  if (v<=1e-12) return 0;
+  let cov=0; for (let i=1;i<xs.length;i++){ cov += (xs[i]-mean)*(xs[i-1]-mean); }
+  cov /= (xs.length-1);
+  const rho = clamp(cov/v, -0.99, 0.99);
+  const ess = xs.length * (1 - rho) / (1 + rho);
+  return Math.max(0, ess|0);
+}
+
+function recursiveEntropyAvg(){
+  const k1 = curvatureK(proc.rwm.x, proc.rwm.y, proc.rwm.n);
+  const k2 = curvatureK(proc.rhmc.x, proc.rhmc.y, proc.rhmc.n);
+  const k3 = curvatureK(proc.klein.x, proc.klein.y, proc.klein.n);
+  return (Math.abs(k1)+Math.abs(k2)+Math.abs(k3))/3;
+}
+
+let prevHr = 0;
+function deltaHr(){
+  const Hr = recursiveEntropyAvg();
+  const d = Hr - prevHr; prevHr = Hr;
+  return {Hr, d};
+}
+
+function avgCurvature(){
+  const all = proc.rwm.samples.concat(proc.rhmc.samples, proc.klein.samples);
+  if (all.length < 10) return 0;
+  let sum = 0;
+  for (const p of all) sum += curvatureK(p.x, p.y, p.n);
+  return sum / all.length;
+}
+
+function varCurvature(){
+  const all = proc.rwm.samples.concat(proc.rhmc.samples, proc.klein.samples);
+  if (all.length < 10) return 0;
+  const avg = avgCurvature();
+  let sum = 0;
+  for (const p of all) {
+    const k = curvatureK(p.x, p.y, p.n);
+    sum += (k - avg) ** 2;
+  }
+  return sum / all.length;
+}
+
+function curvatureEntropyCorr(){
+  const all = proc.rwm.samples.concat(proc.rhmc.samples, proc.klein.samples);
+  if (all.length < 20) return 0;
+  
+  const ks = all.map(p => curvatureK(p.x, p.y, p.n));
+  const hs = all.map((p, i) => Math.abs(curvatureK(p.x, p.y, p.n)));
+  
+  const avgK = ks.reduce((a,b)=>a+b,0) / ks.length;
+  const avgH = hs.reduce((a,b)=>a+b,0) / hs.length;
+  
+  let cov = 0, varK = 0, varH = 0;
+  for (let i = 0; i < ks.length; i++) {
+    const dk = ks[i] - avgK;
+    const dh = hs[i] - avgH;
+    cov += dk * dh;
+    varK += dk * dk;
+    varH += dh * dh;
+  }
+  
+  if (varK === 0 || varH === 0) return 0;
+  return cov / Math.sqrt(varK * varH);
+}
+
+function estimateKL(){
+  const B=40, dx=6/B;
+  const bins = new Array(B*B).fill(0);
+  const all = proc.rwm.samples.concat(proc.rhmc.samples, proc.klein.samples);
+  if (all.length<50) return 0.0;
+  for (const p of all){
+    const ix = Math.floor((p.x+3)/6*B);
+    const iy = Math.floor((p.y+3)/6*B);
+    if (ix>=0&&ix<B&&iy>=0&&iy<B) bins[iy*B+ix] += 1;
+  }
+  const total = bins.reduce((a,b)=>a+b,0) || 1;
+  let kl=0;
+  for (let iy=0; iy<B; iy++){
+    for (let ix=0; ix<B; ix++){
+      const emp = bins[iy*B+ix]/total + 1e-12;
+      const x = ix*dx-3+dx/2, y = iy*dx-3+dx/2;
+      const tar = Math.exp(logp(x,y));
+      const Z = 1;
+      const tq = tar/(Z+1e-12) + 1e-12;
+      kl += emp * (Math.log(emp) - Math.log(tq));
+    }
+  }
+  return kl/(B*B);
+}
+
+/* ========= τ-on phase calculation ========= */
+function getTauPhase(){
+  const seedStr = $('seed').value;
+  const seedNum = strHash(seedStr) % 10000;
+  const phi = (2 * Math.PI * seedNum) / 10000;
+  return { phi, cos: Math.cos(phi), sin: Math.sin(phi), deg: (phi * 180 / Math.PI).toFixed(2) };
+}
+
+/* ========= Rendering ========= */
+const cvs = $('view2d'); const ctx=cvs.getContext('2d');
+
+function toCanvas(x,y){
+  const scale=120 * viewScale, ox=cvs.width/2 + viewOffset.x, oy=cvs.height/2 + viewOffset.y;
+  return {cx: ox + x*scale, cy: oy + y*scale};
+}
+
+function fromCanvas(cx, cy){
+  const scale=120 * viewScale, ox=cvs.width/2 + viewOffset.x, oy=cvs.height/2 + viewOffset.y;
+  return {x: (cx - ox) / scale, y: (cy - oy) / scale};
+}
+
+function drawBackground(){
+  const shouldFullClear = !flags.trails || iter === 0;
+  const isLightMode = document.body.classList.contains('light-mode');
+  
+  if (shouldFullClear) {
+    ctx.fillStyle = isLightMode ? '#f8fafc' : '#0a0f1a';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+  } else {
+    ctx.fillStyle = isLightMode ? 'rgba(248, 250, 252, 0.15)' : 'rgba(10, 15, 26, 0.15)';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+  }
+  
+  if (flags.grid){
+    ctx.strokeStyle = isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)';
+    ctx.lineWidth=1;
+    for (let gx= -3; gx<=3; gx+=0.5){
+      const a = toCanvas(gx, -3), b = toCanvas(gx, 3);
+      ctx.beginPath(); ctx.moveTo(a.cx,a.cy); ctx.lineTo(b.cx,b.cy); ctx.stroke();
+    }
+    for (let gy= -3; gy<=3; gy+=0.5){
+      const a = toCanvas(-3, gy), b = toCanvas(3, gy);
+      ctx.beginPath(); ctx.moveTo(a.cx,a.cy); ctx.lineTo(b.cx,b.cy); ctx.stroke();
+    }
+  }
+}
+
+function drawDensity(){
+  const B=4;
+  for (let px=0; px<cvs.width; px+=B){
+    for (let py=0; py<cvs.height; py+=B){
+      const {x, y} = fromCanvas(px, py);
+      const dens = Math.exp(logp(x,y));
+      let alpha = Math.min(0.45, dens*0.35);
+      if (flags.curv){
+        const k = curvatureK(x,y,0);
+        const r = k>0? 20: 139, g=k>0? 184: 92, b=k>0? 166: 246;
+        alpha = Math.min(Math.abs(k)*0.55, 0.6);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      } else {
+        ctx.fillStyle = `rgba(120,145,200,${alpha})`;
+      }
+      ctx.fillRect(px,py,B,B);
+    }
+  }
+}
+
+function drawField(){
+  if (!flags.field) return;
+  ctx.strokeStyle='rgba(34, 211, 238, 0.35)';
+  ctx.lineWidth=0.6;
+  for (let gx=-3; gx<=3; gx+=0.6){
+    for (let gy=-3; gy<=3; gy+=0.6){
+      const F = tauField(gx,gy,0);
+      const p = toCanvas(gx,gy);
+      const q = {cx: p.cx + F.Fx*10, cy: p.cy + F.Fy*10};
+      ctx.beginPath(); ctx.moveTo(p.cx,p.cy); ctx.lineTo(q.cx,q.cy); ctx.stroke();
+    }
+  }
+}
+
+function drawTrace(samples, color){
+  if (samples.length<2) return;
+  ctx.strokeStyle = color; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for (let i=0;i<samples.length;i++){
+    const p = toCanvas(samples[i].x, samples[i].y);
+    if (i===0) ctx.moveTo(p.cx,p.cy); else ctx.lineTo(p.cx,p.cy);
+  }
+  ctx.stroke();
+  const ph = toCanvas(samples.at(-1).x, samples.at(-1).y);
+  ctx.fillStyle = color.replace(', 0.4)', ', 0.9)');
+  ctx.beginPath(); ctx.arc(ph.cx, ph.cy, 5, 0, Math.PI*2); ctx.fill();
+}
+
+function render(){
+  drawBackground();
+  drawDensity();
+  drawField();
+  drawTrace(proc.rwm.samples, 'rgba(255,105,180,0.4)');
+  drawTrace(proc.rhmc.samples, 'rgba(0,255,255,0.4)');
+  drawTrace(proc.klein.samples, 'rgba(255,215,0,0.4)');
+}
+
+/* ========= Metrics UI ========= */
+function updateUI(){
+  $('m-iters').textContent = iter.toString();
+  
+  const {Hr, d} = deltaHr();
+  $('m-hr').textContent = d.toFixed(3);
+  hrHistory.push(d);
+  if (hrHistory.length > MAX_HISTORY) hrHistory.shift();
+  
+  $('m-kl').textContent = estimateKL().toFixed(3);
+  
+  const kavg = avgCurvature();
+  const kvar = varCurvature();
+  const corr = curvatureEntropyCorr();
+  
+  $('m-kavg').textContent = kavg.toFixed(3);
+  $('m-kvar').textContent = kvar.toFixed(3);
+  $('m-corr').textContent = corr.toFixed(3);
+  
+  curvatureHistory.push(kavg);
+  if (curvatureHistory.length > MAX_HISTORY) curvatureHistory.shift();
+  
+  const rA = (proc.rwm.acc/(proc.rwm.tot||1))*100;
+  const hA = (proc.rhmc.acc/(proc.rhmc.tot||1))*100;
+  const kA = (proc.klein.acc/(proc.klein.tot||1))*100;
+  
+  $('m-rwm-acc').textContent = rA.toFixed(0)+'%';
+  $('m-rhmc-acc').textContent = hA.toFixed(0)+'%';
+  $('m-klein-acc').textContent = kA.toFixed(0)+'%';
+  
+  $('hist-rwm').style.width = rA + '%';
+  $('hist-rhmc').style.width = hA + '%';
+  $('hist-klein').style.width = kA + '%';
+  
+  $('ess-rwm').textContent = essLag1(proc.rwm.samples);
+  $('ess-rhmc').textContent = essLag1(proc.rhmc.samples);
+  $('ess-klein').textContent = essLag1(proc.klein.samples);
+  
+  $('n-rwm').textContent = proc.rwm.n;
+  $('n-rhmc').textContent = proc.rhmc.n;
+  $('n-klein').textContent = proc.klein.n;
+  $('flips-klein').textContent = proc.klein.flips;
+  
+  // Update τ-phase display
+  const tau = getTauPhase();
+  $('tauPhase').textContent = tau.cos.toFixed(3) + ' + ' + tau.sin.toFixed(3) + 'i';
+  $('tauAngle').textContent = tau.deg;
+  $('tauArrow').style.transform = `rotate(${tau.phi}rad)`;
+  
+  // Draw sparkline
+  drawSparkline();
+}
+
+function drawSparkline(){
+  const canvas = $('sparkHr');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, w, h);
+  
+  if (hrHistory.length < 2) return;
+  
+  const max = Math.max(...hrHistory.map(Math.abs), 0.1);
+  ctx.strokeStyle = 'rgba(139, 92, 246, 0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  
+  for (let i = 0; i < hrHistory.length; i++) {
+    const x = (i / (hrHistory.length - 1)) * w;
+    const y = h/2 - (hrHistory[i] / max) * (h/2 - 2);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Zero line
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, h/2);
+  ctx.lineTo(w, h/2);
+  ctx.stroke();
+}
+
+/* ========= Audio ========= */
+let AC=null, osc={}, gain={}, audioActive=false;
+function initAudio(){
+  if (AC) return;
+  try{
+    AC = new (window.AudioContext||window.webkitAudioContext)();
+    const types={rwm:'sine', rhmc:'triangle', klein:'square'};
+    const base={rwm:110, rhmc:165, klein:220};
+    ['rwm','rhmc','klein'].forEach(k=>{
+      osc[k]=AC.createOscillator(); gain[k]=AC.createGain();
+      osc[k].type=types[k]; osc[k].frequency.value=base[k];
+      gain[k].gain.value=0.0; osc[k].connect(gain[k]).connect(AC.destination);
+      osc[k].start();
+    });
+  }catch(e){}
+}
+
+function updateAudio(){
+  if (!AC || !audioActive) return;
+  const now=AC.currentTime;
+  function tune(k, p, base){
+    const f = base*(1 + p.x*0.1 + p.y*0.1)*(1 + (p.n||0)*0.05);
+    const a = clamp(0.03 + 0.04*curvatureK(p.x,p.y,p.n), 0.02, 0.18);
+    osc[k].frequency.setTargetAtTime(f, now, 0.05);
+    gain[k].gain.setTargetAtTime(a, now, 0.05);
+  }
+  tune('rwm', proc.rwm, 110);
+  tune('rhmc', proc.rhmc, 165);
+  tune('klein', proc.klein, 220);
+}
+
+function fadeAudioOut(){
+  if (!AC) return;
+  const now = AC.currentTime;
+  ['rwm','rhmc','klein'].forEach(k=>{
+    gain[k].gain.setTargetAtTime(0.0, now, 0.15);
+  });
+}
+
+function resumeAudioContext(){
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+
+/* ========= Pan & Zoom ========= */
+let isDragging = false, dragStart = {x: 0, y: 0};
+
+cvs.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  viewScale = clamp(viewScale * delta, 0.3, 3.0);
+  render();
+});
+
+cvs.addEventListener('mousedown', (e) => {
+  if (frozen) {
+    // Inspect mode
+    const rect = cvs.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const {x, y} = fromCanvas(cx, cy);
+    showInspectTooltip(e.clientX, e.clientY, x, y);
+  } else {
+    isDragging = true;
+    dragStart = {x: e.clientX - viewOffset.x, y: e.clientY - viewOffset.y};
+  }
+});
+
+cvs.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    viewOffset.x = e.clientX - dragStart.x;
+    viewOffset.y = e.clientY - dragStart.y;
+    render();
+  }
+});
+
+cvs.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+cvs.addEventListener('mouseleave', () => {
+  isDragging = false;
+});
+
+function showInspectTooltip(clientX, clientY, x, y) {
+  const tooltip = $('inspectTooltip');
+  const k = curvatureK(x, y, 0);
+  const lp = logp(x, y);
+  
+  tooltip.innerHTML = `
+    <div>x: ${x.toFixed(3)}, y: ${y.toFixed(3)}</div>
+    <div>κ(x): ${k.toFixed(4)}</div>
+    <div>log π(x): ${lp.toFixed(4)}</div>
+  `;
+  
+  tooltip.style.left = (clientX + 15) + 'px';
+  tooltip.style.top = (clientY + 15) + 'px';
+  tooltip.style.display = 'block';
+  
+  setTimeout(() => {
+    tooltip.style.display = 'none';
+  }, 3000);
+}
+
+/* ========= Controls ========= */
+$('helpBtn').onclick = () => $('guideDialog').showModal();
+$('closeDialog').onclick = () => $('guideDialog').close();
+$('guideDialog').onclick = (e) => {
+  if (e.target === $('guideDialog')) $('guideDialog').close();
+};
+
+$('themeToggle').onclick = () => {
+  document.body.classList.toggle('light-mode');
+  render();
+};
+
+$('btnStart').onclick = () => {
+  running = !running;
+  $('btnStart').textContent = running ? '⏸ Pause' : '▶ Start';
+};
+
+$('btnReset').onclick = () => {
+  if (running) {
+    running = false;
+    $('btnStart').textContent = '▶ Start';
+  }
+  if (frozen) {
+    frozen = false;
+    $('btnFreeze').textContent = '❄ Freeze';
+    $('freezeBanner').style.display = 'none';
+  }
+  resetAll();
+};
+$('btnStep').onclick = () => { tick(); };
+
+$('btnFreeze').onclick = () => {
+  frozen = !frozen;
+  $('btnFreeze').textContent = frozen ? '▶ Resume' : '❄ Freeze';
+  $('freezeBanner').style.display = frozen ? 'block' : 'none';
+};
+
+$('btnAudio').onclick = () => {
+  if (!AC) initAudio();
+  audioActive = !audioActive;
+  if (audioActive) {
+    resumeAudioContext();
+    $('btnAudio').textContent = '🔊 Audio';
+  } else {
+    fadeAudioOut();
+    $('btnAudio').textContent = '🔇 Audio';
+  }
+};
+
+$('btnExport').onclick = () => {
+  const data = {
+    settings,
+    proc,
+    runID,
+    timestamp: Date.now(),
+    version: '3.0'
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `unns_mcmc_v3_${runID}.json`;
+  a.click();
+};
+
+$('btnImport').onclick = async () => {
+  const input = document.createElement('input');
+  input.type='file';
+  input.accept='.json';
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    try{
+      const obj = JSON.parse(text);
+      Object.assign(settings, obj.settings || {});
+      Object.assign(proc.rwm, obj.proc?.rwm||{});
+      Object.assign(proc.rhmc, obj.proc?.rhmc||{});
+      Object.assign(proc.klein, obj.proc?.klein||{});
+      runID = obj.runID || generateRunID();
+      syncInputsFromSettings();
+      render();
+      updateUI();
+    }catch(e){}
+  };
+  input.click();
+};
+
+$('seed').onchange = ()=>{
+  rng = mulberry32(strHash($('seed').value));
+  runID = generateRunID();
+  updateSeedDisplay();
+};
+
+$('target').onchange = ()=>{
+  settings.target=$('target').value;
+  resetAll(false);
+};
+
+// Real-time slider updates
+$('rwmSigma').oninput = () => {
+  settings.rwmSigma = parseFloat($('rwmSigma').value);
+  $('rwmVal').textContent = settings.rwmSigma.toFixed(2);
+};
+$('eps').oninput = () => {
+  settings.eps = parseFloat($('eps').value);
+  $('epsVal').textContent = settings.eps.toFixed(3);
+};
+$('leaps').oninput = () => {
+  settings.L = parseInt($('leaps').value,10);
+  $('leapsVal').textContent = settings.L;
+};
+$('alpha').oninput = () => {
+  settings.alpha = parseFloat($('alpha').value);
+  $('alphaVal').textContent = settings.alpha.toFixed(2);
+};
+$('flipProb').oninput = () => {
+  settings.flipProb = parseFloat($('flipProb').value);
+  $('flipVal').textContent = settings.flipProb.toFixed(2);
+};
+
+$('adapt').onchange = ()=> settings.adapt = $('adapt').value;
+$('stepsPer').onchange = ()=> settings.stepsPer = parseInt($('stepsPer').value,10);
+
+$('chkCurv').onchange = ()=>{
+  flags.curv = $('chkCurv').checked;
+  $('curvLegend').style.display = flags.curv ? 'block' : 'none';
+  render();
+};
+$('chkField').onchange = ()=>{ flags.field = $('chkField').checked; render(); };
+$('chkGrid').onchange = ()=>{ flags.grid = $('chkGrid').checked; render(); };
+$('chkTrails').onchange = ()=>{ flags.trails = $('chkTrails').checked; };
+
+document.addEventListener('keydown', (e)=>{
+  if (e.key==='s' || e.key==='S') $('btnStart').click();
+  if (e.key==='r' || e.key==='R') $('btnReset').click();
+  if (e.key==='f' || e.key==='F') $('btnFreeze').click();
+  if (e.key==='.') $('btnStep').click();
+});
+
+/* ========= Loop ========= */
+function tick(){
+  if (frozen) return;
+  for (let i=0;i<settings.stepsPer;i++){
+    stepRWM();
+    stepRHMC();
+    stepKlein();
+    iter++;
+  }
+  if (settings.adapt==='on') adaptTuning();
+  render();
+  updateUI();
+  if (audioActive) updateAudio();
+}
+
+function loop(){
+  if (running) tick();
+  requestAnimationFrame(loop);
+}
+
+function generateRunID(){
+  const seed = $('seed').value;
+  const timestamp = Date.now();
+  const hash = strHash(seed + timestamp).toString(36).slice(0, 8);
+  return hash.toUpperCase();
+}
+
+function updateSeedDisplay(){
+  $('seedDisplay').textContent = $('seed').value.toUpperCase();
+  $('runID').textContent = runID;
+}
+
+function resetAll(reseed=true){
+  if (reseed) {
+    rng = mulberry32(strHash($('seed').value));
+    runID = generateRunID();
+  }
+  iter=0; prevHr=0;
+  hrHistory = [];
+  curvatureHistory = [];
+  proc = {
+    rwm: { x:-1.5, y:0.0, n:0, acc:0, tot:0, flips:0, samples:[] },
+    rhmc:{ x:-1.0, y:0.5, n:0, acc:0, tot:0, px:0, py:0, samples:[] },
+    klein:{x: 1.5, y:0.0, n:0, acc:0, tot:0, flips:0, samples:[] }
+  };
+  viewOffset = {x: 0, y: 0};
+  viewScale = 1.0;
+  updateSeedDisplay();
+  render();
+  updateUI();
+}
+
+function syncInputsFromSettings(){
+  $('target').value = settings.target;
+  $('rwmSigma').value = settings.rwmSigma;
+  $('eps').value = settings.eps;
+  $('leaps').value = settings.L;
+  $('alpha').value = settings.alpha;
+  $('flipProb').value = settings.flipProb;
+  $('adapt').value = settings.adapt;
+  $('stepsPer').value = settings.stepsPer;
+  
+  $('rwmVal').textContent = settings.rwmSigma.toFixed(2);
+  $('epsVal').textContent = settings.eps.toFixed(3);
+  $('leapsVal').textContent = settings.L;
+  $('alphaVal').textContent = settings.alpha.toFixed(2);
+  $('flipVal').textContent = settings.flipProb.toFixed(2);
+}
+
+/* ========= Boot ========= */
+runID = generateRunID();
+updateSeedDisplay();
+render();
+updateUI();
+loop();
+</script>
+</body>
+</html>
