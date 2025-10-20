@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Showcase: The τ-Field Principle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-medium: #1a1f3a;
+            --primary-glow: #42a5f5;
+            --secondary-glow: #64b5f6;
+            --accent-pink: #ff6b6b;
+            --text-primary: #e0e6ed;
+            --text-secondary: #90a4ae;
+            --border-color: rgba(100, 200, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        #hero-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 100px 0;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        
+        section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: radial-gradient(circle, rgba(10, 14, 39, 0.8) 0%, rgba(10, 14, 39, 1) 70%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #fff, var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(66, 165, 245, 0.3);
+        }
+
+        .hero p.subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            animation: bounce 2s infinite;
+        }
+        
+        .scroll-down svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--secondary-glow);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .principles-nav ul {
+            list-style: none;
+        }
+
+        .principles-nav li {
+            background: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 1.5rem;
+        }
+        
+        .principles-nav li:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-glow);
+        }
+
+        .principles-nav li.active {
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            border-color: var(--primary-glow);
+            box-shadow: 0 4px 20px rgba(66, 165, 245, 0.3);
+        }
+
+        .principles-nav h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .principles-nav p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .principles-viz {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 450px;
+        }
+
+        #principles-canvas {
+            width: 100%;
+            height: 350px;
+            border-radius: 8px;
+            background-color: rgba(0,0,0,0.4);
+            margin-bottom: 1.5rem;
+        }
+        
+        .viz-controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        .viz-controls label {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .viz-controls input[type="range"] {
+            width: 100%;
+        }
+
+        .alpha-section {
+            text-align: center;
+        }
+        
+        .alpha-display {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--primary-glow);
+            text-shadow: 0 0 30px var(--primary-glow);
+            margin: 2rem 0;
+            letter-spacing: -3px;
+        }
+        
+        .chamber-section .grid-2 {
+            grid-template-columns: 1.5fr 1fr;
+        }
+        
+        .chamber-viz {
+            position: relative;
+        }
+        
+        #chamber-canvas {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(0,0,0,0.4);
+        }
+        
+        .chamber-controls {
+            padding: 2rem;
+            background: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+        
+        .chamber-controls h3 {
+            color: var(--secondary-glow);
+            margin-bottom: 1.5rem;
+        }
+        
+        .chamber-controls .control-group {
+            margin-bottom: 2rem;
+        }
+        
+        .chamber-controls .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Roboto Mono', monospace;
+            margin-bottom: 0.75rem;
+        }
+        
+        .chamber-controls .value-display {
+            color: var(--primary-glow);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 4rem 0;
+            background: var(--bg-medium);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer h2 {
+            font-size: 2rem;
+            color: var(--secondary-glow);
+            margin-bottom: 1rem;
+        }
+        
+        .footer p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        
+        .footer .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer a.button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .footer a.button.secondary {
+             background: linear-gradient(135deg, #26a69a, #00897b);
+        }
+
+        .footer a.button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(66, 165, 245, 0.4);
+        }
+        
+        .footer a.button.secondary:hover {
+             box-shadow: 0 4px 20px rgba(38, 166, 154, 0.4);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .principles-nav {
+                margin-bottom: 2rem;
+            }
+            .chamber-section .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .chamber-viz {
+                margin-bottom: 2rem;
+            }
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .hero p.subtitle {
+                font-size: 1rem;
+            }
+            .alpha-display {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="hero-canvas"></canvas>
+
+    <main>
+        <section class="hero visible">
+            <div class="container">
+                <h1>Recursive Curvature & the τ-Field Principle</h1>
+                <p class="subtitle">
+                    An interactive exploration into how dimensionless physical constants, including the fine-structure constant α, emerge naturally from the dynamics of a recursively defined informational substrate.
+                </p>
+            </div>
+            <div class="scroll-down">
+                <span>Explore the Principle</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+                </svg>
+            </div>
+        </section>
+
+        <section id="principles">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Core Concepts of UNNS Dynamics</h2>
+                    <p>The UNNS framework posits that reality's fundamental laws are not imposed but are emergent properties of a recursive system settling into stable states. Interact with the core ideas below.</p>
+                </div>
+                <div class="grid-2">
+                    <nav class="principles-nav">
+                        <ul>
+                            <li id="nav-equilibria" class="active" data-concept="equilibria" aria-label="Constants as Recursive Equilibria">
+                                <h3>Constants as Recursive Equilibria</h3>
+                                <p>Dimensionless constants arise as fixed-point ratios where the system's curvature reaches a stable, unchanging state through recursion.</p>
+                            </li>
+                            <li id="nav-tau" data-concept="tau" aria-label="The τ-Field Principle">
+                                <h3>The τ-Field Principle</h3>
+                                <p>A quantized phase variable, τ, governs the system's evolution. Its discrete states dictate the stable configurations the substrate can inhabit.</p>
+                            </li>
+                            <li id="nav-entropy" data-concept="entropy" aria-label="Quantized Entropy & Noise">
+                                <h3>Quantized Entropy & Noise</h3>
+                                <p>Introducing noise reveals a phase transition. The system shifts from a perfectly ordered state (zero entropy) to a chaotic one as noise increases.</p>
+                            </li>
+                            <li id="nav-collapse" data-concept="collapse" aria-label="Deterministic Collapse">
+                                <h3>Deterministic Collapse</h3>
+                                <p>Under sufficient noise, the system undergoes a deterministic collapse, where informational variance amplifies, linking theory to observation.</p>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="principles-viz">
+                        <canvas id="principles-canvas"></canvas>
+                        <div class="viz-controls">
+                             <label for="param-slider" id="param-label">Recursion Depth (n)</label>
+                             <input type="range" id="param-slider" min="0" max="100" value="100" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="alpha" class="alpha-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>The Emergence of Alpha (α)</h2>
+                    <p>The primary achievement of the τ-Field Principle is deriving the fine-structure constant from first principles. When the quantization index q=1 and the scale Q₀=137, the system naturally settles into a state corresponding to α.</p>
+                </div>
+                <div class="alpha-display" id="alpha-value">1/137.036</div>
+                <p class="subtitle">This links the abstract UNNS recursion directly to a fundamental constant of our universe, with a deviation of less than 2x10<sup>-9</sup> from the measured CODATA value.</p>
+            </div>
+        </section>
+        
+        <section id="chamber" class="chamber-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Interactive τ-Field Chamber</h2>
+                    <p>Experience the core dynamics firsthand. Adjust the quantization index `q` and noise `σ` to see how the curvature field (κ) responds in real-time. Observe the stability of quantized states and the disruptive effect of noise.</p>
+                </div>
+                <div class="grid-2">
+                    <div class="chamber-viz">
+                        <canvas id="chamber-canvas"></canvas>
+                    </div>
+                    <div class="chamber-controls">
+                        <h3>Chamber Controls</h3>
+                        <div class="control-group">
+                            <label for="q-slider">
+                                <span>Quantization Index (q)</span>
+                                <span class="value-display" id="q-display">1</span>
+                            </label>
+                            <input type="range" id="q-slider" min="0" max="50" value="1" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="sigma-slider">
+                                <span>Noise Amplitude (σ)</span>
+                                <span class="value-display" id="sigma-display">0.00</span>
+                            </label>
+                            <input type="range" id="sigma-slider" min="0" max="0.5" value="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <h2>Explore the Full Research</h2>
+                <p>This showcase provides a glimpse into the UNNS dynamics. For a complete understanding of the theory, derivations, and experimental results, please refer to the original paper and the laboratory environments where these results were produced.</p>
+                <div class="button-group">
+                    <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/τ‑field_chamber/Recursive Curvature and the τ -Field Principle Deriving Dimensionless Constants from UNNS Dynamics.pdf" target="_blank" rel="noopener" class="button">Read the Full Paper (PDF)</a>
+                </div>
+                <h2 style="margin-top: 3rem;">Visit the Laboratories</h2>
+                <div class="button-group">
+                    <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/τ‑field_chamber/tau_chamber_v040.html" target="_blank" rel="noopener" class="button secondary">τ-Field Chamber v0.4.0</a>
+                    <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/unns-lab_v0.4.2.html" target="_blank" rel="noopener" class="button secondary">UNNS-Lab v0.4.2</a>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Hero Canvas Animation (Three.js) ---
+            const heroCanvas = document.getElementById('hero-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: heroCanvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            const particleCount = 5000;
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 10;
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x42a5f5,
+                size: 0.02,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+
+            const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particleSystem);
+
+            camera.position.z = 5;
+            
+            const clock = new THREE.Clock();
+
+            function animateHero() {
+                requestAnimationFrame(animateHero);
+                const elapsedTime = clock.getElapsedTime();
+                particleSystem.rotation.y = elapsedTime * 0.1;
+                particleSystem.rotation.x = elapsedTime * 0.05;
+                renderer.render(scene, camera);
+            }
+            animateHero();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // --- Intersection Observer for section animations ---
+            const sections = document.querySelectorAll('section');
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+            sections.forEach(section => observer.observe(section));
+
+
+            // --- Core Principles Interactive Visualization ---
+            const principlesCanvas = document.getElementById('principles-canvas');
+            const pCtx = principlesCanvas.getContext('2d');
+            const paramSlider = document.getElementById('param-slider');
+            const paramLabel = document.getElementById('param-label');
+            const navItems = document.querySelectorAll('.principles-nav li');
+            let currentConcept = 'equilibria';
+            let animationFrameId;
+
+            function drawEquilibria(progress) {
+                const w = principlesCanvas.width;
+                const h = principlesCanvas.height;
+                pCtx.clearRect(0, 0, w, h);
+
+                const totalSteps = 100;
+                const startVal = h * 0.2;
+                const endVal = h * 0.8;
+                
+                // Animate value approaching equilibrium
+                const currentStep = totalSteps * progress;
+                const val = startVal + (endVal - startVal) * (1 - Math.exp(-currentStep / 20));
+                
+                // Draw line
+                pCtx.beginPath();
+                pCtx.moveTo(0, startVal);
+                for(let i=1; i < currentStep; i++) {
+                    const y = startVal + (endVal - startVal) * (1 - Math.exp(-i / 20));
+                    pCtx.lineTo(i/totalSteps * w, y);
+                }
+                pCtx.strokeStyle = 'rgba(66, 165, 245, 0.8)';
+                pCtx.lineWidth = 2;
+                pCtx.stroke();
+                
+                // Draw equilibrium line
+                pCtx.beginPath();
+                pCtx.moveTo(0, endVal);
+                pCtx.lineTo(w, endVal);
+                pCtx.strokeStyle = 'rgba(255, 107, 107, 0.8)';
+                pCtx.setLineDash([5, 5]);
+                pCtx.stroke();
+                pCtx.setLineDash([]);
+                
+                // Draw current point
+                pCtx.beginPath();
+                pCtx.arc(currentStep/totalSteps * w, val, 5, 0, Math.PI * 2);
+                pCtx.fillStyle = '#fff';
+                pCtx.fill();
+
+                // Draw labels
+                pCtx.fillStyle = 'white';
+                pCtx.font = "12px 'Roboto Mono'";
+                pCtx.fillText('Cᵢ = Rₙ₊₁/Rₙ', 10, endVal - 10);
+                pCtx.fillText('Equilibrium (α)', 10, endVal + 20);
+            }
+
+            function drawTauField(q) {
+                const w = principlesCanvas.width;
+                const h = principlesCanvas.height;
+                pCtx.clearRect(0, 0, w, h);
+
+                const centerX = w / 2;
+                const centerY = h / 2;
+                const radius = Math.min(w, h) * 0.4;
+                
+                // Draw unit circle
+                pCtx.beginPath();
+                pCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                pCtx.strokeStyle = 'rgba(100, 200, 255, 0.5)';
+                pCtx.stroke();
+                
+                // Draw axes
+                pCtx.beginPath();
+                pCtx.moveTo(centerX - radius * 1.1, centerY);
+                pCtx.lineTo(centerX + radius * 1.1, centerY);
+                pCtx.moveTo(centerX, centerY - radius * 1.1);
+                pCtx.lineTo(centerX, centerY + radius * 1.1);
+                pCtx.strokeStyle = 'rgba(100, 200, 255, 0.2)';
+                pCtx.stroke();
+
+                const Q0 = 137;
+                const angle = (2 * Math.PI * q) / Q0;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                // Draw radius line
+                pCtx.beginPath();
+                pCtx.moveTo(centerX, centerY);
+                pCtx.lineTo(x, y);
+                pCtx.strokeStyle = 'rgba(255, 107, 107, 1)';
+                pCtx.stroke();
+
+                // Draw point
+                pCtx.beginPath();
+                pCtx.arc(x, y, 6, 0, Math.PI * 2);
+                pCtx.fillStyle = '#ff6b6b';
+                pCtx.fill();
+                
+                pCtx.fillStyle = 'white';
+                pCtx.font = "14px 'Roboto Mono'";
+                pCtx.fillText(`τ = e^(2πi * ${q}/137)`, 10, 20);
+            }
+            
+            let particles = [];
+            function initEntropyParticles() {
+                particles = [];
+                const numParticles = 200;
+                for (let i = 0; i < numParticles; i++) {
+                    particles.push({
+                        x: Math.random() * principlesCanvas.width,
+                        y: Math.random() * principlesCanvas.height,
+                        vx: 0,
+                        vy: 0
+                    });
+                }
+            }
+
+            function drawEntropy(noiseSigma) {
+                const w = principlesCanvas.width;
+                const h = principlesCanvas.height;
+                pCtx.clearRect(0, 0, w, h);
+                
+                if (particles.length === 0) initEntropyParticles();
+
+                pCtx.fillStyle = 'rgba(66, 165, 245, 0.8)';
+                particles.forEach(p => {
+                    p.vx += (Math.random() - 0.5) * noiseSigma;
+                    p.vy += (Math.random() - 0.5) * noiseSigma;
+                    
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // Damping and bounds
+                    p.vx *= 0.95;
+                    p.vy *= 0.95;
+                    if(p.x > w || p.x < 0) p.vx *= -1;
+                    if(p.y > h || p.y < 0) p.vy *= -1;
+                    
+                    pCtx.beginPath();
+                    pCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                    pCtx.fill();
+                });
+
+                const entropy = (noiseSigma / 0.5) * 4.3; // Simplified mapping
+                pCtx.fillStyle = 'white';
+                pCtx.font = "14px 'Roboto Mono'";
+                pCtx.fillText(`Hᵣ ≈ ${entropy.toFixed(2)} bits`, 10, 20);
+            }
+
+            function drawCollapse(noiseSigma) {
+                const w = principlesCanvas.width;
+                const h = principlesCanvas.height;
+                pCtx.clearRect(0, 0, w, h);
+
+                const cleanVariance = 0.05;
+                const noisyVariance = 0.05 + Math.pow(noiseSigma / 0.5, 3) * 0.35;
+
+                const drawWave = (offset, amplitude, color) => {
+                    pCtx.beginPath();
+                    pCtx.moveTo(0, h / 2 + offset);
+                    for(let x=0; x < w; x++) {
+                        const y = h / 2 + offset + Math.sin(x * 0.05) * amplitude * h * 0.1 + (Math.random() - 0.5) * amplitude * 10;
+                        pCtx.lineTo(x, y);
+                    }
+                    pCtx.strokeStyle = color;
+                    pCtx.lineWidth = 2;
+                    pCtx.stroke();
+                };
+                
+                drawWave(-h * 0.25, cleanVariance, 'rgba(66, 165, 245, 0.8)');
+                drawWave(h * 0.25, noisyVariance, 'rgba(255, 107, 107, 0.8)');
+
+                pCtx.fillStyle = 'white';
+                pCtx.font = "14px 'Roboto Mono'";
+                pCtx.fillText(`Var(clean) = 0.00`, 10, 20);
+                pCtx.fillText(`Var(noisy) ≈ ${(noisyVariance/cleanVariance-1).toFixed(3)}`, 10, 40);
+                if (noisyVariance > 0.3) {
+                     pCtx.fillStyle = '#ff6b6b';
+                     pCtx.fillText(`COLLAPSE DETECTED`, 10, 60);
+                }
+            }
+
+
+            function animatePrinciples() {
+                if(currentConcept === 'entropy' || currentConcept === 'collapse') {
+                    const noise = paramSlider.value / 100 * 0.5;
+                    if (currentConcept === 'entropy') drawEntropy(noise);
+                    else drawCollapse(noise);
+                    animationFrameId = requestAnimationFrame(animatePrinciples);
+                }
+            }
+
+            function updateViz() {
+                cancelAnimationFrame(animationFrameId);
+                particles = []; // Reset for entropy viz
+
+                switch(currentConcept) {
+                    case 'equilibria':
+                        paramLabel.textContent = 'Recursion Depth (n)';
+                        paramSlider.max = 100;
+                        paramSlider.value = 100;
+                        drawEquilibria(paramSlider.value / 100);
+                        break;
+                    case 'tau':
+                        paramLabel.textContent = 'Quantization Index (q)';
+                        paramSlider.max = 50;
+                        paramSlider.value = 1;
+                        drawTauField(paramSlider.value);
+                        break;
+                    case 'entropy':
+                    case 'collapse':
+                        paramLabel.textContent = 'Noise Amplitude (σ)';
+                        paramSlider.max = 100;
+                        paramSlider.value = 0;
+                        animatePrinciples();
+                        break;
+                }
+            }
+            
+            paramSlider.addEventListener('input', () => {
+                const value = parseFloat(paramSlider.value);
+                switch(currentConcept) {
+                    case 'equilibria':
+                        drawEquilibria(value / 100);
+                        break;
+                    case 'tau':
+                        drawTauField(Math.round(value));
+                        break;
+                }
+            });
+
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    navItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    currentConcept = item.dataset.concept;
+                    updateViz();
+                });
+            });
+
+            updateViz(); // Initial call
+            
+            // --- Mini τ-Chamber ---
+            const chamberCanvas = document.getElementById('chamber-canvas');
+            const cCtx = chamberCanvas.getContext('2d');
+            const qSlider = document.getElementById('q-slider');
+            const sigmaSlider = document.getElementById('sigma-slider');
+            const qDisplay = document.getElementById('q-display');
+            const sigmaDisplay = document.getElementById('sigma-display');
+            
+            const gridSize = 32;
+            let kappaField = new Array(gridSize * gridSize).fill(0);
+            
+            function updateChamberViz() {
+                const q = parseInt(qSlider.value);
+                const sigma = parseFloat(sigmaSlider.value);
+                qDisplay.textContent = q;
+                sigmaDisplay.textContent = sigma.toFixed(2);
+
+                // Simplified simulation
+                for(let i = 0; i < gridSize * gridSize; i++) {
+                    const baseKappa = Math.cos(q * 0.1 + i * 0.2) * Math.sin(i * 0.1);
+                    const noise = (Math.random() - 0.5) * sigma * 5;
+                    kappaField[i] = baseKappa + noise;
+                }
+                
+                drawChamberHeatmap();
+            }
+            
+            function drawChamberHeatmap() {
+                 const w = chamberCanvas.width;
+                 const h = chamberCanvas.height;
+                 cCtx.clearRect(0,0,w,h);
+                 const cellW = w / gridSize;
+                 const cellH = h / gridSize;
+                 
+                 for(let i=0; i < gridSize; i++) {
+                     for(let j=0; j < gridSize; j++) {
+                         const val = kappaField[i * gridSize + j];
+                         const normalized = (val + 2) / 4; // Map -2..2 to 0..1
+                         const hue = 240 - normalized * 240; // Blue to red
+                         cCtx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                         cCtx.fillRect(j * cellW, i * cellH, cellW, cellH);
+                     }
+                 }
+            }
+
+            qSlider.addEventListener('input', updateChamberViz);
+            sigmaSlider.addEventListener('input', updateChamberViz);
+            updateChamberViz(); // Initial render
+        });
+    </script>
+</body>
+</html>
+
