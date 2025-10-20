@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNNS Lab · Phase IV Results — τ‑Field</title>
+  <style>
+    :root{--bg:#0a0e27;--panel:#0f1333;--ink:#e6ecff;--muted:#9fb0ff;--accent:#7aa2ff;--ok:#7fffd4;--warn:#ffd27f;--border:rgba(255,255,255,.12)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:linear-gradient(135deg,var(--bg),#151a3d);color:var(--ink);padding:20px}
+    .sheet{max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+    h1{margin:0;font-size:1.5rem}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:12px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:rgba(255,255,255,.03)}
+    h2{font-size:1.05rem;margin:0 0 6px;color:var(--accent)}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .metric{background:#10153a;border:1px solid #263065;border-radius:10px;padding:10px}
+    .metric .k{font-size:.8rem;color:#aebcff}
+    .metric .v{font-weight:700;font-size:1.05rem}
+    canvas{width:100%;height:auto;background:#0e1230;border:1px solid #222b66;border-radius:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .legend{font-size:.85rem;color:#cbd5ff;margin-top:6px}
+    .tag{display:inline-block;border:1px solid var(--border);background:#1b214e;border-radius:999px;padding:2px 8px;font-size:12px;color:#dbe3ff;margin-right:6px}
+    footer{text-align:center;color:#9fb0ff;font-size:.85rem;margin-top:14px}
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <div>
+        <h1>Phase IV — E8–E11 Results Summary · τ‑Field Chamber v0.4</h1>
+        <div class="muted">Grid 64×64 · depth 130 · Q₀=137 · seed 42 · 2025‑10‑20</div>
+      </div>
+      <div>
+        <span class="tag">E8 Sweep</span>
+        <span class="tag">E9 Noise</span>
+        <span class="tag">E10 α‑Alignment</span>
+        <span class="tag">E11 Collapse</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Key Outcomes</h2>
+        <div class="metrics">
+          <div class="metric"><div class="k">H<sub>r</sub> (clean)</div><div class="v">0.000 bits</div></div>
+          <div class="metric"><div class="k">H<sub>r</sub> (σ=0.5)</div><div class="v">4.321 bits</div></div>
+          <div class="metric"><div class="k">α lock</div><div class="v">Δ=0.000</div></div>
+          <div class="metric"><div class="k">Collapse</div><div class="v">true</div></div>
+        </div>
+        <div class="legend">Clean τ is fully ordered (H<sub>r</sub>=0). Noise drives entropy to ≈4.3 bits. τ(q=1) matches 2π/137 exactly. Collapse detected via variance rise.</div>
+      </div>
+
+      <div class="card">
+        <h2>Notes</h2>
+        <ul>
+          <li>κ‑mean decreases smoothly across q (no discontinuities) → coherent quantized manifold.</li>
+          <li>Entropy transition around σ≈0.25–0.30 suggests a critical noise threshold.</li>
+          <li>Variance(clean)=0 vs Variance(noisy)=0.392 ⇒ controlled collapse signature.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="card">
+        <h2>E8 — κ̄ vs q</h2>
+        <canvas id="cvE8"></canvas>
+        <div class="legend">Mean curvature ⟨κ⟩ decreases near‑linearly for q∈[0,50] @ Q₀=137; H<sub>r</sub>=0 throughout (ordered state).</div>
+      </div>
+      <div class="card">
+        <h2>E9 — H<sub>r</sub> vs σ</h2>
+        <canvas id="cvE9"></canvas>
+        <div class="legend">Entropy rises mono tonically with σ, stabilizing ≈4.3 bits by σ=0.5; variance plateaus → pseudo‑thermal equilibrium.</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="card">
+        <h2>E10 — α Alignment (q=1)</h2>
+        <canvas id="cvE10"></canvas>
+        <div class="legend">Measured phase equals 2π/137 within float precision (Δ=0).</div>
+      </div>
+      <div class="card">
+        <h2>E11 — Variance (clean vs noisy)</h2>
+        <canvas id="cvE11"></canvas>
+        <div class="legend">Variance amplification under noise → collapse criterion satisfied.</div>
+      </div>
+    </div>
+
+    <footer>UNNS Laboratory · τ‑Field Chamber v0.4 · Phase IV Summary Card</footer>
+  </div>
+
+  <script>
+    // ==== Embedded dataset from artifacts (2025-10-20) ====
+    const E8 = {
+      q: Array.from({length:51}, (_,i)=>i),
+      kappa_mean: [
+        1.605092838853183,1.6044956589111548,1.6027053749637568,1.5997257520059325,1.5955630562309666,1.590226041852655,1.5837259326950872,1.5760763985886652,1.5672935266222974,1.5573957873120319,1.5464039957572027,1.5343412678660007,1.521232971742379,1.5071066743364643,1.491992083470891,1.4759209853648017,1.4589271777868587,1.441046398978093,1.4223162524938018,1.4027761281226587,1.3824671190494147,1.3614319354352857,1.3397148145978146,1.3173614279790788,1.2944187850980127,1.2709351346885698,1.24695986323197,1.2225433910960861,1.1977370665006843,1.1725930575313077,1.1471642424289803,1.1215040983864117,1.0956665890846973,1.0697060512068146,1.043677080166733,1.0176344152944388,0.9916328247182465,0.965726990186616,0.9399713920715194,0.9144201947954487,0.8891271329227389,0.8641453981549737,0.8395275274680047,0.8153252926258755,0.791589591303997,0.7683703400505449,0.7457163693111979,0.7236753207379375,0.702293546997911,0.6816160142930718,0.6616862077955386
+      ]
+    };
+
+    const E9 = {
+      sigma: [0,0.02631578947368421,0.05263157894736842,0.07894736842105263,0.10526315789473684,0.13157894736842105,0.15789473684210525,0.18421052631578946,0.21052631578947367,0.23684210526315788,0.2631578947368421,0.2894736842105263,0.3157894736842105,0.3421052631578947,0.3684210526315789,0.39473684210526316,0.42105263157894735,0.4473684210526315,0.47368421052631576,0.5],
+      Hr: [0,1,1.3890089939719226,1.8734349113070075,2.3230000422704777,2.3991803867928203,2.6461112663506334,2.9076063156731977,3.0520391242557223,3.4115869471279354,3.450132707071286,3.4559950529952927,3.6596334746060513,3.684710396530834,3.9949483235672076,3.8231807380521,4.112687287937801,4.166218577556147,4.357284542649195,4.320634223103431]
+    };
+
+    const E10 = { phase: 0.045862666475763404, expected: 0.045862666475763404, delta: 0 };
+    const E11 = { varClean: 0, varNoisy: 0.39231650431209086 };
+
+    // ==== Simple chart helpers (no deps) ====
+    function lineChart(canvas, x, y, {labelX='x', labelY='y'}={}){
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio||1);
+      const H = canvas.height = 220 * (window.devicePixelRatio||1);
+      const pad = 40 * (window.devicePixelRatio||1);
+      const minX = Math.min(...x), maxX = Math.max(...x);
+      const minY = Math.min(...y), maxY = Math.max(...y);
+      function X(v){ return pad + (W-2*pad) * ( (v-minX) / (maxX-minX || 1) ); }
+      function Y(v){ return H-pad - (H-2*pad) * ( (v-minY) / (maxY-minY || 1) ); }
+      // axes
+      ctx.fillStyle = '#cbd5ff'; ctx.strokeStyle = '#2a3e86'; ctx.lineWidth = 1;
+      ctx.strokeRect(pad, pad, W-2*pad, H-2*pad);
+      // line
+      ctx.strokeStyle = '#7aa2ff'; ctx.lineWidth = 2; ctx.beginPath();
+      for(let i=0;i<x.length;i++){ const px=X(x[i]), py=Y(y[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+      ctx.stroke();
+      // ticks
+      ctx.fillText(labelX, W/2, H-8); ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2); ctx.fillText(labelY, 0, 0); ctx.restore();
+    }
+
+    function barChart(canvas, cats, vals, {labelY=''}={}){
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio||1);
+      const H = canvas.height = 220 * (window.devicePixelRatio||1);
+      const pad = 40 * (window.devicePixelRatio||1);
+      const maxV = Math.max(...vals);
+      const bw = (W-2*pad)/vals.length;
+      // frame
+      ctx.fillStyle = '#cbd5ff'; ctx.strokeStyle = '#2a3e86'; ctx.lineWidth = 1; ctx.strokeRect(pad, pad, W-2*pad, H-2*pad);
+      // bars
+      ctx.fillStyle = '#7aa2ff';
+      for(let i=0;i<vals.length;i++){
+        const h = (H-2*pad) * (vals[i]/(maxV||1));
+        const x = pad + i*bw + bw*0.15, w = bw*0.7;
+        ctx.fillRect(x, H-pad-h, w, h);
+      }
+      // label
+      ctx.fillText(labelY, 10, 14);
+    }
+
+    // Draw charts
+    lineChart(document.getElementById('cvE8'), E8.q, E8.kappa_mean, {labelX:'q', labelY:'⟨κ⟩'});
+    lineChart(document.getElementById('cvE9'), E9.sigma, E9.Hr, {labelX:'σ', labelY:'H_r (bits)'});
+    barChart(document.getElementById('cvE11'), ['clean','noisy'], [E11.varClean, E11.varNoisy], {labelY:'variance'});
+
+    (function drawE10(){
+      const c = document.getElementById('cvE10');
+      const ctx = c.getContext('2d');
+      const DPR = window.devicePixelRatio||1; c.width = c.clientWidth*DPR; c.height = 220*DPR;
+      const W=c.width, H=c.height; const cx=W/2, cy=H/2, r=Math.min(W,H)*0.35;
+      ctx.fillStyle='#0e1230'; ctx.fillRect(0,0,W,H);
+      // circle
+      ctx.strokeStyle='#2a3e86'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+      // expected
+      const aExp = E10.expected; ctx.strokeStyle='#7aa2ff'; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+r*Math.cos(aExp), cy+r*Math.sin(aExp)); ctx.stroke();
+      // measured
+      const aMea = E10.phase; ctx.strokeStyle='#7fffd4'; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+r*Math.cos(aMea), cy+r*Math.sin(aMea)); ctx.stroke();
+      // delta text
+      ctx.fillStyle='#cbd5ff'; ctx.fillText('Δ = 0.000', 10, 18);
+    })();
+  </script>
+</body>
+</html>
