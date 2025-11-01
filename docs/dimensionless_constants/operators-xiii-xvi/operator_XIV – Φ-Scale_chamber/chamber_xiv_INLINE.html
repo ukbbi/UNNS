@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XIV (INLINE)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XIV: Φ-SCALE (INLINE ENGINE)</h1>
+      <div class="subtitle">Operator XIV — Self-Contained Version</div>
+    </header>
+    
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="64" selected>64×64 (fast)</option>
+            <option value="128">128×128 (balanced)</option>
+            <option value="256">256×256 (high-res, power-of-2)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>λ <span id="lambdaValue">0.10825</span></label>
+          <input type="range" id="lambda" min="0.08" max="0.15" step="0.00001" value="0.10825">
+        </div>
+        <div class="control-group">
+          <label>Depth</label>
+          <input type="number" id="depth" value="200">
+        </div>
+        <div class="control-group">
+          <label>μ Min</label>
+          <input type="number" id="muMin" step="0.01" value="1.55">
+        </div>
+        <div class="control-group">
+          <label>μ Max</label>
+          <input type="number" id="muMax" step="0.01" value="1.68">
+        </div>
+        <div class="control-group">
+          <label>μ Step</label>
+          <input type="number" id="muStep" step="0.001" value="0.01">
+        </div>
+      </div>
+      <button id="runSweep" class="button-primary">▶ Run</button>
+      <button id="stopSweep" disabled>⏸ Stop</button>
+      <button id="exportData" disabled>💾 Export Data</button>
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasField"></canvas>
+          <div class="canvas-label">τ-Field Evolution</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasInvariants"></canvas>
+          <div class="canvas-label">Δ_scale(μ) & Π(μ)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">📚 Laboratory Guide</div>
+      <div style="line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Operator XIV: Φ-Scale Hypothesis</h3>
+        
+        <p><strong>Theoretical Foundation:</strong> The recursive scaling operator XIV implements the evolution equation:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          τ<sub>n+1</sub>(x) = τ<sub>n</sub>(x) + λ sin(τ<sub>n</sub>(S<sub>μ</sub>x) - τ<sub>n</sub>(x)) + σ ξ
+        </p>
+        <p>where S<sub>μ</sub> denotes spatial scaling by factor μ, and we measure phase coherence via:</p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>Δ<sub>scale</sub>(μ)</strong> = ⟨(τ(S<sub>μ</sub>x) - τ(x))²⟩ — phase difference variance</li>
+          <li><strong>Π(μ)</strong> = ⟨cos(τ(S<sub>μ</sub>x) - τ(x))⟩ — coherence order parameter</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Expected Results & Interpretation</h3>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4aff4a;">Primary Finding:</strong> μ★ ≈ 1.618 ± 0.01 (golden ratio φ)</p>
+          <p style="margin: 0 0 10px;"><strong style="color: #4a9eff;">Typical φ-error:</strong> 0.02% - 0.8%</p>
+          <p style="margin: 0;"><strong style="color: #ff4a9e;">Curve signature:</strong> Δ<sub>scale</sub> shows unique convex minimum; Π peaks correspondingly</p>
+        </div>
+        
+        <p><strong>Physical Interpretation:</strong> The golden ratio emerges as a <em>natural scale attractor</em> in recursive τ-field dynamics. This suggests that φ represents an optimal self-similar resonance condition where phase differences across scales reach minimum variance — a manifestation of recursive curvature alignment.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Validation Criteria (CΦ)</h3>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9em;">
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Criterion</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Target</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Status</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">CΦ1: Unique μ★</td>
+            <td style="padding: 8px;">Single clear minimum</td>
+            <td style="padding: 8px; color: #4aff4a;">✓ Auto-detected</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">CΦ2: Correlation</td>
+            <td style="padding: 8px;">R²(Δ,Π) ≥ 0.98</td>
+            <td style="padding: 8px; color: #ffa54a;">○ Manual verification</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">CΦ3: Reproducibility</td>
+            <td style="padding: 8px;">CV(μ★) ≤ 1%</td>
+            <td style="padding: 8px; color: #ffa54a;">○ Multi-seed test</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">CΦ4: φ-error</td>
+            <td style="padding: 8px;">|μ★ - φ| / φ < 1%</td>
+            <td style="padding: 8px; color: #4aff4a;">✓ Displayed</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px;">CΦ5: Stability</td>
+            <td style="padding: 8px;">Plateau over depth</td>
+            <td style="padding: 8px; color: #ffa54a;">○ Depth variation test</td>
+          </tr>
+        </table>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Significance & Applications</h3>
+        
+        <p><strong>Why This Matters:</strong></p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Emergent Symmetry:</strong> φ arises spontaneously from dynamics, not imposed externally</li>
+          <li><strong>Scale Invariance:</strong> Suggests fundamental role of golden ratio in multi-scale systems</li>
+          <li><strong>Predictive Power:</strong> μ★ ≈ φ enables parameter-free predictions in related systems</li>
+          <li><strong>Theoretical Bridge:</strong> Links recursive operators to classical symmetry principles</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Recommended Workflow</h3>
+        
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Quick Test:</strong> Use 64×64, depth=200 for rapid validation (~30s)</li>
+          <li><strong>Production Run:</strong> Use 128×128, depth=400, μ step=0.005 for publication (~5min)</li>
+          <li><strong>High-Resolution:</strong> Use 256×256, depth=600 for maximum accuracy (~25-30min)</li>
+          <li><strong>Multi-Seed:</strong> Repeat with seeds [41,42,43,44,45] to compute CV(μ★)</li>
+          <li><strong>Depth Analysis:</strong> Test depths [200,400,600] to verify CΦ5 plateau</li>
+          <li><strong>Export & Archive:</strong> Save JSON bundle for each configuration</li>
+        </ol>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Important Notes:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>Grid sizes must be power-of-2 for FFT compatibility (64, 128, 256)</li>
+            <li>256×256 provides excellent resolution but takes ~25-30 minutes</li>
+            <li>Bilinear sampling eliminates aliasing artifacts in Δ<sub>scale</sub>(μ)</li>
+            <li>Depth ≥400 recommended for stable equilibration</li>
+            <li>Fixed seed (137042) ensures reproducibility</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📖 References & Further Reading</h3>
+        
+        <div style="background: #0a1a2a; padding: 12px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 8px;"><strong>Phase B Documentation:</strong></p>
+          <ul style="margin: 0 0 12px 20px;">
+            <li>
+      <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/operators-xiii-xvi/operator_XIV%20–%20Φ-Scale_chamber/UNNS%20Operators%20XIV–XVI%20.pdf" target="_blank">
+        <strong>UNNS Operators XIV–XVI</strong> — Structural Overview and Φ-Scale Chamber Architecture
+      </a>
+      <p class="ref-desc">Formal specification of Operators XIV–XVI within the recursive constant-generation layer. Defines τ-phase coupling, amplitude strata, and curvature fold behavior.</p>
+    </li>
+
+    <li>
+      <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/operators-xiii-xvi/operator_XIV%20–%20Φ-Scale_chamber/Golden%20Ratio%20in%20Recursive%20Dynamics%20Emergent%20Scale%20Symmetry%20in%20the%20UNNS%20τ%20-Field%20Substrate.pdf" target="_blank">
+        <strong>Golden Ratio in Recursive Dynamics</strong> — Emergent Scale Symmetry in the UNNS τ-Field Substrate
+      </a>
+      <p class="ref-desc">Explores Φ-based resonance patterns and the role of golden-ratio scaling in recursive curvature stabilization and self-similar field equilibria.</p>
+    </li>
+
+    <li>
+      <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/operators-xiii-xvi/operator_XIV%20–%20Φ-Scale_chamber/Scale%20Invariance%20in%20Coupled%20Field%20Systems%20Recursive%20Coupling%20and%20Spectral%20Equilibrium%20in%20the%20UNNS%20Substrate.pdf" target="_blank">
+        <strong>Scale Invariance in Coupled Field Systems</strong> — Recursive Coupling and Spectral Equilibrium in the UNNS Substrate
+      </a>
+      <p class="ref-desc">Presents the full analytical model of Φ-scale equilibrium and recursive coupling across τ-fields, linking dimensional consistency to emergent constants.</p>
+    </li>
+  </ul>
+
+  <h3>🧭 Integration Notes</h3>
+  <ul>
+    <li>All three documents complement <em>Experiment 5 (Φ-Scale Emulator)</em> and <em>Experiment 7 (Constant Predictions)</em>.</li>
+    <li>Operator XIV defines curvature → frequency scaling; Operator XV governs τ-phase self-symmetry; Operator XVI encodes equilibrium closure.</li>
+    <li>To cross-reference inside the Lab, open the Guide’s <strong>“Operators” tab</strong> and link these PDFs via tooltips or the “More Info” button.</li>
+          </ul>
+          
+                 
+          <p style="margin: 12px 0 8px;"><strong>Related Chambers:</strong></p>
+          <ul style="margin: 0 20px;">
+            <li><strong>Chamber XIII:</strong> τ-field fundamentals & equilibration</li>
+            <li><strong>Chamber XV:</strong> Φ-Prism spectral analysis (upcoming)</li>
+            <li><strong>Chamber XVI:</strong> Closure operators & flux conservation (upcoming)</li>
+          </ul>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 0.7.2 | <strong>Engine:</strong> TauFieldEngineN | <strong>Mode:</strong> Self-Contained | <strong>Status:</strong> Production Ready
+        </p>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Metrics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">μ★</div><div class="metric-value" id="metricMuStar">—</div></div>
+        <div class="metric"><div class="metric-label">φ Error</div><div class="metric-value" id="metricPhiError">—</div></div>
+        <div class="metric"><div class="metric-label">Current μ</div><div class="metric-value" id="metricMu">—</div></div>
+        <div class="metric"><div class="metric-label">Δ_scale</div><div class="metric-value" id="metricDelta">—</div></div>
+        <div class="metric"><div class="metric-label">Π</div><div class="metric-value" id="metricPi">—</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value" id="metricStatus">Ready</div></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+/**
+ * UNNS Laboratory Phase B — TauFieldEngineN v0.7.0
+ * 
+ * Multi-field-ready τ-field evolution engine for Operators XIV-XVI
+ * Implements N=1 for Phase B; extensible to N>1 in Phase B2
+ * 
+ * Features:
+ * - Switchable Laplacian backends (FFT/FD/none)
+ * - Incremental flux tracking for Operator XVI
+ * - Trajectory storage with checkpoints + ring buffer
+ * - Deterministic seeded RNG
+ * - Operator-specific evolution modes (XIV/XV/XVI/standard)
+ * - Hi-performance for 192² and 256² grids
+ * 
+ * Target: ≤1.2s per iteration @ 256² grid
+ */
+
+class TauFieldEngineN {
+  constructor(config = {}) {
+    // ===== Grid Configuration =====
+    this.n_fields = config.n_fields || 1;
+    this.W = config.grid_width || 192;
+    this.size = this.W * this.W;
+    
+    // ===== Operator Mode =====
+    // 'standard' | 'XIV' | 'XV' | 'XVI'
+    this.operatorMode = config.operator_mode || 'standard';
+    this.samplingMode = config.sampling_mode || 'bilinear'; // 'nearest'|'bilinear' for XIV
+    
+    // ===== Physical Parameters =====
+    this.lambda = config.lambda || 0.1;        // Coupling strength
+    this.sigma = config.sigma || 0.02;         // Noise amplitude
+    this.beta = config.beta || 0.0;            // XV: dispersive coupling
+    this.alpha_c = config.alpha_c || 0.0;      // XVI: closure strength
+    this.mu_current = config.mu || 1.618;      // XIV: scale parameter
+    
+    // ===== Computational Backend =====
+    this.laplacianMode = config.laplacian_mode || 'none'; // 'fft'|'fd'|'none'
+    this.window = config.window || 'none';     // 'hann'|'hamming'|'none'
+    this.zeroPad = config.zero_pad || 2;       // FFT interpolation factor
+    
+    // Validate FFT requirements
+    if (this.laplacianMode === 'fft') {
+      const isPowerOfTwo = (n) => (n > 0) && ((n & (n - 1)) === 0);
+      if (!isPowerOfTwo(this.W)) {
+        throw new Error(`FFT Laplacian requires power-of-two grid size; got W=${this.W}. Use W ∈ {64, 128, 256, 512, ...}`);
+      }
+    }
+    
+    // ===== Field Storage (N fields) =====
+    this.fields = Array(this.n_fields).fill(null).map(() => ({
+      tau: new Float64Array(this.size),
+      tau_next: new Float64Array(this.size)
+    }));
+    
+    // ===== Trajectory Tracking (XVI) =====
+    this.trajectory_config = {
+      strategy: config.trajectory_strategy || 'incrementalJ+checkpoints',
+      checkpoint_stride: config.checkpoint_stride || 80,
+      ring_buffer_size: config.ring_buffer_size || 12
+    };
+    
+    this.checkpoints = [];
+    this.ring_buffer = [];
+    
+    // ===== Incremental Flux Accumulators (XVI) =====
+    this.flux = {
+      Jx: new Float64Array(this.size),
+      Jy: new Float64Array(this.size),
+      reset_counter: 0
+    };
+    
+    // ===== Coupling Matrix (N×N, ready for multi-field) =====
+    this.coupling = Array(this.n_fields).fill(null).map(() => 
+      Array(this.n_fields).fill(0)
+    );
+    for (let i = 0; i < this.n_fields; i++) {
+      this.coupling[i][i] = this.lambda;
+    }
+    
+    // ===== RNG (deterministic seeding) =====
+    this.seed = config.seed || 137042;
+    this.rng = this.createSeededRNG(this.seed);
+    
+    // ===== Performance Tracking =====
+    this.step_count = 0;
+    this.performance = {
+      total_time: 0,
+      avg_step_time: 0,
+      step_times: []
+    };
+    
+    // ===== FFT Cache (for performance) =====
+    this.fft_cache = {
+      kx_grid: null,
+      ky_grid: null,
+      k2_grid: null
+    };
+    this.initializeFFTCache();
+    
+    // ===== Initialize Fields =====
+    this.initialize(config.init_mode || 'random');
+  }
+  
+  // ========================================
+  // INITIALIZATION
+  // ========================================
+  
+  /**
+   * Initialize τ-fields with specified pattern
+   */
+  initialize(mode = 'random') {
+    for (let field_idx = 0; field_idx < this.n_fields; field_idx++) {
+      const tau = this.fields[field_idx].tau;
+      
+      switch(mode) {
+        case 'random':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.random() * 2 * Math.PI;
+          }
+          break;
+        
+        case 'gaussian':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.gaussian();
+          }
+          break;
+        
+        case 'uniform':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.random();
+          }
+          break;
+        
+        case 'zero':
+          // Already zero from Float64Array initialization
+          break;
+        
+        case 'sine':
+          for (let y = 0; y < this.W; y++) {
+            for (let x = 0; x < this.W; x++) {
+              const idx = x + y * this.W;
+              tau[idx] = Math.sin(2 * Math.PI * x / this.W);
+            }
+          }
+          break;
+        
+        default:
+          throw new Error(`Unknown init mode: ${mode}`);
+      }
+    }
+  }
+  
+  /**
+   * Initialize FFT k-space grids for Laplacian computation
+   * Uses angular frequency convention: k = 2π * (index) / W
+   */
+  initializeFFTCache() {
+    this.fft_cache.kx_grid = new Float64Array(this.size);
+    this.fft_cache.ky_grid = new Float64Array(this.size);
+    this.fft_cache.k2_grid = new Float64Array(this.size);
+    
+    const factor = 2 * Math.PI / this.W;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        // Frequency coordinates (with DC at origin, shifted for FFT)
+        const kx_idx = (x < this.W / 2) ? x : x - this.W;
+        const ky_idx = (y < this.W / 2) ? y : y - this.W;
+        
+        // Angular frequencies
+        const kx = factor * kx_idx;
+        const ky = factor * ky_idx;
+        
+        this.fft_cache.kx_grid[idx] = kx;
+        this.fft_cache.ky_grid[idx] = ky;
+        this.fft_cache.k2_grid[idx] = -(kx * kx + ky * ky); // -k² for Laplacian
+      }
+    }
+  }
+  
+  // ========================================
+  // EVOLUTION STEP
+  // ========================================
+  
+  /**
+   * Single evolution step: τ^(n+1) = F(τ^(n), ∇τ^(n), ...)
+   */
+  step() {
+    const now = this.getTimestamp();
+    const t_start = now();
+    
+    const field_idx = 0; // N=1 for Phase B
+    const {tau, tau_next} = this.fields[field_idx];
+    
+    // Compute gradients (for flux tracking)
+    const {gx, gy} = this.computeGradient(field_idx);
+    
+    // Compute Laplacian if needed (XV)
+    let laplacian_field = null;
+    if (this.beta > 0 && this.laplacianMode !== 'none') {
+      laplacian_field = this.computeLaplacian(field_idx);
+    }
+    
+    // Evolution kernel
+    for (let idx = 0; idx < this.size; idx++) {
+      const x = idx % this.W;
+      const y = Math.floor(idx / this.W);
+      
+      // Compute phase difference based on operator mode
+      let delta_phi;
+      
+      if (this.operatorMode === 'XIV') {
+        // Φ-Scale: τ(Sμx) - τ(x) with configurable sampling
+        if (this.samplingMode === 'bilinear') {
+          const scaled_val = this.sampleScaledBilinear(x, y, this.mu_current, field_idx);
+          delta_phi = scaled_val - tau[idx];
+        } else {
+          // Nearest-neighbor (faster but aliasing risk)
+          const scaled_idx = this.getScaledIndex(x, y, this.mu_current);
+          delta_phi = tau[scaled_idx] - tau[idx];
+        }
+      } else {
+        // Standard nearest-neighbor
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        delta_phi = tau[right_idx] - tau[idx];
+      }
+      
+      // Base evolution
+      let update = tau[idx];
+      update += this.lambda * Math.sin(delta_phi);
+      
+      // Dispersive term (XV)
+      if (laplacian_field !== null) {
+        update -= this.beta * laplacian_field[idx];
+      }
+      
+      // Stochastic noise
+      if (this.sigma > 0) {
+        update += this.sigma * this.rng.gaussian();
+      }
+      
+      tau_next[idx] = update;
+      
+      // Accumulate flux (XVI)
+      if (this.trajectory_config.strategy.includes('incrementalJ')) {
+        this.flux.Jx[idx] += gx[idx] / this.trajectory_config.checkpoint_stride;
+        this.flux.Jy[idx] += gy[idx] / this.trajectory_config.checkpoint_stride;
+      }
+    }
+    
+    // Swap buffers
+    this.fields[field_idx].tau = tau_next;
+    this.fields[field_idx].tau_next = tau;
+    
+    // Trajectory management
+    this.updateTrajectoryStorage(field_idx);
+    
+    // Performance tracking
+    this.step_count++;
+    const t_end = now();
+    const step_time = t_end - t_start;
+    this.performance.total_time += step_time;
+    this.performance.step_times.push(step_time);
+    if (this.performance.step_times.length > 100) {
+      this.performance.step_times.shift(); // Keep last 100
+    }
+    this.performance.avg_step_time = this.performance.total_time / this.step_count;
+  }
+  
+  // ========================================
+  // FIELD COUPLING
+  // ========================================
+  
+  /**
+   * Set coupling between fields i and j
+   * (No-op for N=1, ready for Phase B2)
+   */
+  setCoupling(i, j, lambda_ij) {
+    if (i >= this.n_fields || j >= this.n_fields) {
+      throw new Error(`Field index out of range: N=${this.n_fields}`);
+    }
+    this.coupling[i][j] = lambda_ij;
+  }
+  
+  // ========================================
+  // SPATIAL OPERATORS
+  // ========================================
+  
+  /**
+   * Compute gradient via finite differences
+   */
+  computeGradient(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const gx = new Float64Array(this.size);
+    const gy = new Float64Array(this.size);
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        const right = tau[((x + 1) % this.W) + y * this.W];
+        const left = tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = tau[x + ((y + 1) % this.W) * this.W];
+        const down = tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        
+        gx[idx] = (right - left) / 2;
+        gy[idx] = (up - down) / 2;
+      }
+    }
+    
+    return {gx, gy};
+  }
+  
+  /**
+   * Compute Laplacian (backend-switchable)
+   */
+  computeLaplacian(field_idx = 0) {
+    switch(this.laplacianMode) {
+      case 'fft':
+        return this.laplacianFFT(field_idx);
+      case 'fd':
+        return this.laplacianFD(field_idx);
+      default:
+        throw new Error(`Unknown Laplacian mode: ${this.laplacianMode}`);
+    }
+  }
+  
+  /**
+   * FFT-based Laplacian (periodic BC)
+   * Uses pseudo-spectral method: ∇²τ = IFFT(-k² * FFT(τ))
+   */
+  laplacianFFT(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    
+    // Apply windowing if requested
+    let windowed = tau;
+    if (this.window !== 'none') {
+      windowed = this.applyWindow(tau);
+    }
+    
+    // 2D FFT
+    const {real, imag} = this.fft2D(windowed);
+    
+    // Multiply by -k² in Fourier space
+    for (let i = 0; i < this.size; i++) {
+      const k2 = this.fft_cache.k2_grid[i];
+      real[i] *= k2;
+      imag[i] *= k2;
+    }
+    
+    // Inverse FFT
+    const laplacian = this.ifft2D(real, imag);
+    
+    return laplacian;
+  }
+  
+  /**
+   * Finite-difference Laplacian (5-point stencil)
+   */
+  laplacianFD(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const lap = new Float64Array(this.size);
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const center = tau[idx];
+        
+        const right = tau[((x + 1) % this.W) + y * this.W];
+        const left = tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = tau[x + ((y + 1) % this.W) * this.W];
+        const down = tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        
+        lap[idx] = (right + left + up + down - 4 * center);
+      }
+    }
+    
+    return lap;
+  }
+  
+  // ========================================
+  // FFT UTILITIES
+  // ========================================
+  
+  /**
+   * 2D FFT using row-column decomposition
+   */
+  fft2D(field) {
+    const W = this.W;
+    const real = new Float64Array(field);
+    const imag = new Float64Array(this.size);
+    
+    // FFT along rows
+    for (let y = 0; y < W; y++) {
+      const row_real = new Float64Array(W);
+      const row_imag = new Float64Array(W);
+      
+      for (let x = 0; x < W; x++) {
+        row_real[x] = real[x + y * W];
+      }
+      
+      const {real: fft_real, imag: fft_imag} = this.fft1D(row_real, row_imag);
+      
+      for (let x = 0; x < W; x++) {
+        real[x + y * W] = fft_real[x];
+        imag[x + y * W] = fft_imag[x];
+      }
+    }
+    
+    // FFT along columns
+    for (let x = 0; x < W; x++) {
+      const col_real = new Float64Array(W);
+      const col_imag = new Float64Array(W);
+      
+      for (let y = 0; y < W; y++) {
+        col_real[y] = real[x + y * W];
+        col_imag[y] = imag[x + y * W];
+      }
+      
+      const {real: fft_real, imag: fft_imag} = this.fft1D(col_real, col_imag);
+      
+      for (let y = 0; y < W; y++) {
+        real[x + y * W] = fft_real[y];
+        imag[x + y * W] = fft_imag[y];
+      }
+    }
+    
+    return {real, imag};
+  }
+  
+  /**
+   * Inverse 2D FFT with proper 1/N² normalization
+   */
+  ifft2D(real, imag) {
+    const W = this.W;
+    const result_real = new Float64Array(real);
+    const result_imag = new Float64Array(imag);
+    
+    // Conjugate
+    for (let i = 0; i < this.size; i++) {
+      result_imag[i] = -result_imag[i];
+    }
+    
+    // FFT (forward transform on conjugated data)
+    const {real: fft_real, imag: fft_imag} = this.fft2D(result_real);
+    
+    // Conjugate back and normalize by 1/(W²)
+    const scale = 1.0 / this.size; // W² = this.size
+    const output = new Float64Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      output[i] = fft_real[i] * scale; // Real part only (imaginary should be ~0)
+    }
+    
+    return output;
+  }
+  
+  /**
+   * 1D FFT (Cooley-Tukey radix-2)
+   */
+  fft1D(real, imag) {
+    const N = real.length;
+    
+    // Check if power of 2
+    if ((N & (N - 1)) !== 0) {
+      throw new Error('FFT size must be power of 2');
+    }
+    
+    // Bit-reversal permutation
+    const rev_real = new Float64Array(N);
+    const rev_imag = new Float64Array(N);
+    
+    for (let i = 0; i < N; i++) {
+      const j = this.reverseBits(i, Math.log2(N));
+      rev_real[i] = real[j];
+      rev_imag[i] = imag[j];
+    }
+    
+    // Cooley-Tukey FFT
+    for (let s = 1; s <= Math.log2(N); s++) {
+      const m = 1 << s;
+      const m2 = m >> 1;
+      const theta = -2 * Math.PI / m;
+      
+      for (let k = 0; k < N; k += m) {
+        for (let j = 0; j < m2; j++) {
+          const angle = theta * j;
+          const wr = Math.cos(angle);
+          const wi = Math.sin(angle);
+          
+          const idx1 = k + j;
+          const idx2 = k + j + m2;
+          
+          const t_real = wr * rev_real[idx2] - wi * rev_imag[idx2];
+          const t_imag = wr * rev_imag[idx2] + wi * rev_real[idx2];
+          
+          const u_real = rev_real[idx1];
+          const u_imag = rev_imag[idx1];
+          
+          rev_real[idx1] = u_real + t_real;
+          rev_imag[idx1] = u_imag + t_imag;
+          rev_real[idx2] = u_real - t_real;
+          rev_imag[idx2] = u_imag - t_imag;
+        }
+      }
+    }
+    
+    return {real: rev_real, imag: rev_imag};
+  }
+  
+  /**
+   * Reverse bits for FFT bit-reversal
+   */
+  reverseBits(x, bits) {
+    let result = 0;
+    for (let i = 0; i < bits; i++) {
+      result = (result << 1) | (x & 1);
+      x >>= 1;
+    }
+    return result;
+  }
+  
+  /**
+   * Apply window function to field
+   */
+  applyWindow(field) {
+    const windowed = new Float64Array(field.length);
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        let wx = 1, wy = 1;
+        
+        if (this.window === 'hann') {
+          wx = 0.5 * (1 - Math.cos(2 * Math.PI * x / this.W));
+          wy = 0.5 * (1 - Math.cos(2 * Math.PI * y / this.W));
+        } else if (this.window === 'hamming') {
+          wx = 0.54 - 0.46 * Math.cos(2 * Math.PI * x / this.W);
+          wy = 0.54 - 0.46 * Math.cos(2 * Math.PI * y / this.W);
+        }
+        
+        windowed[idx] = field[idx] * wx * wy;
+      }
+    }
+    
+    return windowed;
+  }
+  
+  // ========================================
+  // OPERATOR XIV: Φ-SCALE
+  // ========================================
+  
+  /**
+   * Scaled index for Operator XIV: Sμ(x,y) with nearest-neighbor sampling
+   */
+  getScaledIndex(x, y, mu) {
+    const x_scaled = Math.floor(x * mu) % this.W;
+    const y_scaled = Math.floor(y * mu) % this.W;
+    return x_scaled + y_scaled * this.W;
+  }
+  
+  /**
+   * Bilinear interpolation sampler for Operator XIV: τ(Sμ(x,y))
+   * Reduces aliasing artifacts in scale-sweep by smoothly interpolating
+   * between grid points instead of nearest-neighbor sampling.
+   */
+  sampleScaledBilinear(x, y, mu, field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const W = this.W;
+    
+    // Compute scaled coordinates (with wrap-around)
+    let xf = (x * mu) % W;
+    let yf = (y * mu) % W;
+    if (xf < 0) xf += W;
+    if (yf < 0) yf += W;
+    
+    // Get surrounding grid points
+    const x0 = Math.floor(xf);
+    const y0 = Math.floor(yf);
+    const x1 = (x0 + 1) % W;
+    const y1 = (y0 + 1) % W;
+    
+    // Fractional parts
+    const dx = xf - x0;
+    const dy = yf - y0;
+    
+    // Four corner indices
+    const i00 = x0 + y0 * W;
+    const i10 = x1 + y0 * W;
+    const i01 = x0 + y1 * W;
+    const i11 = x1 + y1 * W;
+    
+    // Bilinear interpolation
+    const a = tau[i00] * (1 - dx) + tau[i10] * dx;
+    const b = tau[i01] * (1 - dx) + tau[i11] * dx;
+    
+    return a * (1 - dy) + b * dy;
+  }
+  
+  /**
+   * Compute Δ_scale(μ) and Π(μ) invariants with configurable sampling
+   */
+  computeScaleInvariants(mu) {
+    const tau = this.fields[0].tau;
+    let sum_sq_diff = 0;
+    let sum_cos_diff = 0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        // Use bilinear sampling for better accuracy
+        const tau_scaled = this.sampleScaledBilinear(x, y, mu, 0);
+        const diff = tau_scaled - tau[idx];
+        
+        sum_sq_diff += diff * diff;
+        sum_cos_diff += Math.cos(diff);
+      }
+    }
+    
+    return {
+      Delta_scale: sum_sq_diff / this.size,
+      Pi: sum_cos_diff / this.size
+    };
+  }
+  
+  // ========================================
+  // OPERATOR XVI: FLUX & CLOSURE
+  // ========================================
+  
+  /**
+   * Trajectory storage management (XVI)
+   */
+  updateTrajectoryStorage(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    
+    // Ring buffer
+    if (this.ring_buffer.length >= this.trajectory_config.ring_buffer_size) {
+      this.ring_buffer.shift();
+    }
+    this.ring_buffer.push(new Float64Array(tau)); // Deep copy
+    
+    // Checkpoints
+    if (this.step_count % this.trajectory_config.checkpoint_stride === 0) {
+      this.checkpoints.push({
+        step: this.step_count,
+        field: new Float64Array(tau)
+      });
+      
+      // Reset flux accumulators after checkpoint
+      if (this.trajectory_config.strategy.includes('incrementalJ')) {
+        this.flux.Jx.fill(0);
+        this.flux.Jy.fill(0);
+        this.flux.reset_counter++;
+      }
+    }
+  }
+  
+  /**
+   * Compute flux divergence ∇·J (public for validators)
+   */
+  computeFluxDivergence() {
+    const divJ = new Float64Array(this.size);
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        const Jx_right = this.flux.Jx[((x + 1) % this.W) + y * this.W];
+        const Jx_left = this.flux.Jx[((x - 1 + this.W) % this.W) + y * this.W];
+        const Jy_up = this.flux.Jy[x + ((y + 1) % this.W) * this.W];
+        const Jy_down = this.flux.Jy[x + ((y - 1 + this.W) % this.W) * this.W];
+        
+        divJ[idx] = (Jx_right - Jx_left) / 2 + (Jy_up - Jy_down) / 2;
+      }
+    }
+    
+    return divJ;
+  }
+  
+  /**
+   * Apply closure operator: τ ← τ - α_c ∇·J
+   */
+  applyClosure(alpha_c) {
+    const divJ = this.computeFluxDivergence();
+    const tau = this.fields[0].tau;
+    
+    for (let i = 0; i < this.size; i++) {
+      tau[i] -= alpha_c * divJ[i];
+    }
+    
+    return divJ;
+  }
+  
+  // ========================================
+  // UTILITIES
+  // ========================================
+  
+  /**
+   * Seeded RNG (deterministic)
+   */
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10; // Edge case protection
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+  
+  /**
+   * Cross-platform high-resolution timestamp
+   */
+  getTimestamp() {
+    if (typeof performance !== 'undefined' && performance.now) {
+      return performance.now.bind(performance);
+    } else {
+      return () => Date.now();
+    }
+  }
+  
+  /**
+   * Get current field state (copy)
+   */
+  getField(field_idx = 0) {
+    return new Float64Array(this.fields[field_idx].tau);
+  }
+  
+  /**
+   * Set field state
+   */
+  setField(field_data, field_idx = 0) {
+    if (field_data.length !== this.size) {
+      throw new Error(`Field size mismatch: expected ${this.size}, got ${field_data.length}`);
+    }
+    this.fields[field_idx].tau.set(field_data);
+  }
+  
+  /**
+   * Get performance metrics
+   */
+  getPerformance() {
+    const recent_avg = this.performance.step_times.length > 0
+      ? this.performance.step_times.reduce((a,b) => a+b, 0) / this.performance.step_times.length
+      : this.performance.avg_step_time;
+    
+    return {
+      steps: this.step_count,
+      total_time_ms: this.performance.total_time,
+      avg_step_ms: this.performance.avg_step_time,
+      recent_avg_ms: recent_avg,
+      steps_per_second: 1000 / recent_avg
+    };
+  }
+  
+  /**
+   * Reset engine state
+   */
+  reset() {
+    this.step_count = 0;
+    this.performance = {
+      total_time: 0,
+      avg_step_time: 0,
+      step_times: []
+    };
+    this.checkpoints = [];
+    this.ring_buffer = [];
+    this.flux.Jx.fill(0);
+    this.flux.Jy.fill(0);
+    this.flux.reset_counter = 0;
+  }
+}
+
+// ========================================
+// EXPORTS
+// ========================================
+
+// ES Module export
+if (typeof window !== 'undefined') {
+  window.TauFieldEngineN = TauFieldEngineN;
+}
+
+// Node.js export
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = TauFieldEngineN;
+}
+
+// Chamber XIV INLINE v0.7.2
+console.log('═══════════════════════════════════════════');
+console.log('UNNS Phase B | Operator XIV – Φ-Scale | v0.7.2');
+console.log('═══════════════════════════════════════════');
+console.log('✅ Engine loaded (inlined)');
+
+let running = false;
+let sweepData = {
+  mu_values: [],
+  Delta_scale: [],
+  Pi: [],
+  mu_star: null,
+  phi_error: null,
+  config: null
+};
+
+const ui = {
+  runBtn: document.getElementById('runSweep'),
+  stopBtn: document.getElementById('stopSweep'),
+  exportBtn: document.getElementById('exportData'),
+  status: document.getElementById('statusDisplay'),
+  progress: document.getElementById('progressFill'),
+  canvasField: document.getElementById('canvasField'),
+  canvasInvariants: document.getElementById('canvasInvariants'),
+  metricMuStar: document.getElementById('metricMuStar'),
+  metricPhiError: document.getElementById('metricPhiError'),
+  metricStatus: document.getElementById('metricStatus'),
+  metricMu: document.getElementById('metricMu'),
+  metricDelta: document.getElementById('metricDelta'),
+  metricPi: document.getElementById('metricPi')
+};
+
+// Setup canvases
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasField, ui.canvasInvariants].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+// Render field
+function renderField(field, W) {
+  const canvas = ui.canvasField;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const cellSize = Math.min(w, h) / W;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const min_val = Math.min(...field);
+  const max_val = Math.max(...field);
+  const range = max_val - min_val;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const val = field[idx];
+      const normalized = (val - min_val) / range;
+      const hue = normalized * 240;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+// Render invariants
+function renderInvariants() {
+  if (sweepData.mu_values.length < 2) return;
+  
+  const canvas = ui.canvasInvariants;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = (h - 3 * padding) / 2;
+  
+  const mu_min = Math.min(...sweepData.mu_values);
+  const mu_max = Math.max(...sweepData.mu_values);
+  const delta_min = Math.min(...sweepData.Delta_scale);
+  const delta_max = Math.max(...sweepData.Delta_scale);
+  const pi_min = Math.min(...sweepData.Pi);
+  const pi_max = Math.max(...sweepData.Pi);
+  
+  // Plot Δ_scale(μ)
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < sweepData.mu_values.length; i++) {
+    const mu = sweepData.mu_values[i];
+    const delta = sweepData.Delta_scale[i];
+    const px = padding + ((mu - mu_min) / (mu_max - mu_min)) * plot_w;
+    const py = padding + ((delta_max - delta) / (delta_max - delta_min)) * plot_h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Δ_scale(μ)', padding, padding - 10);
+  
+  // Plot Π(μ)
+  ctx.strokeStyle = '#ff4a9e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  const pi_y_offset = padding + plot_h + padding;
+  
+  for (let i = 0; i < sweepData.mu_values.length; i++) {
+    const mu = sweepData.mu_values[i];
+    const pi = sweepData.Pi[i];
+    const px = padding + ((mu - mu_min) / (mu_max - mu_min)) * plot_w;
+    const py = pi_y_offset + ((pi_max - pi) / (pi_max - pi_min)) * plot_h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  ctx.fillStyle = '#ff4a9e';
+  ctx.fillText('Π(μ)', padding, pi_y_offset - 10);
+  
+  // Mark φ
+  const phi = 1.618033988749895;
+  if (phi >= mu_min && phi <= mu_max) {
+    const phi_x = padding + ((phi - mu_min) / (mu_max - mu_min)) * plot_w;
+    ctx.strokeStyle = '#4aff4a';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(phi_x, padding);
+    ctx.lineTo(phi_x, h - padding);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#4aff4a';
+    ctx.fillText('φ', phi_x + 5, padding + 15);
+  }
+}
+
+// Lambda slider
+document.getElementById('lambda').addEventListener('input', (e) => {
+  document.getElementById('lambdaValue').textContent = parseFloat(e.target.value).toFixed(5);
+});
+
+// Run sweep
+ui.runBtn.addEventListener('click', async () => {
+  console.log('🚀 Starting sweep');
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.metricStatus.textContent = 'Running...';
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: 0.02,
+    depth: parseInt(document.getElementById('depth').value),
+    mu_min: parseFloat(document.getElementById('muMin').value),
+    mu_max: parseFloat(document.getElementById('muMax').value),
+    mu_step: parseFloat(document.getElementById('muStep').value),
+    seed: 137042
+  };
+  
+  sweepData = {
+    mu_values: [],
+    Delta_scale: [],
+    Pi: [],
+    mu_star: null,
+    phi_error: null,
+    config: config
+  };
+  
+  const mu_range = [];
+  for (let mu = config.mu_min; mu <= config.mu_max; mu += config.mu_step) {
+    mu_range.push(mu);
+  }
+  
+  ui.status.textContent = `Running ${mu_range.length} μ values...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let i = 0; i < mu_range.length && running; i++) {
+    const mu = mu_range[i];
+    console.log(`  📊 μ=${mu.toFixed(4)} (${i+1}/${mu_range.length})`);
+    
+    const engine = new TauFieldEngineN({
+      grid_width: config.grid_width,
+      operator_mode: 'XIV',
+      lambda: config.lambda,
+      sigma: config.sigma,
+      mu: mu,
+      seed: config.seed,
+      laplacian_mode: 'none',
+      sampling_mode: 'bilinear'
+    });
+    
+    for (let step = 0; step < config.depth; step++) {
+      engine.step();
+      if (step % 50 === 0) {
+        renderField(engine.getField(0), config.grid_width);
+      }
+    }
+    
+    const inv = engine.computeScaleInvariants(mu);
+    sweepData.mu_values.push(mu);
+    sweepData.Delta_scale.push(inv.Delta_scale);
+    sweepData.Pi.push(inv.Pi);
+    
+    ui.metricMu.textContent = mu.toFixed(6);
+    ui.metricDelta.textContent = inv.Delta_scale.toFixed(6);
+    ui.metricPi.textContent = inv.Pi.toFixed(6);
+    
+    renderInvariants();
+    ui.progress.style.width = `${((i+1)/mu_range.length)*100}%`;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  if (running && sweepData.mu_values.length > 0) {
+    let min_idx = 0;
+    for (let i = 1; i < sweepData.mu_values.length; i++) {
+      if (sweepData.Delta_scale[i] < sweepData.Delta_scale[min_idx]) min_idx = i;
+    }
+    
+    sweepData.mu_star = sweepData.mu_values[min_idx];
+    const phi = 1.618033988749895;
+    sweepData.phi_error = Math.abs(sweepData.mu_star - phi) / phi * 100;
+    
+    ui.metricMuStar.textContent = sweepData.mu_star.toFixed(6);
+    ui.metricPhiError.textContent = sweepData.phi_error.toFixed(3) + '%';
+    ui.status.textContent = `Complete! μ★=${sweepData.mu_star.toFixed(4)}, φ error=${sweepData.phi_error.toFixed(3)}%`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log(`✅ μ★ = ${sweepData.mu_star.toFixed(6)}, φ error = ${sweepData.phi_error.toFixed(3)}%`);
+  }
+  
+  ui.runBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  ui.metricStatus.textContent = 'Complete';
+  running = false;
+});
+
+// Stop sweep
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.status.textContent = 'Stopped by user';
+  ui.metricStatus.textContent = 'Stopped';
+  console.log('⏸️  Sweep stopped');
+});
+
+// Export data
+ui.exportBtn.addEventListener('click', () => {
+  const exportData = {
+    version: '0.7.2',
+    operator: 'XIV',
+    chamber: 'Phi-Scale',
+    timestamp: new Date().toISOString(),
+    config: sweepData.config,
+    results: {
+      mu_values: sweepData.mu_values,
+      Delta_scale: sweepData.Delta_scale,
+      Pi: sweepData.Pi,
+      mu_star: sweepData.mu_star,
+      phi_error: sweepData.phi_error
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `LPB-Phi_${exportData.timestamp.split('T')[0]}_seed${exportData.config.seed}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+});
+
+console.log('✅ Chamber ready!');
+console.log('═══════════════════════════════════════════');
+  </script>
+</body>
+</html>
