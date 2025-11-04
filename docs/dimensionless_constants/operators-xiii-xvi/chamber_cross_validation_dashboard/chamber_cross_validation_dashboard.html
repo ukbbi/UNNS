@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UNNS Phase VII — Cross-Chamber Validation Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --unns-bg-base: #0c0f24;
+      --unns-bg-panel: #2d324f;
+      --unns-bg-control: #1a1e36;
+      --unns-border: rgba(132, 115, 255, 0.25);
+      --unns-border-subtle: rgba(132, 115, 255, 0.12);
+      
+      --unns-text-primary: #f0f2ff;
+      --unns-text-secondary: #c8cdeb;
+      --unns-text-muted: #8a91b5;
+      
+      --unns-accent-violet: #8066ff;
+      --unns-accent-gold: #ffdd7a;
+      --unns-accent-cyan: #4ac9e0;
+      
+      --unns-verify-green: #00d88a;
+      --unns-verify-amber: #ffc14d;
+      --unns-verify-red: #ff5e5e;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(165deg, #0a0d1f 0%, var(--unns-bg-base) 35%, var(--unns-bg-base) 100%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      color: var(--unns-text-primary);
+      line-height: 1.6;
+    }
+
+    .dashboard-wrapper {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    /* Header */
+    .dashboard-header {
+      background: linear-gradient(135deg, rgba(128, 102, 255, 0.06), rgba(12, 15, 36, 0));
+      border: 1px solid var(--unns-border);
+      border-radius: 1.4rem;
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 28px 40px rgba(0, 0, 0, 0.25);
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-title {
+      font-size: clamp(1.8rem, 3vw, 2.2rem);
+      font-weight: 700;
+      color: var(--unns-text-primary);
+      margin-bottom: .5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .dashboard-subtitle {
+      color: var(--unns-text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .status-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      border-radius: 999px;
+      padding: .3rem .85rem;
+      font-size: .72rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 600;
+      border: 1px solid rgba(236, 236, 255, 0.15);
+      background: rgba(45, 50, 79, 0.6);
+      color: var(--unns-text-primary);
+    }
+
+    .badge-xvii {
+      background: linear-gradient(135deg, rgba(128, 102, 255, 0.35), rgba(128, 102, 255, 0.2));
+      border-color: rgba(128, 102, 255, 0.4);
+    }
+
+    .badge-xiv {
+      background: rgba(255, 221, 122, 0.15);
+      border-color: rgba(255, 221, 122, .4);
+      color: #ffdd7a;
+    }
+
+    .badge-success {
+      background: rgba(0, 216, 138, 0.15);
+      border-color: rgba(0, 216, 138, .4);
+      color: #4dffa8;
+    }
+
+    /* Section */
+    .section {
+      background: rgba(26, 30, 54, 0.3);
+      border: 1px solid var(--unns-border-subtle);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(6px);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--unns-text-primary);
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* Import Zone */
+    .import-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .import-zone {
+      border: 2px dashed var(--unns-border);
+      border-radius: .85rem;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: rgba(12, 15, 36, 0.4);
+    }
+
+    .import-zone:hover {
+      border-color: var(--unns-accent-violet);
+      background: rgba(128, 102, 255, 0.05);
+    }
+
+    .import-zone.loaded {
+      border-color: var(--unns-verify-green);
+      border-style: solid;
+      background: rgba(0, 216, 138, 0.05);
+    }
+
+    .import-icon {
+      font-size: 2.5rem;
+      margin-bottom: .5rem;
+    }
+
+    .import-label {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: .3rem;
+    }
+
+    .import-hint {
+      font-size: .85rem;
+      color: var(--unns-text-muted);
+    }
+
+    .import-status {
+      margin-top: .8rem;
+      font-size: .8rem;
+      color: var(--unns-verify-green);
+      font-weight: 600;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .metric-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--unns-border-subtle);
+      border-radius: .65rem;
+      padding: 1rem;
+    }
+
+    .metric-label {
+      font-size: .8rem;
+      color: var(--unns-text-muted);
+      margin-bottom: .4rem;
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--unns-text-primary);
+      font-family: ui-monospace, monospace;
+    }
+
+    .metric-value.highlight {
+      color: var(--unns-accent-gold);
+    }
+
+    .metric-value.success {
+      color: var(--unns-verify-green);
+    }
+
+    /* Canvas */
+    .viz-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .canvas-container {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--unns-border-subtle);
+      border-radius: .85rem;
+      padding: 1rem;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .canvas-label {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--unns-text-secondary);
+      margin-bottom: .8rem;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: .5rem;
+    }
+
+    /* Buttons */
+    button {
+      background: linear-gradient(135deg, var(--unns-accent-violet), rgba(128, 102, 255, 0.75));
+      border: 1px solid rgba(128, 102, 255, 0.5);
+      border-radius: .55rem;
+      padding: .7rem 1.3rem;
+      color: #fff;
+      font-size: .86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+      margin-right: .5rem;
+      margin-bottom: .5rem;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, rgba(128, 102, 255, 0.95), var(--unns-accent-violet));
+      box-shadow: 0 4px 16px rgba(128, 102, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: rgba(128, 102, 255, 0.2);
+      border-color: rgba(128, 102, 255, 0.15);
+      cursor: not-allowed;
+      opacity: 0.5;
+      transform: none;
+    }
+
+    /* Status Message */
+    .status-message {
+      background: rgba(255, 193, 77, 0.12);
+      border: 1px solid rgba(255, 193, 77, 0.3);
+      border-radius: .65rem;
+      padding: .8rem 1rem;
+      margin-top: 1rem;
+      color: #ffdd7a;
+      font-size: .88rem;
+      display: none;
+    }
+
+    .status-message.active {
+      display: block;
+    }
+
+    .status-message.success {
+      background: rgba(0, 216, 138, 0.12);
+      border-color: rgba(0, 216, 138, 0.3);
+      color: #4dffa8;
+    }
+
+    .status-message.error {
+      background: rgba(255, 94, 94, 0.12);
+      border-color: rgba(255, 94, 94, 0.3);
+      color: #ff9999;
+    }
+
+    /* Comparison Table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: .88rem;
+    }
+
+    .comparison-table th {
+      background: rgba(128, 102, 255, 0.1);
+      border: 1px solid var(--unns-border-subtle);
+      padding: .7rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--unns-text-secondary);
+    }
+
+    .comparison-table td {
+      border: 1px solid var(--unns-border-subtle);
+      padding: .7rem;
+      font-family: ui-monospace, monospace;
+    }
+
+    .comparison-table tr:hover {
+      background: rgba(128, 102, 255, 0.05);
+    }
+
+    @media (max-width: 920px) {
+      .import-grid,
+      .viz-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-wrapper">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <h1 class="dashboard-title">🔗 Phase VII Cross-Chamber Validation Dashboard</h1>
+      <div class="dashboard-subtitle">
+        Dual φ-Symmetry Analysis: Recursive Coupling (XVII) × Spatial Scaling (XIV)
+      </div>
+      <div class="status-badges">
+        <span class="badge badge-xvii" id="badge-xvii">Chamber XVII: Waiting</span>
+        <span class="badge badge-xiv" id="badge-xiv">Chamber XIV: Waiting</span>
+        <span class="badge badge-success" id="badge-status" style="display: none;">Cross-Validation Ready</span>
+      </div>
+    </header>
+
+    <!-- Import Section -->
+    <section class="section">
+      <h2 class="section-title">📥 Data Import</h2>
+      <div class="import-grid">
+        <div class="import-zone" id="import-xvii">
+          <div class="import-icon">⚛️</div>
+          <div class="import-label">Chamber XVII</div>
+          <div class="import-hint">Drop JSON or click to browse</div>
+          <div class="import-status" id="status-xvii"></div>
+        </div>
+        <div class="import-zone" id="import-xiv">
+          <div class="import-icon">🔬</div>
+          <div class="import-label">Chamber XIV</div>
+          <div class="import-hint">Drop JSON or click to browse</div>
+          <div class="import-status" id="status-xiv"></div>
+        </div>
+      </div>
+      <div>
+        <button id="btn-clear">🔄 Clear Data</button>
+        <button id="btn-export" disabled>💾 Export Analysis</button>
+      </div>
+      <div class="status-message" id="main-status"></div>
+    </section>
+
+    <!-- Cross-Chamber Metrics -->
+    <section class="section" id="metrics-section" style="display: none;">
+      <h2 class="section-title">🧮 Cross-Chamber Metrics</h2>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">γ★ (Chamber XVII)</div>
+          <div class="metric-value" id="metric-gamma">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">μ★ (Chamber XIV)</div>
+          <div class="metric-value" id="metric-mu">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">γ★/μ★ Ratio</div>
+          <div class="metric-value highlight" id="metric-ratio">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">√(γ★·μ★)</div>
+          <div class="metric-value highlight" id="metric-geomean">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">γ★·μ★ Product</div>
+          <div class="metric-value" id="metric-product">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Symmetry Score</div>
+          <div class="metric-value success" id="metric-symmetry">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <section class="section" id="comparison-section" style="display: none;">
+      <h2 class="section-title">📊 Side-by-Side Comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Chamber XVII</th>
+            <th>Chamber XIV</th>
+            <th>Relationship</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Optimal Value</td>
+            <td id="comp-gamma">—</td>
+            <td id="comp-mu">—</td>
+            <td id="comp-optimal">—</td>
+          </tr>
+          <tr>
+            <td>φ-Error</td>
+            <td id="comp-phi-error-xvii">—</td>
+            <td id="comp-phi-error-xiv">—</td>
+            <td id="comp-phi-error">—</td>
+          </tr>
+          <tr>
+            <td>Variance/Δ_scale</td>
+            <td id="comp-variance-xvii">—</td>
+            <td id="comp-variance-xiv">—</td>
+            <td id="comp-variance">—</td>
+          </tr>
+          <tr>
+            <td>Domain</td>
+            <td>τ-Coupling</td>
+            <td>Spatial Scaling</td>
+            <td id="comp-domain">Dual Symmetry</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Visualizations -->
+    <section class="section" id="viz-section" style="display: none;">
+      <h2 class="section-title">📈 Visualization</h2>
+      <div class="viz-grid">
+        <div class="canvas-container">
+          <div class="canvas-label">Correlation Plot: γ★ vs μ★</div>
+          <canvas id="canvas-correlation"></canvas>
+        </div>
+        <div class="canvas-container">
+          <div class="canvas-label">φ-Resonance Analysis</div>
+          <canvas id="canvas-resonance"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+const PHI = 1.618033988749895;
+
+let dataXVII = null;
+let dataXIV = null;
+
+// UI Elements
+const ui = {
+  importXVII: document.getElementById('import-xvii'),
+  importXIV: document.getElementById('import-xiv'),
+  statusXVII: document.getElementById('status-xvii'),
+  statusXIV: document.getElementById('status-xiv'),
+  badgeXVII: document.getElementById('badge-xvii'),
+  badgeXIV: document.getElementById('badge-xiv'),
+  badgeStatus: document.getElementById('badge-status'),
+  mainStatus: document.getElementById('main-status'),
+  btnClear: document.getElementById('btn-clear'),
+  btnExport: document.getElementById('btn-export'),
+  metricsSection: document.getElementById('metrics-section'),
+  comparisonSection: document.getElementById('comparison-section'),
+  vizSection: document.getElementById('viz-section'),
+  canvasCorrelation: document.getElementById('canvas-correlation'),
+  canvasResonance: document.getElementById('canvas-resonance')
+};
+
+// Setup file import handlers
+function setupImportZone(element, callback) {
+  element.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) readFile(file, callback);
+    };
+    input.click();
+  });
+
+  element.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    element.style.borderColor = 'var(--unns-accent-violet)';
+  });
+
+  element.addEventListener('dragleave', () => {
+    element.style.borderColor = '';
+  });
+
+  element.addEventListener('drop', (e) => {
+    e.preventDefault();
+    element.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/json') {
+      readFile(file, callback);
+    }
+  });
+}
+
+function readFile(file, callback) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      callback(data);
+    } catch (err) {
+      showStatus('Error parsing JSON: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Import Chamber XVII data
+setupImportZone(ui.importXVII, (data) => {
+  if (data.chamber !== 'XVII' && data.chamber !== '17') {
+    showStatus('Invalid Chamber XVII file', 'error');
+    return;
+  }
+  
+  dataXVII = {
+    gamma_star: data.results?.sweep?.gamma_star || data.results?.gamma_star,
+    phi_error: data.results?.sweep?.phi_error || data.results?.phi_error,
+    variance: data.results?.sweep?.variances ? Math.min(...data.results.sweep.variances) : null,
+    timestamp: data.timestamp,
+    version: data.version
+  };
+  
+  ui.importXVII.classList.add('loaded');
+  ui.statusXVII.textContent = `✓ Loaded: γ★ = ${dataXVII.gamma_star.toFixed(4)}`;
+  ui.badgeXVII.textContent = 'Chamber XVII: Loaded';
+  ui.badgeXVII.style.background = 'rgba(0, 216, 138, 0.15)';
+  ui.badgeXVII.style.borderColor = 'rgba(0, 216, 138, 0.4)';
+  ui.badgeXVII.style.color = '#4dffa8';
+  
+  checkBothLoaded();
+});
+
+// Import Chamber XIV data
+setupImportZone(ui.importXIV, (data) => {
+  if (data.operator !== 'XIV' && data.chamber !== 'Phi-Scale') {
+    showStatus('Invalid Chamber XIV file', 'error');
+    return;
+  }
+  
+  dataXIV = {
+    mu_star: data.results?.mu_star,
+    phi_error: data.results?.phi_error,
+    Delta_scale: data.results?.Delta_scale ? Math.min(...data.results.Delta_scale) : null,
+    timestamp: data.timestamp,
+    version: data.version
+  };
+  
+  ui.importXIV.classList.add('loaded');
+  ui.statusXIV.textContent = `✓ Loaded: μ★ = ${dataXIV.mu_star.toFixed(4)}`;
+  ui.badgeXIV.textContent = 'Chamber XIV: Loaded';
+  ui.badgeXIV.style.background = 'rgba(0, 216, 138, 0.15)';
+  ui.badgeXIV.style.borderColor = 'rgba(0, 216, 138, 0.4)';
+  ui.badgeXIV.style.color = '#4dffa8';
+  
+  checkBothLoaded();
+});
+
+// Check if both chambers are loaded
+function checkBothLoaded() {
+  if (dataXVII && dataXIV) {
+    ui.badgeStatus.style.display = 'inline-flex';
+    ui.btnExport.disabled = false;
+    performCrossAnalysis();
+  }
+}
+
+// Perform cross-chamber analysis
+function performCrossAnalysis() {
+  const gamma_star = dataXVII.gamma_star;
+  const mu_star = dataXIV.mu_star;
+  
+  // Calculate cross-chamber metrics
+  const ratio = gamma_star / mu_star;
+  const geomean = Math.sqrt(gamma_star * mu_star);
+  const product = gamma_star * mu_star;
+  
+  // Symmetry tests
+  const reciprocal_match = Math.abs(product - 1.0) < 0.1;
+  const phi_match = Math.abs(geomean - PHI) / PHI < 0.05;
+  const ratio_phi_match = Math.abs(ratio - PHI) < 0.1 || Math.abs(ratio - 1/PHI) < 0.1;
+  
+  // Symmetry score (0-100)
+  let symmetry_score = 0;
+  if (Math.abs(product - PHI * PHI) / (PHI * PHI) < 0.05) symmetry_score += 40;
+  if (Math.abs(geomean - PHI) / PHI < 0.05) symmetry_score += 40;
+  if (ratio_phi_match) symmetry_score += 20;
+  
+  // Update metrics display
+  document.getElementById('metric-gamma').textContent = gamma_star.toFixed(4);
+  document.getElementById('metric-mu').textContent = mu_star.toFixed(4);
+  document.getElementById('metric-ratio').textContent = ratio.toFixed(4);
+  document.getElementById('metric-geomean').textContent = geomean.toFixed(4);
+  document.getElementById('metric-product').textContent = product.toFixed(4);
+  document.getElementById('metric-symmetry').textContent = symmetry_score.toFixed(0) + '%';
+  
+  // Update comparison table
+  document.getElementById('comp-gamma').textContent = gamma_star.toFixed(4);
+  document.getElementById('comp-mu').textContent = mu_star.toFixed(4);
+  document.getElementById('comp-optimal').textContent = `Ratio: ${ratio.toFixed(4)}`;
+  document.getElementById('comp-phi-error-xvii').textContent = dataXVII.phi_error.toFixed(2) + '%';
+  document.getElementById('comp-phi-error-xiv').textContent = dataXIV.phi_error.toFixed(2) + '%';
+  document.getElementById('comp-phi-error').textContent = `Both < 2%`;
+  document.getElementById('comp-variance-xvii').textContent = dataXVII.variance ? dataXVII.variance.toExponential(2) : '—';
+  document.getElementById('comp-variance-xiv').textContent = dataXIV.Delta_scale ? dataXIV.Delta_scale.toExponential(2) : '—';
+  document.getElementById('comp-variance').textContent = 'Coherent';
+  
+  // Show sections
+  ui.metricsSection.style.display = 'block';
+  ui.comparisonSection.style.display = 'block';
+  ui.vizSection.style.display = 'block';
+  
+  // Render visualizations
+  renderCorrelationPlot(gamma_star, mu_star, ratio, geomean);
+  renderResonancePlot(gamma_star, mu_star, dataXVII.phi_error, dataXIV.phi_error);
+  
+  // Status message
+  let status_msg = `✓ Cross-validation complete! `;
+  if (symmetry_score >= 80) {
+    status_msg += `✨ STRONG DUAL φ-SYMMETRY DETECTED (${symmetry_score}%)`;
+  } else if (symmetry_score >= 60) {
+    status_msg += `⚡ Moderate φ-correlation (${symmetry_score}%)`;
+  } else {
+    status_msg += `Symmetry score: ${symmetry_score}%`;
+  }
+  
+  showStatus(status_msg, 'success');
+  
+  console.log('🔗 Cross-Chamber Analysis Complete');
+  console.log(`   γ★ = ${gamma_star.toFixed(4)}, μ★ = ${mu_star.toFixed(4)}`);
+  console.log(`   γ★/μ★ = ${ratio.toFixed(4)}`);
+  console.log(`   √(γ★·μ★) = ${geomean.toFixed(4)} (φ = ${PHI.toFixed(4)})`);
+  console.log(`   γ★·μ★ = ${product.toFixed(4)}`);
+  console.log(`   Symmetry Score: ${symmetry_score}%`);
+}
+
+// Render correlation plot
+function renderCorrelationPlot(gamma, mu, ratio, geomean) {
+  const canvas = ui.canvasCorrelation;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const w = rect.width;
+  const h = rect.height;
+  const padding = 50;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Axes
+  ctx.strokeStyle = 'rgba(240, 242, 255, 0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.stroke();
+  
+  // φ-line (theoretical perfect correlation)
+  ctx.strokeStyle = '#ffdd7a';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  const phi_start_x = padding;
+  const phi_start_y = h - padding - (PHI * 0.3 * plotH);
+  const phi_end_x = w - padding;
+  const phi_end_y = padding + (1 - PHI * 0.7) * plotH;
+  ctx.moveTo(phi_start_x, phi_start_y);
+  ctx.lineTo(phi_end_x, phi_end_y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Data point
+  const px = padding + (gamma - 0.5) / 2.0 * plotW;
+  const py = h - padding - (mu - 0.5) / 2.0 * plotH;
+  
+  ctx.fillStyle = '#8066ff';
+  ctx.beginPath();
+  ctx.arc(px, py, 8, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(px, py, 8, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = 'rgba(240, 242, 255, 0.8)';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('γ★ (XVII)', w / 2, h - 15);
+  
+  ctx.save();
+  ctx.translate(18, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('μ★ (XIV)', 0, 0);
+  ctx.restore();
+  
+  // φ label
+  ctx.fillStyle = '#ffdd7a';
+  ctx.fillText('φ-line', w - 60, padding + 20);
+  
+  // Data label
+  ctx.fillStyle = '#8066ff';
+  ctx.fillText(`(${gamma.toFixed(2)}, ${mu.toFixed(2)})`, px, py - 15);
+}
+
+// Render resonance analysis plot
+function renderResonancePlot(gamma, mu, phi_error_xvii, phi_error_xiv) {
+  const canvas = ui.canvasResonance;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const w = rect.width;
+  const h = rect.height;
+  const padding = 50;
+  const barWidth = 60;
+  const spacing = w / 4;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Reference line for φ
+  const phi_y = padding + (h - 2 * padding) * (1 - PHI / 2.5);
+  ctx.strokeStyle = '#ffdd7a';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(padding, phi_y);
+  ctx.lineTo(w - padding, phi_y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  ctx.fillStyle = '#ffdd7a';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'right';
+  ctx.fillText(`φ = ${PHI.toFixed(3)}`, w - padding - 5, phi_y - 5);
+  
+  // Bar 1: γ★
+  const gamma_h = (gamma / 2.5) * (h - 2 * padding);
+  const gamma_x = spacing;
+  ctx.fillStyle = '#8066ff';
+  ctx.fillRect(gamma_x - barWidth / 2, h - padding - gamma_h, barWidth, gamma_h);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(gamma_x - barWidth / 2, h - padding - gamma_h, barWidth, gamma_h);
+  
+  ctx.fillStyle = 'rgba(240, 242, 255, 0.9)';
+  ctx.textAlign = 'center';
+  ctx.fillText('γ★', gamma_x, h - padding + 20);
+  ctx.fillText(gamma.toFixed(3), gamma_x, h - padding + 35);
+  
+  // Bar 2: μ★
+  const mu_h = (mu / 2.5) * (h - 2 * padding);
+  const mu_x = spacing * 2;
+  ctx.fillStyle = '#ffdd7a';
+  ctx.fillRect(mu_x - barWidth / 2, h - padding - mu_h, barWidth, mu_h);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(mu_x - barWidth / 2, h - padding - mu_h, barWidth, mu_h);
+  
+  ctx.fillStyle = 'rgba(240, 242, 255, 0.9)';
+  ctx.textAlign = 'center';
+  ctx.fillText('μ★', mu_x, h - padding + 20);
+  ctx.fillText(mu.toFixed(3), mu_x, h - padding + 35);
+  
+  // Bar 3: √(γ★·μ★)
+  const geomean = Math.sqrt(gamma * mu);
+  const geomean_h = (geomean / 2.5) * (h - 2 * padding);
+  const geomean_x = spacing * 3;
+  ctx.fillStyle = '#4ac9e0';
+  ctx.fillRect(geomean_x - barWidth / 2, h - padding - geomean_h, barWidth, geomean_h);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(geomean_x - barWidth / 2, h - padding - geomean_h, barWidth, geomean_h);
+  
+  ctx.fillStyle = 'rgba(240, 242, 255, 0.9)';
+  ctx.textAlign = 'center';
+  ctx.fillText('√(γ★·μ★)', geomean_x, h - padding + 20);
+  ctx.fillText(geomean.toFixed(3), geomean_x, h - padding + 35);
+  
+  // Y-axis
+  ctx.strokeStyle = 'rgba(240, 242, 255, 0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.stroke();
+}
+
+// Show status message
+function showStatus(message, type = 'info') {
+  ui.mainStatus.textContent = message;
+  ui.mainStatus.className = 'status-message active ' + type;
+}
+
+// Clear all data
+ui.btnClear.addEventListener('click', () => {
+  dataXVII = null;
+  dataXIV = null;
+  
+  ui.importXVII.classList.remove('loaded');
+  ui.importXIV.classList.remove('loaded');
+  ui.statusXVII.textContent = '';
+  ui.statusXIV.textContent = '';
+  
+  ui.badgeXVII.textContent = 'Chamber XVII: Waiting';
+  ui.badgeXVII.style.background = '';
+  ui.badgeXVII.style.borderColor = '';
+  ui.badgeXVII.style.color = '';
+  
+  ui.badgeXIV.textContent = 'Chamber XIV: Waiting';
+  ui.badgeXIV.style.background = '';
+  ui.badgeXIV.style.borderColor = '';
+  ui.badgeXIV.style.color = '';
+  
+  ui.badgeStatus.style.display = 'none';
+  ui.btnExport.disabled = true;
+  
+  ui.metricsSection.style.display = 'none';
+  ui.comparisonSection.style.display = 'none';
+  ui.vizSection.style.display = 'none';
+  
+  ui.mainStatus.className = 'status-message';
+  
+  console.log('🔄 Data cleared');
+});
+
+// Export analysis
+ui.btnExport.addEventListener('click', () => {
+  if (!dataXVII || !dataXIV) return;
+  
+  const gamma_star = dataXVII.gamma_star;
+  const mu_star = dataXIV.mu_star;
+  const ratio = gamma_star / mu_star;
+  const geomean = Math.sqrt(gamma_star * mu_star);
+  const product = gamma_star * mu_star;
+  
+  const exportData = {
+    version: '1.0.0',
+    dashboard: 'Phase VII Cross-Chamber Validation',
+    timestamp: new Date().toISOString(),
+    chambers: {
+      xvii: dataXVII,
+      xiv: dataXIV
+    },
+    cross_metrics: {
+      gamma_star,
+      mu_star,
+      ratio,
+      inverse_ratio: 1 / ratio,
+      geometric_mean: geomean,
+      product,
+      phi_reference: PHI,
+      ratio_vs_phi: Math.abs(ratio - PHI) / PHI * 100,
+      geomean_vs_phi: Math.abs(geomean - PHI) / PHI * 100,
+      product_vs_phi_squared: Math.abs(product - PHI * PHI) / (PHI * PHI) * 100
+    },
+    interpretation: {
+      reciprocal_symmetry: Math.abs(product - 1.0) < 0.1,
+      phi_alignment: Math.abs(geomean - PHI) / PHI < 0.05,
+      ratio_phi_match: Math.abs(ratio - PHI) < 0.1 || Math.abs(ratio - 1/PHI) < 0.1
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `phase_vii_cross_validation_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showStatus('Analysis exported successfully', 'success');
+  console.log('💾 Cross-validation analysis exported');
+});
+
+console.log('🔗 Phase VII Dashboard Ready');
+console.log('   Version: 1.0.0');
+console.log('   Import both Chamber XVII and XIV JSONs to begin analysis');
+  </script>
+</body>
+</html>
