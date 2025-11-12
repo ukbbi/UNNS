@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber XX v2.3</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-bottom: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    button.active { background: #4a9eff; }
+    .button-primary { background: #4a9eff; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+<header>
+<h1>⚡ CHAMBER XX: RECURSIVE TENSOR FIELD EXPLORER v2.3</h1>
+<div class="subtitle">Phase F • Multi-τ Dynamics with Maxwell-Analog Visualization</div>
+</header>
+<div class="panel">
+<div class="panel-title">Configuration</div>
+<div class="controls">
+<div class="control-group">
+<label>Grid Size</label>
+<select id="gridSize">
+<option value="64">64×64 (fast)</option>
+<option selected="" value="128">128×128 (balanced)</option>
+<option value="256">256×256 (high-res)</option>
+</select>
+</div>
+<div class="control-group">
+<label>Field Count</label>
+<select id="fieldCount">
+<option selected="" value="2">2 fields</option>
+<option value="3">3 fields</option>
+</select>
+</div>
+<div class="control-group">
+<label>Operator A</label>
+<select id="operatorA">
+<option selected="" value="laplacian">∇² (Laplacian)</option>
+<option value="gradient">∇ (Gradient)</option>
+<option value="identity">I (Identity)</option>
+</select>
+</div>
+<div class="control-group">
+<label>Operator B</label>
+<select id="operatorB">
+<option selected="" value="gradient">∇ (Gradient)</option>
+<option value="laplacian">∇² (Laplacian)</option>
+<option value="identity">I (Identity)</option>
+</select>
+</div>
+<div class="control-group">
+<label>Evolution Steps</label>
+<input id="steps" min="100" step="100" type="number" value="500"/>
+</div>
+<div class="control-group">
+<label>λ (Coupling)</label>
+<input id="lambda" max="1" min="0" step="0.01" type="number" value="0.15"/>
+</div>
+<button id="toggleBridgeMode">Bridge Mode</button></div>
+<button class="button-primary" id="runEvolution">▶ Run Evolution</button>
+<button disabled="" id="stopEvolution">⏸ Stop</button>
+<button id="toggleBridge">🌉 Bridge Mode</button>
+<button id="toggleVectors">➡️ Vector Overlay</button>
+<button disabled="" id="exportData">💾 Export Data</button>
+<div class="status" id="statusDisplay" style="display: none;"></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%;"></div></div>
+</div>
+<div class="panel">
+<div class="panel-title">Maxwell-Analog Visualization</div>
+<div class="visualization">
+<div class="canvas-container">
+<canvas id="canvasPhi"></canvas>
+<div class="canvas-label">Φ: Divergence (Electric)</div>
+</div>
+<div class="canvas-container">
+<canvas id="canvasPsi"></canvas>
+<div class="canvas-label">Ψ: Curl (Magnetic)</div>
+</div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-title">Diagnostics</div>
+<div class="metrics">
+<div class="metric"><div class="metric-label">Step</div><div class="metric-value" id="metricStep">0</div></div>
+<div class="metric"><div class="metric-label">||Φ||</div><div class="metric-value" id="metricPhi">—</div></div>
+<div class="metric"><div class="metric-label">||Ψ||</div><div class="metric-value" id="metricPsi">—</div></div>
+<div class="metric"><div class="metric-label">E·B</div><div class="metric-value" id="metricEB">—</div></div>
+<div class="metric"><div class="metric-label">Antisym</div><div class="metric-value" id="metricAntisym">—</div></div>
+<div class="metric"><div class="metric-label">FPS</div><div class="metric-value" id="metricFPS">—</div></div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-title">📚 Laboratory Guide</div>
+<div style="line-height: 1.6; color: #aaa;">
+<h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Chamber XX: Recursive Tensor Field Explorer</h3>
+<p><strong>Theoretical Foundation:</strong> Implements cross-field recursive tensors:</p>
+<p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          R<sub>ij</sub> = O<sub>i</sub>(τ<sub>j</sub>) - O<sub>j</sub>(τ<sub>i</sub>)
+        </p>
+<p>where O<sub>i</sub> are differential operators (∇², ∇, I) applied to τ-fields.</p>
+<h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Maxwell-Analog Structure</h3>
+<ul style="margin: 10px 0 10px 20px;">
+<li><strong>Divergence (Φ):</strong> Electric-like charge density from ∇·R</li>
+<li><strong>Curl (Ψ):</strong> Magnetic-like vorticity from ∇×R</li>
+<li><strong>E·B Coupling:</strong> Bridge energy between electric and magnetic modes</li>
+</ul>
+<h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Visualization Features (v2.3)</h3>
+<ul style="margin: 10px 0 10px 20px;">
+<li><strong>Differential Colormaps:</strong> Blue→White→Yellow (Φ), Purple→Black→Cyan (Ψ)</li>
+<li><strong>Vector Overlays:</strong> E-field arrows (radial), B-field arrows (circular)</li>
+<li><strong>Bridge Mode:</strong> Green→Red coupling intensity visualization</li>
+</ul>
+<h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Validation Criteria</h3>
+<ul style="margin: 10px 0 10px 20px;">
+<li><strong>C_F1:</strong> Tensor antisymmetry R<sub>ij</sub> = -R<sub>ji</sub></li>
+<li><strong>C_F2:</strong> Divergence-free regions (∇·Ψ ≈ 0)</li>
+<li><strong>C_F3:</strong> Curl-free regions (∇×Φ ≈ 0)</li>
+<li><strong>C_F4:</strong> E·B coupling emergence</li>
+<li><strong>C_F5:</strong> Performance ≥180 fps @ 128²</li>
+</ul>
+<p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+<strong>Version:</strong> 2.3 | <strong>Phase:</strong> F | <strong>Status:</strong> Production
+        </p>
+ <div class="guide-section">
+  <h3 style="background: linear-gradient(to right, #8a2be2, #ff7f50); padding: 5px 10px; color: white; border-radius: 5px;">Field Overview</h3>
+  <p>Each run generates two τ-fields updated through recursive coupling. 
+  <strong>Φ</strong> (divergence) represents charge-like intensity, 
+  <strong>Ψ</strong> (curl) represents rotational vorticity. 
+  The Bridge Mode overlays their product E·B, visualizing τ-field resonance.</p>
+
+  <h3 style="background: linear-gradient(to right, #20b2aa, #4169e1); padding: 5px 10px; color: white; border-radius: 5px;">Functional Controls</h3>
+  <ul style="margin-left: 20px;">
+    <li><strong>Run Evolution:</strong> Starts the τ-field recursion engine using current grid and λ values.</li>
+    <li><strong>Stop:</strong> Halts recursion mid-cycle, keeping current field states.</li>
+    <li><strong>Bridge Mode:</strong> Toggles Φ–Ψ coupling visualization.</li>
+    <li><strong>Vector Overlay:</strong> Enables E (∇Φ) and B (∇×Ψ) arrow visualization.</li>
+    <li><strong>Export Data:</strong> Saves JSON file with derived metrics and configuration.</li>
+  </ul>
+
+  <h3 style="background: linear-gradient(to right, #20b2aa, #4169e1); padding: 5px 10px; color: white; border-radius: 5px;">Operator Reference</h3>
+  <ul style="margin-left: 20px;">
+    <li><strong>XIII:</strong> Base τ-field initialization (sets random recursive seeds).</li>
+    <li><strong>XIV:</strong> Φ-Scale (electric divergence synthesis via ∇·R).</li>
+    <li><strong>XV:</strong> Prism (magnetic curl extraction via ∇×R).</li>
+    <li><strong>XVI:</strong> Recursive Transfer (cross-field coupling of R<sub>ij</sub>).</li>
+    <li><strong>XVII:</strong> Maxwell Bridge (E·B coherence mapping).</li>
+  </ul>
+
+  <h3 style="background: linear-gradient(to right, #32cd32, #ff4500); padding: 5px 10px; color: white; border-radius: 5px;">Validation and Observables</h3>
+  <ul style="margin-left: 20px;">
+    <li><strong>||Φ||, ||Ψ||:</strong> Norms of derived fields (stability check).</li>
+    <li><strong>E·B:</strong> Mean coupling magnitude between divergence and curl.</li>
+    <li><strong>Antisymmetry:</strong> <em>R<sub>xy</sub> + R<sub>yx</sub> ≈ 0</em> ensures correct tensor parity.</li>
+    <li><strong>FPS:</strong> Frame rate, must exceed 180 @ 128².</li>
+  </ul>
+
+  <h3 style="background: linear-gradient(to right, #9932cc, #4682b4); padding: 5px 10px; color: white; border-radius: 5px;">Remarks</h3>
+  <p>This chamber provides a functional approximation of Maxwell-analog recursion fields within the UNNS substrate.
+  Divergence–curl coherence demonstrates the emergence of coupled tensor dynamics without enforcing physical electromagnetic constraints.</p>
+</div>
+       
+<div class="guide-section">
+<h3 style="background: linear-gradient(to right, #8a2be2, #ff7f50); padding: 5px 10px; color: white; border-radius: 5px;">Field Overview</h3>
+<p>Φ uses a violet→white→amber palette for electric field visualization. Ψ uses cyan→blue→black for magnetic field visualization.</p>
+<p>The Maxwell-Analog Bridge visualizes coupling intensity (E·B = |ΦΨ|) using a green→red gradient.</p>
+<h3 style="background: linear-gradient(to right, #32cd32, #ff4500); padding: 5px 10px; color: white; border-radius: 5px;">Maxwell-Analog Bridge</h3>
+<p>The bridge overlay visualizes the divergence–curl duality, mapping the interaction between Φ and Ψ as a recursive field transfer.</p>
+</div>
+</div>
+</div>
+</div>
+  
+  <script>
+class RecursiveTensorEngine {
+  constructor(config = {}) {
+    this.W = config.grid_width || 128;
+    this.size = this.W * this.W;
+    this.n_fields = config.n_fields || 2;
+    
+    this.lambda = config.lambda || 0.15;
+    this.sigma = config.sigma || 0.02;
+    
+    this.operators = config.operators || ['laplacian', 'gradient'];
+    
+    this.fields = Array(this.n_fields).fill(null).map(() => ({
+      tau: new Float64Array(this.size),
+      tau_next: new Float64Array(this.size)
+    }));
+    
+    this.tensor = {
+      Rxx: new Float64Array(this.size),
+      Rxy: new Float64Array(this.size),
+      Ryx: new Float64Array(this.size),
+      Ryy: new Float64Array(this.size)
+    };
+    
+    this.derived = {
+      phi: new Float64Array(this.size),
+      psi: new Float64Array(this.size)
+    };
+    
+    this.seed = config.seed || 137042;
+    this.rng = this.createSeededRNG(this.seed);
+    
+    this.step_count = 0;
+    this.performance = { frame_times: [] };
+    
+    this.initialize();
+  }
+  
+  initialize() {
+    for (let i = 0; i < this.n_fields; i++) {
+      const tau = this.fields[i].tau;
+      for (let j = 0; j < this.size; j++) {
+        tau[j] = this.rng.random() * 2 * Math.PI;
+      }
+    }
+  }
+  
+  step() {
+    const t_start = performance.now();
+    
+    for (let i = 0; i < this.n_fields; i++) {
+      const {tau, tau_next} = this.fields[i];
+      const op = this.operators[i];
+      
+      for (let idx = 0; idx < this.size; idx++) {
+        const x = idx % this.W;
+        const y = Math.floor(idx / this.W);
+        
+        let coupling_sum = 0;
+        for (let j = 0; j < this.n_fields; j++) {
+          if (i === j) continue;
+          const tau_j = this.fields[j].tau;
+          const op_j = this.operators[j];
+          
+          const val_i = this.applyOperator(tau, x, y, op);
+          const val_j = this.applyOperator(tau_j, x, y, op_j);
+          
+          coupling_sum += Math.sin(val_i - val_j);
+        }
+        
+        tau_next[idx] = tau[idx] + this.lambda * coupling_sum;
+        if (this.sigma > 0) {
+          tau_next[idx] += this.sigma * this.rng.gaussian();
+        }
+      }
+      
+      this.fields[i].tau = tau_next;
+      this.fields[i].tau_next = tau;
+    }
+    
+    this.updateTensorFields();
+    this.updateDerivedFields();
+    
+    this.step_count++;
+    const t_end = performance.now();
+    this.performance.frame_times.push(t_end - t_start);
+    if (this.performance.frame_times.length > 60) {
+      this.performance.frame_times.shift();
+    }
+  }
+  
+  applyOperator(field, x, y, op) {
+    const idx = x + y * this.W;
+    
+    if (op === 'identity') {
+      return field[idx];
+    }
+    
+    const right = field[((x + 1) % this.W) + y * this.W];
+    const left = field[((x - 1 + this.W) % this.W) + y * this.W];
+    const up = field[x + ((y + 1) % this.W) * this.W];
+    const down = field[x + ((y - 1 + this.W) % this.W) * this.W];
+    const center = field[idx];
+    
+    if (op === 'gradient') {
+      const gx = (right - left) / 2;
+      const gy = (up - down) / 2;
+      return Math.sqrt(gx * gx + gy * gy);
+    }
+    
+    if (op === 'laplacian') {
+      return (right + left + up + down - 4 * center);
+    }
+    
+    return center;
+  }
+  
+  updateTensorFields() {
+    if (this.n_fields < 2) return;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        const tau0 = this.fields[0].tau;
+        const tau1 = this.fields[1].tau;
+        const op0 = this.operators[0];
+        const op1 = this.operators[1];
+        
+        const O0_tau1 = this.applyOperator(tau1, x, y, op0);
+        const O1_tau0 = this.applyOperator(tau0, x, y, op1);
+        
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        const down_idx = x + ((y + 1) % this.W) * this.W;
+        
+        const O0_tau1_right = this.applyOperator(tau1, (x + 1) % this.W, y, op0);
+        const O1_tau0_right = this.applyOperator(tau0, (x + 1) % this.W, y, op1);
+        const O0_tau1_down = this.applyOperator(tau1, x, (y + 1) % this.W, op0);
+        const O1_tau0_down = this.applyOperator(tau0, x, (y + 1) % this.W, op1);
+        
+        this.tensor.Rxx[idx] = O0_tau1 - O1_tau0;
+        this.tensor.Ryy[idx] = O0_tau1 - O1_tau0;
+        this.tensor.Rxy[idx] = (O0_tau1_right - O1_tau0_right) - (O0_tau1 - O1_tau0);
+        this.tensor.Ryx[idx] = (O0_tau1_down - O1_tau0_down) - (O0_tau1 - O1_tau0);
+      }
+    }
+  }
+  
+  updateDerivedFields() {
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        const down_idx = x + ((y + 1) % this.W) * this.W;
+        const left_idx = ((x - 1 + this.W) % this.W) + y * this.W;
+        const up_idx = x + ((y - 1 + this.W) % this.W) * this.W;
+        
+        const dRxx_dx = (this.tensor.Rxx[right_idx] - this.tensor.Rxx[left_idx]) / 2;
+        const dRyy_dy = (this.tensor.Ryy[down_idx] - this.tensor.Ryy[up_idx]) / 2;
+        this.derived.phi[idx] = dRxx_dx + dRyy_dy;
+        
+        const dRxy_dy = (this.tensor.Rxy[down_idx] - this.tensor.Rxy[up_idx]) / 2;
+        const dRyx_dx = (this.tensor.Ryx[right_idx] - this.tensor.Ryx[left_idx]) / 2;
+        this.derived.psi[idx] = dRxy_dy - dRyx_dx;
+      }
+    }
+  }
+  
+  computeAntisymmetry() {
+    let sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      const diff = Math.abs(this.tensor.Rxy[i] + this.tensor.Ryx[i]);
+      sum += diff;
+    }
+    return sum / this.size;
+  }
+  
+  computeNorm(field) {
+    let sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      sum += field[i] * field[i];
+    }
+    return Math.sqrt(sum / this.size);
+  }
+  
+  computeEBCoupling() {
+    let sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      sum += Math.abs(this.derived.phi[i] * this.derived.psi[i]);
+    }
+    return sum / this.size;
+  }
+  
+  getFPS() {
+    if (this.performance.frame_times.length === 0) return 0;
+    const avg = this.performance.frame_times.reduce((a, b) => a + b, 0) / this.performance.frame_times.length;
+    return Math.round(1000 / avg);
+  }
+  
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+}
+
+let engine = null;
+let running = false;
+let bridgeMode = false;
+let vectorMode = false;
+
+const ui = {
+  runBtn: document.getElementById('runEvolution'),
+  stopBtn: document.getElementById('stopEvolution'),
+  bridgeBtn: document.getElementById('toggleBridge'),
+  vectorBtn: document.getElementById('toggleVectors'),
+  exportBtn: document.getElementById('exportData'),
+  status: document.getElementById('statusDisplay'),
+  progress: document.getElementById('progressFill'),
+  canvasPhi: document.getElementById('canvasPhi'),
+  canvasPsi: document.getElementById('canvasPsi'),
+  metricStep: document.getElementById('metricStep'),
+  metricPhi: document.getElementById('metricPhi'),
+  metricPsi: document.getElementById('metricPsi'),
+  metricEB: document.getElementById('metricEB'),
+  metricAntisym: document.getElementById('metricAntisym'),
+  metricFPS: document.getElementById('metricFPS')
+};
+
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasPhi, ui.canvasPsi].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+
+function electricColormap(val) {
+  const clamped = Math.max(-1, Math.min(1, val));
+  const normalized = (clamped + 1) / 2;
+  
+  if (normalized < 0.5) {
+    const t = normalized * 2;
+    const r = Math.floor(50 + t * 150);
+    const g = Math.floor(100 + t * 155);
+    const b = Math.floor(200 + t * 55);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const t = (normalized - 0.5) * 2;
+    const r = Math.floor(200 + t * 55);
+    const g = Math.floor(200 + t * 55);
+    const b = Math.floor(100 - t * 50);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+function magneticColormap(val) {
+  const clamped = Math.max(-1, Math.min(1, val));
+  const normalized = (clamped + 1) / 2;
+  
+  if (normalized < 0.5) {
+    const t = normalized * 2;
+    const r = Math.floor(100 + t * 50);
+    const g = Math.floor(0 + t * 50);
+    const b = Math.floor(150 + t * 50);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const t = (normalized - 0.5) * 2;
+    const r = Math.floor(50 - t * 50);
+    const g = Math.floor(150 * t);
+    const b = Math.floor(200 + t * 55);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+function bridgeColormap(val) {
+  const normalized = Math.max(0, Math.min(1, val));
+  const r = Math.floor(normalized * 255);
+  const g = Math.floor((1 - normalized) * 200);
+  const b = 50;
+  return `rgb(${r},${g},${b})`;
+}
+
+function renderField(canvas, field, W, mode = 'phi') {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const cellSize = Math.min(w, h) / W;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  let min_val = Infinity, max_val = -Infinity;
+  for (let i = 0; i < field.length; i++) {
+    min_val = Math.min(min_val, field[i]);
+    max_val = Math.max(max_val, field[i]);
+  }
+  
+  const range = Math.max(Math.abs(min_val), Math.abs(max_val));
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const val = field[idx];
+      const normalized = val / (range + 1e-10);
+      
+      let color;
+      if (mode === 'phi') {
+        color = electricColormap(normalized);
+      } else if (mode === 'psi') {
+        color = magneticColormap(normalized);
+      } else {
+        color = bridgeColormap(Math.abs(normalized));
+      }
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+  
+  if (vectorMode && mode !== 'bridge') {
+    renderVectorField(ctx, field, W, cellSize, mode);
+  }
+}
+
+function renderVectorField(ctx, field, W, cellSize, mode) {
+  const stride = Math.max(1, Math.floor(W / 16));
+  
+  ctx.strokeStyle = mode === 'phi' ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1.5;
+  
+  for (let y = 0; y < W; y += stride) {
+    for (let x = 0; x < W; x += stride) {
+      const idx = x + y * W;
+      const right = field[((x + 1) % W) + y * W];
+      const left = field[((x - 1 + W) % W) + y * W];
+      const up = field[x + ((y + 1) % W) * W];
+      const down = field[x + ((y - 1 + W) % W) * W];
+      
+      let vx, vy;
+      if (mode === 'phi') {
+        vx = (right - left) / 2;
+        vy = (up - down) / 2;
+      } else {
+        vy = (right - left) / 2;
+        vx = -(up - down) / 2;
+      }
+      
+      const mag = Math.sqrt(vx * vx + vy * vy);
+      if (mag < 0.01) continue;
+      
+      const scale = cellSize * stride * 0.4;
+      vx = vx / mag * scale;
+      vy = vy / mag * scale;
+      
+      const cx = (x + 0.5) * cellSize;
+      const cy = (y + 0.5) * cellSize;
+      
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + vx, cy + vy);
+      ctx.stroke();
+      
+      const angle = Math.atan2(vy, vx);
+      const arrowSize = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx + vx, cy + vy);
+      ctx.lineTo(cx + vx - arrowSize * Math.cos(angle - Math.PI / 6), cy + vy - arrowSize * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(cx + vx, cy + vy);
+      ctx.lineTo(cx + vx - arrowSize * Math.cos(angle + Math.PI / 6), cy + vy - arrowSize * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+  }
+}
+
+function updateMetrics() {
+  if (!engine) return;
+  
+  ui.metricStep.textContent = engine.step_count;
+  ui.metricPhi.textContent = engine.computeNorm(engine.derived.phi).toFixed(4);
+  ui.metricPsi.textContent = engine.computeNorm(engine.derived.psi).toFixed(4);
+  ui.metricEB.textContent = engine.computeEBCoupling().toFixed(6);
+  ui.metricAntisym.textContent = engine.computeAntisymmetry().toFixed(6);
+  ui.metricFPS.textContent = engine.getFPS();
+}
+
+async function evolutionLoop(maxSteps) {
+  const W = engine.W;
+  
+  for (let step = 0; step < maxSteps && running; step++) {
+    engine.step();
+    
+    if (step % 5 === 0) {
+      if (bridgeMode) {
+        const coupling = new Float64Array(engine.size);
+        for (let i = 0; i < engine.size; i++) {
+          coupling[i] = Math.abs(engine.derived.phi[i] * engine.derived.psi[i]);
+        }
+        renderField(ui.canvasPhi, coupling, W, 'bridge');
+        renderField(ui.canvasPsi, coupling, W, 'bridge');
+      } else {
+        renderField(ui.canvasPhi, engine.derived.phi, W, 'phi');
+        renderField(ui.canvasPsi, engine.derived.psi, W, 'psi');
+      }
+      
+      updateMetrics();
+      ui.progress.style.width = `${((step + 1) / maxSteps) * 100}%`;
+    }
+    
+    if (step % 20 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  if (running) {
+    ui.status.textContent = `Complete: ${engine.step_count} steps`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+  }
+  
+  ui.runBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+}
+
+ui.runBtn.addEventListener('click', () => {
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    n_fields: parseInt(document.getElementById('fieldCount').value),
+    operators: [
+      document.getElementById('operatorA').value,
+      document.getElementById('operatorB').value
+    ],
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: 0.02,
+    seed: 137042
+  };
+  
+  engine = new RecursiveTensorEngine(config);
+  
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  
+  ui.status.textContent = 'Running evolution...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const maxSteps = parseInt(document.getElementById('steps').value);
+  evolutionLoop(maxSteps);
+});
+
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.status.textContent = 'Stopped by user';
+  ui.runBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+});
+
+ui.bridgeBtn.addEventListener('click', () => {
+  bridgeMode = !bridgeMode;
+  ui.bridgeBtn.className = bridgeMode ? 'active' : '';
+  if (engine) {
+    const W = engine.W;
+    if (bridgeMode) {
+      const coupling = new Float64Array(engine.size);
+      for (let i = 0; i < engine.size; i++) {
+        coupling[i] = Math.abs(engine.derived.phi[i] * engine.derived.psi[i]);
+      }
+      renderField(ui.canvasPhi, coupling, W, 'bridge');
+      renderField(ui.canvasPsi, coupling, W, 'bridge');
+    } else {
+      renderField(ui.canvasPhi, engine.derived.phi, W, 'phi');
+      renderField(ui.canvasPsi, engine.derived.psi, W, 'psi');
+    }
+  }
+});
+
+ui.vectorBtn.addEventListener('click', () => {
+  vectorMode = !vectorMode;
+  ui.vectorBtn.className = vectorMode ? 'active' : '';
+  if (engine) {
+    const W = engine.W;
+    renderField(ui.canvasPhi, engine.derived.phi, W, 'phi');
+    renderField(ui.canvasPsi, engine.derived.psi, W, 'psi');
+  }
+});
+
+ui.exportBtn.addEventListener('click', () => {
+  if (!engine) return;
+  
+  const exportData = {
+    version: '2.3',
+    chamber: 'XX',
+    timestamp: new Date().toISOString(),
+    config: {
+      grid_width: engine.W,
+      n_fields: engine.n_fields,
+      operators: engine.operators,
+      lambda: engine.lambda,
+      steps: engine.step_count
+    },
+    validation: {
+      phi_norm: engine.computeNorm(engine.derived.phi),
+      psi_norm: engine.computeNorm(engine.derived.psi),
+      antisymmetry: engine.computeAntisymmetry(),
+      eb_coupling: engine.computeEBCoupling(),
+      fps: engine.getFPS()
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ChamberXX_v2.3_${exportData.timestamp.split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+window.addEventListener('load', () => {
+  setupCanvases();
+});
+
+window.addEventListener('resize', () => {
+  setupCanvases();
+  if (engine) {
+    const W = engine.W;
+    renderField(ui.canvasPhi, engine.derived.phi, W, 'phi');
+    renderField(ui.canvasPsi, engine.derived.psi, W, 'psi');
+  }
+});
+  </script>
+</body>
+</html>
