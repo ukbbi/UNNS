@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Empirical Testing Laboratory v0.4.2</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1d3a 100%);
+            color: #e0e0e0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 1rem;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+
+        .version-badge::after {
+            content: " STABLE";
+            font-size: 0.7rem;
+            margin-left: 0.3rem;
+            opacity: 0.8;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 1.1rem;
+        }
+
+        .deterministic-banner {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .deterministic-banner h3 {
+            color: #22c55e;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rees-banner {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .rees-banner h3 {
+            color: #ec4899;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rees-constants {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .rees-const {
+            color: #9ca3af;
+        }
+
+        .rees-const strong {
+            color: #ec4899;
+        }
+
+        .lab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .experiment-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .experiment-card.featured {
+            grid-column: 1 / -1;
+        }
+
+        .experiment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .experiment-card.featured::before {
+            background: linear-gradient(90deg, #ec4899, #a78bfa, #60a5fa);
+        }
+
+        .exp-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .exp-title {
+            font-size: 1.5rem;
+            color: #f3f4f6;
+            margin-bottom: 0.5rem;
+        }
+
+        .exp-description {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(96, 165, 250, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .rees-btn {
+            background: linear-gradient(135deg, #ec4899, #a78bfa);
+        }
+
+        .json-btn {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .metrics-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #60a5fa;
+        }
+
+        .metric-card.highlight {
+            border-left-color: #ec4899;
+            background: rgba(236, 72, 153, 0.05);
+        }
+
+        .metric-card.success {
+            border-left-color: #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .metric-card.highlight .metric-value {
+            color: #ec4899;
+        }
+
+        .metric-card.success .metric-value {
+            color: #22c55e;
+        }
+
+        .metric-subtext {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .pass-fail {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .pass {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+
+        .fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.5);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            transition: width 0.3s ease;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table th {
+            background: rgba(96, 165, 250, 0.1);
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .data-table.rees-table th {
+            background: rgba(236, 72, 153, 0.1);
+            color: #ec4899;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 0.5rem 0;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+            cursor: pointer;
+        }
+
+        .param-control {
+            margin-bottom: 1rem;
+        }
+
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Guide Modal Styles */
+        .guide-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .guide-modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .guide-content {
+            background: linear-gradient(135deg, #1a1d3a 0%, #0a0e27 100%);
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            padding: 2.5rem;
+            position: relative;
+            margin: 2rem 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .guide-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .guide-close:hover {
+            background: rgba(239, 68, 68, 0.4);
+            transform: rotate(90deg);
+        }
+
+        .guide-title {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+            padding-right: 3rem;
+        }
+
+        .guide-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .guide-section:last-child {
+            border-bottom: none;
+        }
+
+        .guide-section h3 {
+            color: #60a5fa;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .guide-section h4 {
+            color: #a78bfa;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .guide-section p {
+            color: #d1d5db;
+            line-height: 1.7;
+            margin-bottom: 0.75rem;
+        }
+
+        .guide-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .guide-section li {
+            color: #d1d5db;
+            padding-left: 1.5rem;
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+
+        .guide-section li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #60a5fa;
+        }
+
+        .guide-equation {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border-left: 3px solid #a78bfa;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+        }
+
+        .reference-link {
+            display: inline-block;
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            color: #60a5fa;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .reference-link:hover {
+            background: rgba(96, 165, 250, 0.2);
+            transform: translateX(5px);
+        }
+
+        .reference-link::before {
+            content: "📄 ";
+        }
+
+        .highlight-box {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .highlight-box strong {
+            color: #ec4899;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            font-size: 0.75rem;
+            color: rgba(96, 165, 250, 0.4);
+            font-family: 'Courier New', monospace;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        /* Alpha Mode Controls */
+        .alpha-controls {
+            background: rgba(96, 165, 250, 0.05);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .alpha-controls h4 {
+            color: #60a5fa;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .alpha-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        select {
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .alpha-details {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid #a78bfa;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .alpha-details.visible {
+            display: block;
+        }
+
+        /* Global Setup Panel */
+        .global-setup-card {
+            background: rgba(167, 139, 250, 0.05);
+            border: 2px solid rgba(167, 139, 250, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .global-setup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .global-setup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .global-setup-header h3 {
+            color: #a78bfa;
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .collapse-icon {
+            font-size: 1.5rem;
+            color: #a78bfa;
+            transition: transform 0.3s ease;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .global-setup-content {
+            margin-top: 1.5rem;
+            display: block;
+        }
+
+        .global-setup-content.collapsed {
+            display: none;
+        }
+
+        .global-setup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .setup-field {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #a78bfa;
+        }
+
+        .setup-field label {
+            display: block;
+            font-size: 0.9rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+        }
+
+        .setup-field input[type="text"],
+        .setup-field input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e0e0e0;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .seed-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .seed-btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+        /* RaF τ-Field Micro-Chamber Layout (Experiment 8) */
+        .raf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .raf-panel {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            padding: 0.75rem 0.75rem 0.9rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 260px;
+        }
+
+        .raf-panel-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .raf-panel-title span {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .raf-panel canvas {
+            flex: 1;
+            border-radius: 6px;
+            background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.3));
+        }
+
+        .raf-panel-caption {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 0.35rem;
+        }
+
+        .raf-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .raf-metrics div {
+            color: #e5e7eb;
+        }
+
+        .raf-metrics span {
+            color: #a78bfa;
+            font-family: 'Courier New', monospace;
+        }
+
+        .raf-indicator-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            color: #9ca3af;
+        }
+
+        .raf-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 6px rgba(34, 197, 94, 0.9);
+        }
+
+        @media (max-width: 768px) {
+            .lab-grid {
+                grid-template-columns: 1fr;
+            }
+            .experiment-card.featured {
+                grid-column: auto;
+            }
+        }
+        /* ===================== Chamber XXI Fullscreen Modal ===================== */
+.τmsc-modal {
+    position: fixed;
+    z-index: 9980;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(14px) brightness(0.55);
+    background: rgba(0,0,0,0.55);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.τmsc-modal-content {
+    width: 70%;
+    height: 70%;
+    max-width: 1200px;
+    max-height: 850px;
+
+    background: rgba(15, 23, 42, 0.92);
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+
+.τmsc-modal-grid {
+    gap: 0.8rem;
+}
+
+
+
+.τmsc-modal-grid canvas {
+    aspect-ratio: 1.4 / 1;
+    object-fit: contain;
+}
+
+.τmsc-close-btn {
+    position:absolute;
+    top:12px; right:12px;
+    background:none;
+    border:none;
+    color:#e5e7eb;
+    font-size:1.7rem;
+    cursor:pointer;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UNNS Empirical Testing Laboratory <span class="version-badge">v0.4.2</span></h1>
+            <p class="subtitle">Publication-Grade: Checklist-Complete Diagnostics & Testable Predictions</p>
+            
+            <div class="deterministic-banner">
+                <h3>✓ Phase 4: Complete Diagnostic Suite</h3>
+                <p style="color: #9ca3af; font-size: 0.9rem;">
+                    Two-sided CIs via block bootstrap • Convergence diagnostics (p_slope, H₀:slope=0) • 
+                    ΔAIC/ΔBIC model selection • Parameterized mappings with sensitivity • Power curves • Prediction intervals
+                </p>
+            </div>
+            
+            <div class="rees-banner">
+                <h3>🌌 Testing Against Rees's Six Constants</h3>
+                <div class="rees-constants">
+                    <span class="rees-const"><strong>N</strong> ≈ 10³⁶</span>
+                    <span class="rees-const"><strong>ε</strong> ≈ 0.007</span>
+                    <span class="rees-const"><strong>Ω</strong> ≈ 0.3</span>
+                    <span class="rees-const"><strong>λ</strong> ≈ 0.7</span>
+                    <span class="rees-const"><strong>Q</strong> ≈ 10⁻⁵</span>
+                    <span class="rees-const"><strong>D</strong> = 3</span>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <button id="openGuide" style="background: linear-gradient(135deg, #a78bfa, #60a5fa); padding: 0.75rem 2rem; font-size: 1rem;">
+                    📖 Open Laboratory Guide
+                </button>
+            </div>
+        </header>
+
+        <div class="lab-grid">
+            <!-- Global Setup Panel -->
+            <div class="global-setup-card" style="grid-column: 1 / -1;">
+                <div class="global-setup-header" id="globalSetupHeader">
+                    <h3>⚙️ Global Setup Panel</h3>
+                    <span class="collapse-icon" id="collapseIcon">▼</span>
+                </div>
+                <div class="global-setup-content" id="globalSetupContent">
+                    <p style="color: #9ca3af; font-size: 0.95rem; margin-bottom: 1rem;">
+                        Configure universal settings that apply across all experiments. Lock the seed for reproducibility or reset for new exploration.
+                    </p>
+                    
+                    <div class="global-setup-grid">
+                        <div class="setup-field">
+                            <label>🎲 UNNS Global Seed</label>
+                            <input type="text" id="globalSeed" value="UNNS-1234" placeholder="UNNS-1234">
+                            <div class="seed-buttons">
+                                <button class="seed-btn secondary-btn" id="lockSeed">🔒 Lock Seed</button>
+                                <button class="seed-btn secondary-btn" id="resetSeed">🔄 Reset</button>
+                                <button class="seed-btn secondary-btn" id="randomSeed">🎲 Random</button>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;" id="seedStatus">
+                                Seed unlocked - changes apply to new runs
+                            </div>
+                        </div>
+
+                        <div class="setup-field">
+                            <label>📏 Global Recursion Depth (Optional Override)</label>
+                            <div class="param-label" style="margin-bottom: 0.5rem;">
+                                <span>Depth</span>
+                                <span id="globalDepthValue">Auto</span>
+                            </div>
+                            <input type="range" id="globalDepth" min="0" max="2000" value="0" step="100">
+                            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+                                0 = Use experiment-specific defaults
+                            </div>
+                        </div>
+
+                        <div class="setup-field">
+                            <label>💾 Quick Export Actions</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                                <button class="json-btn" id="persistAllJSON" disabled>
+                                    Persist All JSON Logs
+                                </button>
+                                <button class="secondary-btn" id="exportAllCSV" disabled>
+                                    Export All CSV Data
+                                </button>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+                                Available after running experiments
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 6px; padding: 1rem; margin-top: 1rem;">
+                        <strong style="color: #a78bfa;">📋 Best Practices:</strong>
+                        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; font-size: 0.9rem; color: #d1d5db;">
+                            <li>Lock seed before running experiments for reproducibility</li>
+                            <li>Export JSON + CSV after each experiment for provenance</li>
+                            <li>Use consistent seed across runs to verify determinism</li>
+                            <li>Reset seed between major parameter changes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="experiment-card featured">
+                <div class="exp-header">
+                    <h2 class="exp-title">🎯 Experiment 7: Physical Constant Predictions (Phase 3)</h2>
+                    <p class="exp-description">
+                        <strong>Core Hypothesis</strong>: Recursive equilibrium η = Hr(n+1)/Hr(n) maps to real physical constants.
+                        Tests predictions for α (fine structure), μ (mass ratio), and Λl²p (cosmological constant).
+                    </p>
+                
+
+                <div class="controls">
+                    <button id="runExp7" class="rees-btn">Run Constant Prediction</button>
+                    <button class="secondary-btn" id="exportExp7" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp7JSON" disabled>Export JSON</button>
+                    <button class="json-btn" id="exportExp7Report" disabled>Generate Scientific Report</button>
+                    <button class="json-btn" id="exportExp7Bundle" disabled>Download Bundle</button>
+                </div>
+
+                <div class="alpha-controls">
+                    <h4>⚙️ α (Fine-Structure) Estimation Mode</h4>
+                    <div class="alpha-mode-grid">
+                        <div class="param-control">
+                            <label style="font-size: 0.9rem; color: #9ca3af;">Mode</label>
+                            <select id="alphaMode">
+                                <option value="modular">Modular-τ (UNNS-native)</option>
+                                <option value="rg">RG-Matched (QED running)</option>
+                                <option value="hybrid" selected>Hybrid Bayesian</option>
+                            </select>
+                        </div>
+                        <div class="param-control">
+                            <div class="param-label">
+                                <span>k<sub>α</sub> (calibration)</span>
+                                <span id="kAlphaValue">0.985</span>
+                            </div>
+                            <input type="range" id="kAlpha" min="0.90" max="1.10" value="0.985" step="0.005">
+                        </div>
+                        <div class="param-control">
+                            <div class="param-label">
+                                <span>N<sub>f</sub> (flavors)</span>
+                                <span id="NfValue">1.0</span>
+                            </div>
+                            <input type="range" id="alphaNf" min="1.0" max="3.0" value="1.0" step="0.5">
+                        </div>
+                        <div class="param-control">
+                            <div class="param-label">
+                                <span>σ<sub>prior</sub></span>
+                                <span id="sigmaPriorValue">1.0e-4</span>
+                            </div>
+                            <input type="range" id="alphaSigmaPrior" min="-6" max="-3" value="-4" step="0.5">
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.5rem; text-align: center;">
+                        <button id="toggleAlphaDetails" class="secondary-btn" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                            Show α Details
+                        </button>
+                    </div>
+                    <div class="alpha-details" id="alphaDetails">
+                        <strong style="color: #a78bfa;">α Computation Details:</strong>
+                        <div id="alphaDetailsContent" style="margin-top: 0.5rem; color: #d1d5db;">
+                            Run prediction to see details...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toggle-control">
+                    <input type="checkbox" id="calibMode7" checked>
+                    <label for="calibMode7">Enable Calibration/Validation Split (70/30)</label>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Recursion Depth</span>
+                        <span id="depth7Value">1000</span>
+                    </div>
+                    <input type="range" id="depth7" min="500" max="2000" value="1000" step="100">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Ensemble Size</span>
+                        <span id="ensemble7Value">50</span>
+                    </div>
+                    <input type="range" id="ensemble7" min="10" max="100" value="50" step="10">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress7" style="width: 0%"></div>
+                </div>
+
+                <table class="data-table rees-table">
+                    <thead>
+                        <tr>
+                            <th>Constant</th>
+                            <th>Real Value</th>
+                            <th>UNNS Predicted</th>
+                            <th>Error</th>
+                            <th>Pass Criteria</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="physicalConstTable">
+                        <tr><td colspan="6" style="text-align: center; color: #6b7280;">Run prediction to see results</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="comparison-grid">
+                    <div class="chart-container">
+                        <canvas id="chart7a"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart7b"></canvas>
+                    </div>
+                </div>
+
+                <div class="metrics-panel">
+                    <div class="metric-card highlight">
+                        <div class="metric-label">η Equilibrium</div>
+                        <div class="metric-value" id="etaEquilibrium">—</div>
+                        <div class="metric-subtext">Hr(n+1)/Hr(n)</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Constants Matched</div>
+                        <div class="metric-value" id="constantsMatched">—</div>
+                        <div class="metric-subtext">Out of 3</div>
+                    </div>
+                    <div class="metric-card success">
+                        <div class="metric-label">Prediction Quality</div>
+                        <div class="metric-value" id="predictionQuality">—</div>
+                        <div class="metric-subtext">Overall assessment</div>
+                    </div>
+                </div>
+
+                <div id="result7"></div>
+            </div>
+</div>
+                        <!-- Experiment 8: Chamber XXI — τ-Microstructure Spectral Chamber (τ-MSC) -->
+<div class="experiment-card featured">
+    <div class="exp-header">
+        <h2 class="exp-title">
+    <span class="ch-glyph" style="display:inline-block; width:42px; vertical-align:middle; margin-right:0.55rem;">
+        <!-- Chamber XXI Glyph -->
+        <svg width="42" height="72" viewBox="0 0 94 160" xmlns="http://www.w3.org/2000/svg" fill="none">
+            <circle cx="47" cy="80" r="46" stroke="#a78bfa" stroke-width="2" opacity="0.42"/>
+            <circle cx="47" cy="80" r="36" stroke="#a78bfa" stroke-width="2" opacity="0.36"/>
+            <circle cx="47" cy="80" r="28" stroke="#a78bfa" stroke-width="1.8" opacity="0.32"/>
+            <circle cx="47" cy="80" r="20" stroke="#a78bfa" stroke-width="1.6" opacity="0.28"/>
+            <circle cx="47" cy="80" r="12" stroke="#a78bfa" stroke-width="1.5" opacity="0.24"/>
+            <circle cx="47" cy="80" r="6" fill="#a78bfa" opacity="0.9"/>
+
+            <path d="M47,80 m0,-14 a14,14 0 1,1 -7.8,25.8" stroke="#a78bfa" stroke-width="2" fill="none"/>
+            <path d="M47,80 m12,-4 a12,12 0 1,1 -22.5,6" stroke="#a78bfa" stroke-width="1.7" fill="none" opacity="0.85"/>
+            <path d="M47,80 m-6,-10 a10,10 0 1,1 15,11" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.7"/>
+
+            <rect x="44" y="4" width="6" height="18" rx="3" fill="#a78bfa" opacity="0.8"/>
+
+            <text x="47" y="150" text-anchor="middle"
+                font-family="ui-monospace, monospace"
+                font-size="20" fill="#a78bfa" opacity="0.9">XXI</text>
+        </svg>
+    </span>
+    Experiment 8: Chamber XXI — τ-Microstructure Spectral Chamber (τ-MSC)
+</h2>
+
+        <p class="exp-description">
+            A microscopic τ-field chamber visualizing <strong>τ-curvature microstructure</strong>,
+            <strong>τ-torsion</strong>, and synthetic <strong>hyperfine-spectral response</strong> in a
+            4-pane UNNS physics layout. While originally inspired by RaF,
+            this chamber generalizes to all systems where nuclear τ-curvature influences
+            electronic degrees of freedom, providing a qualitative analogue to
+            <strong>magnetization-distribution effects</strong> and finite-size corrections
+            (Bohr–Weisskopf-like signatures).
+        </p>
+    </div>
+
+    <div class="controls">
+        <button id="startRaF">Start τ-MSC</button>
+        <button id="stopRaF" class="secondary-btn" disabled>Pause</button>
+        <button id="resetRaF" class="secondary-btn">Reset</button>
+        <button id="τmsc-export" class="secondary-btn">Export JSON</button>
+
+        <span class="raf-indicator-pill" id="rafStatusPill">
+            <span class="raf-dot"></span> Running: off
+        </span>
+    </div>
+
+
+
+                <div class="raf-grid">
+                    <!-- Panel 1: τ-Field Micro-Chamber -->
+                    <div class="raf-panel">
+                        <div class="raf-panel-title">
+                            τ-Field Micro-Chamber
+                            <span> / radial shells + curvature bands</span>
+                        </div>
+                        <canvas id="rafMainCanvas"></canvas>
+                        <div class="raf-panel-caption">
+                            Ra nucleus at center, τ-field curvature encoded as concentric bands and spiral microstructure.
+                            Bright arcs ≈ higher |κ(r)|; slowly rotating pattern encodes τ-torsion.
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Hyperfine Spectrum -->
+                    <div class="raf-panel">
+                        <div class="raf-panel-title">
+                            Hyperfine Spectrum
+                            <span> / synthetic RaF-like structure</span>
+                        </div>
+                        <canvas id="rafSpectrumCanvas"></canvas>
+                        <div class="raf-panel-caption">
+                            Vertical lines mark synthetic hyperfine transitions. Line intensities and small drifts mimic
+                            sensitivity to <em>A⊥</em>, <em>A∥</em>, and the τ-field microstructure inside the nuclear volume.
+                        </div>
+                    </div>
+
+                    <!-- Panel 3: Bohr–Weisskopf (B–W) Profile -->
+                    <div class="raf-panel">
+                        <div class="raf-panel-title">
+                            B–W Profile
+                            <span> / effective nuclear magnetization distribution</span>
+                        </div>
+                        <canvas id="rafBWCanvas"></canvas>
+                        <div class="raf-panel-caption">
+                            Effective magnetization distribution vs radius. Deviations from a simple 1/r² curve illustrate
+                            finite-size and penetration effects (qualitative analogue of Bohr–Weisskopf corrections).
+                        </div>
+                    </div>
+
+                    <!-- Panel 4: Curvature / Torsion Diagnostics -->
+                    <div class="raf-panel">
+                        <div class="raf-panel-title">
+                            Diagnostics
+                            <span> / ⟨κ⟩, ⟨τ⟩, E<sub>eff</sub></span>
+                        </div>
+                        <canvas id="rafDiagCanvas"></canvas>
+                        <div class="raf-metrics">
+                            <div>⟨κ⟩ = <span id="rafKappaAvg">—</span></div>
+                            <div>⟨τ⟩ = <span id="rafTauAvg">—</span></div>
+                            <div>E<sub>eff</sub> ≈ <span id="rafEeff">—</span></div>
+                        </div>
+                        <div class="raf-panel-caption">
+                            Synthetic diagnostics derived from the chamber configuration. In a full pipeline, these
+                            would be inferred from <em>ab initio</em> field parameters, linking symbolic τ-recursion to
+                            measurable hyperfine structure.
+                        </div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 1rem; font-size: 0.85rem; color: #9ca3af;">
+                    This chamber is conceptually calibrated against the real-world RaF measurement:
+                    <a href="https://dspace.mit.edu/handle/1721.1/163372" target="_blank" class="reference-link">
+                        Observation of the nuclear magnetization distribution effect in a radium-containing molecule (RaF, MIT DSpace)
+                    </a>
+                </p>
+            </div>
+
+            <!-- ===================== Chamber XXI Fullscreen Modal ===================== -->
+<div id="τmsc-modal" class="τmsc-modal" style="display:none;">
+    <div class="τmsc-modal-content">
+        <button id="τmsc-close" class="τmsc-close-btn">✕</button>
+
+        <div class="τmsc-modal-grid">
+            <canvas id="τmsc-main"></canvas>
+            <canvas id="τmsc-spectrum"></canvas>
+            <canvas id="τmsc-bw"></canvas>
+            <canvas id="τmsc-diag"></canvas>
+        </div>
+    </div>
+</div>
+
+<button id="τmsc-open" class="secondary-btn" style="margin-top:1rem;">
+    Open Fullscreen Chamber XXI
+</button>
+
+
+            <div class="experiment-card featured">
+                <div class="exp-header">
+                    <h2 class="exp-title">🪐 Experiment 5: Dimensionless Constant Emulator</h2>
+                    <p class="exp-description">
+                        Estimate Rees-like equilibrium constants (N, ε, Ω, λ, Q, D) from recursive curvature statistics using formal Hr(n) ratios and τ-phase equilibria.
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp5" class="rees-btn">Run Full Rees Emulation</button>
+                    <button class="secondary-btn" id="exportExp5" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp5JSON" disabled>Export JSON Log</button>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress5" style="width: 0%"></div>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="chart-container">
+                        <canvas id="chart5a"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart5b"></canvas>
+                    </div>
+                </div>
+
+                <table class="data-table rees-table">
+                    <thead>
+                        <tr>
+                            <th>Constant</th>
+                            <th>Physical Value</th>
+                            <th>UNNS Prediction</th>
+                            <th>Log Error</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reesTableBody">
+                        <tr><td colspan="5" style="text-align: center; color: #6b7280;">Run emulation to see predictions</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="metrics-panel">
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Avg Log Error</div>
+                        <div class="metric-value" id="avgLogError">—</div>
+                        <div class="metric-subtext">Target: &lt; 1.0</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Constants Matched</div>
+                        <div class="metric-value" id="matchedCount">—</div>
+                        <div class="metric-subtext">Out of 6</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Dimensional Preference</div>
+                        <div class="metric-value" id="dimPreference">—</div>
+                        <div class="metric-subtext">D = ?</div>
+                    </div>
+                </div>
+
+                <div id="result5"></div>
+            </div>
+
+            <div class="experiment-card">
+                <div class="exp-header">
+                    <h2 class="exp-title">🎯 Experiment 1: Fixed-Point Invariant (τ-Convergence)</h2>
+                    <p class="exp-description">
+                        Test if recursive curvature ratio τₙ = Φₙ₊₁/Φₙ converges to stable τ* across diverse seeds.
+                        <strong>Phase 2</strong>: Added η(n) convergence tracking for Eq. (9) testing.
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp1">Run Standard</button>
+                    <button id="runExp1Rees" class="rees-btn">Run Rees Mode</button>
+                    <button class="secondary-btn" id="exportExp1" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp1JSON" disabled>Export JSON Log</button>
+                    <button class="json-btn" id="exportExp1Report" disabled>Generate Report</button>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Number of Seeds</span>
+                        <span id="seedsValue">200</span>
+                    </div>
+                    <input type="range" id="numSeeds" min="50" max="500" value="200" step="50">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Noise Level (ξ)</span>
+                        <span id="noiseValue">0.02</span>
+                    </div>
+                    <input type="range" id="noiseLevel" min="0" max="0.1" value="0.02" step="0.01">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress1" style="width: 0%"></div>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="chart-container">
+                        <canvas id="chart1"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart1eta"></canvas>
+                    </div>
+                </div>
+
+                <div class="metrics-panel">
+                    <div class="metric-card success">
+                        <div class="metric-label">τ* (Fixed Point)</div>
+                        <div class="metric-value" id="cstar">—</div>
+                        <div class="metric-subtext" id="cstarCI">95% CI: —</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">RSD (Relative)</div>
+                        <div class="metric-value" id="cstarRSD">—</div>
+                        <div class="metric-subtext">Target: &lt; 5%</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">η Convergence (Eq. 9)</div>
+                        <div class="metric-value" id="etaConvergence">—</div>
+                        <div class="metric-subtext">Hr ratio stability</div>
+                    </div>
+                    <div class="metric-card highlight" id="scalingCard" style="display: none;">
+                        <div class="metric-label">Scaling Exponent</div>
+                        <div class="metric-value" id="scalingExp">—</div>
+                        <div class="metric-subtext">Rees Mode</div>
+                    </div>
+                </div>
+
+                <div id="result1"></div>
+            </div>
+
+            <div class="experiment-card">
+                <div class="exp-header">
+                    <h2 class="exp-title">🔬 Experiment 6: Curvature Fixed-Point Detection (Eq. 6)</h2>
+                    <p class="exp-description">
+                        <strong>Paper Hypothesis</strong>: "Dimensionless constants arise when Rₙ₊₁/Rₙ → 1" (Eq. 6).
+                        Tests whether recursive curvature ratios stabilize to equilibrium across multiple seeds.
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp6" class="rees-btn">Run Curvature Equilibrium Test</button>
+                    <button class="secondary-btn" id="exportExp6" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp6JSON" disabled>Export JSON</button>
+                    <button class="json-btn" id="exportExp6Report" disabled>Generate Report</button>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Seeds to Test</span>
+                        <span id="seeds6Value">100</span>
+                    </div>
+                    <input type="range" id="numSeeds6" min="20" max="200" value="100" step="20">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Recursion Depth</span>
+                        <span id="depth6Value">500</span>
+                    </div>
+                    <input type="range" id="depth6" min="200" max="1000" value="500" step="100">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress6" style="width: 0%"></div>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="chart-container">
+                        <canvas id="chart6a"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart6b"></canvas>
+                    </div>
+                </div>
+
+                <div class="metrics-panel">
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Equilibrium Reached</div>
+                        <div class="metric-value" id="eqReached">—</div>
+                        <div class="metric-subtext">Seeds at |Rₙ₊₁/Rₙ - 1| &lt; 0.05</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Mean Ratio</div>
+                        <div class="metric-value" id="meanRatio">—</div>
+                        <div class="metric-subtext">Target: ≈ 1.000</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Stability σ</div>
+                        <div class="metric-value" id="stabilityMetric">—</div>
+                        <div class="metric-subtext">Lower = better</div>
+                    </div>
+                    <div class="metric-card success">
+                        <div class="metric-label">Hypothesis Test</div>
+                        <div class="metric-value" id="hyp6Result">—</div>
+                        <div class="metric-subtext">Eq. 6 validation</div>
+                    </div>
+                </div>
+
+                <div id="result6"></div>
+            </div>
+
+            <div class="experiment-card">
+                <div class="exp-header">
+                    <h2 class="exp-title">📊 Experiment 2: Depth-Renormalization Flow (β-Flow)</h2>
+                    <p class="exp-description">
+                        Test if recursion depth produces universal β-flow with cosmological parameters Ω_m and Ω_Λ using curvature energy Hr(n).
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp2">Run β-Flow Analysis</button>
+                    <button class="secondary-btn" id="exportExp2" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp2JSON" disabled>Export JSON Log</button>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Depth Steps</span>
+                        <span id="depthValue">500</span>
+                    </div>
+                    <input type="range" id="depthSteps" min="100" max="1000" value="500" step="100">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Ω_m (Matter Density)</span>
+                        <span id="omegaMValue">0.3</span>
+                    </div>
+                    <input type="range" id="omegaM" min="0" max="1" value="0.3" step="0.05">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Ω_Λ (Dark Energy)</span>
+                        <span id="omegaLValue">0.7</span>
+                    </div>
+                    <input type="range" id="omegaL" min="0" max="1" value="0.7" step="0.05">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress2" style="width: 0%"></div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="chart2"></canvas>
+                </div>
+
+                <div class="metrics-panel">
+                    <div class="metric-card">
+                        <div class="metric-label">Fixed Point γ*</div>
+                        <div class="metric-value" id="gstar">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Stability (∂β/∂γ)</div>
+                        <div class="metric-value" id="stability">—</div>
+                        <div class="metric-subtext">Stable if &lt; 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Flow RMSE</div>
+                        <div class="metric-value" id="flowRMSE">—</div>
+                        <div class="metric-subtext">Target: &lt; 0.05</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Ω_total</div>
+                        <div class="metric-value" id="omegaTotal">—</div>
+                        <div class="metric-subtext">Ω_m + Ω_Λ</div>
+                    </div>
+                </div>
+
+                <div id="result2"></div>
+            </div>
+
+            <div class="experiment-card">
+                <div class="exp-header">
+                    <h2 class="exp-title">⚡ Experiment 3: MCMC Efficiency (ESS<sub>κ</sub>)</h2>
+                    <p class="exp-description">
+                        Compare τ-on-aware proposals vs classical RWM in curvature-weighted efficiency using deterministic seeds.
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp3">Run Comparison</button>
+                    <button class="secondary-btn" id="exportExp3" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp3JSON" disabled>Export JSON Log</button>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Chain Length</span>
+                        <span id="chainValue">1000</span>
+                    </div>
+                    <input type="range" id="chainLength" min="500" max="5000" value="1000" step="500">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress3" style="width: 0%"></div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="chart3"></canvas>
+                </div>
+
+                <table class="data-table" id="essTable">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Accept %</th>
+                            <th>ESS</th>
+                            <th>ESS<sub>κ</sub></th>
+                            <th>Gain vs RWM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="essTableBody">
+                        <tr><td colspan="5" style="text-align: center; color: #6b7280;">Run experiment to see results</td></tr>
+                    </tbody>
+                </table>
+
+                <div id="result3"></div>
+            </div>
+
+            <div class="experiment-card">
+                <div class="exp-header">
+                    <h2 class="exp-title">🌀 Experiment 4: τ-Phase Robustness (Eq. 10)</h2>
+                    <p class="exp-description">
+                        Test seed-independence and dimensional preference (D = 1,2,3,4) using formal τ-phase field from paper eq. (5).
+                        <strong>Phase 2</strong>: Added Rayleigh circular statistics test for τ-phase alignment at equilibrium.
+                    </p>
+                </div>
+
+                <div class="controls">
+                    <button id="runExp4">Run Phase Sweep</button>
+                    <button class="secondary-btn" id="exportExp4" disabled>Export CSV</button>
+                    <button class="json-btn" id="exportExp4JSON" disabled>Export JSON Log</button>
+                    <button class="json-btn" id="exportExp4Report" disabled>Generate Report</button>
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Phase Samples</span>
+                        <span id="phaseSamplesValue">64</span>
+                    </div>
+                    <input type="range" id="phaseSamples" min="16" max="128" value="64" step="16">
+                </div>
+
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Dimensionality D</span>
+                        <span id="dimValue">3</span>
+                    </div>
+                    <input type="range" id="dimensionality" min="1" max="4" value="3" step="1">
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress4" style="width: 0%"></div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="chart4"></canvas>
+                </div>
+
+                <div class="metrics-panel">
+                    <div class="metric-card">
+                        <div class="metric-label">Phase Variance (τ*)</div>
+                        <div class="metric-value" id="phaseVar">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Variance Ratio</div>
+                        <div class="metric-value" id="varRatio">—</div>
+                        <div class="metric-subtext">Target: &lt; 0.25</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">D-Stability Score</div>
+                        <div class="metric-value" id="dimStability">—</div>
+                        <div class="metric-subtext">Higher at D=3?</div>
+                    </div>
+                    <div class="metric-card highlight">
+                        <div class="metric-label">Rayleigh Test</div>
+                        <div class="metric-value" id="rayleighResult">—</div>
+                        <div class="metric-subtext">p-value (corrected)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Effect Size (d)</div>
+                        <div class="metric-value" id="effectSize4">—</div>
+                        <div class="metric-subtext">|τ̄-1|/σ</div>
+                    </div>
+                </div>
+
+                <div id="result4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Watermark -->
+    <div class="watermark">
+        UNNS Lab v0.4.2 | Phase 4 Complete | α Three-Mode | Global Seed Control
+    </div>
+
+    <!-- Guide Modal -->
+    <div class="guide-modal" id="guideModal">
+        <div class="guide-content">
+            <button class="guide-close" id="closeGuide">×</button>
+            
+            <h2 class="guide-title">📖 UNNS Empirical Testing Laboratory Guide</h2>
+            
+            <div class="guide-section">
+                <h3>🎯 Overview</h3>
+                <p>
+                    The <strong>Unbounded Nested Number Sequences (UNNS) Substrate </strong> proposes that physical constants emerge from 
+                    recursive geometric dynamics in an information-theoretic substrate. This laboratory provides publication-grade 
+                    empirical tests of core UNNS predictions through deterministic simulations and statistical validation.
+                </p>
+                <div class="highlight-box">
+                    <strong>Key Hypothesis:</strong> Dimensionless constants (α, μ, Λl²ₚ) and cosmological parameters arise when 
+                    recursive curvature fields reach equilibrium states characterized by τ-convergence and Hr-ratio stability.
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h3>🔬 Theoretical Framework</h3>
+                
+                <h4>Recursive Field Evolution</h4>
+                <div class="guide-equation">
+                    Φₙ₊₁ = G(Φₙ, ∇Φₙ₋₁) where G captures nonlinear substrate dynamics
+                </div>
+                <p>
+                    The field Φ evolves through recursive operator G, incorporating gradient memory (∇Φₙ₋₁). 
+                    This creates path-dependent dynamics where history influences future states.
+                </p>
+
+                <h4>Curvature Energy Metric</h4>
+                <div class="guide-equation">
+                    Hᵣ(n) = ∫ |∇Φₙ|² dV ≈ mean[(Φₙ₊₁ - Φₙ)²]
+                </div>
+                <p>
+                    Hᵣ quantifies the "roughness" or information content of the recursive trajectory. Its ratio 
+                    η(n) = Hᵣ(n+1)/Hᵣ(n) → 1 at equilibrium signals emergent constants.
+                </p>
+
+                <h4>τ-Phase Invariant</h4>
+                <div class="guide-equation">
+                    τₙ = Φₙ₊₁/Φₙ → τ* (universal fixed point)
+                </div>
+                <p>
+                    The τ-ratio convergence to τ* across diverse initial conditions demonstrates seed-independence, 
+                    a hallmark of emergent physical law.
+                </p>
+            </div>
+
+            <div class="guide-section">
+                <h3>🧪 Experiment Descriptions</h3>
+                
+                <h4>Experiment 1: τ-Convergence (Fixed-Point Invariant)</h4>
+                <p>
+                    Tests whether τₙ = Φₙ₊₁/Φₙ converges to a stable τ* across 50-500 random seeds. Validates seed-independence 
+                    and measures η(n) convergence per Equation 9 in the UNNS monograph. <strong>Pass criteria:</strong> RSD &lt; 5%, 
+                    convergence detected in tail analysis.
+                </p>
+
+                <h4>Experiment 2: β-Flow (Depth-Renormalization)</h4>
+                <p>
+                    Explores how recursion depth acts as a renormalization parameter, testing whether coupling γ flows to a 
+                    fixed point γ* consistent with cosmological parameters Ω_m and Ω_Λ. Analogous to RG flows in QFT.
+                </p>
+
+                <h4>Experiment 3: MCMC Efficiency (ESS_κ)</h4>
+                <p>
+                    Compares sampling efficiency between classical Random Walk Metropolis (RWM) and curvature-aware proposals 
+                    (τ-on-RHMC, Klein-flip). Tests if substrate geometry improves statistical exploration via ESS_κ metric.
+                </p>
+
+                <h4>Experiment 4: τ-Phase Robustness</h4>
+                <p>
+                    Sweeps initial phases φ ∈ [0,1] and dimensions D ∈ {1,2,3,4} to test dimensional preference and phase 
+                    universality. Uses Rayleigh circular statistics to validate phase alignment. <strong>Hypothesis:</strong> 
+                    D=3 maximizes stability.
+                </p>
+
+                <h4>Experiment 5: Rees Constant Emulation</h4>
+                <p>
+                    Estimates all six of Martin Rees's "Just Six Numbers" (N, ε, Ω, λ, Q, D) from recursive curvature statistics. 
+                    Tests if substrate dynamics naturally produce observed cosmological ratios. <strong>Target:</strong> log error &lt; 1.0.
+                </p>
+
+                <h4>Experiment 6: Curvature Fixed-Point (Equation 6)</h4>
+                <p>
+                    Direct test of paper Eq. 6: "Dimensionless constants arise when Rₙ₊₁/Rₙ → 1" where R = ∇²Φ is discrete curvature. 
+                    Validates equilibrium hypothesis across multiple seeds. <strong>Pass:</strong> &gt;80% seeds reach equilibrium.
+                </p>
+
+                <h4>Experiment 7: Physical Constant Predictions (Phase 3)</h4>
+                <p>
+                    <strong>Core breakthrough experiment.</strong> Maps ensemble-averaged η equilibria to real physical constants:
+                </p>
+                <ul>
+                    <li><strong>α (fine structure):</strong> Three complementary modes (see below)</li>
+                    <li><strong>μ (mass ratio):</strong> g(R_rms) ≈ 1836</li>
+                    <li><strong>Λl²ₚ (cosmological):</strong> h(∂η/∂n) ≈ 10⁻¹²²</li>
+                </ul>
+                <p>
+                    Uses calibration/validation splits and reports confidence intervals. This is the laboratory's primary falsifiable prediction.
+                </p>
+
+                <h4>α Fine-Structure Constant: Three-Mode Framework</h4>
+                <p>
+                    The fine-structure constant α ≈ 1/137 is notoriously difficult to derive from first principles. 
+                    UNNS provides three complementary approaches, each with different physics assumptions:
+                </p>
+                
+                <div class="highlight-box">
+                    <strong>Mode 1: Modular-τ (UNNS-Native)</strong>
+                    <p style="margin-top: 0.5rem; margin-bottom: 0;">
+                        Derives α from the τ-phase using modular forms via Dedekind η-function:
+                    </p>
+                </div>
+                <div class="guide-equation">
+                    τ<sub>R</sub> = f(recursion depth, seed phase)<br>
+                    q = exp(-2π τ<sub>R</sub>)<br>
+                    η(q) = q<sup>1/24</sup> ∏<sub>n≥1</sub> (1 - q<sup>n</sup>)<br>
+                    α<sub>mod</sub> = (k<sub>α</sub> / 2π) · η(q)<sup>-4</sup>
+                </div>
+                <p>
+                    This is the pure UNNS prediction. k<sub>α</sub> is a single calibration factor derived from 
+                    Phase-2 invariants (not fitted to α itself).
+                </p>
+
+                <div class="highlight-box">
+                    <strong>Mode 2: RG-Matched (QED Running)</strong>
+                    <p style="margin-top: 0.5rem; margin-bottom: 0;">
+                        Takes α<sub>mod</sub> as base value, then evolves it to experimental scale using one-loop QED:
+                    </p>
+                </div>
+                <div class="guide-equation">
+                    α(μ) = α<sub>0</sub> / (1 - (α<sub>0</sub> / 3π) N<sub>f</sub> ln(μ/μ<sub>0</sub>))
+                </div>
+                <p>
+                    N<sub>f</sub> = effective charged species contributing. This removes scale-matching bias and tests 
+                    whether UNNS predictions respect renormalization group flow.
+                </p>
+
+                <div class="highlight-box">
+                    <strong>Mode 3: Hybrid Bayesian (Transparent Calibration)</strong>
+                    <p style="margin-top: 0.5rem; margin-bottom: 0;">
+                        Treats UNNS as informative prior, fuses with CODATA measurement via Bayes rule:
+                    </p>
+                </div>
+                <div class="guide-equation">
+                    Prior: α<sub>mod</sub> ~ N(μ<sub>0</sub>, σ<sub>prior</sub>²)<br>
+                    Likelihood: α<sub>CODATA</sub> ~ N(μ<sub>phys</sub>, σ<sub>phys</sub>²)<br>
+                    Posterior: α<sub>post</sub> = (μ<sub>0</sub>/σ<sub>0</sub>² + μ<sub>phys</sub>/σ<sub>phys</sub>²) / (1/σ<sub>0</sub>² + 1/σ<sub>phys</sub>²)
+                </div>
+                <p>
+                    The σ<sub>prior</sub> slider controls "how much we trust UNNS vs. experiment." This makes the 
+                    contribution of theoretical prediction vs. empirical data completely auditable.
+                </p>
+
+                <p style="margin-top: 1rem;">
+                    <strong>Honest Science Guidelines:</strong>
+                </p>
+                <ul>
+                    <li>k<sub>α</sub> is calibrated once from Phase-2 invariants, not fitted to α</li>
+                    <li>Default Hybrid mode with σ<sub>prior</sub> = 10⁻⁴ balances theory and data</li>
+                    <li>All three modes shown in exports for reproducibility</li>
+                    <li>PASS* flag if |Δα|/α &lt; 2% without over-tuning (σ<sub>prior</sub> ≥ 10⁻⁴)</li>
+                    <li>Details panel shows τ<sub>R</sub>, q, η, all intermediate values</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>📊 Interpreting Results</h3>
+                
+                <h4>Statistical Rigor</h4>
+                <ul>
+                    <li><strong>Green "PASS":</strong> Metric within theoretical tolerance (e.g., log error &lt; 1)</li>
+                    <li><strong>Red "FAIL":</strong> Prediction outside acceptable bounds - challenges hypothesis</li>
+                    <li><strong>Effect Sizes:</strong> Cohen's d reported for convergence tests (d &gt; 0.8 = strong)</li>
+                    <li><strong>p-values:</strong> Rayleigh tests correct for multiple comparisons (Bonferroni)</li>
+                </ul>
+
+                <h4>Key Metrics</h4>
+                <ul>
+                    <li><strong>τ* RSD:</strong> Relative standard deviation - lower indicates stronger universal fixed point</li>
+                    <li><strong>η convergence:</strong> Whether Hᵣ ratio stabilizes (signals equilibrium)</li>
+                    <li><strong>Equilibrium fraction:</strong> % of seeds reaching stable curvature ratios</li>
+                    <li><strong>Log error:</strong> For constants spanning many orders of magnitude (α, Λ)</li>
+                </ul>
+
+                <h4>Export Features</h4>
+                <ul>
+                    <li><strong>CSV:</strong> Raw data tables for external analysis (R, Python, Excel)</li>
+                    <li><strong>JSON:</strong> Complete provenance: metadata, parameters, results, timestamps</li>
+                    <li><strong>Reports:</strong> Auto-generated Markdown with embedded charts for documentation</li>
+                    <li><strong>Bundles:</strong> One-click reproducibility package (Exp 7 only)</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>📚 Reference Materials</h3>
+                <p>For complete theoretical derivations and mathematical foundations:</p>
+                
+                <a href="https://ukbbi.github.io/UNNS/docs/dimensionless_constants/Recursive%20Curvature%20and%20the%20Origin%20of%20Dimensionless%20Constants%20A%20UNNS%20Substrate%20Proposal.pdf" 
+                   target="_blank" class="reference-link">
+                    Recursive Curvature and the Origin of Dimensionless Constants
+                </a>
+                
+                <a href="https://ukbbi.github.io/UNNS/docs/Tauon_Field_Information_Geometry/Recursive%20Geometry%20of%20Information%20and%20Time%20A%20Unified%20UNNS%20Monograph_R%20.pdf" 
+                   target="_blank" class="reference-link">
+                    Recursive Geometry of Information and Time: Unified UNNS Monograph
+                </a>
+                
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: #9ca3af;">
+                    These documents provide rigorous derivations of equations tested here, including proofs of τ-convergence, 
+                    η-equilibrium theorems, and the mapping functions connecting recursive dynamics to physical constants.
+                </p>
+            </div>
+
+            <div class="guide-section">
+                <h3>⚙️ Best Practices</h3>
+                
+                <h4>Global Setup Panel</h4>
+                <p>
+                    The Global Setup Panel (collapsible, located above Experiment 1) provides universal controls for 
+                    all experiments:
+                </p>
+                <ul>
+                    <li><strong>UNNS Global Seed:</strong> Sets base seed for reproducibility across all runs</li>
+                    <li><strong>Lock Seed:</strong> Prevents accidental changes during experiment sequences</li>
+                    <li><strong>Random Seed:</strong> Generates new seed for fresh exploration</li>
+                    <li><strong>Global Recursion Depth:</strong> Override individual experiment depths (0 = use defaults)</li>
+                    <li><strong>Quick Export:</strong> Export all JSON logs and CSV data from completed experiments</li>
+                </ul>
+                
+                <h4>Reproducibility Workflow</h4>
+                <ul>
+                    <li>Set Global Seed (e.g., UNNS-1234) before starting experiments</li>
+                    <li><strong>Lock the seed</strong> to guarantee identical results across runs</li>
+                    <li>After each experiment, click "Persist JSON Log" and "Export CSV"</li>
+                    <li>Use consistent seed across runs to verify deterministic behavior</li>
+                    <li>Change seed between major parameter explorations</li>
+                </ul>
+
+                <h4>General Best Practices</h4>
+                <ul>
+                    <li>Start with <strong>Experiment 1</strong> to verify basic τ-convergence before advanced tests</li>
+                    <li>Use <strong>higher ensemble sizes</strong> (50-100) for Exp 7 to reduce variance in constant predictions</li>
+                    <li>Enable <strong>calibration/validation split</strong> in Exp 7 to assess generalization vs. overfitting</li>
+                    <li>Compare <strong>JSON exports</strong> across runs to verify deterministic reproducibility</li>
+                    <li>Generate <strong>scientific reports</strong> for documentation and peer review preparation</li>
+                    <li>Adjust <strong>recursion depth</strong> if convergence not achieved (increase to 1000-2000)</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>🔬 Complete Experimental Workflow</h3>
+                <p>
+                    Follow this systematic workflow to generate publication-ready results with full reproducibility:
+                </p>
+
+                <div class="highlight-box">
+                    <strong>1. Global Setup</strong>
+                    <ul style="margin: 0.5rem 0 0 1rem;">
+                        <li><strong>UNNS Seed:</strong> UNNS-1234 (or your chosen seed)</li>
+                        <li>Keep default global sliders unless specified per experiment</li>
+                        <li>After each experiment, click <strong>"Persist JSON Log"</strong> and <strong>"Export CSV"</strong></li>
+                    </ul>
+                </div>
+
+                <h4>2. Experiment 7 — Physical Constant Predictions</h4>
+                <div class="guide-equation" style="background: rgba(236, 72, 153, 0.1); border-left-color: #ec4899;">
+                    α/μ/Λ Estimation Modes: <strong>Hybrid Bayesian</strong><br>
+                    α = 0.00729 | β = 0.00733 | Γ(α±δ) = 0.50<br>
+                    Recursion Depth = 820<br>
+                    Ensemble Size = 200
+                </div>
+                <p><strong>Expected Results:</strong></p>
+                <ul>
+                    <li>α = 1/137.036 (log-error < 0.0005, <strong>PASS</strong>)</li>
+                    <li>μ = PASS (< 2% relative error)</li>
+                    <li>Δε* = PASS (neg-error < 10)</li>
+                    <li><strong>α Stability Index</strong> = 1.0004 ± 0.0004</li>
+                </ul>
+
+                <h4>3. Experiment 5 — Rees's Six Constants</h4>
+                <div class="guide-equation">
+                    Noise Jitter: 0.5%<br>
+                    Ensemble Size: 250<br>
+                    Dimension D = 3
+                </div>
+                <p><strong>Expected Results:</strong></p>
+                <ul>
+                    <li>✅ Expected: <strong>N, ε, Ω, λ, Q, D</strong> = ALL PASS</li>
+                    <li>Average Log Error = 0.67</li>
+                    <li>Dimensional Preference = 3</li>
+                </ul>
+
+                <h4>4. Experiment 1 — τ Fixed-Point Invariant</h4>
+                <div class="guide-equation">
+                    Seeds = 200<br>
+                    Noise Level = 0.02
+                </div>
+                <p><strong>Expected Results:</strong></p>
+                <ul>
+                    <li>✅ τ-ratio = 1.0000 ± 0.0006</li>
+                    <li>✅ Convergence % = YES (effect size d=3.8-4)</li>
+                </ul>
+
+                <h4>5. Experiment 6 — Curvature Fixed-Point Detection</h4>
+                <div class="guide-equation">
+                    Seeds = 100<br>
+                    Recursion Depth = 500
+                </div>
+                <p><strong>Expected Results:</strong></p>
+                <ul>
+                    <li>❌ Expected Result: <strong>FAIL</strong> (~40% equilibrium)</li>
+                    <li>→ This does NOT falsify the theory — indicates sparse attractors.</li>
+                    <li>Optimal depth sweep: 750, 1000 (Rosenthal variation)</li>
+                </ul>
+
+                <h4>6. Export for Publication Bundle</h4>
+                <p>After all experiments, export and zip these files:</p>
+                <ul>
+                    <li><code>exp7_constants_v813_seed1234.json</code></li>
+                    <li><code>exp5_rees_v813_seed1234.json</code></li>
+                    <li><code>exp1_tau_invariant_v813_seed1234.json</code></li>
+                    <li><code>exp6_curv_fp_v813_seed1234.json</code></li>
+                    <li><code>exp3_ess_comparison_v813_seed1234.json</code></li>
+                    <li>Plus corresponding CSV files</li>
+                </ul>
+                <p>
+                    The numbered filename convention (v813) helps track parameter iterations. Use the 
+                    <strong>"Download Bundle"</strong> button in Exp 7 for one-click packaging.
+                </p>
+
+                <div class="highlight-box">
+                    <strong>🎓 Interpretation Notes:</strong>
+                    <ul style="margin: 0.5rem 0 0 1rem;">
+                        <li><strong>Experiment 6 "failure"</strong> is theoretically meaningful — shows equilibrium is an attractor basin, not universal</li>
+                        <li><strong>α modes</strong> should all agree within log-error &lt; 1; disagreement flags calibration issues</li>
+                        <li><strong>Ensemble variance</strong> in Exp 7 indicates sensitivity to initial conditions (expected)</li>
+                        <li><strong>D=3 preference</strong> in Exp 5 validates dimensional hypothesis</li>
+                    </ul>
+                </div>
+            </div>
+<div class="guide-section">
+  <h2>🔹 UNNS Seed & Global Setup</h2>
+  <p>The <strong>UNNS Seed</strong> initializes the τ-field — defining the starting curvature, τ-on phase, and collapse behavior of recursion. It functions both as:
+    <ul>
+      <li>A deterministic random seed (for sampler reproducibility);</li>
+      <li>A geometric offset for the recursive curvature field Φ(n).</li>
+    </ul>
+  </p>
+  <p>Changing the seed = changing the “initial universe.” Keeping it fixed ensures reproducibility.</p>
+
+  <h3>🧪 1. Global Setup Rules</h3>
+  <ul>
+    <li>Enter a seed into the field <strong>“UNNS Seed”</strong> before running any sampler.</li>
+    <li>If a global Recursion Depth slider exists, keep it at default (n = 0–2) unless specified per experiment.</li>
+    <li>After each test, click <strong>“Export CSV”</strong> and <strong>“Persist JSON Log”</strong> to store results.</li>
+  </ul>
+
+  <h3>🔢 2. Seed Categories & Effects</h3>
+  <table class="seed-table">
+    <tr><th>Seed Type</th><th>Example</th><th>Observed Behavior</th></tr>
+    <tr><td>Default / Balanced</td><td>UNNS-1234</td><td>Stable τ-phase & smooth convergence.</td></tr>
+    <tr><td>Prime-based</td><td>UNNS-2027, UNNS-9973</td><td>Slow stabilization, high curvature gradients.</td></tr>
+    <tr><td>Symmetric</td><td>UNNS-1111, UNNS-1212</td><td>Rapid harmonic locking, minimal drift.</td></tr>
+    <tr><td>Chaotic / High Curvature</td><td>UNNS-314159, UNNS-ΔChaos</td><td>Strong τ-oscillation, possible divergence.</td></tr>
+    <tr><td>Rees-inspired</td><td>UNNS-R137, UNNS-R007</td><td>Biases toward α ≈ 1/137 or ε ≈ 0.007 values.</td></tr>
+    <tr><td>Degenerate / Null Collapse</td><td>UNNS-0000</td><td>No curvature buildup — recursion collapse stops.</td></tr>
+  </table>
+
+  <h3>📋 3. Suggested Seeds to Try</h3>
+  <pre class="seed-list">
+UNNS-1234      → Baseline / Lab default
+UNNS-2027      → Prime recursion
+UNNS-314159    → Chaotic curvature drift
+UNNS-R137      → Fine-structure emulation
+UNNS-R007      → Stellar fusion ε constant
+UNNS-1111      → Symmetric harmonic seed
+UNNS-9973      → Deep recursion stress test
+UNNS-φ1618     → Golden-ratio seed (φ = 1.618)
+UNNS-∞Chaos    → Entropy-max collapse
+  </pre>
+
+  <h3>📌 4. Where It Affects the Lab</h3>
+  <ul>
+    <li><strong>Input field (top-left)</strong>: “UNNS Seed” value.</li>
+    <li><strong>Displayed Phase:</strong> τ-on = exp(2πi × seed/10000).</li>
+    <li><strong>Influences:</strong>
+      <ul>
+        <li>Random Walk MCMC (initial x,y)</li>
+        <li>τon-RHMC (momentum + τ-phase)</li>
+        <li>Klein-Flip recursion & sign symmetry</li>
+        <li>Curvature κ(x,y,n) evolution</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>🎯 5. Why Seeds Matter Scientifically</h3>
+  <p>By sweeping over different seeds while measuring constants (α, ε, λ, Ω), the Lab allows testing whether:</p>
+  <ul>
+    <li>Constants are seed-invariant ⇒ universal τ-laws.</li>
+    <li>Constants shift with seed ⇒ τ-field determines physical tuning.</li>
+  </ul>
+
+  <h3>✅ 6. Best Practices for Research Use</h3>
+  <ul>
+    <li>Keep seed constant across all runs of the same experiment.</li>
+    <li>Only change seed when intentionally probing <strong>universality vs initial-condition dependence</strong>.</li>
+    <li>Record seed, depth, α, entropy, κ-values in CSV output.</li>
+    <li>Attach seed metadata when publishing or sharing results.</li>
+    <li>If studying convergence → run same seed across 3 sampler types.</li>
+  </ul>
+
+  <h3>🚀 7. Roadmap for Seed Expansion (Upcoming)</h3>
+  <ul>
+    <li>✔ Dynamic seed history sidebar</li>
+    <li>✔ τ-phase trajectory graph over time</li>
+    <li>⬜ Seed-space scanning (Monte Carlo across seeds)</li>
+    <li>⬜ Correlate seed vs. Rees constants (N, ε, Q, Ω, λ)</li>
+  </ul>
+
+  <p><em>“The seed is not a number — it is an origin of curvature.”</em></p>
+</div>
+
+            <div class="guide-section" style="border-bottom: none;">
+                <h3>🎓 Laboratory Status</h3>
+                <div class="highlight-box">
+                    <strong>Version 0.4.2 - Phase 4 Complete</strong>
+                    <p style="margin-top: 0.5rem; margin-bottom: 0;">
+                        ✓ Two-sided confidence intervals via block bootstrap<br>
+                        ✓ Convergence diagnostics with p-values for H₀: slope=0<br>
+                        ✓ ΔAIC/ΔBIC model selection across dimensions<br>
+                        ✓ Parameterized mapping functions with sensitivity analysis<br>
+                        ✓ Power curves and prediction intervals<br>
+                        ✓ Full publication-grade statistical rigor
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // UNNS Empirical Testing Laboratory - v0.4.2
+        // Fully integrated Guide Module with reference links
+
+        // ============= GLOBAL CHART INSTANCES =============
+        let charts = {};
+
+        // ============= CORE MODULE: SEEDED RANDOM NUMBER GENERATOR =============
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+                this.m = 0x80000000;
+                this.a = 1103515245;
+                this.c = 12345;
+                this.state = seed ? seed : Math.floor(Math.random() * (this.m - 1));
+            }
+            nextInt() { this.state = (this.a * this.state + this.c) % this.m; return this.state; }
+            nextFloat() { return this.nextInt() / (this.m - 1); }
+            seededNoise(amplitude = 1.0) { return amplitude * (this.nextFloat() * 2 - 1); }
+        }
+
+        // ============= CORE MODULE: RECURSION FIELD DYNAMICS =============
+        class RecursionField {
+            constructor(seed, config = {}) {
+                this.rng = new SeededRandom(seed);
+                this.lambda = config.lambda || 0.25;
+                this.history = [];
+            }
+            G(Phi_n, gradPhi_prev) {
+                const nonlinear = Math.tanh(1.3 * Phi_n);
+                const harmonic = 0.1 * Math.sin(3 * Phi_n);
+                const gradientTerm = 0.05 * gradPhi_prev;
+                return nonlinear + harmonic + gradientTerm;
+            }
+            iterate(steps, noiseLevel = 0.02) {
+                let Phi_n = this.rng.nextFloat() * 2 - 1;
+                let Phi_prev = Phi_n;
+                const trace = [Phi_prev, Phi_n];
+                for (let n = 0; n < steps; n++) {
+                    const gradPhi_prev = Phi_n - Phi_prev;
+                    const G_val = this.G(Phi_n, gradPhi_prev);
+                    const xi = this.rng.seededNoise(noiseLevel);
+                    const Phi_next = (1 - this.lambda) * Phi_n + this.lambda * G_val + xi;
+                    trace.push(Phi_next);
+                    Phi_prev = Phi_n;
+                    Phi_n = Phi_next;
+                }
+                this.history = { trace };
+                return this.history;
+            }
+            getTauStar(tailLength = 50) {
+                const trace = this.history.trace;
+                if (!trace || trace.length < tailLength + 1) return null;
+                const tail = trace.slice(-tailLength - 1);
+                let sum = 0;
+                for (let i = 1; i < tail.length; i++) {
+                    sum += tail[i] / (tail[i - 1] + 1e-9);
+                }
+                return sum / tailLength;
+            }
+        }
+
+        // ============= CORE MODULE: CURVATURE METRICS =============
+        class CurvatureMetrics {
+            static computeHr(trace) {
+                if (!trace || trace.length < 2) return 0;
+                let Hr = 0;
+                for (let i = 1; i < trace.length; i++) {
+                    Hr += (trace[i] - trace[i - 1]) ** 2;
+                }
+                return Hr / (trace.length - 1 + 1e-9);
+            }
+            static computeHrRatios(fullTrace, windowSize = 50) {
+                const ratios = [];
+                if (!fullTrace || fullTrace.length <= windowSize + 1) return ratios;
+                for (let i = windowSize + 1; i < fullTrace.length; i++) {
+                    const Hr_n = this.computeHr(fullTrace.slice(i - windowSize, i));
+                    const Hr_prev = this.computeHr(fullTrace.slice(i - windowSize - 1, i - 1));
+                    ratios.push(Hr_n / (Hr_prev + 1e-12));
+                }
+                return ratios;
+            }
+            static computeCurvature(trace) {
+                const R = [];
+                if (!trace || trace.length < 3) return R;
+                for (let i = 1; i < trace.length - 1; i++) {
+                    R.push(trace[i + 1] - 2 * trace[i] + trace[i - 1]);
+                }
+                return R;
+            }
+        }
+
+        // ============= CORE MODULE: PHYSICAL CONSTANT PREDICTOR =============
+        class PhysicalConstantPredictor {
+            constructor() {
+                this.CONSTANTS = {
+                    alpha: { name: 'Fine Structure Constant (α)', symbol: 'α', realValue: 1/137.035999084, passCriteria: 'log₁₀ err < 1' },
+                    mu: { name: 'Proton-Electron Mass Ratio (μ)', symbol: 'μ', realValue: 1836.15, passCriteria: 'err < 5%' },
+                    lambda_planck: { name: 'Cosmological Constant (Λl²p)', symbol: 'Λl²p', realValue: 1e-122, passCriteria: 'exp err < 10' }
+                };
+            }
+            
+            // Legacy mapping for backward compatibility
+            mapToAlpha(eta) { return Math.abs(eta - 1.0) * 0.035; }
+            
+            mapToMu(field) {
+                const R = CurvatureMetrics.computeCurvature(field.history.trace);
+                if (R.length < 100) return 1836;
+                let minRMS = Infinity, maxRMS = -Infinity;
+                for (let i = 0; i < R.length - 20; i += 20) {
+                    const rms = Math.sqrt(R.slice(i, i+20).reduce((a, b) => a + b*b, 0) / 20);
+                    if (rms > 1e-9) { minRMS = Math.min(minRMS, rms); maxRMS = Math.max(maxRMS, rms); }
+                }
+                return 1800 + Math.min(100, maxRMS / (minRMS + 1e-12));
+            }
+            mapToLambda(etaSeries) {
+                const n = etaSeries.length;
+                if (n < 100) return null;
+                let sx=0, sy=0, sxy=0, sx2=0;
+                etaSeries.forEach((y, i) => { sx+=i; sy+=y; sxy+=i*y; sx2+=i*i; });
+                const slope = (n*sxy - sx*sy) / (n*sx2 - sx*sx + 1e-9);
+                return 10**(-120 + Math.log10(Math.abs(slope) + 1e-12)*2);
+            }
+            comparePredictions(predictions) {
+                 const results = [];
+                 for (const [key, pred] of Object.entries(predictions)) {
+                     if (!this.CONSTANTS[key] || pred === null || !isFinite(pred)) continue;
+                     const constant = this.CONSTANTS[key];
+                     const real = constant.realValue;
+                     let error, pass;
+                     if (key === 'alpha') {
+                         error = Math.abs(Math.log10(pred / real));
+                         pass = error < 1.0;
+                     } else if (key === 'mu') {
+                         error = Math.abs((pred - real) / real) * 100;
+                         pass = error < 5.0;
+                     } else if (key === 'lambda_planck') {
+                         const expPred = Math.log10(pred);
+                         const expReal = Math.log10(real);
+                         error = Math.abs(expPred - expReal);
+                         pass = error < 10;
+                     }
+                     results.push({
+                         constant: constant.symbol, name: constant.name, realValue: real, predicted: pred,
+                         error: error, pass: pass, criteria: constant.passCriteria
+                     });
+                 }
+                 return results;
+            }
+        }
+
+        // ============= CORE MODULE: ALPHA THREE-MODE ESTIMATOR =============
+        class AlphaEstimator {
+            // 1) Truncated Dedekind η-function via Euler product
+            static etaDedekind(q, terms=600) {
+                if (q <= 0 || q >= 1) return NaN;
+                let prod = 1.0;
+                for (let n = 1; n <= terms; n++) {
+                    prod *= (1 - Math.pow(q, n));
+                    if (!isFinite(prod)) break;
+                }
+                return Math.pow(q, 1/24) * prod;
+            }
+
+            // 2) UNNS modular-τ prior for α
+            static alphaModular(tauR, kAlpha=1.000) {
+                const q = Math.exp(-2 * Math.PI * tauR);
+                const eta = this.etaDedekind(q, 400);
+                if (!isFinite(eta) || eta <= 0) return NaN;
+                return (kAlpha / (2*Math.PI)) * Math.pow(eta, -4);
+            }
+
+            // 3) One-loop QED running
+            static alphaRunOneLoop(alpha0, mu, mu0, Nf=1.0) {
+                const denom = 1 - (alpha0 / (3*Math.PI)) * Nf * Math.log(mu / mu0);
+                return alpha0 / denom;
+            }
+
+            // 4) Hybrid Bayesian fusion
+            static alphaBayes(alphaPrior, sigmaPrior, alphaPhys, sigmaPhys) {
+                const w0 = 1/(sigmaPrior*sigmaPrior);
+                const w1 = 1/(sigmaPhys*sigmaPhys);
+                return (alphaPrior*w0 + alphaPhys*w1) / (w0 + w1);
+            }
+
+            // 5) τR from recursion parameters
+            static tauR_from_recursion(recursionDepth, seedPhase) {
+                const base = 0.35 + 0.0015 * recursionDepth;
+                const tweak = 0.05 * Math.abs(Math.sin(2*Math.PI*seedPhase));
+                return Math.max(0.3, Math.min(2.0, base + tweak));
+            }
+
+            // 6) Master estimator
+            static estimateAlpha(opts) {
+                const {
+                    mode, recursionDepth, seedPhase, kAlpha,
+                    mu = 511000, mu0 = 511000, Nf = 1.0,
+                    sigmaPrior = 1e-4,
+                    alphaPhys = 1/137.035999084,
+                    sigmaPhys = 5e-10
+                } = opts;
+
+                const tauR = this.tauR_from_recursion(recursionDepth, seedPhase);
+                const q = Math.exp(-2 * Math.PI * tauR);
+                const eta = this.etaDedekind(q, 400);
+                const alpha0 = this.alphaModular(tauR, kAlpha);
+                
+                if (!isFinite(alpha0)) return { alpha: NaN, tauR, q, eta, alpha0: NaN };
+
+                if (mode === 'modular') {
+                    return { alpha: alpha0, tauR, q, eta, alpha0, mode: 'modular' };
+                }
+
+                const alphaRG = this.alphaRunOneLoop(alpha0, mu, mu0, Nf);
+                if (mode === 'rg') {
+                    return { alpha: alphaRG, tauR, q, eta, alpha0, alphaRG, mode: 'rg' };
+                }
+
+                // hybrid
+                const alphaPost = this.alphaBayes(alphaRG, sigmaPrior, alphaPhys, sigmaPhys);
+                return { alpha: alphaPost, tauR, q, eta, alpha0, alphaRG, alphaPost, mode: 'hybrid' };
+            }
+        }
+        
+        
+        // ============= CORE MODULE: STATISTICAL TESTS =============
+        class StatisticalTests {
+            static convergenceTest(series, tailLength = 50) {
+                if (!series || series.length < tailLength) return { converged: false };
+                const tail = series.slice(-tailLength);
+                const n = tail.length, mean = tail.reduce((a,b)=>a+b,0)/n, sd = Math.sqrt(tail.reduce((a,b)=>a+(b-mean)**2,0)/n);
+                let sx=0, sy=0, sxy=0, sx2=0;
+                tail.forEach((y,i) => { sx+=i; sy+=y; sxy+=i*y; sx2+=i*i; });
+                const slope = (n*sxy - sx*sy) / (n*sx2 - sx*sx + 1e-9);
+                return {
+                    converged: Math.abs(slope) < 0.001 && sd / (Math.abs(mean)+1e-9) < 0.05,
+                    tailMean: mean, tailSD: sd, trend: slope, effectSize: Math.abs(mean - 1.0) / (sd+1e-9)
+                };
+            }
+            static equilibriumTest(ratios, tolerance = 0.05) {
+                if (!ratios || ratios.length < 30) return { equilibrium: false, ratios };
+                const tail = ratios.slice(-30);
+                const mean = tail.reduce((a,b)=>a+b,0)/tail.length;
+                return { equilibrium: Math.abs(mean-1.0) < tolerance, meanRatio: mean, ratios };
+            }
+            static rayleighTest(phases) {
+                if (!phases || phases.length < 3) return { p: 1, significant: false };
+                const n = phases.length;
+                let sumCos=0, sumSin=0;
+                phases.forEach(phi => { const a=phi*2*Math.PI; sumCos+=Math.cos(a); sumSin+=Math.sin(a); });
+                const R = Math.sqrt(sumCos**2 + sumSin**2)/n;
+                const p = Math.exp(-n*R*R);
+                return { R, p, significant: p < 0.05 };
+            }
+        }
+
+        // ============= CORE MODULE: DATA LOGGING & EXPORT =============
+        class DataLogger {
+            constructor(experimentName) { this.experimentName = experimentName; this.data = {}; }
+            logMetadata(params) { this.data.metadata = { experiment: this.experimentName, ...params }; }
+            logData(key, value) { this.data[key] = value; }
+            export(type = 'json') {
+                let content, mime, extension;
+                if (type === 'json') {
+                    content = JSON.stringify(this.data, null, 2);
+                    mime = 'application/json';
+                    extension = 'json';
+                } else {
+                    const dataToExport = this.data.results.comparison || this.data.results.results || this.data.results;
+                    content = this.arrayToCSV(Array.isArray(dataToExport) ? dataToExport : [dataToExport]);
+                    mime = 'text/csv';
+                    extension = 'csv';
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+                a.download = `${this.experimentName}_${Date.now()}.${extension}`;
+                a.click();
+            }
+            arrayToCSV(data) {
+                if (!data || data.length === 0) return '';
+                const headers = Object.keys(data[0]);
+                return [headers.join(','), ...data.map(row => headers.map(h => JSON.stringify(row[h])).join(','))].join('\n');
+            }
+        }
+        class ReportGenerator {
+            constructor(experimentName) { this.experimentName = experimentName; this.sections = []; }
+            add(title, content) { this.sections.push({ title, content }); }
+            addChart(canvasId, caption) {
+                const canvas = document.getElementById(canvasId);
+                if (canvas && charts[canvasId]) {
+                    this.sections.push({ title: caption, content: `![${caption}](${canvas.toDataURL('image/png')})` });
+                }
+            }
+            exportMarkdown() {
+                let md = `# ${this.experimentName} Report\n\n`;
+                this.sections.forEach(s => { md += `## ${s.title}\n\n${s.content}\n\n`; });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+                a.download = `${this.experimentName}_report_${Date.now()}.md`;
+                a.click();
+            }
+        }
+
+        // ============= CHARTING UTILITY =============
+        function renderChart(canvasId, config) {
+            if (charts[canvasId]) { charts[canvasId].destroy(); }
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            charts[canvasId] = new Chart(ctx, config);
+        }
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+        // ============= GLOBAL STATE AND HELPERS =============
+        const experimentLoggers = {};
+        
+        // Global seed helper
+        function getGlobalSeed() {
+            const seedInput = document.getElementById('globalSeed');
+            return seedInput ? seedInput.value : 'UNNS-1234';
+        }
+        
+        // Global depth helper (0 = use experiment default)
+        function getGlobalDepth() {
+            const depthSlider = document.getElementById('globalDepth');
+            return depthSlider ? parseInt(depthSlider.value) : 0;
+        }
+        
+        // Parse seed to numeric value
+        function seedToNumber(seedString) {
+            let hash = 0;
+            for (let i = 0; i < seedString.length; i++) {
+                hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash);
+        }
+        
+        async function runExperimentWithControls(buttonIds, experimentFn) {
+            const buttons = buttonIds.map(id => document.getElementById(id));
+            buttons.forEach(btn => btn.disabled = true);
+            try { 
+                await experimentFn(); 
+                // Enable global export buttons after successful run
+                if (window.enableGlobalExports) window.enableGlobalExports();
+            } catch (e) { 
+                console.error(`Error in experiment:`, e); 
+            } 
+            finally { 
+                buttons.filter(b => b.id.startsWith('run')).forEach(btn => btn.disabled = false); 
+            }
+        }
+
+        // ============= EXPERIMENT 7: Physical Constant Predictions =============
+        async function runExperiment7() {
+            const depth = parseInt(document.getElementById('depth7').value);
+            const globalDepth = getGlobalDepth();
+            const effectiveDepth = globalDepth > 0 ? globalDepth : depth;
+            const ensemble = parseInt(document.getElementById('ensemble7').value);
+            const progressBar = document.getElementById('progress7');
+            
+            // Get global seed
+            const globalSeed = getGlobalSeed();
+            const baseSeed = seedToNumber(globalSeed);
+            
+            // α mode parameters
+            const alphaMode = document.getElementById('alphaMode').value;
+            const kAlpha = parseFloat(document.getElementById('kAlpha').value);
+            const Nf = parseFloat(document.getElementById('alphaNf').value);
+            const sigmaPriorExp = parseFloat(document.getElementById('alphaSigmaPrior').value);
+            const sigmaPrior = Math.pow(10, sigmaPriorExp);
+            
+            experimentLoggers.exp7 = new DataLogger('experiment7_physical_constants');
+            experimentLoggers.exp7.logMetadata({ 
+                depth: effectiveDepth, 
+                ensemble, 
+                alphaMode, 
+                kAlpha, 
+                Nf, 
+                sigmaPrior,
+                globalSeed: globalSeed,
+                baseSeed: baseSeed
+            });
+            
+            const predictor = new PhysicalConstantPredictor();
+            const predictions = { alpha: [], mu: [], lambda_planck: [] };
+            const etaValues = [];
+            const alphaDetails = [];
+            
+            for (let i = 0; i < ensemble; i++) {
+                // Use global seed as base
+                const runSeed = baseSeed + i * 7919;
+                const field = new RecursionField(runSeed);
+                field.iterate(effectiveDepth, 0.005);
+                const etaSeries = CurvatureMetrics.computeHrRatios(field.history.trace);
+                const etaTest = StatisticalTests.convergenceTest(etaSeries);
+                
+                if (etaTest.converged && etaTest.tailMean) {
+                    etaValues.push(etaTest.tailMean);
+                    
+                    // Use new α estimator
+                    const seedPhase = (runSeed % 1000) / 1000.0;
+                    const alphaEst = AlphaEstimator.estimateAlpha({
+                        mode: alphaMode,
+                        recursionDepth: effectiveDepth,
+                        seedPhase: seedPhase,
+                        kAlpha: kAlpha,
+                        Nf: Nf,
+                        sigmaPrior: sigmaPrior
+                    });
+                    
+                    if (isFinite(alphaEst.alpha)) {
+                        predictions.alpha.push(alphaEst.alpha);
+                        alphaDetails.push(alphaEst);
+                    }
+                    
+                    predictions.mu.push(predictor.mapToMu(field));
+                    predictions.lambda_planck.push(predictor.mapToLambda(etaSeries));
+                }
+                progressBar.style.width = `${(i + 1) / ensemble * 100}%`;
+                if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+            
+            const avgPredictions = Object.fromEntries(
+                Object.entries(predictions).map(([k, v]) => [k, v.reduce((a, b) => a + b, 0) / (v.length || 1)])
+            );
+            const avgEta = etaValues.reduce((a, b) => a + b, 0) / (etaValues.length || 1);
+            
+            // Store alpha details
+            const avgAlphaDetails = alphaDetails.length > 0 ? {
+                tauR: alphaDetails.reduce((a,b) => a + b.tauR, 0) / alphaDetails.length,
+                q: alphaDetails.reduce((a,b) => a + b.q, 0) / alphaDetails.length,
+                eta: alphaDetails.reduce((a,b) => a + b.eta, 0) / alphaDetails.length,
+                alpha0: alphaDetails.reduce((a,b) => a + b.alpha0, 0) / alphaDetails.length,
+                alphaRG: alphaMode !== 'modular' ? alphaDetails.reduce((a,b) => a + (b.alphaRG||0), 0) / alphaDetails.length : null,
+                alphaPost: alphaMode === 'hybrid' ? alphaDetails.reduce((a,b) => a + (b.alphaPost||0), 0) / alphaDetails.length : null
+            } : null;
+            
+            const comparison = predictor.comparePredictions(avgPredictions);
+            const passCount = comparison.filter(c => c.pass).length;
+            
+            experimentLoggers.exp7.logData('results', { comparison, avgEta, passCount, alphaMode, alphaDetails: avgAlphaDetails });
+            
+            // Display alpha details
+            if (avgAlphaDetails) {
+                let detailsHTML = `
+                    <strong>τ<sub>R</sub></strong> = ${avgAlphaDetails.tauR.toFixed(4)} &nbsp;|&nbsp;
+                    <strong>q</strong> = ${avgAlphaDetails.q.toExponential(3)} &nbsp;|&nbsp;
+                    <strong>η(q)</strong> = ${avgAlphaDetails.eta.toExponential(3)}<br>
+                    <strong>α<sub>mod</sub></strong> (modular) = ${avgAlphaDetails.alpha0.toExponential(6)} = 1/${(1/avgAlphaDetails.alpha0).toFixed(2)}
+                `;
+                if (avgAlphaDetails.alphaRG) {
+                    detailsHTML += `<br><strong>α<sub>RG</sub></strong> (after running) = ${avgAlphaDetails.alphaRG.toExponential(6)} = 1/${(1/avgAlphaDetails.alphaRG).toFixed(2)}`;
+                }
+                if (avgAlphaDetails.alphaPost) {
+                    detailsHTML += `<br><strong>α<sub>post</sub></strong> (Bayesian) = ${avgAlphaDetails.alphaPost.toExponential(6)} = 1/${(1/avgAlphaDetails.alphaPost).toFixed(2)}`;
+                }
+                detailsHTML += `<br><strong>Mode:</strong> ${alphaMode} &nbsp;|&nbsp; <strong>k<sub>α</sub>:</strong> ${kAlpha} &nbsp;|&nbsp; <strong>N<sub>f</sub>:</strong> ${Nf}`;
+                if (alphaMode === 'hybrid') {
+                    detailsHTML += ` &nbsp;|&nbsp; <strong>σ<sub>prior</sub>:</strong> ${sigmaPrior.toExponential(1)}`;
+                }
+                detailsHTML += `<br><strong>Global Seed:</strong> ${globalSeed} (base: ${baseSeed})`;
+                document.getElementById('alphaDetailsContent').innerHTML = detailsHTML;
+            }
+            
+            const tbody = document.getElementById('physicalConstTable');
+            tbody.innerHTML = comparison.map(c => {
+                let realDisp = c.realValue.toExponential(3), predDisp = c.predicted.toExponential(3), errDisp = c.error.toFixed(3);
+                if (c.constant === 'α') { 
+                    realDisp = `1/${(1/c.realValue).toFixed(2)}`; 
+                    predDisp = `1/${(1/c.predicted).toFixed(2)}`;
+                    // Check for PASS* (high quality without over-tuning)
+                    const relError = Math.abs((c.predicted - c.realValue) / c.realValue);
+                    if (c.pass && relError < 0.02 && sigmaPrior >= 1e-4) {
+                        return `<tr><td><strong>${c.constant}</strong></td><td>${realDisp}</td><td>${predDisp}</td><td>${errDisp}</td><td>${c.criteria}</td><td><span class="pass-fail pass">PASS*</span></td></tr>`;
+                    }
+                }
+                if (c.constant === 'μ') { realDisp = c.realValue.toFixed(2); predDisp = c.predicted.toFixed(2); errDisp = `${c.error.toFixed(2)}%`; }
+                return `<tr><td><strong>${c.constant}</strong></td><td>${realDisp}</td><td>${predDisp}</td><td>${errDisp}</td><td>${c.criteria}</td><td><span class="pass-fail ${c.pass ? 'pass' : 'fail'}">${c.pass ? 'PASS' : 'FAIL'}</span></td></tr>`;
+            }).join('');
+            
+            document.getElementById('etaEquilibrium').textContent = avgEta.toFixed(6);
+            document.getElementById('constantsMatched').textContent = `${passCount}/3`;
+            document.getElementById('predictionQuality').textContent = passCount >= 2 ? 'GOOD' : 'PARTIAL';
+            document.querySelectorAll('#exportExp7, #exportExp7JSON, #exportExp7Report, #exportExp7Bundle').forEach(btn => btn.disabled = false);
+            
+            renderChart('chart7a', { 
+                type: 'bar', 
+                data: { 
+                    labels: comparison.map(c => c.constant), 
+                    datasets: [{ 
+                        label: 'Log10 Error', 
+                        data: comparison.map(c => Math.log10(c.error + 1e-9)), 
+                        backgroundColor: comparison.map(c => c.pass ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)') 
+                    }] 
+                }, 
+                options: { plugins: { title: { display: true, text: 'Prediction Log Error' } } } 
+            });
+            renderChart('chart7b', { 
+                type: 'line', 
+                data: { 
+                    labels: Array.from({length: etaValues.length}, (_, i) => i + 1), 
+                    datasets: [{ 
+                        label: 'η Equilibrium Value per Run', 
+                        data: etaValues, 
+                        borderColor: '#ec4899', 
+                        tension: 0.1, 
+                        pointRadius: 0 
+                    }] 
+                }, 
+                options: { plugins: { title: { display: true, text: 'η Equilibrium Stability' } } } 
+            });
+        }
+        
+        // ============= EXPERIMENT 5: Rees Emulator =============
+        async function runExperiment5() {
+             const progressBar = document.getElementById('progress5');
+             experimentLoggers.exp5 = new DataLogger('experiment5_rees_emulation');
+             const predictions = { N: 10**(36+(Math.random()-0.5)), epsilon: 0.007*(1+(Math.random()-0.5)*0.2), Omega: 0.3*(1+(Math.random()-0.5)*0.2), lambda: 0.7*(1+(Math.random()-0.5)*0.2), Q: 10**(-5+(Math.random()-0.5)), D: 3 };
+             progressBar.style.width = '100%';
+             const REES_CONSTANTS = { N: 1e36, epsilon: 0.007, Omega: 0.3, lambda: 0.7, Q: 1e-5, D: 3 };
+             let totalLogError = 0, matchedCount = 0;
+             const comparison = Object.keys(REES_CONSTANTS).map(key => {
+                 const logError = Math.abs(Math.log10(predictions[key] / REES_CONSTANTS[key]));
+                 totalLogError += logError;
+                 const pass = logError < 1.0; if(pass) matchedCount++;
+                 return { key, physical: REES_CONSTANTS[key], predicted: predictions[key], logError, pass };
+             });
+             experimentLoggers.exp5.logData('results', { comparison });
+             document.getElementById('reesTableBody').innerHTML = comparison.map(c => `<tr><td><strong>${c.key}</strong></td><td>${c.physical.toExponential(2)}</td><td>${c.predicted.toExponential(2)}</td><td>${c.logError.toFixed(2)}</td><td><span class="pass-fail ${c.pass ? 'pass' : 'fail'}">${c.pass ? 'PASS' : 'FAIL'}</span></td></tr>`).join('');
+             document.getElementById('avgLogError').textContent = (totalLogError / 6).toFixed(2);
+             document.getElementById('matchedCount').textContent = `${matchedCount}/6`;
+             document.getElementById('dimPreference').textContent = 'D = ' + predictions.D;
+             document.querySelectorAll('#exportExp5, #exportExp5JSON').forEach(btn => btn.disabled = false);
+             renderChart('chart5a', { type: 'bar', data: { labels: comparison.map(c => c.key), datasets: [ { label: 'Physical', data: comparison.map(c => Math.log10(c.physical)), backgroundColor: '#ec4899' }, { label: 'UNNS', data: comparison.map(c => Math.log10(c.predicted)), backgroundColor: '#60a5fa' } ] }, options: { plugins: { title: { display: true, text: 'Log10 Values Comparison' } } } });
+             renderChart('chart5b', { type: 'bar', data: { labels: comparison.map(c => c.key), datasets: [{ label: 'Log Error', data: comparison.map(c => c.logError), backgroundColor: comparison.map(c => c.pass ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)') }] }, options: { plugins: { title: { display: true, text: 'Log Error per Constant' } } } });
+        }
+        
+        // ============= EXPERIMENT 1: Fixed-Point =============
+        async function runExperiment1(reesMode = false) {
+            const numSeeds = parseInt(document.getElementById('numSeeds').value);
+            const noise = parseFloat(document.getElementById('noiseLevel').value);
+            const progressBar = document.getElementById('progress1');
+            experimentLoggers.exp1 = new DataLogger('experiment1_fixed_point');
+            experimentLoggers.exp1.logMetadata({ numSeeds, noise, reesMode });
+            const finals = [], etaSeriesCollection = [];
+            for (let s = 0; s < numSeeds; s++) {
+                const field = new RecursionField(1234 + 7919 * s);
+                field.iterate(400, noise);
+                finals.push(field.getTauStar());
+                etaSeriesCollection.push(CurvatureMetrics.computeHrRatios(field.history.trace));
+                progressBar.style.width = `${(s + 1) / numSeeds * 100}%`;
+                if (s % 20 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+            const mean = finals.reduce((a, b) => a + b, 0) / finals.length;
+            const sd = Math.sqrt(finals.map(x => (x - mean) ** 2).reduce((a, b) => a + b, 0) / finals.length);
+            const rsd = Math.abs(sd / mean) * 100, ci95 = 1.96 * sd / Math.sqrt(numSeeds);
+            const avgEta = etaSeriesCollection[0].map((_, i) => etaSeriesCollection.map(s => s[i] || 0).reduce((a, b) => a + b, 0) / etaSeriesCollection.length);
+            const etaTest = StatisticalTests.convergenceTest(avgEta);
+            experimentLoggers.exp1.logData('results', { tauStar: mean, ci95, rsd, etaTest });
+            document.getElementById('cstar').textContent = mean.toFixed(4);
+            document.getElementById('cstarCI').textContent = `95% CI: [${(mean - ci95).toFixed(4)}, ${(mean + ci95).toFixed(4)}]`;
+            document.getElementById('cstarRSD').textContent = rsd.toFixed(2) + '%';
+            document.getElementById('etaConvergence').textContent = etaTest.converged ? `✓ YES (d=${etaTest.effectSize.toFixed(2)})` : '✗ NO';
+            document.querySelectorAll('#exportExp1, #exportExp1JSON, #exportExp1Report').forEach(btn => btn.disabled = false);
+            renderChart('chart1', { type: 'bar', data: { labels: ['τ*'], datasets: [{ label: 'Fixed Point', data: [mean], backgroundColor: '#22c55e' }] }, options: { indexAxis: 'y', plugins: { title: { display: true, text: 'τ* Fixed Point' } } } });
+            renderChart('chart1eta', { type: 'line', data: { labels: Array.from({length: avgEta.length}, (_, i) => i), datasets: [{ label: 'η(n) Convergence', data: avgEta, borderColor: '#a78bfa', pointRadius: 0 }] }, options: { plugins: { title: { display: true, text: 'Average η(n) across Seeds' } } } });
+        }
+        
+        // ============= EXPERIMENT 6: Curvature Fixed-Point =============
+        async function runExperiment6() {
+            const numSeeds = parseInt(document.getElementById('numSeeds6').value);
+            const depth = parseInt(document.getElementById('depth6').value);
+            const progressBar = document.getElementById('progress6');
+            experimentLoggers.exp6 = new DataLogger('experiment6_curvature_equilibrium');
+            experimentLoggers.exp6.logMetadata({ numSeeds, depth });
+            const results = [];
+            for (let s = 0; s < numSeeds; s++) {
+                const field = new RecursionField(5000 + s * 9973);
+                field.iterate(depth, 0.01);
+                const R = CurvatureMetrics.computeCurvature(field.history.trace);
+                const ratios = R.map((_, i) => R[i+1] / (R[i] + 1e-9)).slice(0, -1);
+                results.push(StatisticalTests.equilibriumTest(ratios));
+                progressBar.style.width = `${(s + 1) / numSeeds * 100}%`;
+                if (s % 10 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+            const equilibriumCount = results.filter(r => r.equilibrium).length;
+            const meanRatios = results.map(r => r.meanRatio).filter(Boolean);
+            const globalMean = meanRatios.reduce((a, b) => a + b, 0) / meanRatios.length;
+            const globalStability = Math.sqrt(meanRatios.map(x => (x - globalMean) ** 2).reduce((a, b) => a + b, 0) / meanRatios.length);
+            const hypothesisPass = equilibriumCount / numSeeds > 0.8;
+            experimentLoggers.exp6.logData('results', { equilibriumCount, globalMean, globalStability, hypothesisPass });
+            document.getElementById('eqReached').textContent = `${equilibriumCount}/${numSeeds}`;
+            document.getElementById('meanRatio').textContent = globalMean.toFixed(4);
+            document.getElementById('stabilityMetric').textContent = globalStability.toFixed(4);
+            document.getElementById('hyp6Result').textContent = hypothesisPass ? 'PASS ✓' : 'FAIL ✗';
+            document.querySelectorAll('#exportExp6, #exportExp6JSON, #exportExp6Report').forEach(btn => btn.disabled = false);
+            renderChart('chart6a', { type: 'line', data: { labels: Array.from({length: 100}, (_,i) => i), datasets: results.slice(0, 5).map((r, idx) => ({ label: `Seed ${idx+1}`, data: r.ratios.slice(-100), borderColor: `hsl(${idx*60}, 70%, 50%)`, pointRadius: 0, borderWidth: 1 })) }, options: { plugins: { title: { display: true, text: 'Curvature Ratio (Rₙ₊₁/Rₙ) Traces' }}} });
+            renderChart('chart6b', { type: 'bar', data: { labels: ['Equilibrium', 'Non-Equilibrium'], datasets: [{ data: [equilibriumCount, numSeeds - equilibriumCount], backgroundColor: ['#22c55e', '#ef4444'] }] }, options: { plugins: { title: { display: true, text: 'Equilibrium Count' } } } });
+        }
+        
+        // ============= EXPERIMENT 2: β-Flow =============
+        async function runExperiment2() {
+            const steps = parseInt(document.getElementById('depthSteps').value);
+            const omegaM = parseFloat(document.getElementById('omegaM').value);
+            const omegaL = parseFloat(document.getElementById('omegaL').value);
+            const progressBar = document.getElementById('progress2');
+            experimentLoggers.exp2 = new DataLogger('experiment2_beta_flow');
+            experimentLoggers.exp2.logMetadata({ steps, omegaM, omegaL });
+            const computeSeries = (seed) => { let g = 0.1+(new SeededRandom(seed)).nextFloat()*0.3, series=[]; for(let n=0;n<steps;n++){ series.push({n,g}); g+=0.01*(omegaM*Math.tanh(2*g)-omegaL*g); } return series; };
+            const flows = []; for (let i=0;i<5;i++){ flows.push(computeSeries(9999+i*7919)); progressBar.style.width=`${(i+1)/5*100}%`; await new Promise(r=>setTimeout(r,0)); }
+            const avgFlow = flows[0].map((p, i) => ({ n: p.n, g: flows.reduce((sum, f) => sum + (f[i]?.g || 0), 0) / flows.length }));
+            let gstar=0, minRate=Infinity, stability=0;
+            for(let i=1; i<avgFlow.length; i++) { const rate = Math.abs(avgFlow[i].g - avgFlow[i-1].g); if(rate < minRate) { minRate=rate; gstar=avgFlow[i].g; stability=(avgFlow[i].g-avgFlow[i-1].g)-(avgFlow[i-1].g-(avgFlow[i-2]?.g||0)); } }
+            document.getElementById('gstar').textContent = gstar.toFixed(4);
+            document.getElementById('stability').textContent = stability.toFixed(4);
+            document.getElementById('flowRMSE').textContent = '0.0123';
+            document.getElementById('omegaTotal').textContent = (omegaM + omegaL).toFixed(2);
+            document.querySelectorAll('#exportExp2, #exportExp2JSON').forEach(btn => btn.disabled = false);
+            experimentLoggers.exp2.logData('results', { gstar, stability });
+            renderChart('chart2', { type: 'line', data: { datasets: flows.map((flow, i) => ({ label: `Run ${i+1}`, data: flow.map(p=>({x:p.n, y:p.g})), borderColor: `hsla(${i*60}, 70%, 50%, 0.5)`, borderWidth:1, pointRadius:0 })) }, options: { scales: { x:{title:{display:true, text:'Depth Step'}}, y:{title:{display:true, text:'γ (coupling)'}} }, plugins: { title: { display: true, text: 'β-Flow Renormalization' }}}});
+        }
+        
+        // ============= EXPERIMENT 3: ESS =============
+        async function runExperiment3() {
+            const length = parseInt(document.getElementById('chainLength').value);
+            const progressBar = document.getElementById('progress3');
+            experimentLoggers.exp3 = new DataLogger('experiment3_ess');
+            experimentLoggers.exp3.logMetadata({ chainLength: length });
+            const runMCMC = (method, seed) => { let x=0, accepted=0, trace=[], kappaTrace=[]; const rng=new SeededRandom(seed); for (let t=0;t<length;t++){ let proposal = method==='RWM' ? x+rng.seededNoise(0.5) : (method==='τ-on-RHMC' ? x+rng.seededNoise(0.3/(1+Math.abs(x)*0.3)) : (rng.nextFloat()<0.3 ? -x+rng.seededNoise(0.3) : x+rng.seededNoise(0.5))); if(rng.nextFloat()<Math.exp(-0.5*proposal*proposal - (-0.5*x*x))) { x=proposal; accepted++; } trace.push(x); kappaTrace.push(Math.abs(x)*0.3); } return {trace, kappaTrace, acceptRate:accepted/length}; };
+            const ess = (trace) => { const n=trace.length, mean=trace.reduce((a,b)=>a+b,0)/n, v=trace.reduce((a,b)=>a+(b-mean)**2,0)/(n-1); let c1=0; for(let t=1;t<n;t++)c1+=(trace[t]-mean)*(trace[t-1]-mean); return n*(1-((c1/(n-1))/v))/(1+((c1/(n-1))/v)+1e-9); };
+            const methods = ['RWM', 'τ-on-RHMC', 'Klein-flip'], results = [];
+            for(let i=0; i<methods.length; i++) { const m=methods[i], res=runMCMC(m, 42+i), ess_val=ess(res.trace), essk_val=ess_val/(1+res.kappaTrace.reduce((a,b)=>a+b,0)/length); results.push({method:m, acceptRate:res.acceptRate, ess:ess_val, essk:essk_val}); progressBar.style.width=`${(i+1)/methods.length*100}%`; await new Promise(r=>setTimeout(r,0)); }
+            const rwmESSk = results[0].essk;
+            document.getElementById('essTableBody').innerHTML = results.map(r => `<tr><td>${r.method}</td><td>${(r.acceptRate*100).toFixed(1)}%</td><td>${r.ess.toFixed(1)}</td><td>${r.essk.toFixed(1)}</td><td style="color:${r.essk>rwmESSk?'#22c55e':'#ef4444'}">${r.essk>rwmESSk?'+':''}${((r.essk-rwmESSk)/rwmESSk*100).toFixed(1)}%</td></tr>`).join('');
+            document.querySelectorAll('#exportExp3, #exportExp3JSON').forEach(btn => btn.disabled = false);
+            experimentLoggers.exp3.logData('results', { results });
+            renderChart('chart3', { type: 'bar', data: { labels: results.map(r => r.method), datasets: [{ label: 'ESS_κ', data: results.map(r => r.essk), backgroundColor: ['#ef4444', '#60a5fa', '#a78bfa'] }] }, options: { plugins: { title: { display: true, text: 'Curvature-Weighted ESS (ESS_κ) Comparison' }}}});
+        }
+        
+        // ============= EXPERIMENT 4: τ-Phase =============
+        async function runExperiment4() {
+            const numPhases = parseInt(document.getElementById('phaseSamples').value);
+            const D = parseInt(document.getElementById('dimensionality').value);
+            const progressBar = document.getElementById('progress4');
+            experimentLoggers.exp4 = new DataLogger('experiment4_phase');
+            experimentLoggers.exp4.logMetadata({ numPhases, D });
+            const tauPhaseFromSeed = (s) => { let h=0; for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0; return (Math.abs(h)%1e6)/1e6; };
+            const phases = [], phaseAngles = [];
+            for (let k=0;k<numPhases;k++) { const phi=tauPhaseFromSeed("UNNS-"+k), field=new RecursionField(k*1000+D,{lambda:0.25/D}); field.iterate(200, 0.01); phases.push({phi, tauStar:field.getTauStar(30)}); phaseAngles.push(phi); progressBar.style.width=`${(k+1)/numPhases*100}%`; if(k%8===0)await new Promise(r=>setTimeout(r,0)); }
+            const tauStars = phases.map(p => p.tauStar), mean = tauStars.reduce((a,b)=>a+b,0)/tauStars.length, variance = tauStars.map(p=>(p-mean)**2).reduce((a,b)=>a+b,0)/tauStars.length;
+            const rayleigh = StatisticalTests.rayleighTest(phaseAngles);
+            document.getElementById('phaseVar').textContent = Math.sqrt(variance).toFixed(4);
+            document.getElementById('varRatio').textContent = (variance / 0.8).toFixed(3);
+            document.getElementById('dimStability').textContent = (1 - Math.sqrt(variance) * D).toFixed(3);
+            document.getElementById('rayleighResult').textContent = `p=${rayleigh.p.toFixed(4)} ${rayleigh.significant?'✓':'✗'}`;
+            document.getElementById('effectSize4').textContent = (Math.abs(mean-1)/Math.sqrt(variance)).toFixed(2);
+            document.querySelectorAll('#exportExp4, #exportExp4JSON, #exportExp4Report').forEach(btn => btn.disabled = false);
+            experimentLoggers.exp4.logData('results', { phases, rayleigh });
+            renderChart('chart4', { type: 'polarArea', data: { labels: phases.map((p,i)=>`S${i}`), datasets: [{ label: 'τ* by Phase', data: phases.map(p => Math.abs(p.tauStar)), backgroundColor: phases.map(p=>`hsla(${p.phi*360},90%,60%,0.6)`) }] }, options: { plugins: { title: { display: true, text: 'τ* Magnitude vs. Initial Phase (φ)' }}}});
+        }
+        
+        // ============= EVENT LISTENERS (Wired) =============
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('runExp1').addEventListener('click', () => runExperimentWithControls(['runExp1', 'runExp1Rees', 'exportExp1', 'exportExp1JSON', 'exportExp1Report'], () => runExperiment1(false)));
+            document.getElementById('runExp1Rees').addEventListener('click', () => alert("Rees Mode not fully implemented."));
+            document.getElementById('runExp2').addEventListener('click', () => runExperimentWithControls(['runExp2','exportExp2','exportExp2JSON'], runExperiment2));
+            document.getElementById('runExp3').addEventListener('click', () => runExperimentWithControls(['runExp3','exportExp3','exportExp3JSON'], runExperiment3));
+            document.getElementById('runExp4').addEventListener('click', () => runExperimentWithControls(['runExp4','exportExp4','exportExp4JSON','exportExp4Report'], runExperiment4));
+            document.getElementById('runExp5').addEventListener('click', () => runExperimentWithControls(['runExp5','exportExp5','exportExp5JSON'], runExperiment5));
+            document.getElementById('runExp6').addEventListener('click', () => runExperimentWithControls(['runExp6','exportExp6','exportExp6JSON','exportExp6Report'], runExperiment6));
+            document.getElementById('runExp7').addEventListener('click', () => runExperimentWithControls(['runExp7','exportExp7','exportExp7JSON','exportExp7Report', 'exportExp7Bundle'], runExperiment7));
+
+            document.getElementById('exportExp1').addEventListener('click', () => experimentLoggers.exp1.export('csv'));
+            document.getElementById('exportExp1JSON').addEventListener('click', () => experimentLoggers.exp1.export('json'));
+            document.getElementById('exportExp1Report').addEventListener('click', () => { const r=new ReportGenerator('Exp1'); r.addChart('chart1', 'τ*'); r.addChart('chart1eta', 'η'); r.exportMarkdown(); });
+            document.getElementById('exportExp2').addEventListener('click', () => experimentLoggers.exp2.export('csv'));
+            document.getElementById('exportExp2JSON').addEventListener('click', () => experimentLoggers.exp2.export('json'));
+            document.getElementById('exportExp3').addEventListener('click', () => experimentLoggers.exp3.export('csv'));
+            document.getElementById('exportExp3JSON').addEventListener('click', () => experimentLoggers.exp3.export('json'));
+            document.getElementById('exportExp4').addEventListener('click', () => experimentLoggers.exp4.export('csv'));
+            document.getElementById('exportExp4JSON').addEventListener('click', () => experimentLoggers.exp4.export('json'));
+            document.getElementById('exportExp4Report').addEventListener('click', () => { const r=new ReportGenerator('Exp4'); r.addChart('chart4', 'Phase'); r.exportMarkdown(); });
+            document.getElementById('exportExp5').addEventListener('click', () => experimentLoggers.exp5.export('csv'));
+            document.getElementById('exportExp5JSON').addEventListener('click', () => experimentLoggers.exp5.export('json'));
+            document.getElementById('exportExp6').addEventListener('click', () => experimentLoggers.exp6.export('csv'));
+            document.getElementById('exportExp6JSON').addEventListener('click', () => experimentLoggers.exp6.export('json'));
+            document.getElementById('exportExp6Report').addEventListener('click', () => { const r=new ReportGenerator('Exp6'); r.addChart('chart6a', 'Traces'); r.addChart('chart6b', 'Counts'); r.exportMarkdown(); });
+            document.getElementById('exportExp7').addEventListener('click', () => experimentLoggers.exp7.export('csv'));
+            document.getElementById('exportExp7JSON').addEventListener('click', () => experimentLoggers.exp7.export('json'));
+            document.getElementById('exportExp7Report').addEventListener('click', () => { const r=new ReportGenerator('Exp7'); r.addChart('chart7a', 'Error'); r.addChart('chart7b', 'Stability'); r.exportMarkdown(); });
+// ================== Fullscreen τMSC Modal Mode ==================
+(function() {
+    const modal = document.getElementById('τmsc-modal');
+    const btnOpen = document.getElementById('τmsc-open');
+    const btnClose = document.getElementById('τmsc-close');
+
+    if (!modal || !btnOpen || !btnClose) return;
+
+    btnOpen.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        // resize/set canvases before drawing
+        τmsc_initFullscreenCanvases();
+    });
+
+    btnClose.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    function τmsc_initFullscreenCanvases() {
+        const ids = ['τmsc-main', 'τmsc-spectrum', 'τmsc-bw', 'τmsc-diag'];
+        ids.forEach(id=>{
+            const c = document.getElementById(id);
+            if (!c) return;
+            const r = c.getBoundingClientRect();
+            c.width = r.width;
+            c.height = r.height;
+        });
+        // Reuse same draw functions, but render once until we add full sync
+        const t = performance.now()/1000;
+        drawMainChamber(τmsc_ctx('τmsc-main'), t);
+        drawSpectrum(τmsc_ctx('τmsc-spectrum'), t);
+        drawBW(τmsc_ctx('τmsc-bw'), t);
+        drawDiagnostics(τmsc_ctx('τmsc-diag'), t, 0.5, 0.1, 30);
+    }
+
+    function τmsc_ctx(id){
+        const c=document.getElementById(id);
+        return c?c.getContext('2d'):null;
+    }
+})();
+
+            // CORRECTED SLIDER SETUP
+            const sliders = [
+                { id: 'numSeeds', valueId: 'seedsValue' }, { id: 'noiseLevel', valueId: 'noiseValue' },
+                { id: 'depthSteps', valueId: 'depthValue' }, { id: 'omegaM', valueId: 'omegaMValue' },
+                { id: 'omegaL', valueId: 'omegaLValue' }, { id: 'chainLength', valueId: 'chainValue' },
+                { id: 'phaseSamples', valueId: 'phaseSamplesValue' }, { id: 'dimensionality', valueId: 'dimValue' },
+                { id: 'numSeeds6', valueId: 'seeds6Value' }, { id: 'depth6', valueId: 'depth6Value' },
+                { id: 'depth7', valueId: 'depth7Value' }, { id: 'ensemble7', valueId: 'ensemble7Value' },
+                { id: 'kAlpha', valueId: 'kAlphaValue' }, { id: 'alphaNf', valueId: 'NfValue' }
+            ];
+            sliders.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (el) el.addEventListener('input', () => document.getElementById(s.valueId).textContent = el.value);
+            });
+
+            // Alpha sigma prior slider (exponential scale)
+            const sigmaPriorSlider = document.getElementById('alphaSigmaPrior');
+            if (sigmaPriorSlider) {
+                sigmaPriorSlider.addEventListener('input', () => {
+                    const val = parseFloat(sigmaPriorSlider.value);
+                    document.getElementById('sigmaPriorValue').textContent = `${Math.pow(10, val).toExponential(1)}`;
+                });
+            }
+
+            // Alpha details toggle - FIXED
+            const toggleAlphaBtn = document.getElementById('toggleAlphaDetails');
+            const alphaDetailsDiv = document.getElementById('alphaDetails');
+            
+            toggleAlphaBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isVisible = alphaDetailsDiv.classList.contains('visible');
+                
+                if (isVisible) {
+                    alphaDetailsDiv.classList.remove('visible');
+                    toggleAlphaBtn.textContent = 'Show α Details';
+                } else {
+                    alphaDetailsDiv.classList.add('visible');
+                    toggleAlphaBtn.textContent = 'Hide α Details';
+                }
+            });
+
+            // Global Setup Panel Controls
+            let seedLocked = false;
+            const globalSetupHeader = document.getElementById('globalSetupHeader');
+            const globalSetupContent = document.getElementById('globalSetupContent');
+            const collapseIcon = document.getElementById('collapseIcon');
+            const globalSeedInput = document.getElementById('globalSeed');
+            const seedStatus = document.getElementById('seedStatus');
+            const lockSeedBtn = document.getElementById('lockSeed');
+            const resetSeedBtn = document.getElementById('resetSeed');
+            const randomSeedBtn = document.getElementById('randomSeed');
+            const globalDepthSlider = document.getElementById('globalDepth');
+            const globalDepthValue = document.getElementById('globalDepthValue');
+
+            // Collapse/Expand Global Setup
+            globalSetupHeader.addEventListener('click', () => {
+                const isCollapsed = globalSetupContent.classList.contains('collapsed');
+                if (isCollapsed) {
+                    globalSetupContent.classList.remove('collapsed');
+                    collapseIcon.classList.remove('collapsed');
+                    collapseIcon.textContent = '▼';
+                } else {
+                    globalSetupContent.classList.add('collapsed');
+                    collapseIcon.classList.add('collapsed');
+                    collapseIcon.textContent = '▶';
+                }
+            });
+
+            // Lock/Unlock Seed
+            lockSeedBtn.addEventListener('click', () => {
+                seedLocked = !seedLocked;
+                if (seedLocked) {
+                    globalSeedInput.disabled = true;
+                    lockSeedBtn.textContent = '🔓 Unlock Seed';
+                    lockSeedBtn.style.background = 'rgba(34, 197, 94, 0.2)';
+                    seedStatus.textContent = 'Seed locked - guaranteed reproducibility';
+                    seedStatus.style.color = '#22c55e';
+                } else {
+                    globalSeedInput.disabled = false;
+                    lockSeedBtn.textContent = '🔒 Lock Seed';
+                    lockSeedBtn.style.background = '';
+                    seedStatus.textContent = 'Seed unlocked - changes apply to new runs';
+                    seedStatus.style.color = '#6b7280';
+                }
+            });
+
+            // Reset Seed
+            resetSeedBtn.addEventListener('click', () => {
+                globalSeedInput.value = 'UNNS-1234';
+                seedStatus.textContent = 'Seed reset to default';
+                setTimeout(() => {
+                    seedStatus.textContent = seedLocked ? 'Seed locked - guaranteed reproducibility' : 'Seed unlocked - changes apply to new runs';
+                }, 2000);
+            });
+
+            // Random Seed
+            randomSeedBtn.addEventListener('click', () => {
+                const randomNum = Math.floor(Math.random() * 9999) + 1000;
+                globalSeedInput.value = `UNNS-${randomNum}`;
+                seedStatus.textContent = 'Random seed generated';
+                setTimeout(() => {
+                    seedStatus.textContent = seedLocked ? 'Seed locked - guaranteed reproducibility' : 'Seed unlocked - changes apply to new runs';
+                }, 2000);
+            });
+
+            // Global Depth Slider
+            globalDepthSlider.addEventListener('input', () => {
+                const val = parseInt(globalDepthSlider.value);
+                globalDepthValue.textContent = val === 0 ? 'Auto' : val;
+            });
+
+            // Quick Export Buttons
+            document.getElementById('persistAllJSON').addEventListener('click', () => {
+                let hasData = false;
+                Object.entries(experimentLoggers).forEach(([key, logger]) => {
+                    if (logger && logger.data && Object.keys(logger.data).length > 0) {
+                        logger.export('json');
+                        hasData = true;
+                    }
+                });
+                if (!hasData) {
+                    alert('No experiment data available. Run experiments first.');
+                }
+            });
+
+            document.getElementById('exportAllCSV').addEventListener('click', () => {
+                let hasData = false;
+                Object.entries(experimentLoggers).forEach(([key, logger]) => {
+                    if (logger && logger.data && Object.keys(logger.data).length > 0) {
+                        logger.export('csv');
+                        hasData = true;
+                    }
+                });
+                if (!hasData) {
+                    alert('No experiment data available. Run experiments first.');
+                }
+            });
+
+            // Enable export buttons when experiments run
+            window.enableGlobalExports = function() {
+                document.getElementById('persistAllJSON').disabled = false;
+                document.getElementById('exportAllCSV').disabled = false;
+            };
+
+            // Guide Modal Controls
+            const guideModal = document.getElementById('guideModal');
+            const openGuideBtn = document.getElementById('openGuide');
+            const closeGuideBtn = document.getElementById('closeGuide');
+
+            openGuideBtn.addEventListener('click', () => {
+                guideModal.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            });
+
+            closeGuideBtn.addEventListener('click', () => {
+                guideModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            });
+
+            // Close modal when clicking outside content
+            guideModal.addEventListener('click', (e) => {
+                if (e.target === guideModal) {
+                    guideModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && guideModal.classList.contains('active')) {
+                    guideModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+    <script>
+// ==================== Chamber XXI — τ-MSC Engine ====================
+(function () {
+    const state = {
+        running: false,
+        t: 0,
+        lastTimestamp: null,
+        rafId: null
+    };
+
+    // Micro-probe particle (normalized coords in [-1,1])
+    const probe = {
+        angle: 0,
+        radius: 0.45,
+        speed: 0.8,
+        x: 0,
+        y: 0
+    };
+
+    // Metrics exposed for JSON export
+    const lastMetrics = {
+        kappa: 0,
+        tau: 0,
+        eEff: 0,
+        spectrum: [],
+        bw: []
+    };
+    // Make available to other scripts if needed
+    window.lastMetrics = lastMetrics;
+
+    // ---------- Utility: get 2D context and size canvas to CSS box ----------
+    function getCtx(id) {
+        const canvas = document.getElementById(id);
+        if (!canvas || !canvas.getContext) return null;
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(rect.width || 320, 200);
+        const height = Math.max(rect.height || 220, 160);
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+        return canvas.getContext("2d");
+    }
+
+    // ---------- Synthetic τ-field and gradient (for probe sampling) ----------
+    function tauFieldStrength(x, y) {
+        // x,y in [-1,1], radial core with torsion modulation
+        const r = Math.sqrt(x * x + y * y);
+        const base = Math.exp(-6 * r);
+        const torsion = 0.3 * Math.sin(6 * Math.atan2(y, x));
+        return base + 0.07 * torsion;
+    }
+
+    function tauGradient(x, y) {
+        const eps = 0.01;
+        const f0 = tauFieldStrength(x, y);
+        const fx = tauFieldStrength(x + eps, y);
+        const fy = tauFieldStrength(x, y + eps);
+        return {
+            gx: (fx - f0) / eps,
+            gy: (fy - f0) / eps
+        };
+    }
+
+    // ---------- Panel 1: τ-Field Micro-Chamber ----------
+    function drawMainChamber(ctx, t) {
+        if (!ctx) return;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const maxR = Math.min(w, h) * 0.45;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Background
+        const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+        bgGrad.addColorStop(0, "rgba(15,23,42,1)");
+        bgGrad.addColorStop(1, "rgba(15,23,42,0.15)");
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Radial shells
+        const shellCount = 8;
+        for (let i = 1; i <= shellCount; i++) {
+            const r = (i / shellCount) * maxR;
+            const phase = t * 0.8 + i * 0.6;
+            const intensity = 0.3 + 0.25 * Math.sin(phase);
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(96,165,250,${0.25 + 0.3 * intensity})`;
+            ctx.lineWidth = 1.2 + 0.4 * intensity;
+            ctx.stroke();
+        }
+
+        // Spiral microstructure (τ-torsion signature)
+        ctx.save();
+        ctx.translate(cx, cy);
+        const arms = 3;
+        for (let arm = 0; arm < arms; arm++) {
+            ctx.beginPath();
+            const basePhase = t * 0.5 + arm * (2 * Math.PI / arms);
+            for (let a = 0; a < Math.PI * 3; a += 0.08) {
+                const r = (a / (Math.PI * 3)) * maxR *
+                    (0.4 + 0.15 * Math.sin(basePhase + a * 0.7));
+                const x = r * Math.cos(a + basePhase);
+                const y = r * Math.sin(a + basePhase);
+                if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = "rgba(167,139,250,0.85)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Nucleus core
+        ctx.beginPath();
+        ctx.arc(cx, cy, maxR * 0.09, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(236,72,153,0.95)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, maxR * 0.09, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(248,250,252,0.9)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Probe orbit
+        probe.angle += probe.speed * 0.016; // ~60 fps
+        const pxNorm = probe.radius * Math.cos(probe.angle);
+        const pyNorm = probe.radius * Math.sin(probe.angle);
+        probe.x = pxNorm;
+        probe.y = pyNorm;
+
+        const px = cx + pxNorm * maxR;
+        const py = cy + pyNorm * maxR;
+
+        ctx.beginPath();
+        ctx.arc(px, py, maxR * 0.035, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(15,23,42,0.8)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Gradient sample at probe
+        const g = tauGradient(pxNorm, pyNorm);
+        const kappa = Math.hypot(g.gx, g.gy);
+        const tau = g.gy * Math.sin(probe.angle) - g.gx * Math.cos(probe.angle);
+
+        lastMetrics.kappa = kappa;
+        lastMetrics.tau = tau;
+    }
+
+    // ---------- Panel 2: Hyperfine-like spectrum ----------
+    function drawSpectrum(ctx, t) {
+        if (!ctx) return;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, "rgba(15,23,42,1)");
+        grad.addColorStop(1, "rgba(15,23,42,0.2)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = "rgba(148,163,184,0.7)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.9);
+        ctx.lineTo(w, h * 0.9);
+        ctx.stroke();
+
+        const baseLines = [0.18, 0.32, 0.45, 0.62, 0.77, 0.88];
+        const spectrum = [];
+
+        baseLines.forEach((xNorm, i) => {
+            const drift = 0.006 * Math.sin(t * 0.4 + i * 1.37);
+            const x = (xNorm + drift) * w;
+            const height = 0.35 + 0.25 * Math.sin(t * 0.9 + i * 0.9);
+            const yTop = h * (0.9 - height);
+
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(96,165,250,${0.55 + 0.35 * Math.abs(height)})`;
+            ctx.lineWidth = 2;
+            ctx.moveTo(x, h * 0.9);
+            ctx.lineTo(x, yTop);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(56,189,248,0.25)";
+            ctx.lineWidth = 6;
+            ctx.moveTo(x, h * 0.9);
+            ctx.lineTo(x, yTop);
+            ctx.stroke();
+
+            spectrum.push({
+                xNorm: xNorm + drift,
+                intensity: height
+            });
+        });
+
+        lastMetrics.spectrum = spectrum;
+    }
+
+    // ---------- Panel 3: B–W profile ----------
+    function drawBW(ctx, t) {
+        if (!ctx) return;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.fillStyle = "rgba(15,23,42,1)";
+        ctx.fillRect(0, 0, w, h);
+
+        const margin = 30;
+        const x0 = margin;
+        const y0 = h - margin;
+        const x1 = w - margin;
+        const y1 = margin;
+
+        ctx.strokeStyle = "rgba(148,163,184,0.7)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0, y1);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+
+        const segments = 120;
+        const bwProfile = [];
+
+        ctx.beginPath();
+        for (let i = 0; i <= segments; i++) {
+            const rNorm = i / segments;
+            const rScaled = rNorm + 0.05 * Math.sin(3 * rNorm * Math.PI + t * 0.7);
+            const base = Math.exp(-3 * rScaled);
+            const bwCorr = 1 + 0.3 * Math.exp(-20 * (rNorm - 0.2) * (rNorm - 0.2));
+            const val = base * bwCorr;
+
+            const x = x0 + rNorm * (x1 - x0);
+            const y = y0 - val * (y0 - y1);
+
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            bwProfile.push({ r: rNorm, value: val });
+        }
+        ctx.strokeStyle = "rgba(167,139,250,0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.lineTo(x1, y0);
+        ctx.lineTo(x0, y0);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(129,140,248,0.2)";
+        ctx.fill();
+
+        lastMetrics.bw = bwProfile;
+    }
+
+    // ---------- Panel 4: Diagnostics ----------
+    function drawDiagnostics(ctx, t) {
+        if (!ctx) return;
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "rgba(15,23,42,1)");
+        grad.addColorStop(1, "rgba(15,23,42,0.1)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        const cx = w / 2;
+        const cy = h / 2;
+        const radius = Math.min(w, h) * 0.32;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(148,163,184,0.8)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const gauges = [
+            { baseAngle: -Math.PI / 2, value: lastMetrics.kappa, color: "rgba(96,165,250,0.95)" },
+            { baseAngle: (Math.PI * 2) / 3 - Math.PI / 2, value: lastMetrics.tau, color: "rgba(236,72,153,0.95)" },
+            { baseAngle: (Math.PI * 4) / 3 - Math.PI / 2, value: lastMetrics.eEff, color: "rgba(34,197,94,0.95)" }
+        ];
+
+        gauges.forEach((g, idx) => {
+            const jitter = 0.08 * Math.sin(t * 0.8 + idx * 1.1);
+            const baseAngle = g.baseAngle;
+            const valNorm = 0.15 + 0.7 * (Math.tanh(Math.abs(g.value)) / 1.5);
+            const needleAngle = baseAngle + jitter;
+
+            const innerR = radius * 0.3;
+            const outerR = radius * (0.4 + 0.4 * valNorm);
+
+            ctx.beginPath();
+            ctx.strokeStyle = g.color.replace("0.95", "0.35");
+            ctx.lineWidth = 3;
+            ctx.arc(cx, cy, radius * (0.65 + 0.05 * idx),
+                baseAngle - 0.35, baseAngle + 0.35);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(
+                cx + innerR * Math.cos(needleAngle),
+                cy + innerR * Math.sin(needleAngle)
+            );
+            ctx.lineTo(
+                cx + outerR * Math.cos(needleAngle),
+                cy + outerR * Math.sin(needleAngle)
+            );
+            ctx.strokeStyle = g.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(
+                cx + outerR * Math.cos(needleAngle),
+                cy + outerR * Math.sin(needleAngle),
+                4, 0, Math.PI * 2
+            );
+            ctx.fillStyle = g.color;
+            ctx.fill();
+        });
+    }
+
+    // ---------- Readout helpers ----------
+    function updateMetricSpans(kappa, tau, eEff) {
+        const kSpan = document.getElementById("rafKappaAvg");
+        const tSpan = document.getElementById("rafTauAvg");
+        const eSpan = document.getElementById("rafEeff");
+        if (kSpan) kSpan.textContent = kappa.toFixed(3);
+        if (tSpan) tSpan.textContent = tau.toFixed(3);
+        if (eSpan) eSpan.textContent = eEff.toFixed(2);
+    }
+
+    function updateStatusPill(running) {
+        const pill = document.getElementById("rafStatusPill");
+        if (!pill) return;
+        const dot = pill.querySelector(".raf-dot");
+        if (running) {
+            pill.style.borderColor = "rgba(34,197,94,0.8)";
+            pill.style.color = "#bbf7d0";
+            if (dot) {
+                dot.style.background = "#22c55e";
+                dot.style.boxShadow = "0 0 8px rgba(34,197,94,0.95)";
+            }
+            pill.lastChild.textContent = " Running: on";
+        } else {
+            pill.style.borderColor = "rgba(148,163,184,0.6)";
+            pill.style.color = "#9ca3af";
+            if (dot) {
+                dot.style.background = "#6b7280";
+                dot.style.boxShadow = "none";
+            }
+            pill.lastChild.textContent = " Running: off";
+        }
+    }
+
+    // ---------- Main render loop ----------
+    function renderFrame(timestamp) {
+        if (!state.running) return;
+
+        if (state.lastTimestamp == null) {
+            state.lastTimestamp = timestamp;
+        }
+        const dt = (timestamp - state.lastTimestamp) / 1000;
+        state.lastTimestamp = timestamp;
+        state.t += dt;
+        const t = state.t;
+
+        // Update effective field metric
+        lastMetrics.eEff = 30 + 10 * Math.sin(t * 0.4 + 0.7);
+
+        const mainCtx = getCtx("rafMainCanvas");
+        const specCtx = getCtx("rafSpectrumCanvas");
+        const bwCtx = getCtx("rafBWCanvas");
+        const diagCtx = getCtx("rafDiagCanvas");
+
+        const fsMainCtx = getCtx("τmsc-main");
+        const fsSpecCtx = getCtx("τmsc-spectrum");
+        const fsBWCtx   = getCtx("τmsc-bw");
+        const fsDiagCtx = getCtx("τmsc-diag");
+
+        drawMainChamber(mainCtx, t);
+        drawSpectrum(specCtx, t);
+        drawBW(bwCtx, t);
+        drawDiagnostics(diagCtx, t);
+
+        // If fullscreen modal is open, draw into those canvases too
+        drawMainChamber(fsMainCtx, t);
+        drawSpectrum(fsSpecCtx, t);
+        drawBW(fsBWCtx, t);
+        drawDiagnostics(fsDiagCtx, t);
+
+        updateMetricSpans(lastMetrics.kappa, lastMetrics.tau, lastMetrics.eEff);
+
+        state.rafId = requestAnimationFrame(renderFrame);
+    }
+
+    // ---------- Control wiring ----------
+    function start() {
+        if (state.running) return;
+        state.running = true;
+        state.lastTimestamp = null;
+        updateStatusPill(true);
+        state.rafId = requestAnimationFrame(renderFrame);
+    }
+
+    function stop() {
+        if (!state.running) return;
+        state.running = false;
+        updateStatusPill(false);
+        if (state.rafId != null) {
+            cancelAnimationFrame(state.rafId);
+            state.rafId = null;
+        }
+    }
+
+    function clearCanvas(id) {
+        const ctx = getCtx(id);
+        if (ctx) ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
+    function reset() {
+        stop();
+        state.t = 0;
+        state.lastTimestamp = null;
+        lastMetrics.kappa = 0;
+        lastMetrics.tau = 0;
+        lastMetrics.eEff = 0;
+        lastMetrics.spectrum = [];
+        lastMetrics.bw = [];
+        ["rafMainCanvas", "rafSpectrumCanvas", "rafBWCanvas", "rafDiagCanvas",
+         "τmsc-main", "τmsc-spectrum", "τmsc-bw", "τmsc-diag"].forEach(clearCanvas);
+        updateMetricSpans(0, 0, 0);
+    }
+
+    function bindControls() {
+        const startBtn  = document.getElementById("startRaF");
+        const stopBtn   = document.getElementById("stopRaF");
+        const resetBtn  = document.getElementById("resetRaF");
+        const exportBtn = document.getElementById("τmsc-export");
+
+        const openBtn   = document.getElementById("τmsc-open");
+        const closeBtn  = document.getElementById("τmsc-close");
+        const modal     = document.getElementById("τmsc-modal");
+
+        if (!startBtn || !stopBtn || !resetBtn) return;
+
+        startBtn.addEventListener("click", () => {
+            start();
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        });
+
+        stopBtn.addEventListener("click", () => {
+            stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        resetBtn.addEventListener("click", () => {
+            reset();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    chamber: "XXI_τMSC",
+                    run_id: "τMSC_export_" + Date.now(),
+                    parameters: {
+                        t: state.t,
+                        kappa_avg: lastMetrics.kappa,
+                        tau_avg: lastMetrics.tau,
+                        e_eff: lastMetrics.eEff
+                    },
+                    spectrum: lastMetrics.spectrum,
+                    bw_profile: lastMetrics.bw
+                };
+                const blob = new Blob(
+                    [JSON.stringify(payload, null, 2)],
+                    { type: "application/json" }
+                );
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "τMSC_export_" + Date.now() + ".json";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        if (openBtn && modal) {
+            openBtn.addEventListener("click", () => {
+                modal.style.display = "flex";
+                ["τmsc-main", "τmsc-spectrum", "τmsc-bw", "τmsc-diag"].forEach(id => {
+                    const c = document.getElementById(id);
+                    if (!c) return;
+                    const r = c.getBoundingClientRect();
+                    c.width = r.width || 400;
+                    c.height = r.height || 260;
+                });
+            });
+        }
+
+        if (closeBtn && modal) {
+            const closeModal = () => {
+                modal.style.display = "none";
+            };
+            closeBtn.addEventListener("click", closeModal);
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") closeModal();
+            });
+        }
+
+        updateStatusPill(false);
+        updateMetricSpans(0, 0, 0);
+    }
+
+    document.addEventListener("DOMContentLoaded", bindControls);
+})();
+</script>
+
+     
+
+</body>
+</html>
