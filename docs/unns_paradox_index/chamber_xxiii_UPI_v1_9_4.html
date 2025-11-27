@@ -1,0 +1,4082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XXIII (UPI Paradox Dynamics)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .btn-secondary { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+    .btn-secondary:hover { background: #3a5a8a; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1.5; }
+    .canvas-container.full { grid-column: 1 / -1; aspect-ratio: 3; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+    .zone-alpha { color: #4aff4a; }
+    .zone-beta { color: #ffa54a; }
+    .zone-gamma { color: #ff4a9e; }
+    .zone-delta { color: #ff4a4a; }
+    
+    /* Custom Data Input Panel */
+    .custom-data-block { margin-top: 20px; border: 1px solid #2a2a2a; border-radius: 8px; padding: 15px; background: #0f0f0f; }
+    .custom-data-block summary { font-size: 1.05em; font-weight: 600; color: #9bc3ff; cursor: pointer; padding: 5px; }
+    .custom-data-block summary:hover { color: #4a9eff; }
+    .custom-data-content { margin-top: 15px; }
+    .custom-sequence-box { width: 100%; height: 130px; background: rgba(15,20,40,0.8); color: #d0d8ff; border: 1px solid rgba(120,150,255,0.35); border-radius: 6px; padding: 12px; font-size: 0.9em; margin-bottom: 15px; resize: vertical; font-family: 'Consolas', monospace; }
+    button.run-custom { background: linear-gradient(135deg, #1b4fff, #0f9aff); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #fff; box-shadow: 0 0 12px rgba(0, 150, 255, 0.2); transition: all 0.2s ease; font-family: inherit; }
+    button.run-custom:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(0, 150, 255, 0.35); }
+    button.run-custom:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+    .mode-indicator { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.85em; margin-left: 10px; background: #2a4a2a; color: #4aff4a; }
+    .mode-indicator.custom { background: #2a3a4a; color: #4a9eff; }
+    .export-png { background: #2a4a2a; border: none; color: #e0e0e0; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 0.85em; }
+    .export-png:hover { background: #3a5a3a; }
+    
+    /* Canvas Tooltip */
+    .canvas-tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.95);
+      color: #e0e0e0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      border: 1px solid #4a9eff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+      white-space: nowrap;
+    }
+    .canvas-tooltip.active { display: block; }
+    
+    /* Macro Tooltip Advanced Styling */
+    .macro-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(20, 20, 20, 0.90);
+      color: #e8e8e8;
+      border: 1px solid #333;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.12s ease-in-out;
+      z-index: 9999;
+      white-space: nowrap;
+      backdrop-filter: blur(3px);
+    }
+    
+    /* Guide Section Collapsible */
+    .guide-section { margin: 20px 0; }
+    .guide-section summary { cursor: pointer; font-size: 1.1em; color: #4a9eff; padding: 10px; }
+    .guide-section summary:hover { color: #6ab8ff; }
+    
+    /* UNNS Macro Table */
+    .unns-macro-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+    }
+    .unns-macro-table th {
+      background: rgba(100,130,255,0.15);
+      padding: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-align: left;
+    }
+    .unns-macro-table td {
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvasTooltip" class="canvas-tooltip"></div>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XXIII: UPI PARADOX DYNAMICS</h1>
+      <div class="subtitle">Operator XXIII — Recursive Paradox Formation & Collapse Channel Diagnostics | v1.9.4 — Macro Diagnostics Manual | Smart Tooltip · Zoom & Pan · Distinct Colors · Smoothing · Crosshair · Multi-Series Pro</div>
+    </header>
+    
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Recursion System</label>
+          <select id="system">
+            <option value="collatz" selected>Collatz (3n+1)</option>
+            <option value="phi_feedback">φ-Feedback</option>
+            <option value="binary_parity">Binary Parity</option>
+            <option value="self_reference">Self-Reference Map</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Initial State (x₀)</label>
+          <input type="number" id="x0" value="27" step="1">
+        </div>
+        <div class="control-group">
+          <label>Max Steps</label>
+          <input type="number" id="n_max" value="200" step="10" min="10" max="1000">
+        </div>
+        <div class="control-group">
+          <label>Sobtra Sensitivity <span id="sensitivityValue">0.70</span></label>
+          <input type="range" id="sensitivity" min="0.1" max="2.0" step="0.05" value="0.70">
+        </div>
+        <div class="control-group">
+          <label>Noise Amplitude (ε)</label>
+          <input type="number" id="noise" value="0.0" step="0.01" min="0" max="0.5">
+        </div>
+      </div>
+      <button id="runBtn" class="button-primary">▶ Run Diagnostics</button>
+      <button id="stopBtn" disabled>⏸ Stop</button>
+      <button id="exportBtn" disabled>💾 Export JSON</button>
+      <span id="modeIndicator" class="mode-indicator" style="display: none;">RECURSIVE MODE</span>
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+      
+      <details class="custom-data-block" id="customDataPanel">
+        <summary>📥 Custom Data Input (User-Provided Sequence)</summary>
+        <div class="custom-data-content">
+          <!-- ===================== PRESET SELECTION ===================== -->
+          <div style="margin-bottom: 1.2rem;">
+            <label for="presetSelector" style="color:#9bb7ff; margin-right:0.6rem;">
+              Preset:
+            </label>
+
+            <select id="presetSelector"
+                    style="padding:4px 10px; background:#141a26; color:#c4d4ff; border:1px solid #273142; border-radius:4px;">
+              <option value="none">None</option>
+              <option value="F1">Financial F1 — Smooth Trend</option>
+              <option value="F2">Financial F2 — Volatility Cluster</option>
+              <option value="F3">Financial F3 — Bubble & Crash</option>
+              <option value="F4">Financial F4 — Regime Shift</option>
+              <option value="F5">Financial F5 — Mean-Reversion</option>
+            </select>
+          </div>
+          
+          <p style="color: #aaa; margin-bottom: 10px;">Paste your own numeric sequence below, or import from CSV file. Separate values with commas, spaces, or line breaks. Chamber XXIII will compute UPI diagnostics, phase zones, and collapse channels for your data.</p>
+          
+          <textarea id="customSequence" placeholder="Example: 1, 3, 7, 22, 5, 91, 182, 45, 136, 68, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1..." class="custom-sequence-box"></textarea>
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+            <button id="runCustomBtn" class="run-custom">▶ Run Diagnostics on Custom Data</button>
+            <label for="csvFileInput" style="background: linear-gradient(135deg, #4a9eff, #0f9aff); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #fff; box-shadow: 0 0 12px rgba(0, 150, 255, 0.2); transition: all 0.2s ease;">
+              📁 Import CSV
+              <input type="file" id="csvFileInput" accept=".csv,.txt" style="display: none;">
+            </label>
+          </div>
+          <div id="customValidation" style="color: #ff4a4a; font-size: 0.9em; margin-top: 10px; display: none;"></div>
+        </div>
+      </details>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">
+        UPI Timeline
+        <label style="float: right; margin-left: 15px; font-size: 0.9em; font-weight: normal; color: #aaa; cursor: pointer;">
+          <input type="checkbox" id="toggleOperatorOverlay" style="margin-right: 5px;">
+          Show Operator Events
+        </label>
+        <button class="export-png" data-canvas="canvasTimeline" style="float: right; background: #2a4a2a; padding: 6px 12px; font-size: 0.85em;">📷 Export PNG</button>
+      </div>
+      <div class="visualization">
+        <div class="canvas-container full">
+          <canvas id="canvasTimeline"></canvas>
+          <div class="canvas-label">UPI(n) — Phase Zones & Collapse Events</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">
+        Phase Analysis
+        <button class="export-png" data-canvas="canvasPhaseMap" style="float: right; background: #2a4a2a; padding: 6px 12px; font-size: 0.85em; margin-right: 5px;">📷 Phase Map</button>
+        <button class="export-png" data-canvas="canvasStateEvolution" style="float: right; background: #2a4a2a; padding: 6px 12px; font-size: 0.85em; margin-right: 5px;">📷 State Evolution</button>
+      </div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasPhaseMap"></canvas>
+          <div class="canvas-label">Phase Map: (M+S) vs (D·R)</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasStateEvolution"></canvas>
+          <div class="canvas-label">State Evolution: x(n)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">
+        Collapse Channel Strip
+        <button class="export-png" data-canvas="canvasCollapseStrip" style="float: right; background: #2a4a2a; padding: 6px 12px; font-size: 0.85em;">📷 Export PNG</button>
+      </div>
+      <div class="visualization">
+        <div class="canvas-container full">
+          <canvas id="canvasCollapseStrip"></canvas>
+          <div class="canvas-label">Collapse Channel Timeline (Sobra · Sobtra)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">
+        Collapse Channel Map (CCM)
+        <button class="export-png" data-canvas="canvasCollapseMap" style="float: right; background: #2a4a2a; padding: 6px 12px; font-size: 0.85em;">📷 Export PNG</button>
+      </div>
+      <div class="visualization">
+        <div class="canvas-container full">
+          <canvas id="canvasCollapseMap"></canvas>
+          <div class="canvas-label">τ-Spectrum & Collapse Density</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ===================== MACRO TIME-SERIES VIEWER ===================== -->
+    <div class="panel" id="macroViewerPanel">
+        <div class="panel-title">Macro Time-Series Viewer</div>
+
+        <div style="margin-bottom: 1rem;">
+            <button id="macroImportBtn" class="btn btn-secondary">📁 Import CSV</button>
+            <button id="macroClearBtn" class="btn btn-secondary" style="margin-left:0.5rem;">🗑 Clear</button>
+            <button id="macroPngBtn" class="btn btn-secondary" style="margin-left:0.5rem;">📷 Export PNG</button>
+            <button id="macroOverlayUPIBtn" class="btn btn-secondary" style="margin-left:0.5rem;">🔁 Overlay UPI</button>
+            <button id="macroAddSeriesBtn" class="btn btn-secondary" style="margin-left:0.5rem;">➕ Add Series</button>
+            <button id="macroSmoothBtn" class="btn btn-secondary" style="margin-left:0.5rem;">📈 Smooth Lines</button>
+            <select id="macroExportDropdown" class="btn btn-secondary" style="margin-left:0.5rem; padding:8px;">
+                <option value="">Export Series ▼</option>
+            </select>
+        </div>
+
+        <div style="position: relative;">
+            <canvas id="macroCanvas" width="1200" height="330"
+                    style="width:100%; height:auto; background:#000; border:1px solid #222; border-radius:4px; cursor:crosshair;">
+            </canvas>
+            <div id="macroTooltip" class="macro-tooltip"></div>
+        </div>
+
+        <div id="macroLegend" style="margin-top:0.5rem; color:#d1e0ff; font-size:0.85em;">
+        </div>
+
+        <div id="macroStatus"
+             style="margin-top:0.5rem; color:#7aa8ff; font-size:0.9em; padding-bottom:1rem;">
+             Ready. Load a CSV to begin.
+        </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Diagnostics Summary</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Current Step</div><div class="metric-value" id="metricStep">—</div></div>
+        <div class="metric"><div class="metric-label">Current UPI</div><div class="metric-value" id="metricUPI">—</div></div>
+        <div class="metric"><div class="metric-label">Current Zone</div><div class="metric-value" id="metricZone">—</div></div>
+        <div class="metric"><div class="metric-label">Max UPI</div><div class="metric-value" id="metricMaxUPI">—</div></div>
+        <div class="metric"><div class="metric-label">α Steps</div><div class="metric-value zone-alpha" id="metricAlpha">—</div></div>
+        <div class="metric"><div class="metric-label">β Steps</div><div class="metric-value zone-beta" id="metricBeta">—</div></div>
+        <div class="metric"><div class="metric-label">γ Steps</div><div class="metric-value zone-gamma" id="metricGamma">—</div></div>
+        <div class="metric"><div class="metric-label">δ Steps</div><div class="metric-value zone-delta" id="metricDelta">—</div></div>
+        <div class="metric"><div class="metric-label">First Paradox</div><div class="metric-value" id="metricFirstParadox">—</div></div>
+        <div class="metric"><div class="metric-label">Sobra Collapses</div><div class="metric-value" id="metricSobra">—</div></div>
+        <div class="metric"><div class="metric-label">Sobtra Collapses</div><div class="metric-value" id="metricSobtra">—</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value" id="metricStatus">Ready</div></div>
+      </div>
+      <div id="paradoxSignatureBlock" style="margin-top: 20px; padding: 15px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; display: none;">
+        <div style="font-size: 0.9em; color: #888; margin-bottom: 8px;">Paradox Signature (PSC)</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div id="pscType" style="font-size: 2em; font-weight: bold; color: #4aff4a; min-width: 40px;">—</div>
+          <div style="flex: 1;">
+            <div id="pscLabel" style="font-size: 1.1em; color: #4a9eff; font-weight: 600;">—</div>
+            <div id="pscDescription" style="font-size: 0.85em; color: #aaa; margin-top: 4px;">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <button id="toggleOperatorsBtn" class="button-primary" style="width: 100%; text-align: center; font-size: 1.1em; margin-bottom: 15px;">
+        🔬 Advanced Operator Diagnostics (XIII-XXI) — Click to Show/Hide
+      </button>
+      <div id="operatorMetricsContainer" style="display: none;">
+        <div class="metrics">
+        <div class="metric"><div class="metric-label">XIII: Phase Spikes</div><div class="metric-value" id="opXIII">—</div></div>
+        <div class="metric"><div class="metric-label">XIV: Φ-Compatibility</div><div class="metric-value" id="opXIV">—</div></div>
+        <div class="metric"><div class="metric-label">XVI: Closure Events</div><div class="metric-value" id="opXVI">—</div></div>
+        <div class="metric"><div class="metric-label">XVII: Semantic Level</div><div class="metric-value" id="opXVII">—</div></div>
+        <div class="metric"><div class="metric-label">XXI: τ-Curvature Peaks</div><div class="metric-value" id="opXXI">—</div></div>
+      </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <button id="toggleGuideBtn" class="button-primary" style="width: 100%; text-align: center; font-size: 1.1em;">
+        📚 Laboratory Guide (Click to Show/Hide)
+      </button>
+      <div id="laboratoryGuide" style="display: none; line-height: 1.6; color: #aaa; margin-top: 15px;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Chamber XXIII: UPI Paradox Dynamics</h3>
+        
+        <p><strong>Theoretical Foundation:</strong> The UNNS Paradox Index (UPI) quantifies paradox intensity in recursive systems by balancing depth, self-reference, divergence, and saturation:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          UPI(n) = [D(n) · R(n)] / [M(n) + S(n)]
+        </p>
+        <p>where:</p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>D(n)</strong> = Depth (iteration count)</li>
+          <li><strong>R(n)</strong> = Self-reference count</li>
+          <li><strong>M(n)</strong> = Divergence (state expansion rate)</li>
+          <li><strong>S(n)</strong> = Saturation (stagnation measure)</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Phase Zones</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9em;">
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Zone</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">UPI Range</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Interpretation</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #4aff4a;">α (Alpha)</td>
+            <td style="padding: 8px;">U &lt; 1</td>
+            <td style="padding: 8px;">Stable recursion</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #ffa54a;">β (Beta)</td>
+            <td style="padding: 8px;">1 ≤ U &lt; 2.2</td>
+            <td style="padding: 8px;">Perturbed, oscillatory</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #ff4a9e;">γ (Gamma)</td>
+            <td style="padding: 8px;">2.2 ≤ U &lt; 3.8</td>
+            <td style="padding: 8px;">Hazard zone, near-paradox</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; color: #ff4a4a;">δ (Delta)</td>
+            <td style="padding: 8px;">U ≥ 3.8</td>
+            <td style="padding: 8px;">Paradoxical regime</td>
+          </tr>
+        </table>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Operator XII Integration</h3>
+        <p>Chamber XXIII integrates <strong>Operator XII — Collapse</strong> through two channels:</p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Sobra (S₀):</strong> Local seed collapse when τ(n) ≤ δ(n). Dampens recursion, increases saturation.</li>
+          <li><strong>Sobtra (Sτ):</strong> Transported seed collapse when τ(n) &gt; δ(n). Boosts divergence, can spike UPI.</li>
+        </ul>
+        <p>Torsion proxy: τ(n) = |x[n+1] - 2x[n] + x[n-1]| (second derivative approximation)</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Built-in Recursion Systems</h3>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Collatz (3n+1):</strong> Classic integer recursion with oscillatory paradox potential</li>
+          <li><strong>φ-Feedback:</strong> Golden ratio-based scaling feedback (ties to Chamber XIV)</li>
+          <li><strong>Binary Parity:</strong> Simple odd/even oscillator with predictable UPI patterns</li>
+          <li><strong>Self-Reference Map:</strong> Toy self-referential logical recursion</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Recommended Workflow</h3>
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Quick Test:</strong> Collatz with x₀=27, 200 steps (~10s)</li>
+          <li><strong>Paradox Hunt:</strong> Try φ-feedback with x₀=1.5, sensitivity=0.5</li>
+          <li><strong>Collapse Study:</strong> Binary parity with noise ε=0.05 to trigger channels</li>
+          <li><strong>Export & Analyze:</strong> Save JSON for cross-chamber analysis</li>
+        </ol>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Important Notes:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>UPI is clamped at 10⁶ to prevent numerical overflow</li>
+            <li>Collapse transforms are geometric approximations (hooks for future physics)</li>
+            <li>High noise (ε &gt; 0.1) can mask genuine paradox signatures</li>
+            <li>For Collatz, expect δ-zone entry for seeds like 27, 31, 41</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📥 Custom Data Input (Extended Mode)</h3>
+        <p><strong>Chamber XXIII now accepts user-provided numeric sequences</strong> for UPI analysis. This transforms the chamber into a <em>universal paradox/instability detector</em> for any arbitrary time series, experimental data, or recursive output.</p>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4a9eff;">How to Use Custom Data:</strong></p>
+          <ol style="margin: 0 0 10px 20px; line-height: 1.8;">
+            <li>Expand the "📥 Custom Data Input" panel in the Configuration section</li>
+            <li><strong>Manual Entry:</strong> Paste your numeric sequence (comma, space, or line-break separated)</li>
+            <li><strong>CSV Import:</strong> Click "📁 Import CSV" to load data from .csv or .txt files</li>
+            <li>Click "▶ Run Diagnostics on Custom Data"</li>
+            <li>Chamber XXIII computes D, R, M, S, UPI, and collapse channels for your data</li>
+            <li>All visualizations adapt automatically to your sequence</li>
+          </ol>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📋 Ready-to-Use Custom Examples</h3>
+        <p>Copy any sequence below and paste into the Custom Data Input panel to explore different UPI dynamics:</p>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #4aff4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #4aff4a;">Example 1: Fibonacci Sequence (Growth Dynamics)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #4aff4a;">
+1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> UPI increases with depth as divergence (M) grows exponentially. Watch for α→β→γ zone transitions around n=15-20. Demonstrates how recursive growth drives paradox formation.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #ffa54a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ffa54a;">Example 2: Collatz Sequence (27 seed)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ffa54a;">
+27, 82, 41, 124, 62, 31, 94, 47, 142, 71, 214, 107, 322, 161, 484, 242, 121, 364, 182, 91, 274, 137, 412, 206, 103, 310, 155, 466, 233, 700, 350, 175, 526, 263, 790, 395, 1186, 593, 1780, 890, 445, 1336, 668, 334, 167, 502, 251, 754, 377, 1132, 566, 283, 850, 425, 1276, 638, 319, 958, 479, 1438, 719, 2158, 1079, 3238, 1619, 4858, 2429, 7288, 3644, 1822, 911, 2734, 1367, 4102, 2051, 6154, 3077, 9232, 4616, 2308, 1154, 577, 1732, 866, 433, 1300, 650, 325, 976, 488, 244, 122, 61, 184, 92, 46, 23, 70, 35, 106, 53, 160, 80, 40, 20, 10, 5, 16, 8, 4, 2, 1
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Classic oscillatory paradox pattern with multiple δ-zone entries during explosive growth phases (e.g., around n=60-70). High Sobtra collapse activity. Peak UPI typically occurs before final convergence to 1.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #ff4a9e; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ff4a9e;">Example 3: Prime Gaps (Irregular Dynamics)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ff4a9e;">
+1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6, 4, 2, 4, 6, 6, 2, 6, 4, 2, 6, 4, 6, 8, 4, 2, 4, 2, 4, 14, 4, 6, 2, 10, 2, 6, 6, 4, 6, 6, 2, 10, 2, 4, 2, 12, 12, 4, 2, 4, 6, 2, 10, 6, 6, 6, 2, 6, 4, 2, 10, 14, 4, 2, 4, 14, 6, 10, 2, 4, 6, 8, 6, 6, 4, 6, 8, 4, 8, 10, 2, 10, 2, 6, 4, 6, 8, 4, 2, 4, 12, 8, 4, 8, 4, 6, 12, 2, 18, 6
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Low baseline UPI in α/β zones with sudden spikes at large gaps (14, 18). Demonstrates how irregular structures create intermittent paradox signatures. Good example of γ-zone "flashing" behavior.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #4a9eff; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #4a9eff;">Example 4: Damped Oscillation (Convergence Study)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #4a9eff;">
+100, -90, 81, -72.9, 65.61, -59.049, 53.1441, -47.82969, 43.046721, -38.742049, 34.867844, -31.381059, 28.242953, -25.418658, 22.876792, -20.589113, 18.530202, -16.677181, 15.009463, -13.508517, 12.157665, -10.941899, 9.847709, -8.862938, 7.976644, -7.17898, 6.461082, -5.814973, 5.233476, -4.710128, 4.239115, -3.815204, 3.433683, -3.090315, 2.781284, -2.503155, 2.252839, -2.027556, 1.824799, -1.64232, 1.478088, -1.330279, 1.197251, -1.077526, 0.969773, -0.872796, 0.785517, -0.706965, 0.636268
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Initial β/γ zone activity that decays into stable α-zone as saturation increases. UPI decreases logarithmically. Excellent test case for auto-scaling feature. Minimal collapse channel activation.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #ff4aff; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ff4aff;">Example 5: Chaotic Map Output (Logistic r=3.9)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ff4aff;">
+0.5, 0.975, 0.09506, 0.33549, 0.86929, 0.44298, 0.96170, 0.14359, 0.47894, 0.97188, 0.10651, 0.37095, 0.90976, 0.32006, 0.84839, 0.50159, 0.97437, 0.09736, 0.34247, 0.87806, 0.41758, 0.94802, 0.19209, 0.60516, 0.93188, 0.24752, 0.72579, 0.77546, 0.67888, 0.84973, 0.49731, 0.97456, 0.09665, 0.34024, 0.87492, 0.42648, 0.95335, 0.17329, 0.55855, 0.96120, 0.14541, 0.48423, 0.97327, 0.10137, 0.35492, 0.89239, 0.37419, 0.91320, 0.30879, 0.83191
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Persistent β/γ zone with occasional δ spikes. High Sobtra collapse frequency due to rapid state changes. UPI oscillates without convergence. Demonstrates paradox in deterministic chaos.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a1a; border-left: 3px solid #ffff4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ffff4a;">Example 6: Power Law Decay (Physical Relaxation)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ffff4a;">
+1000, 500, 333.33, 250, 200, 166.67, 142.86, 125, 111.11, 100, 90.91, 83.33, 76.92, 71.43, 66.67, 62.5, 58.82, 55.56, 52.63, 50, 47.62, 45.45, 43.48, 41.67, 40, 38.46, 37.04, 35.71, 34.48, 33.33, 32.26, 31.25, 30.30, 29.41, 28.57, 27.78, 27.03, 26.32, 25.64, 25, 24.39, 23.81, 23.26, 22.73, 22.22, 21.74, 21.28, 20.83, 20.41, 20
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Rapid UPI decay from β to α zone. High initial saturation (S) dominates denominator. Models physical relaxation processes (radioactive decay, thermal cooling). Expect Sobra dominance as system stabilizes.
+          </p>
+        </div>
+        
+        <div style="background: #1a2a1a; border-left: 3px solid #4aff4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #4aff4a;">Example 7: Square Wave (Discrete Switching)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #4aff4a;">
+10, 10, 10, 10, 10, -10, -10, -10, -10, -10, 10, 10, 10, 10, 10, -10, -10, -10, -10, -10, 10, 10, 10, 10, 10, -10, -10, -10, -10, -10, 10, 10, 10, 10, 10, -10, -10, -10, -10, -10, 10, 10, 10, 10, 10, -10, -10, -10, -10, -10
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> UPI near zero during constant phases (high saturation S), then sharp spikes at transitions. Collapse channels fire at switches. Models digital systems, bistable states, or phase transitions.
+          </p>
+        </div>
+        
+        <div style="background: #1a2a1a; border-left: 3px solid #ff8a4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ff8a4a;">Example 8: Financial Time Series (Synthetic Stock Prices)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ff8a4a;">
+100, 102.3, 101.8, 103.5, 106.2, 105.1, 107.8, 108.9, 107.2, 109.5, 112.3, 111.1, 108.7, 106.9, 109.2, 111.8, 114.5, 116.2, 115.8, 118.3, 121.1, 119.7, 117.9, 120.5, 123.2, 125.8, 124.3, 122.7, 119.8, 121.5, 124.1, 126.7, 128.9, 127.5, 125.9, 128.7, 131.2, 133.8, 132.1, 130.4, 133.2, 136.5, 138.9, 137.2, 135.1, 137.8, 140.5, 143.2, 141.7, 139.9
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected Result:</strong> Low-to-moderate UPI with α/β oscillation. Divergence (M) tracks volatility. Sharp price reversals trigger collapse channels. Demonstrates UPI as a market instability indicator. Compare with real financial data.
+          </p>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📈 Financial Time-Series as UPI Testbed</h3>
+        
+        <p><strong>Purpose:</strong> Financial time-series provide complex numerical signals with rich dynamics—trends, shocks, volatility clusters, regime shifts—that are ideal for stress-testing Chamber XXIII's full diagnostic capabilities. The examples below (F1-F5) and the guidance here position UNNS as a <em>structural instability analysis framework</em> for market data, <strong>not a predictive trading tool</strong>.</p>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4a9eff;">Recommended Public Data Sources:</strong></p>
+          <ul style="margin: 0 0 10px 20px; line-height: 1.8;">
+            <li><strong>FRED</strong> (Federal Reserve Economic Data) — US macro indicators, interest rates, indices</li>
+            <li><strong>World Bank</strong> — Global macro indicators, GDP, CPI, development metrics</li>
+            <li><strong>Central Banks & Statistical Agencies</strong> — EUR, UAH, and other regional economic data</li>
+            <li><strong>Clean Index/ETF Daily Close Series</strong> — Where legally accessible for academic/research use</li>
+          </ul>
+        </div>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Data Preparation Rules for UPI:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li><strong>Use one numeric series</strong> (e.g., daily close or index level)</li>
+            <li><strong>Prefer at least 100-300 points</strong> for meaningful PSC classification</li>
+            <li><strong>Avoid series with:</strong> missing values every second day, extreme zeros (unless you apply log transforms)</li>
+            <li><strong>Optional transforms:</strong>
+              <ul style="margin: 5px 0 0 20px;">
+                <li><em>Raw levels</em> — for trend + crash analysis</li>
+                <li><em>First differences (Δp<sub>t</sub>)</em> — for shock / volatility analysis</li>
+                <li><em>Log-returns (ln(p<sub>t</sub>/p<sub>t-1</sub>))</em> — for scale-independent dynamics</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        
+        <p><strong>How to Use with Chamber XXIII:</strong></p>
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li>Download CSV from FRED / World Bank / your data source</li>
+          <li>Clean/convert it using the helper script <code>upi_financial_prepare.py</code> (see UNNS documentation) → numeric-only CSV</li>
+          <li>In Chamber XXIII:
+            <ul style="margin: 5px 0 0 20px;">
+              <li>Click <strong>📁 Import CSV</strong> to load the file directly, or</li>
+              <li>Open the numeric CSV, copy the sequence, and paste into Custom Data Input</li>
+            </ul>
+          </li>
+          <li>Run UPI diagnostics and interpret:
+            <ul style="margin: 5px 0 0 20px;">
+              <li><strong>PSC class</strong> (global behavior: A-F)</li>
+              <li><strong>CCM</strong> (Sobra/Sobtra patterns + τ-spectrum)</li>
+              <li><strong>Operator metrics XIII-XXI</strong> (instability signatures)</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <div style="background: #1a2a1a; border-left: 3px solid #ffa54a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ffa54a;">🔬 Safety & Interpretation Disclaimer:</strong>
+          <p style="margin: 8px 0 0;">UPI, PSC, CCM, and operators <strong>do not predict prices</strong>. They quantify structural paradox/instability patterns in the numeric signal. Any "market interpretation" remains the user's own responsibility. Chamber XXIII is a diagnostic tool for <em>analyzing</em> complexity, not for generating trading signals.</p>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📋 Financial Examples (F1-F5) — Operator-Tuned Presets</h3>
+        
+        <p>The following synthetic sequences are designed to activate specific PSC classes and operator signatures. Use the <strong>preset selector dropdown</strong> above to load them instantly.</p>
+        
+        <div style="background: #0f1a2a; border-left: 3px solid #4aff4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #4aff4a;">Example F1: Smooth Bull Trend</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #4aff4a;">
+100.00, 100.38, 101.04, 101.55, 101.94, 102.32, 102.05, 102.64, 102.42, 102.68, 102.97, 103.51, 103.33, 103.04, 103.56, 104.04, 104.37, 104.38, 104.61, 104.57, 104.36, 104.30, 104.07, 104.66, 104.39, 104.42, 105.03, 105.06, 105.71, 106.37, 106.83, 106.86, 106.62, 106.74, 106.72, 106.45, 106.50, 107.03, 106.96, 107.18, 107.31, 107.38, 108.08, 108.83, 109.54, 109.79, 110.02, 110.07, 110.39, 111.11, 110.97, 111.24, 111.54, 111.48, 111.40, 111.28, 111.09, 111.13, 111.18, 111.66, 111.58, 111.84, 112.30, 112.04, 112.59, 112.31, 112.55, 112.76, 112.79, 112.94, 112.66, 113.30, 113.49, 113.57, 113.82, 113.60, 114.10, 113.81, 114.53, 114.42, 115.08, 115.42, 115.28, 115.22, 115.48, 116.03, 116.81, 116.51, 117.16, 117.24, 116.93, 117.62, 117.59, 117.96, 118.20, 117.85, 117.53, 117.75, 117.77, 118.36
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected PSC:</strong> A or B | <strong>Zones:</strong> Mostly α, some β around turns | <strong>Operators:</strong> XIV: occasional φ matches; XVI: few closures | <strong>Collapse:</strong> Sobra &gt; Sobtra (mild) | <strong>Use Case:</strong> Baseline "healthy market" reference with gradual upward drift and low noise.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a2a; border-left: 3px solid #ffa54a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ffa54a;">Example F2: Volatility Cluster (Quiet-Storm-Quiet)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ffa54a;">
+100.00, 100.05, 100.30, 100.04, 99.82, 100.01, 100.19, 99.90, 99.94, 100.03, 100.26, 100.51, 100.33, 100.35, 100.22, 100.23, 100.37, 100.14, 100.42, 100.61, 101.22, 100.32, 99.49, 97.56, 98.14, 98.62, 98.38, 99.82, 102.29, 104.73, 103.98, 103.74, 105.64, 106.29, 108.35, 106.23, 106.61, 107.91, 105.71, 105.33, 105.07, 105.37, 105.61, 105.41, 105.18, 104.89, 105.20, 105.22, 104.94, 105.16, 105.05, 105.09, 105.26, 105.36, 105.57, 105.67, 105.82, 105.72, 105.49, 105.59
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected PSC:</strong> C (Chaotic Paradox) | <strong>Zones:</strong> β/γ with bursts of δ | <strong>Operators:</strong> XIII: many phaseSpikes in storms; XXI: τ-peaks cluster | <strong>Collapse:</strong> Sobtra ↑ during storms | <strong>Use Case:</strong> Models GARCH-like volatility clustering; stress-tests XIII and XXI operator sensitivity.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a2a; border-left: 3px solid #ff4a9e; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ff4a9e;">Example F3: Bubble & Crash</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ff4a9e;">
+100, 103, 107, 112, 118, 125, 133, 142, 152, 163, 175, 188, 202, 217, 233, 250, 268, 287, 307, 328, 350, 340, 320, 290, 255, 220, 190, 168, 155, 148, 145, 148, 152, 158, 165, 172, 180, 188, 195, 201, 206, 210, 213, 216, 219, 221, 223, 225, 227, 229
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected PSC:</strong> E (Collapse-Driven Instability) | <strong>Zones:</strong> α→β→γ→δ, strong δ at crash | <strong>Operators:</strong> XIII: large spikes at top+crash; XXI: τ-peaks at crash | <strong>Collapse:</strong> Sobtra ≫ Sobra (crash dominance) | <strong>Use Case:</strong> Classic bubble-crash dynamics; CCM shows clear Sobtra burst during crash phase.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a2a; border-left: 3px solid #4a9eff; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #4a9eff;">Example F4: Regime Shift (Low-Vol → High-Vol → Moderate)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #4a9eff;">
+100.00, 99.89, 99.96, 100.06, 100.22, 100.27, 100.45, 100.55, 100.73, 100.66, 100.69, 100.69, 100.75, 100.84, 100.92, 100.79, 100.65, 100.85, 100.83, 100.92, 100.73, 100.83, 100.94, 101.02, 101.22, 101.15, 101.00, 100.96, 101.13, 100.98, 102.28, 102.55, 101.51, 101.26, 101.79, 102.20, 102.27, 104.17, 105.25, 103.20, 103.16, 102.08, 103.27, 105.29, 104.63, 104.14, 102.40, 102.30, 104.04, 102.04, 103.02, 104.68, 106.26, 104.80, 104.46, 106.34, 107.12, 105.66, 106.82, 105.51, 106.55, 106.31, 106.38, 107.49, 108.12, 107.76, 108.26, 109.37, 109.08, 109.25, 110.44, 109.92, 110.02, 110.59, 110.69, 110.65, 110.63, 111.68, 111.82, 112.10, 112.59, 113.16, 113.94, 113.41, 113.40, 114.07, 115.29, 115.80, 116.64, 116.28
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected PSC:</strong> F (Hybrid Paradox) | <strong>Zones:</strong> α/β early, then γ/δ mix | <strong>Operators:</strong> XIII: spikes at boundary; XVI: closures; XXI: τ-band at shift | <strong>Collapse:</strong> Mixed; Sobtra in new regime | <strong>Use Case:</strong> Demonstrates regime-change detection via operator clustering around transition points.
+          </p>
+        </div>
+        
+        <div style="background: #0f1a2a; border-left: 3px solid #ffff4a; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 8px;"><strong style="color: #ffff4a;">Example F5: Mean-Reverting Process (OU-like)</strong></p>
+          <code style="display: block; background: #000; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; color: #ffff4a;">
+100.00, 96.66, 99.82, 95.52, 94.99, 98.21, 95.36, 93.99, 96.91, 100.92, 104.06, 104.49, 104.69, 105.17, 107.97, 105.97, 103.43, 98.75, 95.67, 98.11, 101.47, 98.64, 99.73, 101.19, 98.71, 101.77, 97.67, 94.48, 99.05, 102.04, 102.47, 101.49, 96.35, 92.35, 96.95, 94.93, 96.71, 98.00, 97.76, 93.71, 99.43, 103.07, 105.12, 108.91, 102.92, 98.80, 101.09, 98.22, 101.43, 103.60, 107.74, 104.57, 107.28, 105.53, 100.91, 98.41, 97.34, 95.37, 96.96, 101.52, 104.55, 106.98, 104.24, 101.31, 98.66, 95.30, 100.96, 97.39, 95.48, 95.48, 99.71, 100.91, 102.00, 98.76, 101.49, 105.65, 108.65, 109.80, 104.70, 108.90
+          </code>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #aaa;">
+            <strong>Expected PSC:</strong> B or soft D (if motifs are strong) | <strong>Zones:</strong> α/β mix, rare γ | <strong>Operators:</strong> XVI: many small closures; XVII: moderate semantic level (repeatable pattern) | <strong>Collapse:</strong> Sobra ≥ Sobtra | <strong>Use Case:</strong> Mean-reversion dynamics; XVI detects "return-to-mean" curvature closures.
+          </p>
+        </div>
+        <h3 style="color:#79a9ff; margin-top:2rem;">🌐 Financial Data Suitable for Mathematical & UNNS Research</h3>
+
+<p>
+The following sources provide <strong>safe, open, publicly accessible</strong> numerical time-series widely used
+in universities for mathematics, data-science, and complexity research. These sequences contain rich structural
+patterns—trends, shocks, cycles, volatility clusters—that make them ideal for UPI paradox analysis.
+</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">1) FRED — Federal Reserve Economic Data</h4>
+<p><a href="https://fred.stlouisfed.org" target="_blank">fred.stlouisfed.org</a></p>
+<ul>
+  <li>Consumer Price Index</li>
+  <li>Industrial Production</li>
+  <li>Interest rates</li>
+  <li>GDP components</li>
+  <li>Employment statistics</li>
+  <li>Commodity indexes</li>
+</ul>
+<p><em>Why valuable:</em> Smooth trends → α-zone; shocks → γ/δ-zone; ideal for PSC A/F.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">2) World Bank Open Data</h4>
+<p><a href="https://data.worldbank.org" target="_blank">data.worldbank.org</a></p>
+<ul>
+  <li>Inflation rates</li>
+  <li>Exchange-rate indexes</li>
+  <li>Money supply aggregates</li>
+  <li>Development indicators</li>
+</ul>
+<p><em>Why valuable:</em> Excellent for multi-country comparisons using MSCM mode.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">3) OECD Data</h4>
+<p><a href="https://data.oecd.org" target="_blank">data.oecd.org</a></p>
+<ul>
+  <li>Interest-rate spreads</li>
+  <li>Housing price indexes</li>
+  <li>Savings/investment ratios</li>
+  <li>Productivity indexes</li>
+</ul>
+<p><em>Why valuable:</em> Smooth macro-patterns; good for Operator XIV (φ-compatibility).</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">4) Eurostat</h4>
+<p><a href="https://ec.europa.eu/eurostat" target="_blank">ec.europa.eu/eurostat</a></p>
+<ul>
+  <li>Consumer confidence</li>
+  <li>Energy prices</li>
+  <li>Transport and industrial output</li>
+</ul>
+<p><em>Why valuable:</em> Reveals semantic motifs recognizable by Operator XVII.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">5) Public Cryptocurrency Historical Datasets (Static, Non-Live)</h4>
+<p>
+Available through academic archives and Kaggle educational datasets. These are <strong>static CSV files</strong>
+intended for research (not trading).
+</p>
+<ul>
+  <li>Bitcoin daily close (historical CSV)</li>
+  <li>Ethereum daily close (historical CSV)</li>
+</ul>
+<p><em>Why valuable:</em> Highly noisy → strong δ-zone; excellent for PSC E and collapse-channel diversity.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">6) Index Data (Aggregated, Historical)</h4>
+<ul>
+  <li>S&amp;P 500 monthly index</li>
+  <li>NASDAQ Composite (research CSVs)</li>
+  <li>Nikkei 225 historical levels</li>
+  <li>FTSE 100 aggregated series</li>
+</ul>
+<p><em>Why valuable:</em> Exhibits volatility patterns that strongly activate Operator XIII.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">7) Energy & Commodity Indexes</h4>
+<ul>
+  <li>Brent crude index</li>
+  <li>Natural gas index</li>
+  <li>Agricultural commodity indexes</li>
+</ul>
+<p><em>Why valuable:</em> Natural γ/δ transitions; strong CCM collapse cluster patterns.</p>
+
+<h4 style="color:#a6c8ff; margin-top:1rem;">8) Synthetic Financial Time-Series</h4>
+<ul>
+  <li>Random walks</li>
+  <li>Log-returns of synthetic series</li>
+  <li>Jump-diffusion models</li>
+  <li>Trend + noise signals</li>
+  <li>Volatility clustering simulations</li>
+</ul>
+<p><em>Why valuable:</em> Safe, controlled, predictable; perfect for teaching and testing PSC behavior.</p>
+
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📊 Financial Behavior Classification via PSC</h3>
+        
+        <p>The table below provides a qualitative mapping from familiar financial patterns to PSC classes and operator signatures. It is <strong>not a predictive model</strong>, but a classification heuristic for interpreting Chamber XXIII outputs on financial-like sequences.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.88em; background: #0a0a0a;">
+          <thead>
+            <tr style="border-bottom: 2px solid #4a9eff;">
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Financial Pattern</th>
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Qualitative Description</th>
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Typical PSC</th>
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Zone Profile</th>
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Operator Highlights (XIII–XXI)</th>
+              <th style="text-align: left; padding: 10px 8px; color: #4a9eff;">Collapse Bias</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #4aff4a;">Smooth trend (bull/bear)</td>
+              <td style="padding: 10px 8px;">Gradual up/down drift, low noise</td>
+              <td style="padding: 10px 8px;">A / B</td>
+              <td style="padding: 10px 8px;">Mostly α, some β around turns</td>
+              <td style="padding: 10px 8px;">XIV: occasional φ matches; XVI: few closures</td>
+              <td style="padding: 10px 8px;">Sobra &gt; Sobtra (mild)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #4aff4a;">Mean-reverting low-vol</td>
+              <td style="padding: 10px 8px;">OU-like oscillation around mean</td>
+              <td style="padding: 10px 8px;">B / D</td>
+              <td style="padding: 10px 8px;">α/β mix, rare γ</td>
+              <td style="padding: 10px 8px;">XVI: many small closures; XVII: motifs ("return-to-mean" cycles)</td>
+              <td style="padding: 10px 8px;">Sobra ≥ Sobtra</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #ffa54a;">Volatility cluster</td>
+              <td style="padding: 10px 8px;">Sideways with quiet–storm cycles</td>
+              <td style="padding: 10px 8px;">C</td>
+              <td style="padding: 10px 8px;">β/γ with bursts of δ</td>
+              <td style="padding: 10px 8px;">XIII: spikes in storms; XXI: τ-peaks cluster</td>
+              <td style="padding: 10px 8px;">Sobtra ↑ during storms</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #ff4a9e;">Bubble & crash</td>
+              <td style="padding: 10px 8px;">Fast run-up then sharp multi-step drop</td>
+              <td style="padding: 10px 8px;">E</td>
+              <td style="padding: 10px 8px;">α→β→γ→δ, strong δ at crash</td>
+              <td style="padding: 10px 8px;">XIII: large spikes; XXI: τ-peaks at top and crash</td>
+              <td style="padding: 10px 8px;">Sobtra ≫ Sobra (crash)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #4a9eff;">Regime shift (calm→turbulent)</td>
+              <td style="padding: 10px 8px;">Sudden jump from low to high volatility</td>
+              <td style="padding: 10px 8px;">F</td>
+              <td style="padding: 10px 8px;">α/β early, then γ/δ mix</td>
+              <td style="padding: 10px 8px;">XIII: spikes at boundary; XVI: closures; XXI: τ-band at shift</td>
+              <td style="padding: 10px 8px;">Mixed; Sobtra in new regime</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #ff4aff;">Choppy sideways high-vol</td>
+              <td style="padding: 10px 8px;">No clear trend, constant jitter</td>
+              <td style="padding: 10px 8px;">C / F</td>
+              <td style="padding: 10px 8px;">β/γ, sometimes δ flashes</td>
+              <td style="padding: 10px 8px;">XIII: many spikes; XXI: dense τ-spectrum</td>
+              <td style="padding: 10px 8px;">Sobtra slightly dominant</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 10px 8px; color: #ffff4a;">Crash + noisy recovery</td>
+              <td style="padding: 10px 8px;">Sudden drop followed by irregular rebound</td>
+              <td style="padding: 10px 8px;">E / F</td>
+              <td style="padding: 10px 8px;">δ at crash, β/γ in recovery</td>
+              <td style="padding: 10px 8px;">XIII: crash spike; XVII: motifs in repeated rally attempts</td>
+              <td style="padding: 10px 8px;">Sobtra at crash, then mix</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; color: #9fb7ff;">Flat with rare jumps</td>
+              <td style="padding: 10px 8px;">Mostly flat levels with occasional big moves</td>
+              <td style="padding: 10px 8px;">B / C</td>
+              <td style="padding: 10px 8px;">α baseline, γ/δ at jumps</td>
+              <td style="padding: 10px 8px;">XIII: isolated spikes; XXI: isolated τ-peaks</td>
+              <td style="padding: 10px 8px;">Sobtra at jump points</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <p style="margin-top: 15px;"><strong>How to Use This Table:</strong> After running UPI diagnostics on financial data, compare the PSC class, zone profile, and operator metrics against the patterns above to identify structural similarities. This helps you understand what type of instability regime the sequence exhibits.</p>
+        
+        <p style="margin-top: 15px;"><strong>Pro Tip:</strong> After running an example, export the PNG visualizations and JSON data to compare patterns across different sequence types. Look for correlations between collapse channel activation and phase zone transitions.</p>
+        
+        <p><strong>CSV Format:</strong> Supports comma-separated, semicolon-separated, and tab-separated values. Multi-column CSV files will have all numeric values extracted and concatenated.</p>
+        
+        <p><strong>Validation Rules:</strong></p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li>Minimum 3 values required</li>
+          <li>Maximum 10,000 values (performance limit)</li>
+          <li>All values must be finite numbers</li>
+          <li>Non-numeric entries are automatically filtered</li>
+        </ul>
+        
+        <div style="background: #1a2a1a; border-left: 3px solid #4aff4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #4aff4a;">✨ Significance:</strong>
+          <p style="margin: 8px 0 0;">Custom Data Mode positions UNNS as a <strong>general recursive instability diagnostic framework</strong>. Scientists, researchers, and clients can bring their own data and leverage the full UPI diagnostic suite—phase zone classification, collapse channel analysis, and paradox detection—without implementing recursion rules. This extends Chamber XXIII from a specialized operator to a universal analytical tool.</p>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📷 Visualization Export</h3>
+        <p>All visualization panels include <strong>PNG export buttons</strong> for publication-ready graphics:</p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>UPI Timeline:</strong> Exports full phase zone diagram with collapse events</li>
+          <li><strong>Phase Map:</strong> Exports (M+S) vs (D·R) scatter plot</li>
+          <li><strong>State Evolution:</strong> Exports x(n) time series</li>
+          <li><strong>Collapse Strip:</strong> Exports Sobra/Sobtra channel timeline</li>
+        </ul>
+        <p>PNG files are automatically named with timestamp and system identifier for easy organization.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Auto-Scaling for Large UPI Spikes</h3>
+        <p>When UPI values exceed 100, the timeline visualization automatically switches to <strong>logarithmic scale</strong> to maintain visibility of both low and high values. A "LOG SCALE" indicator appears when active. This ensures that extreme paradox spikes don't compress baseline dynamics into invisibility.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Integration with UNNS Operators</h3>
+        <p><strong>Chamber XXIII implements five advanced operator diagnostics</strong> that provide additional analytic lenses on UPI dynamics. These operators are non-invasive—they read existing output without altering core UPI or collapse logic.</p>
+        
+        <div style="background: #1a2a1a; border-left: 3px solid #4aff4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #4aff4a;">🔒 Critical Design Principle:</strong>
+          <p style="margin: 8px 0 0;">Operators XIII–XXI run in passive diagnostic mode; they evaluate recursion behavior but never modify UPI computation, collapse channels, or sequence evolution.</p>
+        </div>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4a9eff;">Implemented Operators:</strong></p>
+          
+          <div style="margin: 10px 0; padding-left: 15px;">
+            <p style="margin: 5px 0;"><strong style="color: #ffa54a;">⚡ Operator XIII — Phase Instability Diagnostics</strong></p>
+            <p style="margin: 5px 0 5px 15px; font-size: 0.9em; color: #aaa;">
+              Detects rapid UPI slope changes (|ΔU| > 1.5) as early paradox onset indicators. Counts phase spikes and sets warning flag when instability threshold exceeded.
+            </p>
+          </div>
+          
+          <div style="margin: 10px 0; padding-left: 15px;">
+            <p style="margin: 5px 0;"><strong style="color: #4aff4a;">φ Operator XIV — Φ-Scaling Feedback Compatibility</strong></p>
+            <p style="margin: 5px 0 5px 15px; font-size: 0.9em; color: #aaa;">
+              Measures how often state ratio x<sub>n+1</sub>/x<sub>n</sub> ≈ φ (golden ratio). Reports compatibility percentage showing φ-resonance in recursion dynamics. Tolerance: ±0.04.
+            </p>
+          </div>
+          
+          <div style="margin: 10px 0; padding-left: 15px;">
+            <p style="margin: 5px 0;"><strong style="color: #ff4a9e;">⊗ Operator XVI — Fold/Closure Pattern Detection</strong></p>
+            <p style="margin: 5px 0 5px 15px; font-size: 0.9em; color: #aaa;">
+              Identifies small-curvature moments (x<sub>n+1</sub> - 2x<sub>n</sub> + x<sub>n-1</sub> ≈ 0) where recursion nearly self-intersects. Counts closure events indicating structural folds in state space.
+            </p>
+          </div>
+          
+          <div style="margin: 10px 0; padding-left: 15px;">
+            <p style="margin: 5px 0;"><strong style="color: #4a9eff;">∞ Operator XVII — Semantic Recursion Recognition</strong></p>
+            <p style="margin: 5px 0 5px 15px; font-size: 0.9em; color: #aaa;">
+              Detects stable self-referential motifs by tracking consistency in Δx patterns. Classifies recursion level as Weak (&lt;5), Moderate (5-19), or Strong (≥20) based on motif repetition count.
+            </p>
+          </div>
+          
+          <div style="margin: 10px 0; padding-left: 15px;">
+            <p style="margin: 5px 0;"><strong style="color: #ffff4a;">τ Operator XXI — τ-Microstructure Curvature Sampling</strong></p>
+            <p style="margin: 5px 0 5px 15px; font-size: 0.9em; color: #aaa;">
+              Samples full τ-curvature spectrum throughout evolution. Computes mean τ and detects micro-instability peaks (τ > 1.5σ). Extends Operator XII's torsion metric with statistical analysis.
+            </p>
+          </div>
+        </div>
+        
+        <p style="margin: 10px 0;"><strong>Implementation Notes:</strong></p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li>All operator metrics stored in <code style="background: #0a0a0a; padding: 2px 6px;">advancedMetrics</code> field of JSON export</li>
+          <li>Operators compute in parallel with core UPI evolution (zero performance impact)</li>
+          <li>Results appear in "Advanced Operator Diagnostics" panel after each run</li>
+          <li>Compatible with both recursive and custom data modes</li>
+          <li>Thresholds configurable via engine constructor parameters</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Cross-Chamber Operator Compatibility</h3>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>XII:</strong> Collapse channel selection (Sobra vs Sobtra) — Fully Integrated ✅</li>
+          <li><strong>XIII:</strong> Phase instability diagnostics — Implemented ✅</li>
+          <li><strong>XIV:</strong> φ-scaling feedback compatibility — Implemented ✅</li>
+          <li><strong>XVI:</strong> Fold/closure pattern detection — Implemented ✅</li>
+          <li><strong>XVII:</strong> Semantic recursion recognition — Implemented ✅</li>
+          <li><strong>XXI:</strong> τ-Microstructure curvature sampling — Implemented ✅</li>
+        </ul>
+        
+      <!-- ========================================================= -->
+<!--  SVG: Paradox Signature Classifier (PSC) Overview         -->
+<!-- ========================================================= -->
+<svg viewBox="0 0 760 140" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-labelledby="pscTitle pscDesc">
+  <title id="pscTitle">Paradox Signature Classes (PSC)</title>
+  <desc id="pscDesc">
+    Visual overview of PSC classes A–F: monotonic, oscillatory, chaotic,
+    semantic, collapse-driven, and hybrid.
+  </desc>
+
+  <!-- Background -->
+  <defs>
+    <linearGradient id="pscBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050814"/>
+      <stop offset="100%" stop-color="#10182d"/>
+    </linearGradient>
+    <linearGradient id="pscActive" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff4d7a"/>
+      <stop offset="100%" stop-color="#ffb347"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="140" rx="10" ry="10"
+        fill="url(#pscBg)" stroke="#1f2945" stroke-width="1.5"/>
+
+  <!-- Title -->
+  <text x="24" y="32" fill="#a8c4ff" font-size="16" font-family="Segoe UI, sans-serif">
+    PSC — Global Paradox Signature
+  </text>
+  <text x="24" y="52" fill="#6f7ba8" font-size="12" font-family="Segoe UI, sans-serif">
+    A: Monotonic · B: Oscillatory · C: Chaotic · D: Semantic · E: Collapse-Driven · F: Hybrid
+  </text>
+
+  <!-- Class slots -->
+  <!-- Common slot box function: x positions: 40, 150, 260, 370, 480, 590 -->
+  <!-- A -->
+  <rect x="40" y="70" width="90" height="50" rx="8" ry="8"
+        fill="none" stroke="#2d395e" stroke-width="1"/>
+  <circle cx="65" cy="92" r="14" fill="#273555" />
+  <text x="65" y="98" text-anchor="middle" fill="#a8c4ff"
+        font-size="14" font-family="Segoe UI, sans-serif">A</text>
+  <text x="95" y="88" fill="#9fb7ff" font-size="11" font-family="Segoe UI, sans-serif">
+    Mono
+  </text>
+  <text x="95" y="103" fill="#5d6a92" font-size="10" font-family="Segoe UI, sans-serif">
+    Dissipation
+  </text>
+
+  <!-- B -->
+  <rect x="150" y="70" width="90" height="50" rx="8" ry="8"
+        fill="none" stroke="#2d395e" stroke-width="1"/>
+  <circle cx="175" cy="92" r="14" fill="#273555" />
+  <text x="175" y="98" text-anchor="middle" fill="#a8c4ff"
+        font-size="14" font-family="Segoe UI, sans-serif">B</text>
+  <text x="205" y="88" fill="#9fb7ff" font-size="11" font-family="Segoe UI, sans-serif">
+    Oscill.
+  </text>
+  <text x="205" y="103" fill="#5d6a92" font-size="10" font-family="Segoe UI, sans-serif">
+    Paradox
+  </text>
+
+  <!-- C (highlighted as example) -->
+  <rect x="260" y="65" width="110" height="60" rx="10" ry="10"
+        fill="url(#pscActive)" stroke="#ffdf9b" stroke-width="1.5"/>
+  <circle cx="288" cy="92" r="16" fill="#10152b" />
+  <text x="288" y="98" text-anchor="middle" fill="#ffdf9b"
+        font-size="16" font-family="Segoe UI, sans-serif" font-weight="600">C</text>
+  <text x="315" y="88" fill="#1b1020" font-size="11" font-family="Segoe UI, sans-serif">
+    Chaotic
+  </text>
+  <text x="315" y="103" fill="#1b1020" font-size="10" font-family="Segoe UI, sans-serif">
+    Paradox
+  </text>
+
+  <!-- D -->
+  <rect x="390" y="70" width="90" height="50" rx="8" ry="8"
+        fill="none" stroke="#2d395e" stroke-width="1"/>
+  <circle cx="415" cy="92" r="14" fill="#273555" />
+  <text x="415" y="98" text-anchor="middle" fill="#a8c4ff"
+        font-size="14" font-family="Segoe UI, sans-serif">D</text>
+  <text x="445" y="88" fill="#9fb7ff" font-size="11" font-family="Segoe UI, sans-serif">
+    Semantic
+  </text>
+  <text x="445" y="103" fill="#5d6a92" font-size="10" font-family="Segoe UI, sans-serif">
+    Paradox
+  </text>
+
+  <!-- E -->
+  <rect x="500" y="70" width="90" height="50" rx="8" ry="8"
+        fill="none" stroke="#2d395e" stroke-width="1"/>
+  <circle cx="525" cy="92" r="14" fill="#273555" />
+  <text x="525" y="98" text-anchor="middle" fill="#a8c4ff"
+        font-size="14" font-family="Segoe UI, sans-serif">E</text>
+  <text x="555" y="88" fill="#9fb7ff" font-size="11" font-family="Segoe UI, sans-serif">
+    Collapse
+  </text>
+  <text x="555" y="103" fill="#5d6a92" font-size="10" font-family="Segoe UI, sans-serif">
+    Driven
+  </text>
+
+  <!-- F -->
+  <rect x="610" y="70" width="90" height="50" rx="8" ry="8"
+        fill="none" stroke="#2d395e" stroke-width="1"/>
+  <circle cx="635" cy="92" r="14" fill="#273555" />
+  <text x="635" y="98" text-anchor="middle" fill="#a8c4ff"
+        font-size="14" font-family="Segoe UI, sans-serif">F</text>
+  <text x="665" y="88" fill="#9fb7ff" font-size="11" font-family="Segoe UI, sans-serif">
+    Hybrid
+  </text>
+  <text x="665" y="103" fill="#5d6a92" font-size="10" font-family="Segoe UI, sans-serif">
+    Mix
+  </text>
+</svg>
+
+<!-- ========================================================= -->
+<!--  SVG: Collapse Channel Map (CCM)                          -->
+<!-- ========================================================= -->
+<svg viewBox="0 0 760 180" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-labelledby="ccmTitle ccmDesc">
+  <title id="ccmTitle">Collapse Channel Map (CCM)</title>
+  <desc id="ccmDesc">
+    Stylized schematic of Sobra density, Sobtra density, and τ-spectrum bands.
+  </desc>
+
+  <defs>
+    <linearGradient id="ccmBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050814"/>
+      <stop offset="100%" stop-color="#0e1327"/>
+    </linearGradient>
+    <linearGradient id="sobraGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3fa9ff"/>
+      <stop offset="100%" stop-color="#1b5f99"/>
+    </linearGradient>
+    <linearGradient id="sobtraGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff4d9a"/>
+      <stop offset="100%" stop-color="#b01a4f"/>
+    </linearGradient>
+    <linearGradient id="tauGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe873"/>
+      <stop offset="100%" stop-color="#8b791c"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="180" rx="10" ry="10"
+        fill="url(#ccmBg)" stroke="#1f2945" stroke-width="1.5"/>
+
+  <!-- Title -->
+  <text x="24" y="28" fill="#a8c4ff" font-size="16" font-family="Segoe UI, sans-serif">
+    Collapse Channel Map (CCM)
+  </text>
+  <text x="24" y="46" fill="#6f7ba8" font-size="11" font-family="Segoe UI, sans-serif">
+    Sobra / Sobtra densities and τ-spectrum view along the UPI timeline.
+  </text>
+
+  <!-- Bands frame -->
+  <rect x="40" y="60" width="680" height="100" fill="none"
+        stroke="#323b5b" stroke-width="1"/>
+
+  <!-- Sobra band -->
+  <rect x="40" y="60" width="680" height="28" fill="#050814"/>
+  <!-- simple stylized density pulses -->
+  <rect x="50" y="62" width="40" height="24" fill="url(#sobraGrad)" opacity="0.75"/>
+  <rect x="120" y="62" width="25" height="24" fill="url(#sobraGrad)" opacity="0.6"/>
+  <rect x="190" y="62" width="65" height="24" fill="url(#sobraGrad)" opacity="0.9"/>
+  <rect x="290" y="62" width="35" height="24" fill="url(#sobraGrad)" opacity="0.55"/>
+  <rect x="360" y="62" width="50" height="24" fill="url(#sobraGrad)" opacity="0.7"/>
+  <rect x="440" y="62" width="30" height="24" fill="url(#sobraGrad)" opacity="0.5"/>
+  <rect x="520" y="62" width="70" height="24" fill="url(#sobraGrad)" opacity="0.85"/>
+  <rect x="620" y="62" width="55" height="24" fill="url(#sobraGrad)" opacity="0.6"/>
+
+  <!-- Sobtra band -->
+  <rect x="40" y="92" width="680" height="28" fill="#050814"/>
+  <rect x="55" y="94" width="60" height="24" fill="url(#sobtraGrad)" opacity="0.8"/>
+  <rect x="145" y="94" width="80" height="24" fill="url(#sobtraGrad)" opacity="0.95"/>
+  <rect x="250" y="94" width="40" height="24" fill="url(#sobtraGrad)" opacity="0.7"/>
+  <rect x="320" y="94" width="100" height="24" fill="url(#sobtraGrad)" opacity="0.9"/>
+  <rect x="440" y="94" width="50" height="24" fill="url(#sobtraGrad)" opacity="0.8"/>
+  <rect x="515" y="94" width="40" height="24" fill="url(#sobtraGrad)" opacity="0.7"/>
+  <rect x="585" y="94" width="90" height="24" fill="url(#sobtraGrad)" opacity="0.95"/>
+
+  <!-- τ-spectrum band -->
+  <rect x="40" y="124" width="680" height="36" fill="#050814"/>
+  <!-- stylized spectrum bars -->
+  <rect x="52"  y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.35"/>
+  <rect x="88"  y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.55"/>
+  <rect x="124" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.2"/>
+  <rect x="170" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.8"/>
+  <rect x="210" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.4"/>
+  <rect x="246" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.6"/>
+  <rect x="290" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.9"/>
+  <rect x="340" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.3"/>
+  <rect x="390" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.75"/>
+  <rect x="440" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.5"/>
+  <rect x="490" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.85"/>
+  <rect x="540" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.4"/>
+  <rect x="590" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.7"/>
+  <rect x="640" y="126" width="16" height="32" fill="url(#tauGrad)" opacity="0.95"/>
+
+  <!-- Labels -->
+  <text x="48" y="78" fill="#7faefc" font-size="11" font-family="Segoe UI, sans-serif">
+    Sobra density
+  </text>
+  <text x="48" y="110" fill="#ff8abc" font-size="11" font-family="Segoe UI, sans-serif">
+    Sobtra density
+  </text>
+  <text x="48" y="142" fill="#f5d86b" font-size="11" font-family="Segoe UI, sans-serif">
+    τ-spectrum (Operator XXI)
+  </text>
+
+  <!-- Axis hints -->
+  <text x="40" y="170" fill="#505a86" font-size="10" font-family="Segoe UI, sans-serif">
+    step 0
+  </text>
+  <text x="690" y="170" text-anchor="end" fill="#505a86" font-size="10"
+        font-family="Segoe UI, sans-serif">
+    step N
+  </text>
+</svg>
+
+<!-- ========================================================= -->
+<!--  SVG: Operator Timeline Overlay (XIII–XXI)                -->
+<!-- ========================================================= -->
+<svg viewBox="0 0 760 180" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-labelledby="otoTitle otoDesc">
+  <title id="otoTitle">Operator Timeline Overlay</title>
+  <desc id="otoDesc">
+    Stylized UPI curve with markers for operators XIII, XIV, XVI, XVII, XXI.
+  </desc>
+
+  <defs>
+    <linearGradient id="otoBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050814"/>
+      <stop offset="100%" stop-color="#10182d"/>
+    </linearGradient>
+    <linearGradient id="upiLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3fa9ff"/>
+      <stop offset="100%" stop-color="#99e9ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="180" rx="10" ry="10"
+        fill="url(#otoBg)" stroke="#1f2945" stroke-width="1.5"/>
+
+  <!-- Title -->
+  <text x="24" y="28" fill="#a8c4ff" font-size="16" font-family="Segoe UI, sans-serif">
+    UPI Timeline with Operator Overlay
+  </text>
+  <text x="24" y="46" fill="#6f7ba8" font-size="11" font-family="Segoe UI, sans-serif">
+    UPI(n) curve with XIII, XIV, XVI, XVII, XXI markers at selected steps.
+  </text>
+
+  <!-- Axes -->
+  <line x1="50" y1="60" x2="50" y2="150" stroke="#303955" stroke-width="1"/>
+  <line x1="50" y1="150" x2="720" y2="150" stroke="#303955" stroke-width="1"/>
+  <text x="45" y="64" text-anchor="end" fill="#505a86" font-size="10"
+        font-family="Segoe UI, sans-serif">UPI</text>
+  <text x="720" y="164" text-anchor="end" fill="#505a86" font-size="10"
+        font-family="Segoe UI, sans-serif">n</text>
+
+  <!-- UPI curve (stylized path) -->
+  <path d="
+    M 50 140
+    C 90 120, 130 100, 170 110
+    S 250 80, 290 90
+    S 370 60, 410 70
+    S 490 120, 530 90
+    S 610 70, 720 95"
+    fill="none" stroke="url(#upiLine)" stroke-width="2"/>
+
+  <!-- Operator markers -->
+  <!-- XIII: lightning -->
+  <circle cx="120" cy="105" r="8" fill="#1b253f" stroke="#ffd26f" stroke-width="1.3"/>
+  <text x="120" y="108" text-anchor="middle" font-size="10"
+        font-family="Segoe UI, sans-serif" fill="#ffd26f">⚡</text>
+
+  <!-- XIV: phi -->
+  <circle cx="210" cy="96" r="8" fill="#17293b" stroke="#7dffb3" stroke-width="1.3"/>
+  <text x="210" y="100" text-anchor="middle" font-size="11"
+        font-family="Segoe UI, sans-serif" fill="#7dffb3">φ</text>
+
+  <!-- XVI: closure -->
+  <circle cx="310" cy="80" r="8" fill="#241933" stroke="#ff9ed5" stroke-width="1.3"/>
+  <text x="310" y="84" text-anchor="middle" font-size="11"
+        font-family="Segoe UI, sans-serif" fill="#ff9ed5">⊗</text>
+
+  <!-- XVII: semantic -->
+  <circle cx="420" cy="72" r="8" fill="#15232f" stroke="#8fd0ff" stroke-width="1.3"/>
+  <text x="420" y="76" text-anchor="middle" font-size="11"
+        font-family="Segoe UI, sans-serif" fill="#8fd0ff">∞</text>
+
+  <!-- XXI: tau -->
+  <circle cx="545" cy="92" r="8" fill="#24261f" stroke="#ffe873" stroke-width="1.3"/>
+  <text x="545" y="96" text-anchor="middle" font-size="11"
+        font-family="Segoe UI, sans-serif" fill="#ffe873">τ</text>
+
+  <!-- Legend -->
+  <rect x="520" y="20" width="210" height="32" rx="8" ry="8"
+        fill="#070b18" stroke="#303955" stroke-width="1"/>
+  <text x="530" y="36" fill="#7faefc" font-size="10" font-family="Segoe UI, sans-serif">
+    ⚡ XIII spikes   φ XIV φ-match   ⊗ XVI closure   ∞ XVII motif   τ XXI τ-peak
+  </text>
+</svg>
+
+        <!-- ─────────────────────────────────────────────────────────────── -->
+<!--  LABORATORY GUIDE — EXTENDED v1.6.0 (Financial Analysis Pack)  -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<div class="guide-section">
+
+<h2>📘 Laboratory Guide — UPI Paradox Dynamics (v1.6.1)</h2>
+
+<p>
+Chamber XXIII implements the Universal Paradox Index (UPI) for arbitrary numeric
+sequences and recursion systems. Version <strong>1.6.1</strong> introduces the
+<strong>Financial Analysis Pack</strong>: five operator-tuned financial presets (F1-F5),
+a preset selector dropdown for instant loading, a financial behavior classification
+table mapping market patterns to PSC types, and comprehensive guidance for using
+real-world financial time-series data. Building on v1.5.0's five major capabilities—
+<strong>Paradox Signature Classification (PSC)</strong>,
+<strong>Collapse Channel Map (CCM)</strong>,
+<strong>Operator Timeline Overlay (XIII–XXI)</strong>,
+<strong>Dynamic Tooltip Inspector (DTI)</strong>, and
+<strong>Multi-System Comparison Mode (MSCM)</strong>—v1.6.1 positions UNNS as a
+universal structural instability diagnostic framework for both mathematical
+sequences and real-world data.
+</p>
+
+<hr>
+
+<!-- ========================================================= -->
+<!-- UNNS MACRO DIAGNOSTICS MANUAL (NEW IN v1.9.4)           -->
+<!-- Positioned at the top of the guide for maximum visibility -->
+<!-- ========================================================= -->
+<details class="guide-section" open>
+<summary>📊 <strong>UNNS Macro Diagnostics Manual</strong> — Advanced Interpretation Guide</summary>
+
+<div style="margin-top:1.2rem">
+
+<h3>1. Introduction</h3>
+<p>
+The Macro Time-Series Viewer integrates real-world economic data into Chamber XXIII.
+It enables researchers to compare recursive instability (UPI(n)) with macroeconomic
+volatility across countries, currencies, markets, and synthetic financial processes.
+This manual introduces the concepts, methods, and best practices for using macro data
+within the UNNS diagnostic framework.
+</p>
+
+
+<h3>2. Loading Macro Data</h3>
+<p>
+The viewer supports CSV imports for publicly available time-series such as inflation,
+interest rates, GDP indexes, commodity prices, and volatility indices. The engine
+automatically:
+</p>
+<ul>
+    <li>Parses comma-, semicolon-, and tab-separated values</li>
+    <li>Removes non-numerical rows</li>
+    <li>Normalizes series length at render time</li>
+    <li>Applies unified scaling for multi-series comparison</li>
+</ul>
+<p>
+Imported series can be viewed alongside built-in UPI diagnostics or compared to
+each other as independent macro signals.
+</p>
+
+
+<h3>3. Multi-Series Comparison</h3>
+<p>
+Chamber XXIII supports unlimited parallel macro series. Use <strong>Add Series</strong> to import
+multiple CSV files. The viewer will assign distinct colors and automatically rescale
+the Y-axis to accommodate all active series.
+</p>
+
+<p><em>Why multi-series matters:</em></p>
+<ul>
+    <li>Compare inflation between countries (US vs EU vs Japan)</li>
+    <li>Study synchronized macro shocks</li>
+    <li>Analyze divergence in recovery regimes</li>
+    <li>Detect structural lag between economies</li>
+</ul>
+
+
+<h3>4. Zoom & Navigation</h3>
+<p>
+Use the mouse wheel to zoom horizontally around the cursor. The view centers on the
+cursor position and recalculates the visible window dynamically.
+</p>
+
+<ul>
+    <li><strong>Zoom In</strong>: Focus on crisis periods or transitions</li>
+    <li><strong>Zoom Out</strong>: Recover the global macro trend</li>
+    <li><strong>Drag</strong>: Scroll across time by clicking and moving horizontally</li>
+</ul>
+
+<p>
+This allows detailed inspection of high-density regions, such as 1970s inflation spikes,
+2008 recession, or 2020–2023 post-pandemic volatility.
+</p>
+
+
+<h3>5. Vertical Crosshair</h3>
+<p>
+The crosshair provides an instantaneous reference position across all series. It is
+ideal for:
+</p>
+<ul>
+    <li>Measuring temporal alignment between series</li>
+    <li>Detecting phase-lag in macro shocks</li>
+    <li>Identifying breakpoints or structural shifts</li>
+</ul>
+
+
+<h3>6. Advanced Tooltip</h3>
+<p>
+The tooltip follows the cursor with positional intelligence. It displays the value of:
+</p>
+<ul>
+    <li>Primary macro series</li>
+    <li>All additional imported series</li>
+    <li>UPI overlay (if enabled)</li>
+</ul>
+
+<p>
+Tooltip placement avoids overlapping data and remains fully inside panel bounds.
+Use it to:
+</p>
+<ul>
+    <li>Measure exact inflation levels</li>
+    <li>Track local maxima/minima</li>
+    <li>Identify divergence points</li>
+</ul>
+
+
+<h3>7. Smoothing Mode</h3>
+<p>
+The <strong>Smooth Lines</strong> toggle applies a reversible smoothing transform to reduce noise.
+This is particularly useful for highly volatile series or synthetic financial sequences.
+It does not alter underlying data or affect CSV export.
+</p>
+
+
+<h3>8. Understanding Macro Regimes in UNNS Terms</h3>
+<p>
+Macro behavior often maps naturally to UNNS phase-states and PSC classifications:
+</p>
+
+<table class="unns-macro-table">
+<tr><th>Macro Pattern</th><th>PSC Class</th><th>Phase Profile</th><th>Operator Signals</th></tr>
+
+<tr><td>Stable low inflation (Japan-like)</td>
+<td>A / B</td>
+<td>Mostly α region with rare γ</td>
+<td>XIV (φ-matching), XVII (weak motifs)</td></tr>
+
+<tr><td>Sideways cycles, moderate variance</td>
+<td>C</td>
+<td>β / γ oscillation</td>
+<td>XIII (occasional spikes)</td></tr>
+
+<tr><td>Volatility cluster (energy shocks, CPI bursts)</td>
+<td>C / E</td>
+<td>β↔γ bursts, isolated δ</td>
+<td>XIII (dense spikes), XXI (τ-peaks)</td></tr>
+
+<tr><td>Bubble & crash (asset prices)</td>
+<td>E / F</td>
+<td>α→β→γ→δ collapse</td>
+<td>Strong XVI closures, XVII motif repetition</td></tr>
+
+<tr><td>Regime shift / structural break</td>
+<td>F</td>
+<td>α early, γ/δ transition</td>
+<td>XIII (boundary), XXI (instability peak)</td></tr>
+</table>
+
+
+<h3>9. UPI Overlay as a Volatility Benchmark</h3>
+<p>
+The <strong>Overlay UPI</strong> option allows direct comparison between macro dynamics and
+recursive instability. UPI acts as a structural "volatility template":
+</p>
+<ul>
+    <li>Strong UPI spikes resemble macro shock volatility</li>
+    <li>UPI flat regions highlight low-instability periods</li>
+    <li>UPI periodicity reveals hidden rhythm mismatches</li>
+</ul>
+
+
+<h3>10. Exporting Series</h3>
+<p>
+Use <strong>Export Series</strong> to download:
+</p>
+<ul>
+    <li>The primary macro dataset</li>
+    <li>Individual imported datasets</li>
+    <li>UPI overlay (if active)</li>
+</ul>
+
+<p>
+Exports are raw numeric CSV files for analysis in Python, R, MATLAB, and UNNS Lab
+modules.
+</p>
+
+
+<h3>11. Collapse Channel Interpretation for Macro Data</h3>
+<p>
+Though collapse channels are defined on recursive systems, macro series often mimic
+collapse-like events during:
+</p>
+<ul>
+    <li>inflation crises</li>
+    <li>financial crashes</li>
+    <li>abrupt policy transitions</li>
+</ul>
+
+<p>
+When macro data is fed into Custom Data Mode, collapse strips and CCM reveal:
+</p>
+<ul>
+    <li>Sobra-dominated regimes (stability)</li>
+    <li>Sobtra-dominated regimes (instability)</li>
+    <li>mixed behavior around shocks</li>
+</ul>
+
+
+<h3>12. Best Practices</h3>
+<ul>
+    <li>Use zoom to isolate shocks or transitions</li>
+    <li>Overlay UPI to evaluate structural similarity</li>
+    <li>Disable smoothing before exporting</li>
+    <li>Compare at least 3 regions for meaningful patterns</li>
+    <li>Use operator diagnostics to classify macro volatility</li>
+</ul>
+
+
+<h3>13. Recommended Macro Datasets</h3>
+<p>Trusted sources include:</p>
+<ul>
+    <li>FRED (U.S.)</li>
+    <li>ECB / Eurostat (Europe)</li>
+    <li>OECD Data</li>
+    <li>World Bank</li>
+    <li>Bank of Japan</li>
+    <li>Kaggle (historical static datasets)</li>
+</ul>
+
+<p>
+CSV files should contain a single column of numeric values.
+</p>
+
+
+<h3>14. Significance</h3>
+<p>
+The Macro Diagnostics module unifies real-world economic dynamics with recursive
+instability theory. Chamber XXIII becomes a hybrid platform capable of analyzing:
+</p>
+<ul>
+    <li>macroeconomic shocks</li>
+    <li>structural transitions</li>
+    <li>volatility regimes</li>
+    <li>synthetic financial processes</li>
+</ul>
+
+<p>
+This expansion transforms Chamber XXIII from a pure UNNS recursion laboratory into
+a general-purpose time-series instability research engine.
+</p>
+
+</div>
+</details>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  1. PARADOX SIGNATURE CLASSIFIER (PSC)                          -->
+<!-- =============================================================== -->
+<h3>1. Paradox Signature Classifier (PSC)</h3>
+
+<p>
+The <strong>Paradox Signature Classifier</strong> infers the global paradox
+behavior of the sequence based on UPI variance, collapse channel distribution,
+phase-zone transitions, and the collective activity of Operators XIII–XXI.
+PSC reduces the complete UPI dynamics into a concise six-class signature:
+</p>
+
+<ul>
+<li><strong>A — Monotonic Dissipation</strong>: low variance, α-zone dominant</li>
+<li><strong>B — Oscillatory Paradox</strong>: alternating α/β structure</li>
+<li><strong>C — Chaotic Paradox</strong>: recurrent γ/δ phases, high variance</li>
+<li><strong>D — Semantic Paradox</strong>: prominent XVII motifs</li>
+<li><strong>E — Collapse-Driven Instability</strong>: Sobtra dominance (≥2:1)</li>
+<li><strong>F — Hybrid Paradox</strong>: no single regime is dominant</li>
+</ul>
+
+<p>
+PSC appears in the Diagnostics Summary as a colored badge accompanied by
+a brief interpretive statement. It is the recommended first-look descriptor
+when comparing different recursion systems or custom datasets.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  2. COLLAPSE CHANNEL MAP (CCM)                                  -->
+<!-- =============================================================== -->
+<h3>2. Collapse Channel Map (CCM)</h3>
+
+<p>
+The <strong>Collapse Channel Map</strong> visualizes Sobra and Sobtra dominance
+over time, together with the τ-spectrum derived from Operator XXI. CCM contains
+three vertically stacked analytical layers:
+</p>
+
+<ol>
+<li><strong>Sobra Density</strong> (blue): frequency of positive-collapse events</li>
+<li><strong>Sobtra Density</strong> (red/magenta): frequency of negative-collapse events</li>
+<li><strong>τ-Spectrum</strong> (yellow–olive gradient): curvature-driven microstructure</li>
+</ol>
+
+<p>
+Peaks in τ indicate <em>curvature instabilities</em> and often align with
+paradox transitions (γ→δ) or regions classified as PSC Type C/E.  
+The CCM is therefore the preferred high-level visual tool for collapse
+behavior and structural volatility.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  3. OPERATOR TIMELINE OVERLAY (XIII–XXI)                        -->
+<!-- =============================================================== -->
+<h3>3. Operator Timeline Overlay (XIII–XXI)</h3>
+
+<p>
+Enabling the <strong>Show Operator Events</strong> toggle superimposes
+symbolic markers onto the UPI Timeline. Each operator highlights distinct
+structural conditions:
+</p>
+
+<ul>
+<li><strong>XIII — Phase Spikes</strong> (⚡): localized instability</li>
+<li><strong>XIV — φ-Compatibility</strong> (φ): golden-ratio scaling alignment</li>
+<li><strong>XVI — Closure Events</strong> (⊗): recursion curvature fold-points</li>
+<li><strong>XVII — Semantic Motifs</strong> (∞): symbolic or pattern-retaining echo</li>
+<li><strong>XXI — τ-Curvature Peaks</strong> (τ): microstructural resonance</li>
+</ul>
+
+<p>
+This overlay allows researchers to correlate UPI peaks, collapse channels, and
+operator-level structure at each step <code>n</code>.  
+Dense operator clustering is a strong indicator of chaotic or hybrid PSC classes.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  4. DYNAMIC TOOLTIP INSPECTOR (DTI)                             -->
+<!-- =============================================================== -->
+<h3>4. Dynamic Tooltip Inspector (DTI)</h3>
+
+<p>
+Hovering over any canvas activates the <strong>Dynamic Tooltip Inspector</strong>.
+DTI provides a local, high-resolution view of the system at each step.  
+Displayed information varies by visualization:
+</p>
+
+<h4>UPI Timeline</h4>
+<ul>
+<li>Step <code>n</code>, UPI(n), zone (α/β/γ/δ)</li>
+<li>Collapse type (Sobra / Sobtra)</li>
+<li>D, R, M components</li>
+<li>Operator events at <code>n</code></li>
+</ul>
+
+<h4>Phase Map</h4>
+<ul>
+<li><code>M+S</code> and <code>D–R</code> coordinates</li>
+<li>Zone membership</li>
+</ul>
+
+<h4>State Evolution</h4>
+<ul>
+<li>x(n), Δx, slope cues</li>
+</ul>
+
+<h4>Collapse Strip / CCM</h4>
+<ul>
+<li>Collapse channel</li>
+<li>τ-curvature value</li>
+<li>Local density window</li>
+</ul>
+
+<p>
+DTI is essential for fine-grained analysis, allowing precise investigation
+of anomalous steps, operator alignments, or paradox bursts.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  5. MULTI-SYSTEM COMPARISON MODE (MSCM)                         -->
+<!-- =============================================================== -->
+<h3>5. Multi-System Comparison Mode (MSCM)</h3>
+
+<p>
+MSCM allows researchers to evaluate two sequences or two recursion systems
+side-by-side. Three modes are available:
+</p>
+
+<ul>
+<li><strong>Single Run</strong>: standard mode</li>
+<li><strong>Dual Recursive</strong>: compare two recursion systems</li>
+<li><strong>Dual Custom</strong>: compare two user-provided datasets</li>
+</ul>
+
+<p>
+Results may be viewed either in (A) dual stacked mode or (B) overlay mode
+(blue vs orange). The Comparison Summary includes:
+</p>
+
+<ul>
+<li>ΔUPI (max, mean, variance)</li>
+<li>ΔZone distribution</li>
+<li>ΔCollapse densities</li>
+<li>ΔOperator metrics (XIII–XXI)</li>
+</ul>
+
+<p>
+MSCM is the recommended tool for studying seed-dependence, algorithmic
+sensitivity, and structural divergence between competing dynamical systems.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  6. OPERATOR INTERPRETATION GUIDE (XIII–XXI)                     -->
+<!-- =============================================================== -->
+<h3>6. Operator Interpretation Guide (XIII–XXI)</h3>
+
+<p>
+Chamber XXIII employs UNNS Operators XIII through XXI strictly in 
+<strong>passive diagnostic mode</strong>. These operators analyze structure
+but <em>never modify</em> UPI evolution or collapse channels.
+</p>
+
+<ul>
+<li><strong>XIII</strong>: detects instability spikes or sharp UPI gradients</li>
+<li><strong>XIV</strong>: measures φ-scaling compatibility across local ratios</li>
+<li><strong>XVI</strong>: identifies curvature closures, fold-points, or recursion loops</li>
+<li><strong>XVII</strong>: detects semantic or pattern-preserving motifs</li>
+<li><strong>XXI</strong>: computes τ-curvature spectrum and resonance peaks</li>
+</ul>
+
+<p>
+These metrics enrich the interpretation of UPI dynamics and contribute to
+the PSC classification.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  7. INTERPRETATION WORKFLOW                                     -->
+<!-- =============================================================== -->
+<h3>7. Interpretation Workflow</h3>
+
+<p>
+A recommended analysis workflow for Chamber XXIII:
+</p>
+
+<ol>
+<li><strong>Examine PSC</strong> to determine global paradox class</li>
+<li><strong>Inspect the UPI Timeline</strong> (zone transitions, collapse clusters)</li>
+<li><strong>Enable Operator Overlay</strong> to locate structural markers</li>
+<li><strong>Open the CCM</strong> to analyze Sobra/Sobtra dominance and τ-activity</li>
+<li><strong>Use DTI</strong> to inspect anomalous regions step-by-step</li>
+<li><strong>Run MSCM</strong> if comparing two systems or datasets</li>
+</ol>
+
+<p>
+This workflow mirrors the UNNS Lab methodology used in Chambers XVI and XXI,
+but adapted for general-purpose paradox analysis.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  8. JSON EXPORT FORMAT                                          -->
+<!-- =============================================================== -->
+<h3>8. JSON Export Format Extensions</h3>
+
+<p>
+Version 1.5.0 extends the JSON summary with the following fields:
+</p>
+
+<pre>{
+  summary: {
+    paradoxSignature: {
+      type: "C",
+      label: "Chaotic Paradox",
+      notes: "High variance with recurrent γ/δ activity"
+    },
+    advancedMetrics: {
+      XIII_spikes: 88,
+      XIV_phiMatches: 0,
+      XVI_closures: 8,
+      XVII_semanticLevel: "Moderate",
+      XXI_tauPeaks: 22
+    },
+    collapseChannelMap: {
+      sobraDensity: [...],
+      sobtraDensity: [...],
+      tauSpectrum: [...]
+    }
+  }
+}
+</pre>
+
+<p>
+These fields enable reproducible analysis in external tools and can be used in
+future UNNS research pipelines.
+</p>
+
+<hr>
+
+<!-- =============================================================== -->
+<!--  END OF EXTENDED GUIDE                                          -->
+<!-- =============================================================== -->
+</div>
+
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">📖 References & Documentation</h3>
+        <div style="background: #0a1a2a; padding: 12px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 8px;"><strong>Primary Reference:</strong></p>
+          <div style="
+    width: 100%;
+    max-width: 1800px;
+    margin: 2rem auto;
+    padding: 0;
+    min-height: 90vh;
+    height: 90vh;
+    display: block;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+">
+    <embed 
+        src="https://unns.tech/media/docs/UNNS Paradox Index_UPI Foundations Structure and Recursive Dynamics.pdf"
+        type="application/pdf"
+        width="100%"
+        height="100%"
+        style="display:block; border:none; min-height:90vh;"
+    />
+</div>
+          <p style="margin: 8px 0 0; font-size: 0.9em; color: #888;">
+            Comprehensive monograph covering UPI axioms, mathematical preliminaries, formal definitions, recursive geometry, paradox phase spaces, collapse channel integration, and cross-chamber applications.
+          </p>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 1.5.0 | <strong>Engine:</strong> UPIDiagnosticsEngine | <strong>Features:</strong> PSC · CCM · OTO · Operator Integration · Tooltips · Collapsible Panels | <strong>Status:</strong> Production Ready
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+/**
+ * UNNS Laboratory — Chamber XXIII: UPI Paradox Dynamics Engine
+ * 
+ * Measures paradox formation in recursive systems via the UNNS Paradox Index:
+ * UPI(n) = [D(n) · R(n)] / [M(n) + S(n)]
+ * 
+ * Integrates Operator XII collapse channels (Sobra vs Sobtra)
+ * Provides time-resolved diagnostics, phase maps, and collapse visualization
+ */
+
+class UPIDiagnosticsEngine {
+  constructor(config = {}) {
+    this.config = {
+      system: config.system || 'collatz',
+      x0: config.x0 || 27,
+      n_max: config.n_max || 200,
+      sobtra_sensitivity: config.sobtra_sensitivity || 0.7,
+      noise_epsilon: config.noise_epsilon || 0.0,
+      base_delta: config.base_delta || 0.1,
+      mode: config.mode || 'recursive', // 'recursive' | 'custom'
+      custom_sequence: config.custom_sequence || null
+    };
+    
+    this.timeline = [];
+    this.summary = null;
+    this.running = false;
+    this.current_step = 0;
+    
+    // State buffer (for computing torsion)
+    this.state_buffer = [];
+    
+    // Validate custom mode
+    if (this.config.mode === 'custom' && !this.config.custom_sequence) {
+      throw new Error('Custom mode requires custom_sequence');
+    }
+    
+    // ========================================
+    // OPERATOR CONFIGURATION (XIII-XXI)
+    // ========================================
+    this.operators = {
+      XIII: {
+        phaseSpikeThreshold: config.op13_threshold || 1.5,
+        phaseSpikes: 0,
+        flag: false
+      },
+      XIV: {
+        phi: 1.61803398875,
+        tolerance: config.op14_tolerance || 0.04,
+        matches: 0,
+        total: 0,
+        compatibility: 0
+      },
+      XVI: {
+        curvatureThreshold: config.op16_threshold || 0.0001,
+        closureEvents: 0
+      },
+      XVII: {
+        semanticThreshold: config.op17_threshold || 0.01,
+        recursions: 0,
+        level: "Weak"
+      },
+      XXI: {
+        peakFactor: config.op21_peakfactor || 1.5,
+        tauSpectrum: [],
+        peaks: 0,
+        meanTau: 0
+      }
+    };
+  }
+  
+  // ========================================
+  // RECURSION RULES
+  // ========================================
+  
+  applyCollatz(x) {
+    if (x <= 1) return 1;
+    return (x % 2 === 0) ? x / 2 : 3 * x + 1;
+  }
+  
+  applyPhiFeedback(x) {
+    const phi = 1.618033988749895;
+    return x + 0.1 * Math.sin(phi * x);
+  }
+  
+  applyBinaryParity(x) {
+    return (Math.floor(Math.abs(x)) % 2 === 0) ? x + 1 : x - 1;
+  }
+  
+  applySelfReference(x, buffer) {
+    if (buffer.length < 2) return x * 1.1;
+    const prev = buffer[buffer.length - 1];
+    return (x + prev) / 2 + 0.1 * Math.sin(x);
+  }
+  
+  applyRule(x, buffer) {
+    let next_x;
+    
+    switch(this.config.system) {
+      case 'collatz':
+        next_x = this.applyCollatz(x);
+        break;
+      case 'phi_feedback':
+        next_x = this.applyPhiFeedback(x);
+        break;
+      case 'binary_parity':
+        next_x = this.applyBinaryParity(x);
+        break;
+      case 'self_reference':
+        next_x = this.applySelfReference(x, buffer);
+        break;
+      default:
+        next_x = x;
+    }
+    
+    // Add noise if configured
+    if (this.config.noise_epsilon > 0) {
+      const noise = (Math.random() - 0.5) * 2 * this.config.noise_epsilon;
+      next_x += noise;
+    }
+    
+    return next_x;
+  }
+  
+  // ========================================
+  // UPI COMPONENTS
+  // ========================================
+  
+  computeDepth(n) {
+    return n;
+  }
+  
+  computeSelfReference(n) {
+    // Basic implementation: R = 1 for single-step rules
+    // Can be enhanced for multi-step self-referential systems
+    return 1;
+  }
+  
+  computeDivergence(x_current, x_next) {
+    return Math.max(0, Math.abs(x_next) - Math.abs(x_current));
+  }
+  
+  computeSaturation(x_current, x_next) {
+    return 1 / (1 + Math.abs(x_next - x_current));
+  }
+  
+  computeUPI(D, R, M, S) {
+    const denom = M + S;
+    if (denom === 0) return 0;
+    const raw_upi = (D * R) / denom;
+    return Math.min(raw_upi, 1e6); // Clamp to prevent overflow
+  }
+  
+  classifyZone(upi) {
+    if (upi < 1) return 'alpha';
+    if (upi < 2.2) return 'beta';
+    if (upi < 3.8) return 'gamma';
+    return 'delta';
+  }
+  
+  // ========================================
+  // COLLAPSE CHANNEL (OPERATOR XII)
+  // ========================================
+  
+  computeTorsion(buffer) {
+    if (buffer.length < 3) return 0;
+    const n = buffer.length - 1;
+    const x_n1 = buffer[n];
+    const x_n = buffer[n - 1];
+    const x_n_1 = buffer[n - 2];
+    return Math.abs(x_n1 - 2 * x_n + x_n_1);
+  }
+  
+  computeThreshold() {
+    return this.config.base_delta * this.config.sobtra_sensitivity;
+  }
+  
+  selectCollapseChannel(tau, delta) {
+    if (tau === 0) return 'none';
+    return tau <= delta ? 'sobra' : 'sobtra';
+  }
+  
+  applyCollapseTransform(x, channel) {
+    if (channel === 'sobra') {
+      return x * 0.95; // Damping
+    } else if (channel === 'sobtra') {
+      return x * 1.05; // Boost
+    }
+    return x;
+  }
+  
+  // ========================================
+  // OPERATOR DIAGNOSTICS (XIII-XXI)
+  // ========================================
+  
+  /**
+   * Compute additional operator metrics (non-invasive)
+   * Called after UPI computation, does not alter core dynamics
+   */
+  computeOperatorDiagnostics(n, x_current, x_next, UPI_current) {
+    const buffer = this.state_buffer;
+    
+    // Need at least 3 points for most operators
+    if (buffer.length < 3) return;
+    
+    const x_prev = buffer[buffer.length - 1];
+    const x_prev2 = buffer.length >= 3 ? buffer[buffer.length - 2] : x_prev;
+    
+    // Get previous UPI if available
+    const UPI_prev = this.timeline.length > 0 ? this.timeline[this.timeline.length - 1].UPI : 0;
+    
+    // ===== OPERATOR XIII: Phase Instability =====
+    const dU = UPI_current - UPI_prev;
+    if (Math.abs(dU) > this.operators.XIII.phaseSpikeThreshold) {
+      this.operators.XIII.phaseSpikes++;
+      this.operators.XIII.flag = true;
+    }
+    
+    // ===== OPERATOR XIV: Φ-Scaling Feedback Compatibility =====
+    if (Math.abs(x_current) > 1e-10) { // Avoid division by near-zero
+      const ratio = x_next / x_current;
+      if (Math.abs(ratio - this.operators.XIV.phi) < this.operators.XIV.tolerance) {
+        this.operators.XIV.matches++;
+      }
+      this.operators.XIV.total++;
+    }
+    
+    // ===== OPERATOR XVI: Fold/Closure Pattern Detection =====
+    const curvature = x_next - 2 * x_current + x_prev;
+    const threshold = this.operators.XVI.curvatureThreshold * Math.max(Math.abs(x_current), 1);
+    if (Math.abs(curvature) < threshold) {
+      this.operators.XVI.closureEvents++;
+    }
+    
+    // ===== OPERATOR XVII: Semantic Recursion Recognition =====
+    const motif = x_current - x_prev;
+    const motifPrev = x_prev - x_prev2;
+    if (Math.abs(motif - motifPrev) < this.operators.XVII.semanticThreshold) {
+      this.operators.XVII.recursions++;
+    }
+    
+    // ===== OPERATOR XXI: τ-Microstructure Curvature Sampling =====
+    const tauVal = Math.abs(x_next - 2 * x_current + x_prev);
+    this.operators.XXI.tauSpectrum.push(tauVal);
+  }
+  
+  /**
+   * Finalize operator metrics (called at end of run)
+   */
+  finalizeOperatorDiagnostics() {
+    // XIV: Compute compatibility ratio
+    if (this.operators.XIV.total > 0) {
+      this.operators.XIV.compatibility = this.operators.XIV.matches / this.operators.XIV.total;
+    }
+    
+    // XVII: Classify semantic level
+    const recCount = this.operators.XVII.recursions;
+    if (recCount < 5) {
+      this.operators.XVII.level = "Weak";
+    } else if (recCount < 20) {
+      this.operators.XVII.level = "Moderate";
+    } else {
+      this.operators.XVII.level = "Strong";
+    }
+    
+    // XXI: Compute mean tau and detect peaks
+    const tauSpectrum = this.operators.XXI.tauSpectrum;
+    if (tauSpectrum.length > 0) {
+      const sum = tauSpectrum.reduce((a, b) => a + b, 0);
+      this.operators.XXI.meanTau = sum / tauSpectrum.length;
+      
+      // Compute standard deviation
+      const mean = this.operators.XXI.meanTau;
+      const variance = tauSpectrum.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / tauSpectrum.length;
+      const tauStd = Math.sqrt(variance);
+      
+      // Count peaks
+      this.operators.XXI.peaks = 0;
+      for (const tau of tauSpectrum) {
+        if (tau > this.operators.XXI.peakFactor * tauStd) {
+          this.operators.XXI.peaks++;
+        }
+      }
+    }
+  }
+  
+  // ========================================
+  // MAIN ITERATION
+  // ========================================
+  
+  async run(onStepCallback = null) {
+    this.running = true;
+    this.timeline = [];
+    this.current_step = 0;
+    
+    if (this.config.mode === 'custom') {
+      return await this.runCustomMode(onStepCallback);
+    } else {
+      return await this.runRecursiveMode(onStepCallback);
+    }
+  }
+  
+  async runRecursiveMode(onStepCallback = null) {
+    this.state_buffer = [this.config.x0];
+    let x_current = this.config.x0;
+    
+    for (let n = 0; n < this.config.n_max && this.running; n++) {
+      this.current_step = n;
+      
+      // Compute next state
+      const x_next_raw = this.applyRule(x_current, this.state_buffer);
+      
+      // Compute UPI components
+      const D = this.computeDepth(n);
+      const R = this.computeSelfReference(n);
+      const M = this.computeDivergence(x_current, x_next_raw);
+      const S = this.computeSaturation(x_current, x_next_raw);
+      const UPI = this.computeUPI(D, R, M, S);
+      const zone = this.classifyZone(UPI);
+      
+      // Compute collapse channel
+      const tau = this.computeTorsion(this.state_buffer);
+      const delta = this.computeThreshold();
+      const collapse_channel = this.selectCollapseChannel(tau, delta);
+      
+      // Apply collapse transform if needed
+      const x_next = this.applyCollapseTransform(x_next_raw, collapse_channel);
+      
+      // ========================================
+      // OPERATOR DIAGNOSTICS (XIII-XXI)
+      // ========================================
+      this.computeOperatorDiagnostics(n, x_current, x_next, UPI);
+      
+      // Record step
+      const step_data = {
+        n: n,
+        x: x_current,
+        D: D,
+        R: R,
+        M: M,
+        S: S,
+        UPI: UPI,
+        tau: tau,
+        delta: delta,
+        collapse_channel: collapse_channel,
+        zone: zone
+      };
+      
+      this.timeline.push(step_data);
+      this.state_buffer.push(x_next);
+      
+      // Callback for live updates
+      if (onStepCallback) {
+        await onStepCallback(step_data, n, this.config.n_max);
+      }
+      
+      // Update for next iteration
+      x_current = x_next;
+      
+      // Prevent infinite loops
+      if (Math.abs(x_current) > 1e10) {
+        console.warn(`Divergence detected at step ${n}, halting.`);
+        break;
+      }
+      
+      // Yield to UI
+      if (n % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+    
+    this.running = false;
+    this.finalizeOperatorDiagnostics();
+    this.computeSummary();
+    
+    return {
+      timeline: this.timeline,
+      summary: this.summary
+    };
+  }
+  
+  async runCustomMode(onStepCallback = null) {
+    const sequence = this.config.custom_sequence;
+    this.state_buffer = [];
+    
+    for (let n = 0; n < sequence.length && this.running; n++) {
+      this.current_step = n;
+      
+      const x_current = sequence[n];
+      this.state_buffer.push(x_current);
+      
+      // For custom mode, x_next is the next value in sequence (or same if last)
+      const x_next = (n < sequence.length - 1) ? sequence[n + 1] : x_current;
+      
+      // Compute UPI components
+      const D = this.computeDepth(n);
+      const R = this.computeSelfReference(n);
+      const M = this.computeDivergence(x_current, x_next);
+      const S = this.computeSaturation(x_current, x_next);
+      const UPI = this.computeUPI(D, R, M, S);
+      const zone = this.classifyZone(UPI);
+      
+      // Compute collapse channel
+      const tau = this.computeTorsion(this.state_buffer);
+      const delta = this.computeThreshold();
+      const collapse_channel = this.selectCollapseChannel(tau, delta);
+      
+      // ========================================
+      // OPERATOR DIAGNOSTICS (XIII-XXI)
+      // ========================================
+      this.computeOperatorDiagnostics(n, x_current, x_next, UPI);
+      
+      // Record step
+      const step_data = {
+        n: n,
+        x: x_current,
+        D: D,
+        R: R,
+        M: M,
+        S: S,
+        UPI: UPI,
+        tau: tau,
+        delta: delta,
+        collapse_channel: collapse_channel,
+        zone: zone
+      };
+      
+      this.timeline.push(step_data);
+      
+      // Callback for live updates
+      if (onStepCallback) {
+        await onStepCallback(step_data, n, sequence.length);
+      }
+      
+      // Yield to UI
+      if (n % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+    
+    this.running = false;
+    this.finalizeOperatorDiagnostics();
+    this.computeSummary();
+    
+    return {
+      timeline: this.timeline,
+      summary: this.summary
+    };
+  }
+  
+  stop() {
+    this.running = false;
+  }
+  
+  // ========================================
+  // SUMMARY STATISTICS
+  // ========================================
+  
+  computeSummary() {
+    const zone_counts = { alpha: 0, beta: 0, gamma: 0, delta: 0 };
+    let collapse_counts = { sobra: 0, sobtra: 0 };
+    let first_paradox = null;
+    let max_UPI = 0;
+    let sum_UPI = 0;
+    let sum_sq_UPI = 0;
+    
+    for (let i = 0; i < this.timeline.length; i++) {
+      const step = this.timeline[i];
+      
+      zone_counts[step.zone]++;
+      
+      if (step.collapse_channel === 'sobra') collapse_counts.sobra++;
+      if (step.collapse_channel === 'sobtra') collapse_counts.sobtra++;
+      
+      if (step.zone === 'delta' && first_paradox === null) {
+        first_paradox = step.n;
+      }
+      
+      max_UPI = Math.max(max_UPI, step.UPI);
+      sum_UPI += step.UPI;
+      sum_sq_UPI += step.UPI * step.UPI;
+    }
+    
+    const n = this.timeline.length;
+    const mean_UPI = sum_UPI / n;
+    const variance_UPI = (sum_sq_UPI / n) - (mean_UPI * mean_UPI);
+    const std_UPI = Math.sqrt(Math.max(0, variance_UPI));
+    
+    this.summary = {
+      total_steps: n,
+      alpha_steps: zone_counts.alpha,
+      beta_steps: zone_counts.beta,
+      gamma_steps: zone_counts.gamma,
+      delta_steps: zone_counts.delta,
+      first_paradox_step: first_paradox,
+      num_sobra_collapses: collapse_counts.sobra,
+      num_sobtra_collapses: collapse_counts.sobtra,
+      max_UPI: max_UPI,
+      mean_UPI: mean_UPI,
+      std_UPI: std_UPI,
+      advancedMetrics: {
+        opXIII: {
+          phaseSpikes: this.operators.XIII.phaseSpikes,
+          flag: this.operators.XIII.flag
+        },
+        opXIV: {
+          compatibility: this.operators.XIV.compatibility,
+          matches: this.operators.XIV.matches,
+          total: this.operators.XIV.total
+        },
+        opXVI: {
+          closureEvents: this.operators.XVI.closureEvents
+        },
+        opXVII: {
+          recursions: this.operators.XVII.recursions,
+          level: this.operators.XVII.level
+        },
+        opXXI: {
+          peaks: this.operators.XXI.peaks,
+          meanTau: this.operators.XXI.meanTau,
+          tauSpectrumLength: this.operators.XXI.tauSpectrum.length
+        }
+      },
+      paradoxSignature: this.computeParadoxSignature(zone_counts, collapse_counts, max_UPI, mean_UPI, std_UPI)
+    };
+  }
+  
+  /**
+   * Paradox Signature Classifier (PSC)
+   * Generates A-F classification of overall paradox behavior
+   */
+  computeParadoxSignature(zone_counts, collapse_counts, max_UPI, mean_UPI, std_UPI) {
+    const n = this.timeline.length;
+    const alpha_ratio = zone_counts.alpha / n;
+    const delta_ratio = zone_counts.delta / n;
+    const collapse_ratio = collapse_counts.sobtra / Math.max(1, collapse_counts.sobra);
+    const upi_cv = std_UPI / Math.max(0.001, mean_UPI); // Coefficient of variation
+    
+    // Count zone switches
+    let zone_switches = 0;
+    for (let i = 1; i < this.timeline.length; i++) {
+      if (this.timeline[i].zone !== this.timeline[i-1].zone) zone_switches++;
+    }
+    const switch_frequency = zone_switches / n;
+    
+    // Classification logic
+    let type, label, description;
+    
+    // Type A: Monotonic Dissipation
+    if (alpha_ratio > 0.75 && upi_cv < 0.3) {
+      type = 'A';
+      label = 'Monotonic Dissipation';
+      description = 'Stable α-zone dominance with low variance';
+    }
+    // Type B: Oscillatory Paradox
+    else if (switch_frequency > 0.15 && delta_ratio < 0.1 && upi_cv < 0.8) {
+      type = 'B';
+      label = 'Oscillatory Paradox';
+      description = 'Frequent zone oscillations without extreme δ-zone entries';
+    }
+    // Type C: Chaotic Paradox
+    else if (upi_cv > 1.0 || (delta_ratio > 0.15 && switch_frequency > 0.2)) {
+      type = 'C';
+      label = 'Chaotic Paradox';
+      description = 'High variance with recurrent γ/δ-zone activity';
+    }
+    // Type D: Semantic Paradox
+    else if (this.operators.XVII.level === 'Strong' || this.operators.XVII.level === 'Moderate') {
+      type = 'D';
+      label = 'Semantic Paradox';
+      description = 'Strong self-referential patterns detected';
+    }
+    // Type E: Collapse-Driven Instability
+    else if (collapse_ratio >= 2.0 || collapse_counts.sobtra > n * 0.4) {
+      type = 'E';
+      label = 'Collapse-Driven Instability';
+      description = 'Sobtra transport dominates dynamics';
+    }
+    // Type F: Hybrid Paradox
+    else {
+      type = 'F';
+      label = 'Hybrid Paradox';
+      description = 'No single dominant behavior pattern';
+    }
+    
+    return {
+      type: type,
+      label: label,
+      description: description,
+      metrics: {
+        alpha_ratio: alpha_ratio,
+        delta_ratio: delta_ratio,
+        switch_frequency: switch_frequency,
+        upi_cv: upi_cv,
+        collapse_ratio: collapse_ratio
+      }
+    };
+  }
+  
+  // ========================================
+  // EXPORT
+  // ========================================
+  
+  exportJSON() {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const seed_info = this.config.mode === 'custom' ? 'custom' : Math.floor(this.config.x0);
+    const filename = `UPI_XXIII_run_${timestamp}_seed${seed_info}.json`;
+    
+    const data = {
+      chamber: "XXIII",
+      mode: this.config.mode,
+      system: this.config.mode === 'custom' ? 'custom' : this.config.system,
+      seed: this.config.mode === 'custom' ? 'custom_data' : this.config.x0,
+      params: {
+        n_max: this.config.mode === 'custom' ? this.config.custom_sequence.length : this.config.n_max,
+        sobtra_sensitivity: this.config.sobtra_sensitivity,
+        noise_epsilon: this.config.noise_epsilon
+      },
+      timeline: this.timeline,
+      summary: this.summary
+    };
+    
+    // Include custom sequence if in custom mode
+    if (this.config.mode === 'custom') {
+      data.input_sequence = this.config.custom_sequence;
+    }
+    
+    return { filename, data };
+  }
+}
+
+// ========================================
+// UI CONTROLLER
+// ========================================
+
+console.log('═══════════════════════════════════════════');
+console.log('UNNS Chamber XXIII | UPI Paradox Dynamics');
+console.log('Version 1.5.0 | PSC · CCM · OTO · Full Operator Suite');
+console.log('═══════════════════════════════════════════');
+
+let engine = null;
+let running = false;
+let currentMode = 'recursive'; // 'recursive' | 'custom'
+
+const ui = {
+  system: document.getElementById('system'),
+  x0: document.getElementById('x0'),
+  n_max: document.getElementById('n_max'),
+  sensitivity: document.getElementById('sensitivity'),
+  sensitivityValue: document.getElementById('sensitivityValue'),
+  noise: document.getElementById('noise'),
+  runBtn: document.getElementById('runBtn'),
+  stopBtn: document.getElementById('stopBtn'),
+  exportBtn: document.getElementById('exportBtn'),
+  status: document.getElementById('statusDisplay'),
+  progress: document.getElementById('progressFill'),
+  modeIndicator: document.getElementById('modeIndicator'),
+  customSequence: document.getElementById('customSequence'),
+  runCustomBtn: document.getElementById('runCustomBtn'),
+  customValidation: document.getElementById('customValidation'),
+  csvFileInput: document.getElementById('csvFileInput'),
+  canvasTimeline: document.getElementById('canvasTimeline'),
+  canvasPhaseMap: document.getElementById('canvasPhaseMap'),
+  canvasStateEvolution: document.getElementById('canvasStateEvolution'),
+  canvasCollapseStrip: document.getElementById('canvasCollapseStrip'),
+  canvasCollapseMap: document.getElementById('canvasCollapseMap'),
+  toggleOperatorOverlay: document.getElementById('toggleOperatorOverlay'),
+  metricStep: document.getElementById('metricStep'),
+  metricUPI: document.getElementById('metricUPI'),
+  metricZone: document.getElementById('metricZone'),
+  metricMaxUPI: document.getElementById('metricMaxUPI'),
+  metricAlpha: document.getElementById('metricAlpha'),
+  metricBeta: document.getElementById('metricBeta'),
+  metricGamma: document.getElementById('metricGamma'),
+  metricDelta: document.getElementById('metricDelta'),
+  metricFirstParadox: document.getElementById('metricFirstParadox'),
+  metricSobra: document.getElementById('metricSobra'),
+  metricSobtra: document.getElementById('metricSobtra'),
+  metricStatus: document.getElementById('metricStatus')
+};
+
+// ===================== MACRO VIEWER — DATA =====================
+let macroData = {
+    dates: [],
+    values: [],
+    valid: false
+};
+
+let macroUPI = {
+    values: [],
+    active: false
+};
+
+let macroSeries = [];
+// each element: { name: "Series Name", dates: [...], values: [...], color: "#color" }
+
+// === MICRO-IMPROVEMENTS GLOBALS ===
+let macroSmooth = false;
+let macroZoomLevel = 1.0;
+let macroZoomCenter = 0.5;
+let macroCurrentHoverX = null;
+
+// Extended color palette for >10 series (starting with colors distinct from primary #4da6ff)
+const macroPalette = [
+    "#55ffaa", "#ff7788", "#ffaa44", "#dd88ff", "#33ffaa",
+    "#ff44aa", "#44ccff", "#ffcc33", "#66ddaa", "#ff88dd",
+    ...Array.from({length:20}, (_,i) => `hsl(${(i*37)%360}, 80%, 60%)`)
+];
+
+// Setup canvases
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasTimeline, ui.canvasPhaseMap, ui.canvasStateEvolution, ui.canvasCollapseStrip, ui.canvasCollapseMap].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+window.addEventListener('resize', setupCanvases);
+
+// Sensitivity slider
+ui.sensitivity.addEventListener('input', (e) => {
+  ui.sensitivityValue.textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+// Laboratory Guide toggle
+document.getElementById('toggleGuideBtn').addEventListener('click', () => {
+  const guide = document.getElementById('laboratoryGuide');
+  const btn = document.getElementById('toggleGuideBtn');
+  
+  if (guide.style.display === 'none') {
+    guide.style.display = 'block';
+    btn.textContent = '📚 Laboratory Guide (Click to Hide)';
+  } else {
+    guide.style.display = 'none';
+    btn.textContent = '📚 Laboratory Guide (Click to Show)';
+  }
+});
+
+// Toggle Advanced Operator Diagnostics
+document.getElementById('toggleOperatorsBtn').addEventListener('click', () => {
+  const container = document.getElementById('operatorMetricsContainer');
+  const btn = document.getElementById('toggleOperatorsBtn');
+  
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    btn.textContent = '🔬 Advanced Operator Diagnostics (XIII-XXI) — Click to Hide';
+  } else {
+    container.style.display = 'none';
+    btn.textContent = '🔬 Advanced Operator Diagnostics (XIII-XXI) — Click to Show';
+  }
+});
+
+// ========================================
+// CANVAS TOOLTIPS
+// ========================================
+
+const tooltip = document.getElementById('canvasTooltip');
+let tooltipData = null; // Will store current timeline data
+
+function setupCanvasTooltips() {
+  const canvasConfigs = [
+    { canvas: ui.canvasTimeline, type: 'timeline' },
+    { canvas: ui.canvasPhaseMap, type: 'phaseMap' },
+    { canvas: ui.canvasStateEvolution, type: 'stateEvolution' },
+    { canvas: ui.canvasCollapseStrip, type: 'collapseStrip' },
+    { canvas: ui.canvasCollapseMap, type: 'collapseMap' }
+  ];
+  
+  canvasConfigs.forEach(({ canvas, type }) => {
+    canvas.addEventListener('mousemove', (e) => {
+      if (!tooltipData || tooltipData.length === 0) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const content = getTooltipContent(type, x, y, rect.width, rect.height);
+      
+      if (content) {
+        tooltip.innerHTML = content;
+        tooltip.classList.add('active'); // Make visible first so getBoundingClientRect works
+        
+        // Now get actual tooltip dimensions
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const viewportW = window.innerWidth;
+        const viewportH = window.innerHeight;
+        
+        let left = e.clientX + 12; // Small offset to right of cursor
+        let top = e.clientY + 12;  // Small offset below cursor
+        
+        // Flip to left if too close to right edge
+        if (left + tooltipRect.width + 10 > viewportW) {
+          left = e.clientX - tooltipRect.width - 12;
+        }
+        
+        // Flip above if too close to bottom edge
+        if (top + tooltipRect.height + 10 > viewportH) {
+          top = e.clientY - tooltipRect.height - 12;
+        }
+        
+        // Ensure minimum distance from edges
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+        
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      } else {
+        tooltip.classList.remove('active');
+      }
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('active');
+    });
+  });
+}
+
+function getTooltipContent(type, mouseX, mouseY, canvasW, canvasH) {
+  const padding = 40;
+  const plotW = canvasW - 2 * padding;
+  const plotH = canvasH - 2 * padding;
+  
+  // Check if mouse is in plot area
+  if (mouseX < padding || mouseX > canvasW - padding) return null;
+  if (mouseY < padding || mouseY > canvasH - padding) return null;
+  
+  const n_max = tooltipData.length - 1;
+  
+  switch (type) {
+    case 'timeline': {
+      // Map x position to step number
+      const fraction = (mouseX - padding) / plotW;
+      const stepIdx = Math.round(fraction * n_max);
+      if (stepIdx < 0 || stepIdx >= tooltipData.length) return null;
+      
+      const step = tooltipData[stepIdx];
+      const zoneColor = {
+        alpha: '#4aff4a',
+        beta: '#ffa54a',
+        gamma: '#ff4a9e',
+        delta: '#ff4a4a'
+      }[step.zone];
+      
+      let html = `<strong>Step ${step.n}</strong><br>`;
+      html += `UPI: <strong>${step.UPI.toFixed(3)}</strong><br>`;
+      html += `Zone: <span style="color: ${zoneColor}"><strong>${step.zone.toUpperCase()}</strong></span><br>`;
+      html += `D=${step.D.toFixed(1)} R=${step.R.toFixed(1)} M=${step.M.toFixed(2)} S=${step.S.toFixed(2)}<br>`;
+      if (step.collapse_channel !== 'none') {
+        const chColor = step.collapse_channel === 'sobra' ? '#4a9eff' : '#ff4a9e';
+        html += `Collapse: <span style="color: ${chColor}"><strong>${step.collapse_channel.toUpperCase()}</strong></span>`;
+      }
+      return html;
+    }
+    
+    case 'phaseMap': {
+      // Find nearest point in phase space
+      const MS_vals = tooltipData.map(s => s.M + s.S);
+      const DR_vals = tooltipData.map(s => s.D * s.R);
+      const MS_min = Math.min(...MS_vals);
+      const MS_max = Math.max(...MS_vals);
+      const DR_min = Math.min(...DR_vals);
+      const DR_max = Math.max(...DR_vals);
+      
+      // Mouse coordinates in data space
+      const mouseMS = MS_min + (mouseX - padding) / plotW * (MS_max - MS_min);
+      const mouseDR = DR_max - (mouseY - padding) / plotH * (DR_max - DR_min);
+      
+      // Find nearest point
+      let minDist = Infinity;
+      let nearestIdx = 0;
+      tooltipData.forEach((step, idx) => {
+        const MS = step.M + step.S;
+        const DR = step.D * step.R;
+        const dist = Math.sqrt(Math.pow(MS - mouseMS, 2) + Math.pow(DR - mouseDR, 2));
+        if (dist < minDist) {
+          minDist = dist;
+          nearestIdx = idx;
+        }
+      });
+      
+      const step = tooltipData[nearestIdx];
+      const zoneColor = {
+        alpha: '#4aff4a',
+        beta: '#ffa54a',
+        gamma: '#ff4a9e',
+        delta: '#ff4a4a'
+      }[step.zone];
+      
+      let html = `<strong>Step ${step.n}</strong><br>`;
+      html += `M+S: <strong>${(step.M + step.S).toFixed(2)}</strong><br>`;
+      html += `D·R: <strong>${(step.D * step.R).toFixed(2)}</strong><br>`;
+      html += `UPI: <strong>${step.UPI.toFixed(3)}</strong><br>`;
+      html += `Zone: <span style="color: ${zoneColor}"><strong>${step.zone.toUpperCase()}</strong></span>`;
+      return html;
+    }
+    
+    case 'stateEvolution': {
+      // Map x position to step number
+      const fraction = (mouseX - padding) / plotW;
+      const stepIdx = Math.round(fraction * n_max);
+      if (stepIdx < 0 || stepIdx >= tooltipData.length) return null;
+      
+      const step = tooltipData[stepIdx];
+      
+      let html = `<strong>Step ${step.n}</strong><br>`;
+      html += `State x: <strong>${step.x.toFixed(4)}</strong><br>`;
+      html += `τ: <strong>${step.tau.toFixed(4)}</strong>`;
+      return html;
+    }
+    
+    case 'collapseStrip': {
+      // Map x position to step number
+      const fraction = (mouseX - padding) / plotW;
+      const stepIdx = Math.round(fraction * n_max);
+      if (stepIdx < 0 || stepIdx >= tooltipData.length) return null;
+      
+      const step = tooltipData[stepIdx];
+      
+      let html = `<strong>Step ${step.n}</strong><br>`;
+      if (step.collapse_channel === 'sobra') {
+        html += `Channel: <span style="color: #4a9eff"><strong>SOBRA</strong></span><br>`;
+        html += `Effect: Local dampening (×0.95)`;
+      } else if (step.collapse_channel === 'sobtra') {
+        html += `Channel: <span style="color: #ff4a9e"><strong>SOBTRA</strong></span><br>`;
+        html += `Effect: Transport boost (×1.05)`;
+      } else {
+        html += `Channel: <strong>NONE</strong><br>`;
+        html += `τ=${step.tau.toFixed(4)} δ=${step.delta.toFixed(4)}`;
+      }
+      return html;
+    }
+    
+    case 'collapseMap': {
+      // Map x position to step number
+      const fraction = (mouseX - padding) / plotW;
+      const stepIdx = Math.round(fraction * n_max);
+      if (stepIdx < 0 || stepIdx >= tooltipData.length) return null;
+      
+      const step = tooltipData[stepIdx];
+      
+      let html = `<strong>Step ${step.n}</strong><br>`;
+      html += `τ: <strong>${step.tau.toFixed(4)}</strong><br>`;
+      if (step.collapse_channel === 'sobra') {
+        html += `<span style="color: #4a9eff">●</span> Sobra density`;
+      } else if (step.collapse_channel === 'sobtra') {
+        html += `<span style="color: #ff4a9e">●</span> Sobtra density`;
+      } else {
+        html += `No collapse`;
+      }
+      return html;
+    }
+  }
+  
+  return null;
+}
+
+setupCanvasTooltips();
+
+// ========================================
+// CUSTOM DATA HANDLING
+// ========================================
+
+function parseCustomSequence(rawText) {
+  // Parse comma, space, or line-break separated values
+  const cleaned = rawText
+    .replace(/\s+/g, ',')
+    .replace(/,,+/g, ',')
+    .replace(/^,|,$/g, '');
+  
+  const values = cleaned
+    .split(',')
+    .map(v => parseFloat(v.trim()))
+    .filter(v => !isNaN(v));
+  
+  return values;
+}
+
+function validateCustomSequence(sequence) {
+  const errors = [];
+  
+  if (sequence.length < 3) {
+    errors.push('Sequence must contain at least 3 numeric values.');
+  }
+  
+  if (sequence.length > 10000) {
+    errors.push('Sequence exceeds maximum length of 10,000 values.');
+  }
+  
+  if (sequence.some(v => !isFinite(v))) {
+    errors.push('All values must be finite numbers.');
+  }
+  
+  return errors;
+}
+
+// ===================== FINANCIAL PRESETS (F1–F5) =====================
+const financialPresets = {
+
+    F1: `100, 101.2, 102.5, 103.1, 104.0, 105.5, 106.2, 107.8, 109.0,
+         110.3, 111.0, 112.4, 113.7, 114.5, 115.8, 116.4, 117.9`,
+
+    F2: `100,  99.5, 100.8, 100.2,  99.1, 101.4,  98.2, 102.8, 101.9,
+          99.0, 100.3,  99.2, 103.6,  96.7, 104.8,  95.4, 103.2, 97.1`,
+
+    F3: `100, 103, 107, 112, 118, 125, 133, 142, 152, 163, 175, 188, 202,
+         217, 205, 182, 160, 140, 125, 118, 121, 124, 129, 132, 136, 140`,
+
+    F4: `100, 100.3,  99.9, 100.1, 100.2,  99.8, 100.4,
+          98.2, 102.3, 105.8,  97.9, 108.4,  95.1, 110.5,  92.7, 109.2,
+         111.3, 112.8, 113.9, 115.0`,
+
+    F5: `100, 102, 101, 100,  99, 101, 100,  98,  99, 100, 101, 100,
+          99, 100, 101, 100, 100`
+};
+
+// ===================== PRESET SELECTOR HANDLER =====================
+const presetSelector = document.getElementById("presetSelector");
+const customSequenceTextarea = document.getElementById("customSequence");
+const customDataPanel = document.getElementById("customDataPanel");
+
+if (presetSelector && customSequenceTextarea && customDataPanel) {
+  presetSelector.addEventListener("change", () => {
+    const preset = presetSelector.value;
+
+    if (preset === "none") return;
+
+    // Inject the preset sequence
+    customSequenceTextarea.value = financialPresets[preset].replace(/\s+/g, " ").trim();
+
+    // Scroll to panel and visually highlight
+    customDataPanel.scrollIntoView({ behavior: "smooth" });
+    customSequenceTextarea.style.background = "#0e1627";
+    setTimeout(() => customSequenceTextarea.style.background = "", 1000);
+  });
+}
+
+// ===================== MACRO VIEWER — CSV IMPORT =====================
+document.getElementById("macroImportBtn").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv";
+
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = evt => {
+            const lines = evt.target.result.split(/\r?\n/);
+            const dates = [];
+            const values = [];
+
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                const parts = line.split(",");
+
+                // One-column numeric
+                if (parts.length === 1) {
+                    const v = parseFloat(parts[0]);
+                    if (!isNaN(v)) {
+                        values.push(v);
+                        dates.push(null);
+                    }
+                    continue;
+                }
+
+                // Two-column (date, value)
+                const d = parts[0].trim();
+                const v = parseFloat(parts[1]);
+                if (!isNaN(v)) {
+                    dates.push(d);
+                    values.push(v);
+                }
+            }
+
+            macroData.values = values;
+            macroData.dates = dates;
+            macroData.valid = values.length > 0;
+
+            drawMacroChart();
+            updateMacroLegend();
+            document.getElementById("macroStatus").innerText =
+                `Loaded ${values.length} points.`;
+        };
+
+        reader.readAsText(file);
+    };
+
+    input.click();
+});
+
+// ===================== MACRO VIEWER — CLEAR =====================
+document.getElementById("macroClearBtn").addEventListener("click", () => {
+    macroData = { dates: [], values: [], valid: false };
+    macroUPI = { values: [], active: false };
+    macroSeries = [];
+    const canvas = document.getElementById("macroCanvas");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById("macroStatus").innerText = "Cleared.";
+    document.getElementById("macroLegend").innerHTML = "";
+});
+
+// ===================== MACRO VIEWER — EXPORT PNG =====================
+document.getElementById("macroPngBtn").addEventListener("click", () => {
+    const canvas = document.getElementById("macroCanvas");
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `macro_view_${Date.now()}.png`;
+    a.click();
+});
+
+// ===================== MACRO VIEWER — OVERLAY UPI =====================
+document.getElementById("macroOverlayUPIBtn").addEventListener("click", () => {
+    if (!macroData.valid) return;
+
+    macroUPI.active = !macroUPI.active;
+
+    if (macroUPI.active) {
+        // Compute a UPI evolution of same length
+        const N = macroData.values.length;
+        let seq = [1];  // baseline seed for visualization
+
+        for (let i = 1; i < N; i++) {
+            seq.push( seq[i-1] + (seq[i-1] % 2 === 0 ? -seq[i-1]/2 : seq[i-1]*2 + 1) );
+        }
+
+        macroUPI.values = seq;
+        document.getElementById("macroStatus").innerText = "UPI overlay enabled.";
+    } else {
+        macroUPI.values = [];
+        document.getElementById("macroStatus").innerText = "UPI overlay disabled.";
+    }
+
+    drawMacroChart();
+    updateMacroLegend();
+});
+
+// ===================== MACRO VIEWER — ADD SERIES =====================
+document.getElementById("macroAddSeriesBtn").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv";
+
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = evt => {
+            const lines = evt.target.result.split(/\r?\n/);
+            const dates = [];
+            const values = [];
+
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                const parts = line.split(",");
+                const v = parseFloat(parts[1] || parts[0]);
+                if (!isNaN(v)) {
+                    values.push(v);
+                    dates.push(parts[0].includes("-") ? parts[0].trim() : null);
+                }
+            }
+
+            const color = macroPalette[macroSeries.length % macroPalette.length];
+
+            macroSeries.push({
+                name: file.name.replace(".csv",""),
+                dates,
+                values,
+                color
+            });
+
+            drawMacroChart();
+            updateMacroLegend();
+
+            document.getElementById("macroStatus").innerText =
+                `Added series: ${file.name.replace(".csv","")}`;
+        };
+        reader.readAsText(file);
+    };
+
+    input.click();
+});
+
+// === SMOOTHING TOGGLE ===
+document.getElementById("macroSmoothBtn").addEventListener("click", () => {
+    macroSmooth = !macroSmooth;
+    const btn = document.getElementById("macroSmoothBtn");
+    btn.textContent = macroSmooth ? "📉 Raw Data" : "📈 Smooth Lines";
+    btn.style.background = macroSmooth ? "#3a5a3a" : "#2a4a7a";
+    drawMacroChart();
+});
+
+// === EXPORT SERIES DROPDOWN ===
+document.getElementById("macroExportDropdown").addEventListener("change", (e) => {
+    const selection = e.target.value;
+    if (!selection) return;
+
+    let name = "";
+    let values = [];
+
+    if (selection === "primary") {
+        name = "primary_series";
+        values = macroData.values;
+    } else if (selection === "upi") {
+        name = "upi_overlay";
+        values = macroUPI.values;
+    } else {
+        const idx = parseInt(selection);
+        if (macroSeries[idx]) {
+            name = macroSeries[idx].name;
+            values = macroSeries[idx].values;
+        }
+    }
+
+    if (values.length > 0) {
+        const text = values.join("\n");
+        const blob = new Blob([text], {type: 'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${name}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    e.target.value = "";
+});
+
+// Custom data button handler
+ui.runCustomBtn.addEventListener('click', async () => {
+  const rawText = ui.customSequence.value.trim();
+  
+  if (!rawText) {
+    ui.customValidation.textContent = '⚠️ Please enter a numeric sequence.';
+    ui.customValidation.style.display = 'block';
+    return;
+  }
+  
+  const sequence = parseCustomSequence(rawText);
+  const errors = validateCustomSequence(sequence);
+  
+  if (errors.length > 0) {
+    ui.customValidation.textContent = '⚠️ ' + errors.join(' ');
+    ui.customValidation.style.display = 'block';
+    return;
+  }
+  
+  // Valid sequence, hide error and run
+  ui.customValidation.style.display = 'none';
+  currentMode = 'custom';
+  
+  console.log('🚀 Starting UPI diagnostics (CUSTOM DATA)');
+  console.log(`   Sequence length: ${sequence.length}`);
+  
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.runCustomBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.metricStatus.textContent = 'Running...';
+  ui.modeIndicator.textContent = 'CUSTOM DATA MODE';
+  ui.modeIndicator.className = 'mode-indicator custom';
+  ui.modeIndicator.style.display = 'inline-block';
+  
+  const config = {
+    mode: 'custom',
+    custom_sequence: sequence,
+    sobtra_sensitivity: parseFloat(ui.sensitivity.value),
+    noise_epsilon: 0.0 // No noise in custom mode
+  };
+  
+  engine = new UPIDiagnosticsEngine(config);
+  
+  ui.status.textContent = `Analyzing custom sequence (${sequence.length} values)...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const onStep = async (step, n, n_max) => {
+    ui.metricStep.textContent = step.n;
+    ui.metricUPI.textContent = step.UPI.toFixed(3);
+    ui.metricZone.textContent = step.zone.toUpperCase();
+    ui.metricZone.className = `metric-value zone-${step.zone}`;
+    
+    ui.progress.style.width = `${((n+1)/n_max)*100}%`;
+    
+    if (n % 10 === 0) {
+      renderTimeline(engine.timeline);
+      renderPhaseMap(engine.timeline);
+      renderStateEvolution(engine.timeline);
+      renderCollapseStrip(engine.timeline);
+      renderCollapseMap(engine.timeline);
+    }
+  };
+  
+  const result = await engine.run(onStep);
+  
+  if (running) {
+    // Update final visualizations
+    renderTimeline(result.timeline);
+    renderPhaseMap(result.timeline);
+    renderStateEvolution(result.timeline);
+    renderCollapseStrip(result.timeline);
+    renderCollapseMap(result.timeline);
+    
+    // Update summary metrics
+    const s = result.summary;
+    ui.metricMaxUPI.textContent = s.max_UPI.toFixed(3);
+    ui.metricAlpha.textContent = s.alpha_steps;
+    ui.metricBeta.textContent = s.beta_steps;
+    ui.metricGamma.textContent = s.gamma_steps;
+    ui.metricDelta.textContent = s.delta_steps;
+    ui.metricFirstParadox.textContent = s.first_paradox_step !== null ? s.first_paradox_step : 'None';
+    ui.metricSobra.textContent = s.num_sobra_collapses;
+    ui.metricSobtra.textContent = s.num_sobtra_collapses;
+    
+    // Update operator metrics
+    if (s.advancedMetrics) {
+      const op = s.advancedMetrics;
+      document.getElementById('opXIII').textContent = `${op.opXIII.phaseSpikes} spikes` + (op.opXIII.flag ? ' ⚠️' : '');
+      document.getElementById('opXIV').textContent = `${(op.opXIV.compatibility * 100).toFixed(1)}% (${op.opXIV.matches}/${op.opXIV.total})`;
+      document.getElementById('opXVI').textContent = `${op.opXVI.closureEvents} events`;
+      document.getElementById('opXVII').textContent = `${op.opXVII.level} (${op.opXVII.recursions})`;
+      document.getElementById('opXXI').textContent = `${op.opXXI.peaks} peaks (μ=${op.opXXI.meanTau.toFixed(4)})`;
+    }
+    
+    // Update Paradox Signature display
+    if (s.paradoxSignature) {
+      const psc = s.paradoxSignature;
+      document.getElementById('paradoxSignatureBlock').style.display = 'block';
+      document.getElementById('pscType').textContent = psc.type;
+      document.getElementById('pscLabel').textContent = psc.label;
+      document.getElementById('pscDescription').textContent = psc.description;
+      
+      // Color-code type
+      const typeColors = {
+        'A': '#4aff4a', 'B': '#4a9eff', 'C': '#ff4a9e',
+        'D': '#9b4aff', 'E': '#ffa54a', 'F': '#888'
+      };
+      document.getElementById('pscType').style.color = typeColors[psc.type] || '#4aff4a';
+    }
+    
+    ui.status.textContent = `Complete! Max UPI=${s.max_UPI.toFixed(2)}, δ-steps=${s.delta_steps}`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log('✅ Custom data diagnostics complete');
+    console.log(`   Max UPI: ${s.max_UPI.toFixed(3)}`);
+    console.log(`   Phase distribution: α=${s.alpha_steps} β=${s.beta_steps} γ=${s.gamma_steps} δ=${s.delta_steps}`);
+    console.log(`   Collapses: Sobra=${s.num_sobra_collapses} Sobtra=${s.num_sobtra_collapses}`);
+  }
+  
+  ui.runBtn.disabled = false;
+  ui.runCustomBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  ui.metricStatus.textContent = 'Complete';
+  running = false;
+});
+
+// ========================================
+// CSV IMPORT HANDLER
+// ========================================
+
+ui.csvFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const csvText = event.target.result;
+    
+    // Parse CSV: handle comma-separated, semicolon-separated, or tab-separated
+    const lines = csvText.split(/\r?\n/);
+    const values = [];
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      
+      // Try different separators
+      const cells = trimmed.split(/[,;\t]/).map(c => c.trim());
+      
+      for (const cell of cells) {
+        const num = parseFloat(cell);
+        if (!isNaN(num) && isFinite(num)) {
+          values.push(num);
+        }
+      }
+    }
+    
+    if (values.length > 0) {
+      ui.customSequence.value = values.join(', ');
+      ui.customValidation.textContent = `✅ Loaded ${values.length} values from ${file.name}`;
+      ui.customValidation.style.color = '#4aff4a';
+      ui.customValidation.style.display = 'block';
+      
+      console.log(`📁 CSV imported: ${values.length} values from ${file.name}`);
+    } else {
+      ui.customValidation.textContent = '⚠️ No numeric values found in CSV file.';
+      ui.customValidation.style.color = '#ff4a4a';
+      ui.customValidation.style.display = 'block';
+    }
+  };
+  
+  reader.onerror = () => {
+    ui.customValidation.textContent = '⚠️ Error reading file.';
+    ui.customValidation.style.color = '#ff4a4a';
+    ui.customValidation.style.display = 'block';
+  };
+  
+  reader.readAsText(file);
+  
+  // Reset file input so same file can be selected again
+  e.target.value = '';
+});
+
+// ========================================
+// PNG EXPORT HANDLERS
+// ========================================
+
+function exportCanvasToPNG(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log(`📷 Canvas exported: ${filename}`);
+  });
+}
+
+document.querySelectorAll('.export-png').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const canvasId = btn.getAttribute('data-canvas');
+    const timestamp = new Date().toISOString().split('T')[0];
+    const modeLabel = currentMode === 'custom' ? 'custom' : ui.system.value;
+    const filename = `UNNS_XXIII_${canvasId}_${modeLabel}_${timestamp}.png`;
+    
+    exportCanvasToPNG(canvasId, filename);
+  });
+});
+
+// ========================================
+// VISUALIZATION RENDERERS
+// ========================================
+
+const zoneColors = {
+  alpha: '#4aff4a',
+  beta: '#ffa54a',
+  gamma: '#ff4a9e',
+  delta: '#ff4a4a'
+};
+
+// === SMOOTHING HELPER ===
+function smoothValues(values, window = 3) {
+    if (!macroSmooth || values.length < window) return values;
+    
+    const out = [];
+    for (let i = 0; i < values.length; i++) {
+        let sum = 0, count = 0;
+        for (let j = -window; j <= window; j++) {
+            if (values[i + j] !== undefined) {
+                sum += values[i + j];
+                count++;
+            }
+        }
+        out.push(sum / count);
+    }
+    return out;
+}
+
+// ===================== MACRO VIEWER — RENDERER =====================
+function drawMacroChart() {
+    if (!macroData.valid) return;
+
+    const canvas = document.getElementById("macroCanvas");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const baseValues = macroData.values;
+    const N = baseValues.length;
+
+    // === ZOOM SUPPORT: Calculate visible window ===
+    const viewSize = Math.floor(N / macroZoomLevel);
+    let zoomStart = Math.floor(N * macroZoomCenter - viewSize / 2);
+    zoomStart = Math.max(0, Math.min(zoomStart, N - viewSize));
+    const zoomEnd = Math.min(zoomStart + viewSize, N);
+    
+    const visibleValues = baseValues.slice(zoomStart, zoomEnd);
+    const visibleN = visibleValues.length;
+
+    // ─── 1. Build a combined value range for all active series ───
+    let allValues = [...visibleValues];
+
+    // include UPI overlay if active
+    if (macroUPI.active && macroUPI.values.length) {
+        const upiSlice = macroUPI.values.slice(zoomStart, zoomEnd);
+        allValues = allValues.concat(upiSlice);
+    }
+
+    // include each extra series
+    for (let s of macroSeries) {
+        if (s.values && s.values.length) {
+            const seriesSlice = s.values.slice(zoomStart, zoomEnd);
+            allValues = allValues.concat(seriesSlice);
+        }
+    }
+
+    const minV = Math.min(...allValues);
+    const maxV = Math.max(...allValues);
+    const margin = 0.1 * (maxV - minV || 1);
+    const ymin = minV - margin;
+    const ymax = maxV + margin;
+
+    // ─── 2. Grid ───
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx <= 10; gx++) {
+        const x = gx * (w / 10);
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+    }
+    for (let gy = 0; gy <= 6; gy++) {
+        const y = gy * (h / 6);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+    }
+
+    // ─── 3. Primary series (blue) ───
+    const displayValues = smoothValues(visibleValues);
+    ctx.strokeStyle = "#4da6ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < visibleN; i++) {
+        const x = (i / (visibleN - 1)) * w;
+        const y = h - ((displayValues[i] - ymin) / (ymax - ymin)) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // ─── 4. Extra series (multi-country etc.) ───
+    for (let series of macroSeries) {
+        if (!series.values || !series.values.length) continue;
+
+        const seriesSlice = series.values.slice(zoomStart, zoomEnd);
+        const Ns = seriesSlice.length;
+        const seriesDisplay = smoothValues(seriesSlice);
+        ctx.strokeStyle = series.color;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+
+        for (let i = 0; i < Ns; i++) {
+            const x = (i / (Ns - 1)) * w;
+            const y = h - ((seriesDisplay[i] - ymin) / (ymax - ymin)) * h;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // ─── 5. UPI overlay (on top of everything) ───
+    if (macroUPI.active && macroUPI.values.length) {
+        const upiSlice = macroUPI.values.slice(zoomStart, zoomEnd);
+        const Nu = upiSlice.length;
+        const upiDisplay = smoothValues(upiSlice);
+        ctx.strokeStyle = "#ffcc66";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        for (let i = 0; i < Nu; i++) {
+            const x = (i / (Nu - 1)) * w;
+            const y = h - ((upiDisplay[i] - ymin) / (ymax - ymin)) * h;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // ─── 6. Vertical crosshair ───
+    if (macroCurrentHoverX !== null) {
+        ctx.strokeStyle = "#ffffff33";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(macroCurrentHoverX, 0);
+        ctx.lineTo(macroCurrentHoverX, h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+function updateMacroLegend() {
+    const legend = document.getElementById("macroLegend");
+    let html = '<span style="color:#4da6ff;">●</span> ' + (macroData.valid ? 'Primary Series' : '');
+    
+    if (macroUPI.active) {
+        html += '<br><span style="color:#ffcc66;">●</span> UPI Overlay';
+    }
+    
+    for (let i = 0; i < macroSeries.length; i++) {
+        const s = macroSeries[i];
+        html += `<br><span style="color:${s.color};">●</span> ${s.name} <button onclick="removeMacroSeries(${i})" style="background:#3a2a2a; border:none; color:#ff6666; padding:2px 6px; border-radius:3px; cursor:pointer; font-size:0.8em; margin-left:8px;">[×]</button>`;
+    }
+    
+    legend.innerHTML = html;
+    
+    // Update export dropdown
+    const dropdown = document.getElementById("macroExportDropdown");
+    dropdown.innerHTML = '<option value="">Export Series ▼</option>';
+    if (macroData.valid) {
+        dropdown.innerHTML += '<option value="primary">Primary Series</option>';
+    }
+    if (macroUPI.active) {
+        dropdown.innerHTML += '<option value="upi">UPI Overlay</option>';
+    }
+    for (let i = 0; i < macroSeries.length; i++) {
+        dropdown.innerHTML += `<option value="${i}">${macroSeries[i].name}</option>`;
+    }
+}
+
+function removeMacroSeries(index) {
+    macroSeries.splice(index, 1);
+    drawMacroChart();
+    updateMacroLegend();
+}
+
+function renderTimeline(timeline) {
+  if (timeline.length < 2) return;
+  
+  // Update tooltip data
+  tooltipData = timeline;
+  
+  const canvas = ui.canvasTimeline;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = h - 2 * padding;
+  
+  // Find bounds
+  const n_max = Math.max(...timeline.map(s => s.n));
+  let upi_values = timeline.map(s => s.UPI);
+  const upi_max = Math.max(...upi_values);
+  const upi_min = Math.min(...upi_values);
+  
+  // Auto-scaling: use log scale if max UPI > 100
+  const useLogScale = upi_max > 100;
+  
+  // Transform function for y-axis
+  const transformY = (upi) => {
+    if (useLogScale) {
+      // Log scale with floor to avoid log(0)
+      const logMin = Math.log10(Math.max(upi_min, 0.1));
+      const logMax = Math.log10(Math.max(upi_max, 1));
+      const logUPI = Math.log10(Math.max(upi, 0.1));
+      return (logUPI - logMin) / (logMax - logMin);
+    } else {
+      // Linear scale
+      return (upi - upi_min) / (upi_max - upi_min);
+    }
+  };
+  
+  // Draw zone backgrounds (in linear UPI space)
+  const zones = [
+    { name: 'alpha', max: 1, color: 'rgba(74, 255, 74, 0.05)' },
+    { name: 'beta', max: 2.2, color: 'rgba(255, 165, 74, 0.05)' },
+    { name: 'gamma', max: 3.8, color: 'rgba(255, 74, 158, 0.05)' },
+    { name: 'delta', max: Math.min(upi_max, 1000), color: 'rgba(255, 74, 74, 0.05)' }
+  ];
+  
+  let prev_y = padding + plot_h;
+  zones.forEach(zone => {
+    if (zone.max > upi_min) {
+      const normalized = transformY(zone.max);
+      const y = padding + plot_h - normalized * plot_h;
+      ctx.fillStyle = zone.color;
+      ctx.fillRect(padding, y, plot_w, prev_y - y);
+      prev_y = y;
+    }
+  });
+  
+  // Draw UPI line
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < timeline.length; i++) {
+    const step = timeline[i];
+    const px = padding + (step.n / n_max) * plot_w;
+    const normalized = transformY(step.UPI);
+    const py = padding + plot_h - normalized * plot_h;
+    
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  // Draw collapse markers
+  timeline.forEach(step => {
+    if (step.collapse_channel !== 'none') {
+      const px = padding + (step.n / n_max) * plot_w;
+      const normalized = transformY(step.UPI);
+      const py = padding + plot_h - normalized * plot_h;
+      
+      ctx.fillStyle = step.collapse_channel === 'sobra' ? '#4a9eff' : '#ff4a4a';
+      ctx.beginPath();
+      
+      if (step.collapse_channel === 'sobra') {
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+      } else {
+        // Triangle for sobtra
+        ctx.moveTo(px, py - 5);
+        ctx.lineTo(px - 4, py + 3);
+        ctx.lineTo(px + 4, py + 3);
+        ctx.closePath();
+      }
+      ctx.fill();
+    }
+  });
+  
+  // Operator Timeline Overlay (OTO)
+  if (ui.toggleOperatorOverlay && ui.toggleOperatorOverlay.checked && engine) {
+    ctx.font = '11px Arial';
+    
+    timeline.forEach((step, idx) => {
+      const px = padding + (step.n / n_max) * plot_w;
+      const normalized = transformY(step.UPI);
+      const py = padding + plot_h - normalized * plot_h;
+      
+      let offsetY = -15; // Start above point
+      
+      // XIII: Phase spikes
+      if (engine.operators.XIII.phaseSpikes > 0 && idx > 0) {
+        const prevUPI = timeline[idx - 1].UPI;
+        if (Math.abs(step.UPI - prevUPI) > 1.5) {
+          ctx.fillStyle = '#ffff4a';
+          ctx.fillText('⚡', px - 5, py + offsetY);
+          offsetY -= 12;
+        }
+      }
+      
+      // XIV: φ-matches
+      if (idx > 0) {
+        const ratio = step.x / timeline[idx - 1].x;
+        if (Math.abs(ratio - 1.618033988749895) < 0.04) {
+          ctx.fillStyle = '#4aff4a';
+          ctx.fillText('φ', px - 4, py + 15);
+        }
+      }
+      
+      // XVI: Closure events
+      if (idx > 0 && idx < timeline.length - 1) {
+        const curvature = timeline[idx + 1].x - 2 * step.x + timeline[idx - 1].x;
+        const threshold = 0.0001 * Math.max(Math.abs(step.x), 1);
+        if (Math.abs(curvature) < threshold) {
+          ctx.fillStyle = '#ff4a9e';
+          ctx.fillText('⊗', px - 5, py + offsetY);
+          offsetY -= 12;
+        }
+      }
+      
+      // XVII: Semantic matches
+      if (idx > 1) {
+        const motif = step.x - timeline[idx - 1].x;
+        const prevMotif = timeline[idx - 1].x - timeline[idx - 2].x;
+        if (Math.abs(motif - prevMotif) < 0.01) {
+          ctx.fillStyle = '#4a9eff';
+          ctx.fillText('∞', px + 8, py);
+        }
+      }
+      
+      // XXI: τ-peaks
+      if (engine.operators.XXI.tauSpectrum && engine.operators.XXI.tauSpectrum.length > idx) {
+        const tau = engine.operators.XXI.tauSpectrum[idx];
+        if (tau > engine.operators.XXI.meanTau + 1.5 * 0.1) { // Approximate std
+          ctx.fillStyle = '#ffaa4a';
+          ctx.beginPath();
+          ctx.arc(px + 10, py, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    });
+  }
+  
+  // Axes
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + plot_h);
+  ctx.lineTo(padding + plot_w, padding + plot_h);
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText('n', padding + plot_w - 10, padding + plot_h + 25);
+  ctx.save();
+  ctx.translate(padding - 25, padding + plot_h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(useLogScale ? 'log₁₀(UPI)' : 'UPI', 0, 0);
+  ctx.restore();
+  
+  // Scale indicator
+  if (useLogScale) {
+    ctx.fillStyle = '#ffa54a';
+    ctx.font = '9px Consolas';
+    ctx.fillText('LOG SCALE', padding + 5, padding + 15);
+  }
+}
+
+function renderPhaseMap(timeline) {
+  if (timeline.length < 2) return;
+  
+  // Update tooltip data
+  tooltipData = timeline;
+  
+  const canvas = ui.canvasPhaseMap;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = h - 2 * padding;
+  
+  const x_vals = timeline.map(s => s.M + s.S);
+  const y_vals = timeline.map(s => s.D * s.R);
+  
+  const x_min = Math.min(...x_vals);
+  const x_max = Math.max(...x_vals);
+  const y_min = Math.min(...y_vals);
+  const y_max = Math.max(...y_vals);
+  
+  // Draw points
+  timeline.forEach(step => {
+    const px = padding + ((step.M + step.S - x_min) / (x_max - x_min)) * plot_w;
+    const py = padding + plot_h - ((step.D * step.R - y_min) / (y_max - y_min)) * plot_h;
+    
+    ctx.fillStyle = zoneColors[step.zone];
+    ctx.beginPath();
+    ctx.arc(px, py, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  // Axes
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + plot_h);
+  ctx.lineTo(padding + plot_w, padding + plot_h);
+  ctx.stroke();
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText('M+S', padding + plot_w - 30, padding + plot_h + 25);
+  ctx.save();
+  ctx.translate(padding - 30, padding + plot_h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('D·R', 0, 0);
+  ctx.restore();
+}
+
+function renderStateEvolution(timeline) {
+  if (timeline.length < 2) return;
+  
+  // Update tooltip data
+  tooltipData = timeline;
+  
+  const canvas = ui.canvasStateEvolution;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = h - 2 * padding;
+  
+  const n_max = Math.max(...timeline.map(s => s.n));
+  const x_vals = timeline.map(s => s.x);
+  const x_min = Math.min(...x_vals);
+  const x_max = Math.max(...x_vals);
+  
+  // Draw line
+  ctx.strokeStyle = '#ffa54a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < timeline.length; i++) {
+    const step = timeline[i];
+    const px = padding + (step.n / n_max) * plot_w;
+    const py = padding + plot_h - ((step.x - x_min) / (x_max - x_min)) * plot_h;
+    
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  // Axes
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + plot_h);
+  ctx.lineTo(padding + plot_w, padding + plot_h);
+  ctx.stroke();
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText('n', padding + plot_w - 10, padding + plot_h + 25);
+  ctx.save();
+  ctx.translate(padding - 25, padding + plot_h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('x(n)', 0, 0);
+  ctx.restore();
+}
+
+function renderCollapseStrip(timeline) {
+  if (timeline.length < 2) return;
+  
+  // Update tooltip data
+  tooltipData = timeline;
+  
+  const canvas = ui.canvasCollapseStrip;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const strip_w = w - 2 * padding;
+  const strip_h = 40;
+  const strip_y = (h - strip_h) / 2;
+  
+  const n_max = timeline.length - 1;
+  
+  timeline.forEach(step => {
+    const x = padding + (step.n / n_max) * strip_w;
+    const cell_w = strip_w / n_max;
+    
+    let color = '#1a1a1a';
+    if (step.collapse_channel === 'sobra') color = '#4a9eff';
+    if (step.collapse_channel === 'sobtra') color = '#ff4a4a';
+    
+    ctx.fillStyle = color;
+    ctx.fillRect(x, strip_y, cell_w, strip_h);
+  });
+  
+  // Border
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padding, strip_y, strip_w, strip_h);
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Sobra', padding, strip_y - 10);
+  ctx.fillStyle = '#4a9eff';
+  ctx.fillRect(padding + 50, strip_y - 15, 15, 10);
+  ctx.fillStyle = '#888';
+  ctx.fillText('Sobtra', padding + 100, strip_y - 10);
+  ctx.fillStyle = '#ff4a4a';
+  ctx.fillRect(padding + 160, strip_y - 15, 15, 10);
+}
+
+// Render Collapse Channel Map (CCM)
+function renderCollapseMap(timeline) {
+  if (timeline.length < 2) return;
+  
+  // Update tooltip data
+  tooltipData = timeline;
+  
+  const canvas = ui.canvasCollapseMap;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = h - 2 * padding;
+  
+  const n_max = timeline.length - 1;
+  
+  // Extract tau spectrum and collapse data
+  const tauValues = timeline.map(s => s.tau);
+  const tauMax = Math.max(...tauValues);
+  const tauMean = tauValues.reduce((a,b) => a+b, 0) / tauValues.length;
+  const tauStd = Math.sqrt(tauValues.map(v => Math.pow(v - tauMean, 2)).reduce((a,b) => a+b, 0) / tauValues.length);
+  
+  // Three bands
+  const bandHeight = plot_h / 3;
+  
+  // Band 1: Sobra density (blue)
+  timeline.forEach(step => {
+    const x = padding + (step.n / n_max) * plot_w;
+    const cellW = plot_w / n_max;
+    
+    if (step.collapse_channel === 'sobra') {
+      ctx.fillStyle = 'rgba(74, 158, 255, 0.8)';
+      ctx.fillRect(x, padding, cellW, bandHeight);
+    }
+  });
+  
+  // Band 2: Sobtra density (red)
+  timeline.forEach(step => {
+    const x = padding + (step.n / n_max) * plot_w;
+    const cellW = plot_w / n_max;
+    
+    if (step.collapse_channel === 'sobtra') {
+      ctx.fillStyle = 'rgba(255, 74, 158, 0.8)';
+      ctx.fillRect(x, padding + bandHeight, cellW, bandHeight);
+    }
+  });
+  
+  // Band 3: τ-spectrum (yellow intensity)
+  timeline.forEach(step => {
+    const x = padding + (step.n / n_max) * plot_w;
+    const cellW = plot_w / n_max;
+    
+    const intensity = Math.min(1, step.tau / (tauMax * 0.5));
+    ctx.fillStyle = `rgba(255, 255, 74, ${intensity * 0.7})`;
+    ctx.fillRect(x, padding + 2 * bandHeight, cellW, bandHeight);
+    
+    // Mark τ-peaks
+    if (step.tau > tauMean + 1.5 * tauStd) {
+      ctx.fillStyle = '#ffff4a';
+      ctx.fillRect(x, padding + 2 * bandHeight - 5, cellW, 5);
+    }
+  });
+  
+  // Band borders
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padding, padding, plot_w, bandHeight);
+  ctx.strokeRect(padding, padding + bandHeight, plot_w, bandHeight);
+  ctx.strokeRect(padding, padding + 2 * bandHeight, plot_w, bandHeight);
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Sobra Density', padding + 5, padding + 20);
+  ctx.fillText('Sobtra Density', padding + 5, padding + bandHeight + 20);
+  ctx.fillText('τ-Spectrum', padding + 5, padding + 2 * bandHeight + 20);
+  
+  // Axis
+  ctx.fillStyle = '#666';
+  ctx.fillText('Step 0', padding, h - 10);
+  ctx.fillText(`Step ${n_max}`, w - padding - 50, h - 10);
+}
+
+// ========================================
+// RUN CONTROL
+// ========================================
+
+ui.runBtn.addEventListener('click', async () => {
+  console.log('🚀 Starting UPI diagnostics');
+  
+  currentMode = 'recursive';
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.runCustomBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.metricStatus.textContent = 'Running...';
+  ui.modeIndicator.textContent = 'RECURSIVE MODE';
+  ui.modeIndicator.className = 'mode-indicator';
+  ui.modeIndicator.style.display = 'inline-block';
+  
+  const config = {
+    mode: 'recursive',
+    system: ui.system.value,
+    x0: parseFloat(ui.x0.value),
+    n_max: parseInt(ui.n_max.value),
+    sobtra_sensitivity: parseFloat(ui.sensitivity.value),
+    noise_epsilon: parseFloat(ui.noise.value)
+  };
+  
+  engine = new UPIDiagnosticsEngine(config);
+  
+  ui.status.textContent = `Running ${config.system} from x₀=${config.x0}...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const onStep = async (step, n, n_max) => {
+    ui.metricStep.textContent = step.n;
+    ui.metricUPI.textContent = step.UPI.toFixed(3);
+    ui.metricZone.textContent = step.zone.toUpperCase();
+    ui.metricZone.className = `metric-value zone-${step.zone}`;
+    
+    ui.progress.style.width = `${((n+1)/n_max)*100}%`;
+    
+    if (n % 10 === 0) {
+      renderTimeline(engine.timeline);
+      renderPhaseMap(engine.timeline);
+      renderStateEvolution(engine.timeline);
+      renderCollapseStrip(engine.timeline);
+    }
+  };
+  
+  const result = await engine.run(onStep);
+  
+  if (running) {
+    // Update final visualizations
+    renderTimeline(result.timeline);
+    renderPhaseMap(result.timeline);
+    renderStateEvolution(result.timeline);
+    renderCollapseStrip(result.timeline);
+    
+    // Update summary metrics
+    const s = result.summary;
+    ui.metricMaxUPI.textContent = s.max_UPI.toFixed(3);
+    ui.metricAlpha.textContent = s.alpha_steps;
+    ui.metricBeta.textContent = s.beta_steps;
+    ui.metricGamma.textContent = s.gamma_steps;
+    ui.metricDelta.textContent = s.delta_steps;
+    ui.metricFirstParadox.textContent = s.first_paradox_step !== null ? s.first_paradox_step : 'None';
+    ui.metricSobra.textContent = s.num_sobra_collapses;
+    ui.metricSobtra.textContent = s.num_sobtra_collapses;
+    
+    // Update operator metrics
+    if (s.advancedMetrics) {
+      const op = s.advancedMetrics;
+      document.getElementById('opXIII').textContent = `${op.opXIII.phaseSpikes} spikes` + (op.opXIII.flag ? ' ⚠️' : '');
+      document.getElementById('opXIV').textContent = `${(op.opXIV.compatibility * 100).toFixed(1)}% (${op.opXIV.matches}/${op.opXIV.total})`;
+      document.getElementById('opXVI').textContent = `${op.opXVI.closureEvents} events`;
+      document.getElementById('opXVII').textContent = `${op.opXVII.level} (${op.opXVII.recursions})`;
+      document.getElementById('opXXI').textContent = `${op.opXXI.peaks} peaks (μ=${op.opXXI.meanTau.toFixed(4)})`;
+    
+    // Update Paradox Signature display
+    if (s.paradoxSignature) {
+      const psc = s.paradoxSignature;
+      document.getElementById('paradoxSignatureBlock').style.display = 'block';
+      document.getElementById('pscType').textContent = psc.type;
+      document.getElementById('pscLabel').textContent = psc.label;
+      document.getElementById('pscDescription').textContent = psc.description;
+      
+      // Color-code type
+      const typeColors = {
+        'A': '#4aff4a', 'B': '#4a9eff', 'C': '#ff4a9e',
+        'D': '#9b4aff', 'E': '#ffa54a', 'F': '#888'
+      };
+      document.getElementById('pscType').style.color = typeColors[psc.type] || '#4aff4a';
+    }
+    }
+    
+    ui.status.textContent = `Complete! Max UPI=${s.max_UPI.toFixed(2)}, δ-steps=${s.delta_steps}`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log('✅ Diagnostics complete');
+    console.log(`   Max UPI: ${s.max_UPI.toFixed(3)}`);
+    console.log(`   Phase distribution: α=${s.alpha_steps} β=${s.beta_steps} γ=${s.gamma_steps} δ=${s.delta_steps}`);
+    console.log(`   Collapses: Sobra=${s.num_sobra_collapses} Sobtra=${s.num_sobtra_collapses}`);
+  }
+  
+  ui.runBtn.disabled = false;
+  ui.runCustomBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  ui.metricStatus.textContent = 'Complete';
+  running = false;
+});
+
+ui.stopBtn.addEventListener('click', () => {
+  if (engine) engine.stop();
+  running = false;
+  ui.status.textContent = 'Stopped by user';
+  ui.metricStatus.textContent = 'Stopped';
+  console.log('⏸️ Diagnostics stopped');
+});
+
+ui.exportBtn.addEventListener('click', () => {
+  if (!engine || !engine.summary) return;
+  
+  const { filename, data } = engine.exportJSON();
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', filename);
+});
+
+// ===================== MACRO VIEWER — TOOLTIP =====================
+const macroCanvas = document.getElementById("macroCanvas");
+
+// === ADVANCED TOOLTIP POSITIONING ===
+function updateMacroTooltip(mouseX, mouseY, text) {
+    const tt = document.getElementById("macroTooltip");
+    tt.innerHTML = text;
+
+    const rect = macroCanvas.getBoundingClientRect();
+    const offset = 18;
+
+    // Default candidate position
+    let left = mouseX + rect.left + offset;
+    let top = mouseY + rect.top + offset;
+
+    // Get tooltip dimensions after content is set
+    const ttW = tt.offsetWidth;
+    const ttH = tt.offsetHeight;
+
+    // Smart horizontal placement
+    if (mouseX + ttW + offset > rect.width)
+        left = mouseX + rect.left - ttW - offset;
+
+    // Smart vertical placement
+    if (mouseY + ttH + offset > rect.height)
+        top = mouseY + rect.top - ttH - offset;
+
+    // Clamp into panel bounds
+    left = Math.max(rect.left, Math.min(left, rect.right - ttW));
+    top = Math.max(rect.top, Math.min(top, rect.bottom - ttH));
+
+    // Apply position
+    tt.style.left = left + "px";
+    tt.style.top = top + "px";
+
+    // Fade-in
+    tt.style.opacity = 1;
+}
+
+// === ENHANCED TOOLTIP & CROSSHAIR ===
+macroCanvas.addEventListener("mousemove", e => {
+    if (!macroData.valid) return;
+
+    const rect = macroCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Update crosshair position
+    macroCurrentHoverX = x * (macroCanvas.width / rect.width);
+    
+    const N = macroData.values.length;
+    const idx = Math.round((x / rect.width) * (N - 1));
+
+    if (idx < 0 || idx >= N) return;
+
+    // Build tooltip HTML
+    const date = macroData.dates[idx] || `Index ${idx}`;
+    let tooltipHTML = `<div style="font-weight:bold; margin-bottom:5px; color:#4a9eff;">${date}</div>`;
+    
+    tooltipHTML += `<div><span style="color:#4da6ff;">●</span> Primary: ${macroData.values[idx].toFixed(4)}</div>`;
+    
+    if (macroUPI.active && idx < macroUPI.values.length) {
+        tooltipHTML += `<div><span style="color:#ffcc66;">●</span> UPI: ${macroUPI.values[idx].toFixed(2)}</div>`;
+    }
+    
+    for (let s of macroSeries) {
+        if (idx < s.values.length) {
+            tooltipHTML += `<div><span style="color:${s.color};">●</span> ${s.name}: ${s.values[idx].toFixed(4)}</div>`;
+        }
+    }
+    
+    // Position with smart placement
+    updateMacroTooltip(x, y, tooltipHTML);
+    
+    // Redraw to update crosshair
+    drawMacroChart();
+});
+
+macroCanvas.addEventListener("mouseleave", () => {
+    macroCurrentHoverX = null;
+    const tt = document.getElementById("macroTooltip");
+    tt.style.opacity = 0;
+    drawMacroChart();
+    
+    if (macroData.valid) {
+        let baseText = `Loaded ${macroData.values.length} points.`;
+        if (macroSeries.length > 0) {
+            baseText += ` (${macroSeries.length + 1} series total)`;
+        }
+        document.getElementById("macroStatus").innerText = baseText;
+    }
+});
+
+// === SYNCHRONIZED ZOOM (MOUSE WHEEL) ===
+macroCanvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (!macroData.valid) return;
+
+    const rect = macroCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+
+    // Update zoom level
+    macroZoomLevel *= (e.deltaY > 0 ? 1.1 : 0.9);
+    macroZoomLevel = Math.max(0.2, Math.min(macroZoomLevel, 5.0));
+
+    // Set zoom center based on cursor position
+    macroZoomCenter = x / rect.width;
+
+    drawMacroChart();
+});
+
+console.log('✅ Chamber XXIII ready!');
+console.log('═══════════════════════════════════════════');
+  </script>
+</body>
+</html>
