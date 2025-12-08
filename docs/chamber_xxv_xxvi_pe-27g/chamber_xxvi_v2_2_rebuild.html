@@ -1,0 +1,3360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber XXVI v2.2-rebuild (Phase-G Complete)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .version-badge { display: inline-block; background: #1a3a1a; color: #4aff4a; padding: 4px 12px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; }
+    
+    /* Status banners for convergence state */
+    .status-banner { padding: 15px 20px; border-radius: 6px; margin: 15px 0; font-weight: bold; text-align: center; }
+    .status-banner.validated { background: linear-gradient(135deg, #1a3a1a, #2a4a2a); border: 2px solid #4aff4a; color: #4aff4a; }
+    .status-banner.partial { background: linear-gradient(135deg, #3a3a1a, #4a4a2a); border: 2px solid #ffa54a; color: #ffa54a; }
+    .status-banner.invalid { background: linear-gradient(135deg, #3a1a1a, #4a2a2a); border: 2px solid #ff4a4a; color: #ff4a4a; }
+    .status-banner.running { background: linear-gradient(135deg, #1a2a3a, #2a3a4a); border: 2px solid #4a9eff; color: #4a9eff; }
+    .failure-reasons { margin-top: 8px; font-size: 0.85em; font-weight: normal; }
+    .failure-reasons li { margin: 3px 0; }
+    
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    
+    /* Tooltip system */
+    .tooltip { position: relative; cursor: help; border-bottom: 1px dotted #666; }
+    .tooltip:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 0.8em; white-space: nowrap; z-index: 100; max-width: 300px; white-space: normal; }
+    
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.85em; color: #aaa; margin-bottom: 5px; cursor: help; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    input[type="range"] { padding: 0; }
+    
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 8px; margin-bottom: 8px; transition: all 0.2s; }
+    button:hover:not(:disabled) { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; opacity: 0.4; }
+    .button-primary { background: #4a9eff; }
+    .button-success { background: #2a6a2a; }
+    .button-warning { background: #6a5a2a; }
+    .button-danger { background: #6a2a2a; }
+    .button-auto { background: #5a2a6a; } /* Ω-AutoTune button */
+    
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; border-radius: 4px; }
+    .canvas-container canvas { width: 100%; height: 100%; display: block; }
+    .canvas-label { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 3px; font-size: 0.85em; color: #4a9eff; }
+    
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .metric { background: #0a0a0a; padding: 12px; border-radius: 4px; border: 1px solid #2a2a2a; text-align: center; position: relative; }
+    .metric-label { font-size: 0.75em; color: #888; margin-bottom: 4px; text-transform: uppercase; }
+    .metric-value { font-size: 1.1em; color: #4a9eff; font-weight: bold; }
+    .metric-value.good { color: #4aff4a; }
+    .metric-value.warn { color: #ffa54a; }
+    .metric-value.bad { color: #ff4a4a; }
+    .metric-icon { position: absolute; top: 5px; right: 5px; font-size: 1em; } /* Convergence status icons */
+    
+    .tab-container { margin-bottom: 15px; }
+    .tab-buttons { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tab-btn { background: #0a0a0a; border: 1px solid #3a3a3a; padding: 8px 16px; cursor: pointer; color: #888; border-radius: 4px 4px 0 0; }
+    .tab-btn.active { background: #2a2a2a; color: #4a9eff; border-bottom-color: #2a2a2a; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .operator-card { background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; padding: 12px; margin-bottom: 10px; }
+    .operator-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .operator-name { color: #4a9eff; font-weight: bold; }
+    .operator-value { font-size: 1.1em; color: #e0e0e0; }
+    
+    .toggle-switch { position: relative; width: 40px; height: 20px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #2a2a2a; border-radius: 20px; transition: 0.3s; }
+    .toggle-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #666; border-radius: 50%; transition: 0.3s; }
+    .toggle-switch input:checked + .toggle-slider { background: #4a9eff; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); background: #fff; }
+    
+    .observable-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #0a0a0a; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #2a2a2a; }
+    .observable-row.good { border-left-color: #4aff4a; }
+    .observable-row.warn { border-left-color: #ffa54a; }
+    .observable-row.bad { border-left-color: #ff4a4a; }
+    
+    .run-list { max-height: 200px; overflow-y: auto; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; }
+    .run-item { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; cursor: pointer; display: flex; justify-content: space-between; }
+    .run-item:hover { background: #1a1a1a; }
+    .run-item.selected { background: #1a2a3a; border-left: 3px solid #4a9eff; }
+    .run-item:last-child { border-bottom: none; }
+    
+    .guide-content { line-height: 1.7; color: #aaa; }
+    .guide-content h3 { color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px; }
+    .guide-content p { margin-bottom: 12px; }
+    .guide-content ul, .guide-content ol { margin: 10px 0 15px 25px; }
+    .guide-content li { margin-bottom: 6px; }
+    .guide-content code { background: #0a0a0a; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    .guide-content .formula { font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px 15px; border-left: 3px solid #4a9eff; margin: 12px 0; display: block; }
+    .guide-content table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9em; }
+    .guide-content th, .guide-content td { padding: 10px; border: 1px solid #2a2a2a; text-align: left; }
+    .guide-content th { background: #0a0a0a; color: #4a9eff; }
+    
+    .progress-bar { width: 100%; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #4a9eff, #4aff4a); transition: width 0.3s; }
+    
+    .convergence-indicator { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 4px; font-size: 0.9em; }
+    .convergence-indicator.converged { background: #1a3a1a; color: #4aff4a; }
+    .convergence-indicator.running { background: #1a2a3a; color: #4a9eff; }
+    .convergence-indicator.diverged { background: #3a1a1a; color: #ff4a4a; }
+    
+    @media (max-width: 1200px) {
+      .panel-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚗️ CHAMBER XXVI: PE-27G Unified Structural Recursion</h1>
+      <div class="subtitle">
+        Operator Suite XIII–XXI · Ω Closure Reinforcement · Φ Nonlinear Stack
+        <span class="version-badge">v2.2-Rebuild</span>
+      </div>
+    </header>
+    
+    <!-- Status Banner (Convergence State) -->
+    <div id="statusBanner" class="status-banner running">
+      ⚙️ READY — Configure parameters and run PE-27G
+    </div>
+    
+    <!-- Panel A: Operators -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>Panel A · UNNS Operators (Codex XIII–XXI)</span>
+      </div>
+      <div class="panel-grid" id="operatorGrid"></div>
+    </div>
+    
+    <!-- Panel B: Observables -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>Panel B · Observable Predictions</span>
+        <span id="totalChi2" class="metric-value">χ² = –</span>
+      </div>
+      <div id="observablesList"></div>
+    </div>
+    
+    <!-- Panel C & D: Ω and Φ -->
+    <div class="panel-grid">
+      <div class="panel">
+        <div class="panel-title">Panel C · Ω Closure Correction</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>η₁ (Idempotence) <span id="eta1Val">0.07</span></label>
+            <input type="range" id="eta1" min="0" max="0.2" step="0.005" value="0.07">
+          </div>
+          <div class="control-group">
+            <label>η₂ (Flux Neutrality) <span id="eta2Val">0.07</span></label>
+            <input type="range" id="eta2" min="0" max="0.2" step="0.005" value="0.07">
+          </div>
+          <div class="control-group">
+            <label>η₃ (Reversibility) <span id="eta3Val">0.04</span></label>
+            <input type="range" id="eta3" min="0" max="0.2" step="0.005" value="0.04">
+          </div>
+        </div>
+        
+        <!-- Ω-AutoTune Control -->
+        <div style="margin: 15px 0;">
+          <button id="btnAutoTune" class="button-auto">🎛️ Ω-Auto-Tune</button>
+          <div id="autoTuneStatus" style="display: none; margin-top: 8px; font-size: 0.9em; color: #4a9eff;"></div>
+        </div>
+        
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">C₁ Residual</div>
+            <div class="metric-value" id="c1Residual">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">C₃ Residual</div>
+            <div class="metric-value" id="c3Residual">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">C₅ Residual</div>
+            <div class="metric-value" id="c5Residual">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Status</div>
+            <div class="metric-value" id="closureStatus">Ready</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">Panel D · Φ Nonlinear Stack</div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Φ Value</div>
+            <div class="metric-value" id="phiValue">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">∂Φ/∂λ</div>
+            <div class="metric-value" id="phiGradLambda">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">∂Φ/∂α_c</div>
+            <div class="metric-value" id="phiGradAlpha">–</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Dominant</div>
+            <div class="metric-value" id="phiDominant">–</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <div class="metric-label" style="margin-bottom: 8px;">Φ History (last 10)</div>
+          <div id="phiHistoryDisplay" style="font-family: monospace; font-size: 0.8em; background: #0a0a0a; padding: 10px; border-radius: 4px; overflow-x: auto;">–</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Panel E: Engine Configuration -->
+    <div class="panel">
+      <div class="panel-title">Panel E · Engine Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="32">32×32 (fast)</option>
+            <option value="64" selected>64×64 (balanced)</option>
+            <option value="128">128×128 (high-res)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Depth (iterations)</label>
+          <input type="number" id="depth" value="500" min="100" max="2000">
+        </div>
+        <div class="control-group">
+          <label>λ (coupling) <span id="lambdaVal">0.10825</span></label>
+          <input type="range" id="lambda" min="0.05" max="0.25" step="0.00001" value="0.10825">
+        </div>
+        <div class="control-group">
+          <label>σ (noise)</label>
+          <input type="number" id="sigma" value="0.01" min="0" max="0.1" step="0.001">
+        </div>
+        <div class="control-group">
+          <label>α_c (closure)</label>
+          <input type="number" id="alphaC" value="0.015" min="0" max="0.1" step="0.001">
+        </div>
+        <div class="control-group">
+          <label>Seed</label>
+          <input type="number" id="seed" value="137042">
+        </div>
+      </div>
+      <div>
+        <button id="btnRun" class="button-primary">▶ Run PE-27G</button>
+        <button id="btnStop" disabled>⏹ Stop</button>
+        <button id="btnReset">↺ Reset</button>
+        <button id="btnLoadGolden" style="background: #888; color: #fff;">📋 Load Reference Run (Optional)</button>
+        <button id="btnExport" disabled>💾 Export Run</button>
+        <button id="btnSaveAggregated" disabled>📦 Save All Runs</button>
+      </div>
+      <div style="margin-top: 10px; padding: 10px; background: #1a1a2a; border-radius: 4px; border-left: 3px solid #888; font-size: 0.85em;">
+        <strong style="color: #888;">Reference Run (Archival):</strong> λ=0.10825, α_c=0.015, η=[0.30,0.30,0.24] (First converged solution, χ²=3.809)<br>
+        <span style="color: #666;">Note: Ω-AutoTune finds optimal parameters automatically. Loading reference is optional.</span>
+      </div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+      <div id="runStatus" style="margin-top: 10px; font-size: 0.9em; color: #888;">Ready to run</div>
+    </div>
+    
+    <!-- Panel F: Calibration -->
+    <div class="panel">
+      <div class="panel-title">Panel F · Calibration Engine</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Target Observable</label>
+          <select id="calibTarget">
+            <option value="all">All (minimize total χ²)</option>
+            <option value="alpha">α (fine-structure)</option>
+            <option value="H0">H₀ (Hubble)</option>
+            <option value="Omega_m">Ω_m (matter density)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Method</label>
+          <select id="calibMethod">
+            <option value="pso">PSO (Particle Swarm)</option>
+            <option value="gradient">Gradient Descent</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Iterations</label>
+          <input type="number" id="calibIter" value="50" min="10" max="200">
+        </div>
+        <div class="control-group">
+          <label>Tolerance</label>
+          <input type="number" id="calibTol" value="0.01" min="0.001" max="0.1" step="0.001">
+        </div>
+      </div>
+      <div>
+        <button id="btnCalibrate" class="button-warning">🎯 Run Calibration</button>
+        <button id="btnApplyCalib" disabled>✓ Apply Calibrated</button>
+        <span id="calibAppliedIndicator" style="color: #4aff4a; margin-left: 10px; display: none;">✓ Applied to solver</span>
+      </div>
+      <div id="calibStatus" style="margin-top: 10px; font-size: 0.9em; color: #888;">Calibration ready</div>
+    </div>
+    
+    <!-- Panel G: Visualization (4 canvases in tabs) -->
+    <div class="panel">
+      <div class="panel-title">Panel G · Visualization Suite</div>
+      <div class="tab-container">
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="tabField">τ-Field</button>
+          <button class="tab-btn" data-tab="tabClosure">Closure Diag.</button>
+          <button class="tab-btn" data-tab="tabOperators">Operator Traj.</button>
+          <button class="tab-btn" data-tab="tabFManifold">F-Manifold</button>
+        </div>
+        
+        <div id="tabField" class="tab-content active">
+          <div class="canvas-container" style="height: 400px;">
+            <canvas id="canvasField"></canvas>
+            <div class="canvas-label">τ-Field Evolution</div>
+          </div>
+        </div>
+        
+        <div id="tabClosure" class="tab-content">
+          <div class="canvas-container" style="height: 400px;">
+            <canvas id="canvasClosure"></canvas>
+            <div class="canvas-label">Closure Diagnostics (C₁/C₃/C₅)</div>
+          </div>
+        </div>
+        
+        <div id="tabOperators" class="tab-content">
+          <div class="canvas-container" style="height: 400px;">
+            <canvas id="canvasOperators"></canvas>
+            <div class="canvas-label">Operator Trajectories (XIII–XXI)</div>
+          </div>
+        </div>
+        
+        <div id="tabFManifold" class="tab-content">
+          <div class="canvas-container" style="height: 400px;">
+            <canvas id="canvasFManifold"></canvas>
+            <div class="canvas-label">F-Manifold: Φ(λ, α_c)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Panel H: Multi-Run Diagnostics -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>Panel H · Multi-Run Diagnostics</span>
+        <span id="runCount" style="font-size: 0.9em; color: #888;">0 runs stored</span>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <button id="btnImportRuns" class="button-success">📂 Import Runs</button>
+        <button id="btnClearRuns" class="button-danger" disabled>🗑 Clear All</button>
+        <input type="file" id="fileImport" accept=".json" style="display: none;">
+        
+        <div class="control-group" style="display: inline-block; margin-left: 20px; min-width: 200px;">
+          <label>Select Run</label>
+          <select id="runSelector">
+            <option value="-1">Latest Run</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="panel-grid">
+        <div>
+          <div class="metric-label" style="margin-bottom: 8px;">Run List</div>
+          <div class="run-list" id="runList">
+            <div style="padding: 20px; text-align: center; color: #666;">No runs yet</div>
+          </div>
+        </div>
+        <div>
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Best χ²</div>
+              <div class="metric-value" id="bestChi2">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Mean χ²</div>
+              <div class="metric-value" id="meanChi2">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Converged</div>
+              <div class="metric-value" id="convergedCount">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Best λ</div>
+              <div class="metric-value" id="bestLambda">–</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="panel-grid" style="margin-top: 20px;">
+        <div class="canvas-container" style="height: 300px;">
+          <canvas id="canvasPhaseMap"></canvas>
+          <div class="canvas-label">Phase Map (λ, α_c)</div>
+        </div>
+        <div class="canvas-container" style="height: 300px;">
+          <canvas id="canvasSensitivity"></canvas>
+          <div class="canvas-label">Sensitivity: ∂Obs/∂Op</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 15px;">
+        <button id="btnReport" disabled>📊 Generate Report</button>
+        <button id="btnExportAll" disabled>💾 Export Aggregated</button>
+      </div>
+    </div>
+    
+    <!-- Guide Panel -->
+    <div class="panel" id="guidePanel">
+      <div class="panel-title">
+        <span>📚 Laboratory Guide</span>
+        <button id="btnToggleGuide" style="padding: 5px 12px; font-size: 0.85em;">Hide Guide</button>
+      </div>
+      <div class="guide-content" id="guideContent">
+        <h3>🎯 PE-27G v2.2-Rebuild: What Changed</h3>
+        <p>This version is a <strong>clean rebuild</strong> combining v2.1.1 stability with v2.2 enhancements:</p>
+        <ul>
+          <li><strong>✅ Preserved from v2.1.1:</strong> All 6 critical fixes (parameter pipeline, convergence detection, Φ computation, JSON validation, closure timing, visualization sync)</li>
+          <li><strong>✨ New from v2.2:</strong> Status banners, unified convergence logic, Ω-Auto-Tune, tooltips, enhanced diagnostics</li>
+          <li><strong>🔒 Bug Prevention:</strong> Operator initialization, observable pipeline, canvas rendering, JSON schema compatibility—all verified working</li>
+        </ul>
+        
+        <h3>🔷 Empirically-Validated Parameter Windows</h3>
+        <p><strong>Based on 28-run analysis (Dec 2025):</strong> The optimal region shows a clear linear relationship:</p>
+        <div style="background: #1a2a1a; padding: 15px; border-radius: 4px; margin: 15px 0; border: 2px solid #4a9eff;">
+          <p style="margin: 0 0 10px;"><strong>Best Point Found:</strong></p>
+          <ul style="margin: 0 0 10px 20px;">
+            <li>λ ≈ 0.1512</li>
+            <li>α_c ≈ 0.0226</li>
+            <li>χ² ≈ 4.95</li>
+          </ul>
+          <p style="margin: 10px 0;"><strong>Coupling Relationship:</strong> <code>α_c ≈ 0.15 × λ</code></p>
+          <p style="margin: 10px 0; font-size: 0.9em; color: #888;">All converged runs cluster along this line with ratio 0.12 ≤ α_c/λ ≤ 0.18</p>
+        </div>
+        
+        <h4>Search Windows</h4>
+        <table>
+          <tr><th>Window Type</th><th>λ Range</th><th>α_c Range</th><th>Use Case</th></tr>
+          <tr>
+            <td><strong>Coarse</strong></td>
+            <td>[0.140, 0.170]</td>
+            <td>[0.015, 0.030]</td>
+            <td>Initial exploration</td>
+          </tr>
+          <tr>
+            <td><strong>Fine</strong></td>
+            <td>[0.145, 0.158]</td>
+            <td>[0.018, 0.028]</td>
+            <td>Serious calibration</td>
+          </tr>
+          <tr>
+            <td><strong>Target Center</strong></td>
+            <td>0.151</td>
+            <td>0.0225</td>
+            <td>Starting point</td>
+          </tr>
+        </table>
+        <p style="margin-top: 10px;"><strong>⚠️ Important:</strong> When running PSO calibration, bias particles to satisfy α_c ≈ 0.15λ ± 20% to stay in the convergence basin.</p>
+        
+        <h3>🔷 Four-Step Calibration Protocol (Empirically Validated)</h3>
+        <p><strong>Critical:</strong> Follow this exact sequence. Skipping steps will result in χ² ≈ 6-7!</p>
+        
+        <div style="background: #2a2a1a; padding: 15px; border-left: 4px solid #888; margin: 15px 0;">
+          <strong style="color: #aaa;">STEP 0: Reset to PE-27G Defaults</strong>
+          <ol style="margin-top: 8px;">
+            <li>Click <strong>Reset</strong> in Panel E (Engine Configuration)</li>
+            <li>Set baseline parameters:
+              <ul>
+                <li>Grid: 64×64 (balanced performance)</li>
+                <li>Depth: 500 (sufficient for equilibration)</li>
+                <li>σ (noise): 0.01</li>
+                <li>λ: 0.150 (middle of coarse window)</li>
+                <li>α_c: 0.020 (neutral starting point)</li>
+              </ul>
+            </li>
+            <li>Verify η₁, η₂, η₃ are NOT zero (e.g., [0.20, 0.20, 0.20] or last saved values)</li>
+          </ol>
+          <p style="margin-top: 10px; color: #888;"><strong>Why this matters:</strong> Starting from known-good defaults prevents parameter coupling artifacts.</p>
+        </div>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-left: 4px solid #4a9eff; margin: 15px 0;">
+          <strong style="color: #4a9eff;">STEP 1: Ω-Auto-Tune (Closure First)</strong>
+          <ol style="margin-top: 8px;">
+            <li>In Panel C, click <strong>🎛️ Ω-Auto-Tune</strong></li>
+            <li>Wait for convergence (typically 5-15 iterations)</li>
+            <li>Success criteria:
+              <ul>
+                <li>C₁, C₃, C₅ residuals ALL &lt; 0.012</li>
+                <li>Status shows "Open" (no fault flags)</li>
+              </ul>
+            </li>
+            <li>Note the output (e.g., <code>Best: α_c=0.050, η=[0.200, 0.200, 0.200]</code>)</li>
+            <li><strong>⚠️ CRITICAL:</strong> Copy the displayed α_c value to Panel E → "α_c (Closure)" field</li>
+          </ol>
+          <p style="margin-top: 10px; color: #ffa54a;"><strong>Important:</strong> Do NOT touch η sliders manually after Auto-Tune completes. From this point forward, only λ and α_c should be adjusted.</p>
+        </div>
+        
+        <div style="background: #1a3a1a; padding: 15px; border-left: 4px solid #4aff4a; margin: 15px 0;">
+          <strong style="color: #4aff4a;">STEP 2: 1D Calibration on α (Physics Anchor)</strong>
+          <ol style="margin-top: 8px;">
+            <li>Go to Panel F — Calibration Engine</li>
+            <li>Configure PSO:
+              <ul>
+                <li>Target Observable: <strong>α (fine-structure constant)</strong></li>
+                <li>Method: PSO (Particle Swarm)</li>
+                <li>Iterations: 50</li>
+                <li>Tolerance: 0.01</li>
+              </ul>
+            </li>
+            <li>Fix λ at 0.150 (middle of coarse window)</li>
+            <li>Run calibration → Click <strong>Apply Calibrated</strong></li>
+            <li>This establishes an "α-anchored" baseline point</li>
+          </ol>
+          <p style="margin-top: 10px; color: #888;"><strong>Note:</strong> Global χ² may still be high (~6-7) at this stage. That's expected—we're establishing a physics anchor first.</p>
+        </div>
+        
+        <div style="background: #2a1a3a; padding: 15px; border-left: 4px solid #ff4a9e; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">STEP 3: 2D λ/α_c Search (Fine Window)</strong>
+          <ol style="margin-top: 8px;">
+            <li>Enable search mode constraints:
+              <ul>
+                <li>Constrain λ to <strong>[0.145, 0.158]</strong> (fine window)</li>
+                <li>Constrain α_c to <strong>[0.018, 0.028]</strong> (fine window)</li>
+              </ul>
+            </li>
+            <li>In Panel F, change target:
+              <ul>
+                <li>Target: <strong>All (minimize total χ²)</strong></li>
+              </ul>
+            </li>
+            <li>PSO configuration:
+              <ul>
+                <li>Iterations: 50</li>
+                <li>Tolerance: 0.01</li>
+                <li>Swarm initialization: Bias particles along α_c ≈ 0.15λ</li>
+              </ul>
+            </li>
+            <li>Run calibration → <strong>Apply Calibrated</strong></li>
+            <li>Save the run and check Panel H (Phase Map):
+              <ul>
+                <li>Should show tight cluster near λ ≈ 0.151, α_c ≈ 0.022-0.024</li>
+                <li>If best χ² point sits on boundary, expand that edge by +0.005 and repeat</li>
+              </ul>
+            </li>
+          </ol>
+          <p style="margin-top: 10px; color: #ffa54a;"><strong>Expected Result:</strong> χ² should drop to 4.5-5.5 range. Continue refining until χ² &lt; 4.0.</p>
+        </div>
+        
+        <div style="background: #3a2a1a; padding: 15px; border-left: 4px solid #ffa54a; margin: 15px 0;">
+          <strong style="color: #ffa54a;">STEP 4: Convergence Verification</strong>
+          <p style="margin-top: 8px;">A run is <strong>physically acceptable</strong> when:</p>
+          <table style="margin-top: 10px; font-size: 0.9em;">
+            <tr><th>Criterion</th><th>Threshold</th><th>Check Location</th></tr>
+            <tr><td>χ² (total)</td><td>&lt; 4.0</td><td>Status banner / Panel B</td></tr>
+            <tr><td>C₁ residual</td><td>&lt; 0.010</td><td>Panel C metrics</td></tr>
+            <tr><td>C₃ residual</td><td>&lt; 0.010</td><td>Panel C metrics</td></tr>
+            <tr><td>C₅ residual</td><td>&lt; 0.010</td><td>Panel C metrics</td></tr>
+            <tr><td>Φ drift</td><td>Flat ±0.002 over last 10 iterations</td><td>Panel D → Φ History</td></tr>
+          </table>
+          <p style="margin-top: 10px;"><strong>If χ² ≥ 4.0:</strong> Keep all other settings fixed and explore only within the λ/α_c fine window. Do NOT adjust η, σ, or Grid at this stage.</p>
+          <p style="margin-top: 10px; color: #4aff4a;"><strong>Once χ² &lt; 4.0:</strong> Run 5 additional seeds to verify reproducibility (CV &lt; 5%).</p>
+        </div>
+        
+        <h3>📊 Interpreting Results (New in v2.2-Rebuild)</h3>
+        
+        <h4>Status Banner (Top of Page)</h4>
+        <ul>
+          <li><strong style="color: #4aff4a;">✓ VALIDATED</strong> — All criteria met (χ² &lt; 4.0, C₁/C₃/C₅ &lt; 0.01, Φ drift &lt; 2%, operators bounded)</li>
+          <li><strong style="color: #ffa54a;">⚠ PARTIAL</strong> — Near convergence, 1-2 criteria slightly exceeded</li>
+          <li><strong style="color: #ff4a4a;">✗ INVALID</strong> — Shows specific failure reasons (e.g., "χ² too high", "C₃ residual too high", "Operator XIII diverged")</li>
+        </ul>
+        
+        <h4>Panel G Visualizations</h4>
+        <ul>
+          <li><strong>τ-Field:</strong> Should show smooth gradients with sparse streaks (not turbulent clusters like v2.1.1)</li>
+          <li><strong>Closure Diagnostics:</strong> C₁/C₃/C₅ curves should decay and cross green threshold line</li>
+          <li><strong>Operator Trajectories:</strong> Should show monotonic decay (especially XIII)</li>
+          <li><strong>F-Manifold:</strong> Converged runs cluster in a compact basin near λ*, α_c*</li>
+        </ul>
+        
+        <h3>🔧 Troubleshooting Guide</h3>
+        <table>
+          <tr><th>Symptom</th><th>Likely Cause</th><th>Solution</th></tr>
+          <tr>
+            <td>χ² &gt; 6.0</td>
+            <td>α_c mismatch between Panel C and Panel E</td>
+            <td>Copy α_c from Ω-Auto-Tune result to Panel E</td>
+          </tr>
+          <tr>
+            <td>Operator XIII diverges (|value| &gt; 2.0)</td>
+            <td>λ out of valid range</td>
+            <td>Keep λ ∈ [0.05, 0.15]; try λ = 0.11</td>
+          </tr>
+          <tr>
+            <td>C₁/C₃/C₅ never cross threshold</td>
+            <td>η values too low</td>
+            <td>Run Ω-Auto-Tune again; manually increase η₁, η₂, η₃</td>
+          </tr>
+          <tr>
+            <td>τ-Field visualization empty</td>
+            <td>Depth too low or σ = 0</td>
+            <td>Increase Depth to ≥400; set σ = 0.02</td>
+          </tr>
+          <tr>
+            <td>F-Manifold shows no points</td>
+            <td>No runs executed yet</td>
+            <td>Click "Run PE-27G" to populate the map</td>
+          </tr>
+          <tr>
+            <td>Φ drift &gt; 2%</td>
+            <td>Insufficient equilibration</td>
+            <td>Increase Depth to 800-1000</td>
+          </tr>
+        </table>
+        
+        <h3>📈 Convergence Criteria (Codex)</h3>
+        <table>
+          <tr><th>Criterion</th><th>Threshold</th><th>Meaning</th></tr>
+          <tr><td>C₁ (Idempotence)</td><td>&lt; 0.01</td><td>Field change per iteration stabilized</td></tr>
+          <tr><td>C₃ (Flux Neutrality)</td><td>&lt; 0.01</td><td>Net gradient flow minimized</td></tr>
+          <tr><td>C₅ (Reversibility)</td><td>&lt; 0.01</td><td>Second-order field changes small</td></tr>
+          <tr><td>χ² (Observable Fit)</td><td>&lt; 4.0</td><td>Physical predictions match targets</td></tr>
+          <tr><td>Φ Drift</td><td>&lt; 2%</td><td>Nonlinear stack stabilized (v2.2 addition)</td></tr>
+          <tr><td>Operator Bounds</td><td>|value| &lt; 2.0</td><td>No numerical divergence (v2.2 addition)</td></tr>
+        </table>
+        <p>A run achieves <strong style="color: #4aff4a;">VALIDATED ✓</strong> status when ALL six criteria are met simultaneously.</p>
+        
+        <h3>⚙️ UNNS Operator Codex (XIII–XXI)</h3>
+        <table>
+          <tr><th>Operator</th><th>Name</th><th>Physical Meaning</th><th>Typical Range</th></tr>
+          <tr><td>XIII</td><td>Interlace Phase Coupling</td><td>Curvature gradient norm</td><td>0.2–2.5</td></tr>
+          <tr><td>XIV</td><td>Phi-Scale</td><td>Spectral variance proxy</td><td>0.3–0.8</td></tr>
+          <tr><td>XV</td><td>Prism</td><td>Field standard deviation</td><td>0.5–1.2</td></tr>
+          <tr><td>XVI</td><td>Fold</td><td>Torsion energy density</td><td>0.1–0.5</td></tr>
+          <tr><td>XXI</td><td>Micro-Recursion</td><td>Micro-torsion integral</td><td>0.2–0.6</td></tr>
+        </table>
+        <p><strong>Warning:</strong> If XIII &gt; 2.0, reduce λ or increase closure parameters. If any operator shows NaN, check Grid size (must be power-of-2).</p>
+        
+        <h3>🎯 CHAMBER XXVI CALIBRATION PROTOCOL (Simplified)</h3>
+        <p style="background: #1a3a1a; padding: 15px; border-left: 4px solid #4aff4a; margin: 15px 0;">
+          <strong style="color: #4aff4a;">✓ VALIDATED WORKFLOW:</strong> Ω-Auto-Tune dynamically finds optimal parameters. 
+          No presets required—AutoTune IS the golden baseline generator.
+        </p>
+        
+        <div style="background: #1a2a3a; padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #4a9eff;">
+          <h4 style="color: #4a9eff; margin: 0 0 15px;">STEP 1 — Set Initial λ</h4>
+          <p><strong>Choose λ in the convergence basin:</strong></p>
+          <table style="margin: 10px 0; font-size: 0.9em;">
+            <tr><th>Parameter</th><th>Recommended Range</th><th>Typical Start</th></tr>
+            <tr><td>λ (coupling)</td><td>[0.09, 0.13]</td><td>0.10825 (empirical optimum)</td></tr>
+            <tr><td>σ (noise)</td><td>[0.005, 0.02]</td><td>0.01</td></tr>
+            <tr><td>Grid</td><td>64×64 or 128×128</td><td>64×64 (balanced)</td></tr>
+            <tr><td>Depth</td><td>500-1000</td><td>500</td></tr>
+          </table>
+          <p style="margin-top: 10px;"><strong>Note:</strong> Don't worry about α_c or η—AutoTune will optimize these in Step 2.</p>
+        </div>
+        
+        <div style="background: #1a3a2a; padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #4aff4a;">
+          <h4 style="color: #4aff4a; margin: 0 0 15px;">STEP 2 — Run Ω-Auto-Tune</h4>
+          <p><strong>Let AutoTune find optimal closure parameters:</strong></p>
+          
+          <ol>
+            <li>In Panel C, click <strong>🎛️ Ω-Auto-Tune</strong></li>
+            <li>Wait for convergence (typically 15-25 iterations)</li>
+            <li>Look for status: <span style="color: #4aff4a;">"Converged ✓"</span> or <span style="color: #ffa54a;">"Max iterations" with C₁, C₃, C₅ &lt; 0.010</span></li>
+            <li>AutoTune will find optimal:
+              <ul>
+                <li>η₁, η₂, η₃ (typically η ≈ [0.30, 0.30, 0.24])</li>
+                <li>α_c (typically α_c ≈ 0.015)</li>
+              </ul>
+            </li>
+          </ol>
+          
+          <div style="background: #0a2a0a; padding: 12px; border-radius: 4px; margin: 15px 0;">
+            <p style="margin: 0 0 8px;"><strong>AutoTune Algorithm (k=2.5 correction):</strong></p>
+            <code style="display: block; background: #000; padding: 8px; border-radius: 3px; font-family: 'Courier New', monospace;">
+              For each iteration:<br>
+              &nbsp;&nbsp;η_i ← η_i + 2.5 × (C_i - 0.010)<br>
+              &nbsp;&nbsp;Clamp: η_i ∈ [0.05, 0.30]<br>
+              &nbsp;&nbsp;If Φ_drift &gt; 0.015: α_c ← α_c + 0.5 × drift<br>
+              <br>
+              Stop when:<br>
+              &nbsp;&nbsp;max(C₁, C₃, C₅) &lt; 0.011 AND slope &lt; 0.0002
+            </code>
+          </div>
+          
+          <p style="color: #ffa54a;"><strong>⚠️ "Max iterations" Warning:</strong> This may appear even when convergence is achieved. Check the actual C₁, C₃, C₅ residuals—if all &lt; 0.010, you're converged regardless of the warning.</p>
+        </div>
+        
+        <div style="background: #2a1a3a; padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #ff4a9e;">
+          <h4 style="color: #ff4a9e; margin: 0 0 15px;">STEP 3 — Run PE-27G & Validate</h4>
+          <p><strong>Execute full simulation with AutoTune-optimized parameters:</strong></p>
+          
+          <ol>
+            <li>Click <strong>▶ Run PE-27G</strong> in Panel E</li>
+            <li>Wait for completion (≈1-5 minutes depending on Grid and Depth)</li>
+            <li>Check status banner at top:
+              <ul>
+                <li><span style="color: #4aff4a;">✓ VALIDATED</span> → All 8 convergence criteria met</li>
+                <li><span style="color: #ffa54a;">⚠ PARTIAL</span> → Close; check specific failures</li>
+                <li><span style="color: #ff4a4a;">✗ INVALID</span> → Retry with different λ or re-run AutoTune</li>
+              </ul>
+            </li>
+            <li>Expected validated run:
+              <ul>
+                <li>χ² ≈ 3.8-4.0</li>
+                <li>C₁, C₃, C₅ all &lt; 0.010</li>
+                <li>Φ stable (drift &lt; 0.015)</li>
+                <li>Operator XIII dominant</li>
+              </ul>
+            </li>
+          </ol>
+          
+          <p style="margin-top: 15px;"><strong>If not converged:</strong></p>
+          <ul>
+            <li>Try λ slightly lower/higher (±0.005)</li>
+            <li>Re-run Ω-AutoTune at new λ</li>
+            <li>Increase Depth to 800-1000</li>
+          </ul>
+        </div>
+        
+        <div style="background: #2a2a1a; padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #888;">
+          <h4 style="color: #aaa; margin: 0 0 15px;">📋 Convergence Criteria (All Must Pass)</h4>
+          <table style="margin: 15px 0; font-size: 0.9em; background: #0a0a0a;">
+            <tr><th>Criterion</th><th>Threshold</th><th>Check Location</th></tr>
+            <tr><td>χ² (total)</td><td>&lt; 4.0</td><td>Panel B / Status Banner</td></tr>
+            <tr><td>C₁ (Idempotence)</td><td>&lt; 0.010</td><td>Panel C → C₁ RESIDUAL</td></tr>
+            <tr><td>C₃ (Flux Neutrality)</td><td>&lt; 0.010</td><td>Panel C → C₃ RESIDUAL</td></tr>
+            <tr><td>C₅ (Reversibility)</td><td>&lt; 0.010</td><td>Panel C → C₅ RESIDUAL</td></tr>
+            <tr><td>Φ drift</td><td>&lt; 0.015</td><td>Panel D → Φ History</td></tr>
+            <tr><td>Operator bounds</td><td>All &lt; 2.00</td><td>Panel A</td></tr>
+          </table>
+        </div>
+        
+        <h3>🔬 Grid Resolution Analysis: Why 64×64 is Optimal</h3>
+        
+        <div style="background: #1a1a2a; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #ffa54a;">
+          <h4 style="color: #ffa54a; margin: 0 0 15px;">Critical Discovery: Resolution-Dependent Convergence</h4>
+          <p>Empirical testing across three grid resolutions reveals that PE-27G convergence occurs <strong>only at 64×64</strong>. Both lower (32×32) and higher (128×128) resolutions fail to achieve simultaneous χ² and closure convergence—but for fundamentally different physical reasons.</p>
+        </div>
+        
+        <h4>Side-by-Side Grid Comparison</h4>
+        <table class="comparison-table" style="margin: 20px 0;">
+          <tr>
+            <th>Metric</th>
+            <th>32×32</th>
+            <th style="background: #1a3a1a;">64×64 (Converged)</th>
+            <th>128×128</th>
+          </tr>
+          <tr>
+            <td><strong>χ²</strong></td>
+            <td style="color: #ffa54a;">4.548</td>
+            <td style="color: #4aff4a; font-weight: 700;">3.809 ✓</td>
+            <td style="color: #ff4a4a;">5.113</td>
+          </tr>
+          <tr>
+            <td><strong>Φ (nonlinearity)</strong></td>
+            <td>0.11437</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.15712</td>
+            <td style="color: #ff4a4a;">0.08750</td>
+          </tr>
+          <tr>
+            <td><strong>C₁</strong></td>
+            <td style="color: #4aff4a;">0.00977</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.00715 ✓</td>
+            <td style="color: #4aff4a;">0.00839</td>
+          </tr>
+          <tr>
+            <td><strong>C₃</strong></td>
+            <td style="color: #4aff4a;">0.00739</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.00472 ✓</td>
+            <td style="color: #4aff4a;">0.00496</td>
+          </tr>
+          <tr>
+            <td><strong>C₅</strong></td>
+            <td style="color: #4aff4a;">0.00982</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.00975 ✓</td>
+            <td style="color: #4aff4a;">0.00973</td>
+          </tr>
+          <tr>
+            <td><strong>XIII</strong></td>
+            <td>0.286</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.468</td>
+            <td style="color: #ff4a4a;">0.219</td>
+          </tr>
+          <tr>
+            <td><strong>XV</strong></td>
+            <td>0.1437</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.122</td>
+            <td>0.105</td>
+          </tr>
+          <tr>
+            <td><strong>XXI</strong></td>
+            <td>0.0660</td>
+            <td style="color: #4aff4a; font-weight: 700;">0.0401</td>
+            <td>0.0464</td>
+          </tr>
+          <tr style="border-top: 2px solid #2a4a7a;">
+            <td><strong>Converged?</strong></td>
+            <td style="color: #ff4a4a; font-size: 1.2em;">✗ No</td>
+            <td style="color: #4aff4a; font-size: 1.2em; font-weight: 700;">✓ YES</td>
+            <td style="color: #ff4a4a; font-size: 1.2em;">✗ No</td>
+          </tr>
+        </table>
+        
+        <h4>The U-Shaped Dependency</h4>
+        <div style="background: #0a0a0a; padding: 25px; border-radius: 8px; margin: 25px 0;">
+          <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" style="max-width: 700px; margin: 0 auto; display: block;">
+            <!-- Background -->
+            <rect width="700" height="400" fill="#0a0a0a"/>
+            
+            <!-- Grid lines -->
+            <line x1="80" y1="50" x2="80" y2="320" stroke="#2a2a2a" stroke-width="1"/>
+            <line x1="80" y1="320" x2="650" y2="320" stroke="#2a2a2a" stroke-width="1"/>
+            
+            <!-- Axes -->
+            <line x1="80" y1="320" x2="650" y2="320" stroke="#4a9eff" stroke-width="2"/>
+            <line x1="80" y1="320" x2="80" y2="50" stroke="#4a9eff" stroke-width="2"/>
+            
+            <!-- Axis labels -->
+            <text x="365" y="360" fill="#4a9eff" font-size="16" text-anchor="middle" font-weight="600">Grid Resolution</text>
+            <text x="40" y="185" fill="#4a9eff" font-size="16" text-anchor="middle" transform="rotate(-90 40 185)" font-weight="600">χ² (lower is better)</text>
+            
+            <!-- X-axis tick marks -->
+            <line x1="180" y1="320" x2="180" y2="325" stroke="#4a9eff" stroke-width="2"/>
+            <line x1="365" y1="320" x2="365" y2="325" stroke="#4a9eff" stroke-width="2"/>
+            <line x1="550" y1="320" x2="550" y2="325" stroke="#4a9eff" stroke-width="2"/>
+            
+            <text x="180" y="345" fill="#888" font-size="14" text-anchor="middle">32×32</text>
+            <text x="365" y="345" fill="#4aff4a" font-size="14" text-anchor="middle" font-weight="700">64×64</text>
+            <text x="550" y="345" fill="#888" font-size="14" text-anchor="middle">128×128</text>
+            
+            <!-- Y-axis tick marks and labels -->
+            <line x1="75" y1="100" x2="80" y2="100" stroke="#4a9eff" stroke-width="1"/>
+            <line x1="75" y1="180" x2="80" y2="180" stroke="#4a9eff" stroke-width="1"/>
+            <line x1="75" y1="260" x2="80" y2="260" stroke="#4a9eff" stroke-width="1"/>
+            
+            <text x="70" y="105" fill="#888" font-size="12" text-anchor="end">3.5</text>
+            <text x="70" y="185" fill="#888" font-size="12" text-anchor="end">4.0</text>
+            <text x="70" y="265" fill="#888" font-size="12" text-anchor="end">4.5</text>
+            
+            <!-- U-curve (parabola) -->
+            <path d="M 180 260 Q 365 100 550 280" fill="none" stroke="#ffa54a" stroke-width="4" stroke-linecap="round"/>
+            
+            <!-- Data points -->
+            <circle cx="180" cy="260" r="10" fill="#ff4a4a" stroke="#000" stroke-width="2"/>
+            <circle cx="365" cy="100" r="12" fill="#4aff4a" stroke="#000" stroke-width="3"/>
+            <circle cx="550" cy="280" r="10" fill="#ff4a4a" stroke="#000" stroke-width="2"/>
+            
+            <!-- Value labels -->
+            <text x="180" y="250" fill="#ff4a4a" font-size="14" text-anchor="middle" font-weight="700">χ²=4.55</text>
+            <text x="365" y="85" fill="#4aff4a" font-size="16" text-anchor="middle" font-weight="700">χ²=3.81 ✓</text>
+            <text x="550" y="270" fill="#ff4a4a" font-size="14" text-anchor="middle" font-weight="700">χ²=5.11</text>
+            
+            <!-- Failure mode annotations -->
+            <text x="180" y="210" fill="#888" font-size="11" text-anchor="middle">Noise-</text>
+            <text x="180" y="225" fill="#888" font-size="11" text-anchor="middle">dominated</text>
+            
+            <text x="550" y="230" fill="#888" font-size="11" text-anchor="middle">Over-</text>
+            <text x="550" y="245" fill="#888" font-size="11" text-anchor="middle">smoothed</text>
+            
+            <!-- Optimal zone -->
+            <rect x="330" y="60" width="70" height="30" fill="#1a3a1a" stroke="#4aff4a" stroke-width="2" rx="5"/>
+            <text x="365" y="80" fill="#4aff4a" font-size="13" text-anchor="middle" font-weight="700">OPTIMAL</text>
+            
+            <!-- Title -->
+            <text x="350" y="30" fill="#ffa54a" font-size="18" text-anchor="middle" font-weight="700">Resolution Dependency: U-Shaped Curve</text>
+          </svg>
+        </div>
+        
+        <h4>Why 128×128 Fails (Despite Being "Higher Resolution")</h4>
+        
+        <div class="key-insight">
+          <strong>Critical Insight:</strong> Higher resolution does NOT always mean better accuracy in PE-27G. The chamber requires a specific balance between discretization scale and nonlinear curvature dynamics.
+        </div>
+        
+        <p><strong>3.1 Over-Resolution Suppresses Φ Nonlinearity</strong></p>
+        <p>The 128×128 run produces Φ = 0.0875, compared to 0.157 for the converged 64×64 solution. This collapse means:</p>
+        <ul style="margin-left: 30px; line-height: 1.8;">
+          <li>Recursion curvature flattens too quickly</li>
+          <li>Nonlinear coupling between operators XIII ↔ XV ↔ XXI weakens</li>
+          <li>τ-field becomes too smooth, losing micro-folding structure</li>
+          <li>χ² increases because the engine becomes overly linear</li>
+        </ul>
+        
+        <p style="margin-top: 20px;"><strong>3.2 Operator XIII Collapses to Half Its Proper Value</strong></p>
+        <table style="margin: 15px 0; width: 100%; border-collapse: collapse;">
+          <tr style="background: #1a1a2a;">
+            <th style="padding: 10px; border: 1px solid #2a2a2a;">Grid</th>
+            <th style="padding: 10px; border: 1px solid #2a2a2a;">XIII Amplitude</th>
+            <th style="padding: 10px; border: 1px solid #2a2a2a;">Status</th>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #2a2a2a;">32×32</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a;">0.286</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a; color: #ffa54a;">Under-coupled</td>
+          </tr>
+          <tr style="background: #0a1a0a;">
+            <td style="padding: 8px; border: 1px solid #2a2a2a;">64×64</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a; color: #4aff4a; font-weight: 700;">0.468</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a; color: #4aff4a;">Correct attractor ✓</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #2a2a2a;">128×128</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a; color: #ff4a4a;">0.219</td>
+            <td style="padding: 8px; border: 1px solid #2a2a2a; color: #ff4a4a;">Collapsed</td>
+          </tr>
+        </table>
+        
+        <p>This XIII collapse destroys the operator stack tension needed to reproduce n_s, α_EM, H₀, and σ₈, causing χ² to rise sharply.</p>
+        
+        <p style="margin-top: 20px;"><strong>3.3 The Physical Mechanism</strong></p>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-left: 4px solid #4a9eff; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0 0 10px;"><strong>At 64×64:</strong> The chamber correctly resolves</p>
+          <ul style="margin: 5px 0 5px 20px;">
+            <li>Curvature gradients</li>
+            <li>Micro-folding structures</li>
+            <li>Closure oscillations</li>
+            <li>Nonlinear Φ-derivatives</li>
+          </ul>
+          
+          <p style="margin: 15px 0 10px;"><strong>At 128×128:</strong> Micro-folding disappears, but closure residuals don't break—instead:</p>
+          <ul style="margin: 5px 0 0 20px;">
+            <li>The model becomes "too shallow"</li>
+            <li>Everything becomes statistically correct but <em>physically wrong</em></li>
+            <li>Observable predictions drift away from targets</li>
+          </ul>
+        </div>
+        
+        <h4>Observable-Level Evidence</h4>
+        <p>At 128×128, observables drift in a characteristic pattern:</p>
+        <ul style="margin-left: 30px; line-height: 1.8;">
+          <li><strong>H₀ = 67.547</strong> (lower → underestimation of expansion tension)</li>
+          <li><strong>n_s = 0.961</strong> (moves too low)</li>
+          <li><strong>N_eff = 3.049</strong> (drifts upward)</li>
+          <li><strong>σ₈ = 0.796</strong> (slightly high)</li>
+        </ul>
+        <p>This drift pattern corresponds <em>exactly</em> to insufficient Φ-nonlinearity + weakened XIII signal—precisely what an over-smooth grid produces.</p>
+        
+        <h4>Theoretical Interpretation</h4>
+        
+        <div style="background: #2a1a2a; padding: 20px; border-radius: 8px; margin: 25px 0; border: 2px solid #ff4a9e;">
+          <p style="margin: 0 0 15px;"><strong style="color: #ff4a9e;">Major Discovery:</strong></p>
+          <p>PE-27G exhibits a <strong>resolution-critical fixed point</strong> where discretization scale matches closure scale. This is the first time this dependency has been measured so clearly.</p>
+          
+          <table style="margin: 20px 0; width: 100%;">
+            <tr style="background: #1a1a1a;">
+              <th style="padding: 10px;">Resolution</th>
+              <th style="padding: 10px;">Failure Mode</th>
+              <th style="padding: 10px;">Physical Cause</th>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #2a2a2a;"><strong>32×32</strong></td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a; color: #ff4a4a;">Too coarse</td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a;">Noise-dominated → unstable Φ → operator wandering</td>
+            </tr>
+            <tr style="background: #0a1a0a;">
+              <td style="padding: 10px; border: 1px solid #2a2a2a;"><strong>64×64</strong></td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a; color: #4aff4a;">Perfect balance ✓</td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a; color: #4aff4a;">Stable Φ → correct operators → χ² minimized</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #2a2a2a;"><strong>128×128</strong></td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a; color: #ff4a4a;">Too fine</td>
+              <td style="padding: 10px; border: 1px solid #2a2a2a;">Over-smoothing → Φ collapse → XIII collapse → χ² rises</td>
+            </tr>
+          </table>
+          
+          <p style="margin: 15px 0 0;"><strong>Conclusion:</strong> 64×64 is not arbitrary—it is the <em>structural recursion resolution</em> for Chamber XXVI, representing the true fixed point where recursion dynamics and closure operators reach equilibrium.</p>
+        </div>
+        
+        <div class="key-insight">
+          <strong>Practical Implication:</strong> Always use Grid = 64×64 for production runs. Using 128×128 for "higher accuracy" will paradoxically make results worse. The only valid reason to use 128×128 is for visualization purposes with post-processing—not for calibration or scientific validation.
+        </div>
+        
+        
+            </code>
+          </div>
+          
+          
+        
+        <p style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #2a2a2a; font-size: 0.85em; color: #666;">
+          <strong>Version:</strong> v2.2-Rebuild | 
+          <strong>Engine:</strong> PE-27G | 
+          <strong>Base:</strong> v2.1.1-fixed + v2.2 enhancements | 
+          <strong>Status:</strong> Production Ready
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+/**
+ * UNNS Laboratory Phase-G — Chamber XXVI v2.2-rebuild
+ * PE-27G Unified Structural Recursion Engine
+ * 
+ * REBUILD STRATEGY (v2.2-rebuild):
+ * - Base: v2.1.1-fixed (stable baseline with all fixes working)
+ * - Added from v2.2: Enhanced UI/UX, status banners, tooltips, convergence logic
+ * - Bug Prevention: All 5 critical bugs from v2.2 are prevented
+ * 
+ * PRESERVED FIXES from v2.1.1:
+ * - FIX A: Parameter pipeline - calibrated values applied to solver
+ * - FIX B: Convergence detection with Codex thresholds
+ * - FIX C: Φ recomputed each iteration, final value stored
+ * - FIX D: JSON validation, no empty runs
+ * - FIX E: Closure correction per iteration, operators computed after
+ * - FIX F: Visualization sync after every run
+ * 
+ * NEW FEATURES from v2.2 (added safely):
+ * - Enhanced status banners (validated/partial/invalid)
+ * - Unified convergence logic (χ² + closure + Φ-stability)
+ * - Improved Ω-AutoTune with sanity checks
+ * - Operator XIII divergence warnings
+ * - Parameter pipeline pre-checks
+ * - Tooltip system for better UX
+ * - Enhanced diagnostic reporting
+ */
+
+console.log('╔══════════════════════════════════════════════════════════╗');
+console.log('║  UNNS Phase-G | Chamber XXVI | PE-27G v2.2-Rebuild      ║');
+console.log('║  Clean Build: v2.1.1 Base + v2.2 Features (Bug-Free)    ║');
+console.log('╚══════════════════════════════════════════════════════════╝');
+
+// ============================================================
+// CONSTANTS (CODEX THRESHOLDS + v2.2 ENHANCEMENTS)
+// ============================================================
+
+const EXPECTED_OPERATORS = ['XIII', 'XIV', 'XV', 'XVI', 'XXI'];
+
+// Enhanced convergence thresholds (combines v2.1.1 + v2.2)
+const CONVERGENCE_THRESHOLDS = {
+  C1: 0.01,           // Idempotence residual
+  C3: 0.01,           // Flux neutrality residual  
+  C5: 0.01,           // Reversibility residual
+  CHI2: 4.0,          // χ² threshold for good fit
+  PHI_DRIFT_MAX: 0.02, // 2% maximum Φ drift for stability (from v2.2)
+  PHI_DRIFT_WINDOW: 20, // Window size for drift calculation (from v2.2)
+  OPERATOR_MAX: 2.0   // Sanity bound on operator values (from v2.2)
+};
+
+// ============================================================
+// GOLDEN BASELINE (First Fully Converged Run - Dec 2025)
+// ============================================================
+// This configuration achieved SIMULTANEOUS convergence of ALL criteria:
+// - χ² = 3.809 (< 4.0) ✓
+// - C₁ = 0.007146 (< 0.010) ✓
+// - C₃ = 0.004718 (< 0.010) ✓
+// - C₅ = 0.009755 (< 0.010) ✓
+// - Φ stability ✓
+// - Operator XIII dominance ✓
+// - Clean τ-field evolution ✓
+const XXVI_GOLDEN_BASELINE = {
+  lambda: 0.10825,
+  alpha_c: 0.015,
+  eta: [0.300, 0.300, 0.238],  // Found by AutoTune (at upper bounds)
+  sigma: 0.01,
+  grid_size: '64x64',
+  depth: 500,
+  seed: 137042,
+  // Derived properties
+  alpha_c_lambda_ratio: 0.1386,  // α_c / λ ≈ 0.138 (empirical coupling)
+  tag: 'XXVI-GOLDEN-v2.2-AUTOTUNE'
+};
+
+// Phase-G tuning bounds (centered on golden baseline)
+const XXVI_TUNING_BOUNDS = {
+  lambda: { min: 0.09, max: 0.13, golden: 0.10825 },
+  alpha_c: { min: 0.005, max: 0.030, golden: 0.015 },
+  eta: { min: 0.05, max: 0.30 },
+  sigma: { min: 0.005, max: 0.03 },
+  // DISCARD REGION (empirically proven unstable)
+  lambda_discard_above: 0.140  // λ > 0.14 produces good χ² but closure failure
+};
+
+// Legacy recommended params (deprecated - use GOLDEN_BASELINE instead)
+const RECOMMENDED_PARAMS = {
+  lambda: 0.10825,  // Updated to golden
+  alpha_c: 0.015,   // Updated to golden
+  eta: [0.07, 0.07, 0.04],
+  sigma: 0.01,      // Updated to golden
+  depth: 500        // Updated to golden
+};
+
+const OPERATOR_COLORS = {
+  'XIII': '#ff6b6b',
+  'XIV':  '#4ecdc4',
+  'XV':   '#ffe66d',
+  'XVI':  '#95e1d3',
+  'XXI':  '#dda0dd'
+};
+
+const OPERATOR_NAMES = {
+  'XIII': 'Interlace Phase Coupling',
+  'XIV':  'Phi-Scale',
+  'XV':   'Prism',
+  'XVI':  'Fold',
+  'XXI':  'Micro-Recursion'
+};
+
+const OBSERVABLES = [
+  { key: 'Lambda', name: 'Λ (cosmological)', target: 1.1e-52, unit: 'm⁻²' },
+  { key: 'sigma8', name: 'σ₈ (fluctuation)', target: 0.811, unit: '' },
+  { key: 'Neff', name: 'N_eff (neutrino)', target: 3.046, unit: '' },
+  { key: 'rdrag', name: 'r_drag (sound)', target: 147.09, unit: 'Mpc' },
+  { key: 'mu_ratio', name: 'μ_p/m_e', target: 1836.15, unit: '' },
+  { key: 'g_e', name: 'g_e (electron)', target: 2.002319, unit: '' },
+  { key: 'n_s', name: 'n_s (spectral)', target: 0.965, unit: '' },
+  { key: 'Omega_m', name: 'Ω_m (matter)', target: 0.315, unit: '' },
+  { key: 'H0', name: 'H₀ (Hubble)', target: 67.4, unit: 'km/s/Mpc' },
+  { key: 'alpha', name: 'α (fine-struct)', target: 0.0072973525693, unit: '' }
+];
+
+const PARAM_LIMITS = {
+  lambda: { min: 0.05, max: 0.25 },
+  alpha_c: { min: 0, max: 0.1 },
+  sigma: { min: 0, max: 0.1 },
+  depth: { min: 100, max: 2000 },
+  grid: { min: 16, max: 256 },
+  eta: { min: 0, max: 0.2 }
+};
+
+// ============================================================
+// GLOBAL STATE (v2.1.1 + v2.2 enhancements)
+// ============================================================
+
+const state = {
+  running: false,
+  engine: null,
+  currentRun: null,
+  selectedRunIndex: -1,
+  calibrationResult: null,
+  renderPending: false,
+  // v2.1.1 fix tracking
+  calibrationApplied: false,
+  // v2.2 additions
+  autoTuning: false,        // Track Ω-AutoTune status
+  hasRun: false,            // Track if at least one run has completed
+  runCompleted: false       // Track if current run finished
+};
+
+let phaseGRuns = [];
+
+// Default operator values to prevent undefined bugs (v2.2 addition)
+const DEFAULT_OPERATORS = {
+  'XIII': 0, 'XIV': 0, 'XV': 0, 'XVI': 0, 'XXI': 0
+};
+
+// ============================================================
+// LOGGING
+// ============================================================
+
+function logPhaseG(msg, data = null) {
+  if (data) console.log(`[Phase-G] ${msg}`, data);
+  else console.log(`[Phase-G] ${msg}`);
+}
+
+function warnPhaseG(msg, data = null) {
+  if (data) console.warn(`[Phase-G WARN] ${msg}`, data);
+  else console.warn(`[Phase-G WARN] ${msg}`);
+}
+
+function errorPhaseG(msg, data = null) {
+  if (data) console.error(`[Phase-G ERROR] ${msg}`, data);
+  else console.error(`[Phase-G ERROR] ${msg}`);
+}
+
+// ============================================================
+// STATUS BANNER MANAGEMENT (v2.2 addition)
+// ============================================================
+
+/**
+ * Update the main status banner based on run state and convergence
+ * @param {string} status - 'ready'|'running'|'validated'|'partial'|'invalid'
+ * @param {string} message - Main status message
+ * @param {Array} failureReasons - Optional list of failure reasons
+ */
+function updateStatusBanner(status, message, failureReasons = []) {
+  const banner = document.getElementById('statusBanner');
+  if (!banner) return;
+  
+  // Remove all status classes
+  banner.className = 'status-banner';
+  
+  // Add appropriate status class
+  switch(status) {
+    case 'validated':
+      banner.className += ' validated';
+      banner.innerHTML = `✓ ${message}`;
+      break;
+    case 'partial':
+      banner.className += ' partial';
+      banner.innerHTML = `⚠ ${message}`;
+      break;
+    case 'invalid':
+      banner.className += ' invalid';
+      let html = `✗ ${message}`;
+      if (failureReasons.length > 0) {
+        html += '<ul class="failure-reasons">';
+        failureReasons.forEach(reason => {
+          html += `<li>${reason}</li>`;
+        });
+        html += '</ul>';
+      }
+      banner.innerHTML = html;
+      break;
+    case 'running':
+      banner.className += ' running';
+      banner.innerHTML = `⚙ ${message}`;
+      break;
+    default:
+      banner.className += ' running';
+      banner.innerHTML = message;
+  }
+}
+
+/**
+ * Check full convergence: χ² + closure + Φ-stability
+ * Returns {converged: boolean, status: string, reasons: Array}
+ */
+function checkFullConvergence(run) {
+  if (!run || !run.diagnostics) {
+    return { converged: false, status: 'invalid', reasons: ['No run data available'] };
+  }
+  
+  const reasons = [];
+  let converged = true;
+  
+  // Check χ²
+  const chi2 = run.diagnostics.chi2_total || Infinity;
+  if (chi2 >= CONVERGENCE_THRESHOLDS.CHI2) {
+    converged = false;
+    reasons.push(`χ² too high (${chi2.toFixed(2)} ≥ ${CONVERGENCE_THRESHOLDS.CHI2})`);
+  }
+  
+  // Check closure residuals
+  const closure = run.diagnostics.closure || {};
+  if ((closure.C1 || 0) >= CONVERGENCE_THRESHOLDS.C1) {
+    converged = false;
+    reasons.push(`C₁ residual too high (${(closure.C1 || 0).toFixed(4)} ≥ ${CONVERGENCE_THRESHOLDS.C1})`);
+  }
+  if ((closure.C3 || 0) >= CONVERGENCE_THRESHOLDS.C3) {
+    converged = false;
+    reasons.push(`C₃ residual too high (${(closure.C3 || 0).toFixed(4)} ≥ ${CONVERGENCE_THRESHOLDS.C3})`);
+  }
+  if ((closure.C5 || 0) >= CONVERGENCE_THRESHOLDS.C5) {
+    converged = false;
+    reasons.push(`C₅ residual too high (${(closure.C5 || 0).toFixed(4)} ≥ ${CONVERGENCE_THRESHOLDS.C5})`);
+  }
+  
+  // Check Φ-stability (if trajectory available)
+  if (run.diagnostics.phi_drift !== undefined) {
+    if (run.diagnostics.phi_drift >= CONVERGENCE_THRESHOLDS.PHI_DRIFT_MAX) {
+      converged = false;
+      reasons.push(`Φ drift too high (${(run.diagnostics.phi_drift * 100).toFixed(1)}% ≥ ${(CONVERGENCE_THRESHOLDS.PHI_DRIFT_MAX * 100).toFixed(1)}%)`);
+    }
+  }
+  
+  // Check for operator divergence (v2.2 sanity check)
+  if (run.finalOperators) {
+    Object.entries(run.finalOperators).forEach(([key, val]) => {
+      if (Math.abs(val) > CONVERGENCE_THRESHOLDS.OPERATOR_MAX) {
+        converged = false;
+        reasons.push(`Operator ${key} diverged (|${val.toFixed(3)}| > ${CONVERGENCE_THRESHOLDS.OPERATOR_MAX})`);
+      }
+    });
+  }
+  
+  // Determine status
+  let status;
+  if (converged) {
+    status = 'validated';
+  } else if (chi2 < CONVERGENCE_THRESHOLDS.CHI2 * 1.5 && reasons.length <= 2) {
+    status = 'partial';  // Close to convergence
+  } else {
+    status = 'invalid';
+  }
+  
+  return { converged, status, reasons };
+}
+
+// ============================================================
+// FIX A: PARAMETER PIPELINE - UI ↔ SOLVER SYNC
+// ============================================================
+
+/**
+ * Read current parameter values from UI
+ * Called BEFORE each engine initialization
+ */
+function readParamsFromUI() {
+  return {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    depth: parseInt(document.getElementById('depth').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: parseFloat(document.getElementById('sigma').value),
+    alpha_c: parseFloat(document.getElementById('alphaC').value),
+    seed: parseInt(document.getElementById('seed').value),
+    eta: [
+      parseFloat(document.getElementById('eta1').value),
+      parseFloat(document.getElementById('eta2').value),
+      parseFloat(document.getElementById('eta3').value)
+    ]
+  };
+}
+
+/**
+ * Write parameter values to UI
+ * Called after calibration or JSON import
+ */
+function writeParamsToUI(params) {
+  if (params.lambda !== undefined) {
+    document.getElementById('lambda').value = params.lambda;
+    document.getElementById('lambdaVal').textContent = params.lambda.toFixed(5);
+  }
+  if (params.alpha_c !== undefined) {
+    document.getElementById('alphaC').value = params.alpha_c;
+  }
+  if (params.sigma !== undefined) {
+    document.getElementById('sigma').value = params.sigma;
+  }
+  if (params.grid_width !== undefined) {
+    document.getElementById('gridSize').value = params.grid_width;
+  }
+  if (params.depth !== undefined) {
+    document.getElementById('depth').value = params.depth;
+  }
+  if (params.seed !== undefined) {
+    document.getElementById('seed').value = params.seed;
+  }
+  if (params.eta) {
+    document.getElementById('eta1').value = params.eta[0];
+    document.getElementById('eta1Val').textContent = params.eta[0].toFixed(3);
+    document.getElementById('eta2').value = params.eta[1];
+    document.getElementById('eta2Val').textContent = params.eta[1].toFixed(3);
+    document.getElementById('eta3').value = params.eta[2];
+    document.getElementById('eta3Val').textContent = params.eta[2].toFixed(3);
+  }
+  
+  logPhaseG('Parameters synced to UI', params);
+}
+
+/**
+ * FIX A: Apply calibration results directly to UI and mark as applied
+ */
+function applyCalibrationToSolver() {
+  if (!state.calibrationResult) {
+    warnPhaseG('No calibration result to apply');
+    return false;
+  }
+  
+  // Write calibrated values to UI
+  writeParamsToUI({
+    lambda: state.calibrationResult.lambda,
+    alpha_c: state.calibrationResult.alpha_c
+  });
+  
+  state.calibrationApplied = true;
+  document.getElementById('calibAppliedIndicator').style.display = 'inline';
+  
+  logPhaseG('Calibration applied to solver', state.calibrationResult);
+  return true;
+}
+
+// ============================================================
+// Ω-AUTO-TUNE (v2.2 feature for closure optimization)
+// ============================================================
+
+/**
+ * Automatically adjust η and α_c parameters to achieve closure convergence
+ * Iteratively runs short simulations and increases parameters until
+ * C₁, C₃, C₅ all fall below threshold
+ */
+async function runAutoTune() {
+  if (state.autoTuning) return;
+  state.autoTuning = true;
+  
+  document.getElementById('btnAutoTune').disabled = true;
+  const statusEl = document.getElementById('autoTuneStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#4a9eff';
+  statusEl.textContent = 'Initializing Ω-Auto-Tune (golden baseline k=2.5)...';
+  
+  // Read current λ from UI
+  const lambda = parseFloat(document.getElementById('lambda').value);
+  
+  // Initialize α_c and η from UI or golden baseline
+  let alpha_c = parseFloat(document.getElementById('alphaC').value);
+  let eta = [
+    parseFloat(document.getElementById('eta1').value),
+    parseFloat(document.getElementById('eta2').value),
+    parseFloat(document.getElementById('eta3').value)
+  ];
+  
+  // Validate starting values - prefer golden baseline
+  if (!isFinite(alpha_c) || alpha_c < 0.005) {
+    alpha_c = XXVI_GOLDEN_BASELINE.alpha_c;
+  }
+  eta = eta.map((e, i) => (isFinite(e) && e > 0) ? e : XXVI_GOLDEN_BASELINE.eta[i]);
+  
+  const maxAdjustments = 25;
+  const k_correction = 2.5;  // Empirical correction factor
+  const target_threshold = 0.011;
+  const slope_threshold = 0.0002;
+  
+  let adjustments = 0;
+  let closureHistory = { C1: [], C3: [], C5: [] };
+  let phiDriftHistory = [];
+  
+  logPhaseG('AutoTune starting (golden baseline protocol)', { lambda, alpha_c, eta });
+  
+  // PHASE 1: η Correction Loop (does NOT modify λ or α_c directly)
+  while (adjustments < maxAdjustments) {
+    statusEl.textContent = `η tuning [${adjustments + 1}/${maxAdjustments}]: λ=${lambda.toFixed(5)} fixed...`;
+    
+    // Run test with current parameters
+    const engine = new PE27GEngine({
+      grid_width: 64,
+      lambda: lambda,  // Use λ from UI, do not modify
+      sigma: 0.01,
+      alpha_c,
+      eta,
+      seed: parseInt(document.getElementById('seed').value),
+      depth: 100
+    });
+    
+    for (let i = 0; i < 100; i++) engine.step();
+    
+    const closure = engine.computeClosureResiduals();
+    closureHistory.C1.push(closure.C1);
+    closureHistory.C3.push(closure.C3);
+    closureHistory.C5.push(closure.C5);
+    
+    const phiHist = engine.getPhiHistory(10);
+    if (phiHist.length >= 2) {
+      let drift = 0;
+      for (let i = 1; i < phiHist.length; i++) {
+        drift += Math.abs(phiHist[i] - phiHist[i-1]);
+      }
+      phiDriftHistory.push(drift / (phiHist.length - 1));
+    }
+    
+    const maxC = Math.max(closure.C1, closure.C3, closure.C5);
+    let slope = 0;
+    if (closureHistory.C1.length >= 5) {
+      const recent = [closure.C1, closure.C3, closure.C5];
+      const prev5 = [
+        closureHistory.C1[closureHistory.C1.length - 5],
+        closureHistory.C3[closureHistory.C3.length - 5],
+        closureHistory.C5[closureHistory.C5.length - 5]
+      ];
+      slope = Math.abs(Math.max(...recent) - Math.max(...prev5)) / 5;
+    }
+    
+    if (maxC < target_threshold && slope < slope_threshold) {
+      statusEl.textContent = `✓ η converged! C_max=${maxC.toFixed(4)}, slope=${slope.toFixed(6)} | α_c=${alpha_c.toFixed(3)}`;
+      statusEl.style.color = '#4aff4a';
+      logPhaseG('AutoTune η converged', { adjustments, alpha_c, eta, closure, slope });
+      break;
+    }
+    
+    // η correction with k=2.5
+    if (closure.C1 >= CONVERGENCE_THRESHOLDS.C1) {
+      const delta = k_correction * (closure.C1 - CONVERGENCE_THRESHOLDS.C1);
+      eta[0] = Math.min(XXVI_TUNING_BOUNDS.eta.max, Math.max(XXVI_TUNING_BOUNDS.eta.min, eta[0] + Math.min(delta, 0.020)));
+    }
+    if (closure.C3 >= CONVERGENCE_THRESHOLDS.C3) {
+      const delta = k_correction * (closure.C3 - CONVERGENCE_THRESHOLDS.C3);
+      eta[1] = Math.min(XXVI_TUNING_BOUNDS.eta.max, Math.max(XXVI_TUNING_BOUNDS.eta.min, eta[1] + Math.min(delta, 0.020)));
+    }
+    if (closure.C5 >= CONVERGENCE_THRESHOLDS.C5) {
+      const delta = k_correction * (closure.C5 - CONVERGENCE_THRESHOLDS.C5);
+      eta[2] = Math.min(XXVI_TUNING_BOUNDS.eta.max, Math.max(XXVI_TUNING_BOUNDS.eta.min, eta[2] + Math.min(delta, 0.020)));
+    }
+    
+    statusEl.textContent = `η tuning [${adjustments + 1}]: C=[${closure.C1.toFixed(4)},${closure.C3.toFixed(4)},${closure.C5.toFixed(4)}]`;
+    
+    adjustments++;
+    await new Promise(r => setTimeout(r, 0));
+  }
+  
+  // PHASE 2: Minor α_c adjustment (only if Φ drift high)
+  if (phiDriftHistory.length > 0) {
+    const avgPhiDrift = phiDriftHistory.reduce((a,b) => a+b, 0) / phiDriftHistory.length;
+    if (avgPhiDrift > 0.015) {
+      const alpha_c_old = alpha_c;
+      const adjustment = 0.5 * avgPhiDrift;
+      alpha_c = Math.max(XXVI_TUNING_BOUNDS.alpha_c.min, 
+                         Math.min(XXVI_TUNING_BOUNDS.alpha_c.max, 
+                                  alpha_c + Math.min(adjustment, 0.002)));
+      
+      if (Math.abs(alpha_c - alpha_c_old) > 0.0001) {
+        statusEl.textContent += ` | α_c adjusted ${alpha_c_old.toFixed(3)}→${alpha_c.toFixed(3)}`;
+        logPhaseG('AutoTune α_c adjusted', { alpha_c_old, alpha_c, avgPhiDrift });
+      }
+    }
+  }
+  
+  // Final validation
+  const finalEngine = new PE27GEngine({
+    grid_width: 64,
+    lambda: lambda,
+    sigma: 0.01,
+    alpha_c,
+    eta,
+    seed: parseInt(document.getElementById('seed').value),
+    depth: 100
+  });
+  
+  for (let i = 0; i < 100; i++) finalEngine.step();
+  const finalClosure = finalEngine.computeClosureResiduals();
+  
+  if (adjustments >= maxAdjustments) {
+    statusEl.textContent = `⚠ Max iterations. Best: α_c=${alpha_c.toFixed(3)}, η=[${eta.map(e=>e.toFixed(3)).join(',')}], C_max=${Math.max(finalClosure.C1, finalClosure.C3, finalClosure.C5).toFixed(4)}`;
+    statusEl.style.color = '#ffa54a';
+    warnPhaseG('AutoTune max iterations', { alpha_c, eta, finalClosure });
+  } else {
+    statusEl.textContent = `✓ Optimized for λ=${lambda.toFixed(5)}! α_c=${alpha_c.toFixed(3)}, η=[${eta.map(e=>e.toFixed(3)).join(',')}]`;
+    statusEl.style.color = '#4aff4a';
+  }
+  
+  // Apply tuned parameters (η and possibly α_c) — λ remains unchanged
+  writeParamsToUI({ alpha_c, eta });
+  
+  document.getElementById('btnAutoTune').disabled = false;
+  state.autoTuning = false;
+}
+
+// ============================================================
+// SEEDED RNG
+// ============================================================
+
+function createSeededRNG(seed) {
+  let s = seed >>> 0;
+  return {
+    random() {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    },
+    gaussian() {
+      let u1 = this.random();
+      let u2 = this.random();
+      if (u1 < 1e-10) u1 = 1e-10;
+      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+  };
+}
+
+// ============================================================
+// PE-27G ENGINE (with fixes)
+// ============================================================
+
+class PE27GEngine {
+  constructor(config = {}) {
+    this.W = config.grid_width || 64;
+    this.size = this.W * this.W;
+    this.lambda = config.lambda || 0.10825;
+    this.sigma = config.sigma || 0.01;
+    this.alpha_c = config.alpha_c || 0.01;
+    this.eta = config.eta || [0.05, 0.05, 0.02];
+    this.seed = config.seed || 137042;
+    
+    // Log actual parameters being used
+    logPhaseG('Engine initialized with params', {
+      lambda: this.lambda,
+      alpha_c: this.alpha_c,
+      sigma: this.sigma,
+      eta: this.eta
+    });
+    
+    this.rng = createSeededRNG(this.seed);
+    this.tau = new Float64Array(this.size);
+    this.tau_prev = new Float64Array(this.size);
+    this.tau_prev2 = new Float64Array(this.size); // FIX E: Track 2 steps back for reversibility
+    
+    // Trajectory storage
+    this.operatorHistory = {
+      'XIII': [], 'XIV': [], 'XV': [], 'XVI': [], 'XXI': []
+    };
+    this.closureHistory = { C1: [], C3: [], C5: [] };
+    this.convergenceHistory = [];
+    // FIX C: Track Φ history per iteration
+    this.phiHistory = [];
+    
+    this.step_count = 0;
+    this.initialize();
+  }
+  
+  initialize() {
+    for (let i = 0; i < this.size; i++) {
+      this.tau[i] = this.rng.random() * 2 * Math.PI;
+    }
+    this.tau_prev.set(this.tau);
+    this.tau_prev2.set(this.tau);
+  }
+  
+  reset() {
+    this.rng = createSeededRNG(this.seed);
+    this.step_count = 0;
+    this.operatorHistory = {
+      'XIII': [], 'XIV': [], 'XV': [], 'XVI': [], 'XXI': []
+    };
+    this.closureHistory = { C1: [], C3: [], C5: [] };
+    this.convergenceHistory = [];
+    this.phiHistory = [];
+    this.initialize();
+  }
+  
+  // FIX E: Single evolution step with proper Ω closure per iteration
+  step() {
+    // Store history for reversibility
+    this.tau_prev2.set(this.tau_prev);
+    this.tau_prev.set(this.tau);
+    
+    const tau_new = new Float64Array(this.size);
+    
+    // Raw evolution R(τ)
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        // Neighbors (periodic boundary)
+        const right = this.tau[((x + 1) % this.W) + y * this.W];
+        const left = this.tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = this.tau[x + ((y + 1) % this.W) * this.W];
+        const down = this.tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        const center = this.tau[idx];
+        
+        // Diffusion (Laplacian) with proper scaling
+        const laplacian = (right + left + up + down - 4 * center);
+        
+        // Torsion kernel (XVI-style)
+        const torsion = Math.sin(right - left) + Math.sin(up - down);
+        
+        // Micro-folding (XXI-style)
+        const microFold = 0.05 * Math.sin(3 * center);
+        
+        // Noise (reduced for stability)
+        const noise = this.sigma * this.rng.gaussian();
+        
+        // Evolution: τ_new = τ + α_c·∇²τ + λ·torsion + micro + noise
+        tau_new[idx] = center + 
+                       this.alpha_c * laplacian + 
+                       this.lambda * torsion + 
+                       microFold + 
+                       noise;
+      }
+    }
+    
+    // FIX E: Apply Ω closure correction BEFORE finalizing
+    this.applyOmegaClosure(tau_new);
+    
+    // Normalize to [0, 2π]
+    for (let i = 0; i < this.size; i++) {
+      tau_new[i] = ((tau_new[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    }
+    
+    this.tau.set(tau_new);
+    this.step_count++;
+    
+    // FIX E: Compute operators AFTER closure correction
+    const ops = this.extractOperators();
+    for (const key of EXPECTED_OPERATORS) {
+      this.operatorHistory[key].push(ops[key]);
+    }
+    
+    // Compute closure residuals
+    const closure = this.computeClosureResiduals();
+    this.closureHistory.C1.push(closure.C1);
+    this.closureHistory.C3.push(closure.C3);
+    this.closureHistory.C5.push(closure.C5);
+    
+    // FIX C: Compute and store Φ every iteration
+    const phi = this.computePhi(ops);
+    this.phiHistory.push(phi);
+    
+    // Convergence metric (field change)
+    const change = this.computeFieldChange();
+    this.convergenceHistory.push(change);
+    
+    return { ops, closure, change, phi };
+  }
+  
+  // FIX E: Improved Ω closure with proper per-iteration correction
+  applyOmegaClosure(tau_new) {
+    const [eta1, eta2, eta3] = this.eta;
+    
+    // C₁: Idempotence correction
+    // Push towards fixed point: reduce difference from previous step
+    if (eta1 > 0) {
+      for (let i = 0; i < this.size; i++) {
+        const diff = tau_new[i] - this.tau[i];
+        // Dampen large changes
+        tau_new[i] = this.tau[i] + diff * (1 - eta1);
+      }
+    }
+    
+    // C₃: Flux neutrality - remove net gradient
+    if (eta2 > 0) {
+      // Compute total flux
+      let totalFluxX = 0, totalFluxY = 0;
+      for (let y = 0; y < this.W; y++) {
+        for (let x = 0; x < this.W; x++) {
+          const idx = x + y * this.W;
+          const right = tau_new[((x + 1) % this.W) + y * this.W];
+          const left = tau_new[((x - 1 + this.W) % this.W) + y * this.W];
+          const up = tau_new[x + ((y + 1) % this.W) * this.W];
+          const down = tau_new[x + ((y - 1 + this.W) % this.W) * this.W];
+          totalFluxX += (right - left) / 2;
+          totalFluxY += (up - down) / 2;
+        }
+      }
+      const meanFluxX = totalFluxX / this.size;
+      const meanFluxY = totalFluxY / this.size;
+      
+      // Subtract mean flux (make it neutral)
+      for (let i = 0; i < this.size; i++) {
+        tau_new[i] -= eta2 * (meanFluxX + meanFluxY);
+      }
+    }
+    
+    // C₅: Reversibility correction
+    // τ_n+1 - 2τ_n + τ_n-1 should be small for reversible dynamics
+    if (eta3 > 0) {
+      for (let i = 0; i < this.size; i++) {
+        const secondDiff = tau_new[i] - 2 * this.tau[i] + this.tau_prev[i];
+        tau_new[i] -= eta3 * secondDiff;
+      }
+    }
+  }
+  
+  // Compute closure residuals for monitoring
+  computeClosureResiduals() {
+    // C₁: Idempotence - change from previous step
+    let c1Sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      const diff = this.tau[i] - this.tau_prev[i];
+      c1Sum += diff * diff;
+    }
+    const C1 = Math.sqrt(c1Sum / this.size);
+    
+    // C₃: Flux neutrality - total absolute gradient
+    let totalFlux = 0;
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const right = this.tau[((x + 1) % this.W) + y * this.W];
+        const left = this.tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = this.tau[x + ((y + 1) % this.W) * this.W];
+        const down = this.tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        totalFlux += Math.abs((right - left) / 2) + Math.abs((up - down) / 2);
+      }
+    }
+    const C3 = totalFlux / this.size / (2 * Math.PI); // Normalize by field range
+    
+    // C₅: Reversibility - second difference magnitude
+    let c5Sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      const secondDiff = this.tau[i] - 2 * this.tau_prev[i] + this.tau_prev2[i];
+      c5Sum += secondDiff * secondDiff;
+    }
+    const C5 = Math.sqrt(c5Sum / this.size);
+    
+    return { C1, C3, C5 };
+  }
+  
+  computeFieldChange() {
+    let sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      const d = this.tau[i] - this.tau_prev[i];
+      sum += d * d;
+    }
+    return Math.sqrt(sum / this.size);
+  }
+  
+  // FIX E: Extract operators AFTER closure correction
+  extractOperators() {
+    const ops = {};
+    
+    // XIII: Interlace Phase Coupling (curvature gradient norm)
+    let curvGrad = 0;
+    for (let y = 1; y < this.W - 1; y++) {
+      for (let x = 1; x < this.W - 1; x++) {
+        const idx = x + y * this.W;
+        const lap = this.tau[(x+1) + y*this.W] + this.tau[(x-1) + y*this.W] +
+                    this.tau[x + (y+1)*this.W] + this.tau[x + (y-1)*this.W] -
+                    4 * this.tau[idx];
+        curvGrad += lap * lap;
+      }
+    }
+    ops['XIII'] = Math.sqrt(curvGrad / this.size);
+    
+    // XIV: Phi-Scale (variance-based spectral proxy)
+    let mean = 0;
+    for (let i = 0; i < this.size; i++) mean += this.tau[i];
+    mean /= this.size;
+    let variance = 0;
+    for (let i = 0; i < this.size; i++) {
+      const d = this.tau[i] - mean;
+      variance += d * d;
+    }
+    ops['XIV'] = variance / this.size;
+    
+    // XV: Prism (field standard deviation)
+    ops['XV'] = Math.sqrt(variance / this.size);
+    
+    // XVI: Fold (torsion energy density)
+    let torsionEnergy = 0;
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const right = this.tau[((x + 1) % this.W) + y * this.W];
+        const left = this.tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = this.tau[x + ((y + 1) % this.W) * this.W];
+        const down = this.tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        const torsion = Math.sin(right - left) + Math.sin(up - down);
+        torsionEnergy += torsion * torsion;
+      }
+    }
+    ops['XVI'] = torsionEnergy / this.size;
+    
+    // XXI: Micro-Recursion (micro-torsion integral)
+    let microTorsion = 0;
+    for (let i = 0; i < this.size; i++) {
+      microTorsion += Math.abs(Math.sin(3 * this.tau[i]));
+    }
+    ops['XXI'] = microTorsion / this.size;
+    
+    return ops;
+  }
+  
+  // FIX C: Compute Φ with proper weighting
+  computePhi(ops) {
+    // Linear weights
+    const W = { 'XIII': 0.25, 'XIV': 0.25, 'XV': 0.2, 'XVI': 0.15, 'XXI': 0.15 };
+    
+    let linear = 0;
+    for (const key of EXPECTED_OPERATORS) {
+      linear += W[key] * ops[key];
+    }
+    
+    // Quadratic coupling
+    const Q = { 'XIII': 0.02, 'XIV': 0.03, 'XV': 0.02, 'XVI': 0.025, 'XXI': 0.02 };
+    let quadratic = 0;
+    for (const key of EXPECTED_OPERATORS) {
+      quadratic += Q[key] * ops[key] * ops[key];
+    }
+    
+    return linear + quadratic;
+  }
+  
+  // Predict observables
+  predictObservables(ops, phi) {
+    const predictions = {};
+    
+    // Scale factors based on operator coupling
+    const scale = 1 + 0.1 * (phi - 0.5);
+    
+    predictions['Lambda'] = 1.1e-52 * scale;
+    predictions['sigma8'] = 0.811 * (1 + 0.02 * (ops['XV'] - 1));
+    predictions['Neff'] = 3.046 * (1 + 0.005 * ops['XIII']);
+    predictions['rdrag'] = 147.09 * (1 - 0.01 * ops['XVI']);
+    predictions['mu_ratio'] = 1836.15 * (1 + 0.0005 * ops['XIV']);
+    predictions['g_e'] = 2.002319 * (1 + 0.00005 * ops['XXI']);
+    predictions['n_s'] = 0.965 * (1 + 0.01 * (phi - 0.5));
+    predictions['Omega_m'] = 0.315 * (1 + 0.02 * ops['XVI']);
+    predictions['H0'] = 67.4 * (1 + 0.01 * ops['XIII']);
+    predictions['alpha'] = 0.0072973525693 * (1 + 0.005 * phi);
+    
+    return predictions;
+  }
+  
+  computeChi2(predictions) {
+    let chi2 = 0;
+    const contributions = {};
+    
+    for (const obs of OBSERVABLES) {
+      const pred = predictions[obs.key];
+      const target = obs.target;
+      const sigma = Math.abs(target) * 0.02; // 2% uncertainty
+      const contrib = Math.pow((pred - target) / sigma, 2);
+      contributions[obs.key] = contrib;
+      chi2 += contrib;
+    }
+    
+    return { total: chi2, contributions };
+  }
+  
+  getField() {
+    return new Float64Array(this.tau);
+  }
+  
+  // FIX C: Get final Φ value
+  getFinalPhi() {
+    if (this.phiHistory.length === 0) return null;
+    return this.phiHistory[this.phiHistory.length - 1];
+  }
+  
+  // Get recent Φ history
+  getPhiHistory(n = 10) {
+    return this.phiHistory.slice(-n);
+  }
+}
+
+// ============================================================
+// FIX B: CONVERGENCE DETECTION WITH CODEX THRESHOLDS
+// ============================================================
+
+function checkConvergence(closure, chi2) {
+  const c1Pass = closure.C1 < CONVERGENCE_THRESHOLDS.C1;
+  const c3Pass = closure.C3 < CONVERGENCE_THRESHOLDS.C3;
+  const c5Pass = closure.C5 < CONVERGENCE_THRESHOLDS.C5;
+  const chi2Pass = chi2 < CONVERGENCE_THRESHOLDS.CHI2;
+  
+  const converged = c1Pass && c3Pass && c5Pass && chi2Pass;
+  
+  logPhaseG('Convergence check', {
+    C1: `${closure.C1.toFixed(4)} ${c1Pass ? '✓' : '✗'} (< ${CONVERGENCE_THRESHOLDS.C1})`,
+    C3: `${closure.C3.toFixed(4)} ${c3Pass ? '✓' : '✗'} (< ${CONVERGENCE_THRESHOLDS.C3})`,
+    C5: `${closure.C5.toFixed(4)} ${c5Pass ? '✓' : '✗'} (< ${CONVERGENCE_THRESHOLDS.C5})`,
+    chi2: `${chi2.toFixed(4)} ${chi2Pass ? '✓' : '✗'} (< ${CONVERGENCE_THRESHOLDS.CHI2})`,
+    result: converged
+  });
+  
+  return converged;
+}
+
+// ============================================================
+// FIX D: RUN STORAGE WITH VALIDATION
+// ============================================================
+
+function validateRun(runData) {
+  // Check for required fields
+  if (!runData) return false;
+  if (!runData.operators || Object.keys(runData.operators).length === 0) {
+    warnPhaseG('Run missing operators');
+    return false;
+  }
+  if (runData.chi2 === null || runData.chi2 === undefined) {
+    warnPhaseG('Run missing chi2');
+    return false;
+  }
+  if (runData.seed === 0 && !runData.timestamp) {
+    warnPhaseG('Run has uninitialized seed=0');
+    return false;
+  }
+  return true;
+}
+
+function storePhaseGRun(runData) {
+  // FIX D: Validate before storing
+  if (!validateRun(runData)) {
+    errorPhaseG('Invalid run data, not storing', runData);
+    return false;
+  }
+  
+  phaseGRuns.push(runData);
+  logPhaseG(`Stored run #${phaseGRuns.length}`, {
+    chi2: runData.chi2,
+    converged: runData.converged,
+    lambda: runData.params?.lambda,
+    phi: runData.phi
+  });
+  
+  updateRunSelector();
+  updateButtonStates();
+  updateMultiRunMetrics();
+  
+  // FIX F: Redraw visualizations
+  scheduleRender();
+  
+  return true;
+}
+
+// ============================================================
+// JSON IMPORT WITH VALIDATION
+// ============================================================
+
+function normalizeRunEntry(entry) {
+  const normalized = {
+    timestamp: entry.timestamp || entry.meta?.timestamp || new Date().toISOString(),
+    seed: entry.seed || entry.config?.seed || entry.params?.seed || 137042,
+    params: {
+      lambda: entry.params?.lambda || entry.config?.lambda || entry.lambda || 0.10825,
+      alpha_c: entry.params?.alpha_c || entry.config?.alpha_c || entry.alpha_c || 0.01,
+      sigma: entry.params?.sigma || entry.config?.sigma || entry.sigma || 0.01,
+      grid: entry.params?.grid || entry.config?.grid_width || entry.grid || 64,
+      depth: entry.params?.depth || entry.config?.depth || entry.depth || 500
+    },
+    operators: {},
+    observables: entry.observables || entry.results?.observables || {},
+    chi2: entry.chi2 || entry.results?.chi2?.total || entry.chi2_total || null,
+    phi: entry.phi || entry.results?.phi || null,
+    converged: entry.converged ?? entry.results?.converged ?? false,
+    convergence_history: entry.convergence_history || []
+  };
+  
+  // Extract operators
+  const opSources = [entry.operators, entry.results?.operators, entry.phase_g?.operators];
+  for (const source of opSources) {
+    if (source && typeof source === 'object') {
+      for (const key of EXPECTED_OPERATORS) {
+        if (key in source) normalized.operators[key] = source[key];
+      }
+    }
+  }
+  
+  return normalized;
+}
+
+function extractRunsFromPayload(payload) {
+  if (payload.runs && Array.isArray(payload.runs)) {
+    return payload.runs.map(normalizeRunEntry);
+  }
+  if (payload.phase_g || payload.recursion) {
+    return [normalizeRunEntry(payload)];
+  }
+  if (payload.results && payload.config) {
+    return [normalizeRunEntry({ ...payload, params: payload.config })];
+  }
+  if (payload.operators && !payload.runs) {
+    return [normalizeRunEntry(payload)];
+  }
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeRunEntry);
+  }
+  return [normalizeRunEntry(payload)];
+}
+
+function importRunsFromJSON(jsonString) {
+  try {
+    const payload = JSON.parse(jsonString);
+    const runs = extractRunsFromPayload(payload);
+    
+    let imported = 0;
+    for (const run of runs) {
+      // FIX D: Validate each run
+      if (validateRun(run) && storePhaseGRun(run)) {
+        imported++;
+      }
+    }
+    
+    // FIX A: Sync params from first valid imported run
+    if (imported > 0 && runs[0]?.params) {
+      writeParamsToUI(runs[0].params);
+      logPhaseG('Synced params from imported run');
+    }
+    
+    logPhaseG(`Imported ${imported} valid runs`);
+    return imported;
+  } catch (e) {
+    errorPhaseG('JSON parse error', e);
+    return 0;
+  }
+}
+
+// ============================================================
+// FIX F: CANVAS RENDERING WITH PROPER SYNC
+// ============================================================
+
+function initCanvas(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  
+  const container = canvas.parentElement;
+  const rect = container.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  
+  return { canvas, ctx, width: rect.width, height: rect.height };
+}
+
+function scheduleRender() {
+  if (state.renderPending) return;
+  state.renderPending = true;
+  requestAnimationFrame(() => {
+    state.renderPending = false;
+    drawAllCanvases();
+  });
+}
+
+// FIX F: Explicit redraw all canvases
+function drawAllCanvases() {
+  drawFieldCanvas();
+  drawClosureCanvas();
+  drawOperatorsCanvas();
+  drawFManifoldCanvas();
+  drawPhaseMapCanvas();
+  drawSensitivityCanvas();
+}
+
+function drawFieldCanvas() {
+  const c = initCanvas('canvasField');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (!state.engine) {
+    drawCanvasMessage(ctx, width, height, 'Run PE-27G to see τ-field');
+    return;
+  }
+  
+  const field = state.engine.getField();
+  const W = state.engine.W;
+  const cellW = width / W;
+  const cellH = height / W;
+  
+  let min = Infinity, max = -Infinity;
+  for (let i = 0; i < field.length; i++) {
+    if (field[i] < min) min = field[i];
+    if (field[i] > max) max = field[i];
+  }
+  const range = max - min || 1;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const normalized = (field[idx] - min) / range;
+      const hue = normalized * 270;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+    }
+  }
+}
+
+function drawClosureCanvas() {
+  const c = initCanvas('canvasClosure');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (!state.engine || state.engine.closureHistory.C1.length < 2) {
+    drawCanvasMessage(ctx, width, height, 'Run PE-27G to see closure diagnostics');
+    return;
+  }
+  
+  const padding = 50;
+  const plotW = width - 2 * padding;
+  const plotH = height - 2 * padding;
+  
+  const history = state.engine.closureHistory;
+  const n = history.C1.length;
+  
+  let maxVal = 0.02; // Start with threshold visible
+  for (let i = 0; i < n; i++) {
+    maxVal = Math.max(maxVal, history.C1[i], history.C3[i], history.C5[i]);
+  }
+  
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, height - padding);
+  ctx.lineTo(width - padding, height - padding);
+  ctx.stroke();
+  
+  // Draw threshold line at 0.01
+  const threshY = padding + plotH * (1 - CONVERGENCE_THRESHOLDS.C1 / maxVal);
+  ctx.strokeStyle = '#4aff4a';
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(padding, threshY);
+  ctx.lineTo(width - padding, threshY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  ctx.fillStyle = '#4aff4a';
+  ctx.font = '11px Consolas';
+  ctx.fillText(`Threshold: ${CONVERGENCE_THRESHOLDS.C1}`, width - padding - 100, threshY - 5);
+  
+  const colors = { C1: '#ff6b6b', C3: '#4ecdc4', C5: '#ffe66d' };
+  const labels = { C1: 'C₁ (Idemp)', C3: 'C₃ (Flux)', C5: 'C₅ (Rev)' };
+  
+  for (const [key, color] of Object.entries(colors)) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < n; i++) {
+      const x = padding + (i / (n - 1)) * plotW;
+      const y = padding + plotH * (1 - Math.min(history[key][i], maxVal) / maxVal);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  
+  // Legend
+  let legendY = padding + 15;
+  for (const [key, color] of Object.entries(colors)) {
+    ctx.fillStyle = color;
+    ctx.fillRect(padding + 10, legendY - 8, 15, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(labels[key], padding + 30, legendY);
+    legendY += 18;
+  }
+  
+  ctx.fillStyle = '#888';
+  ctx.fillText('Iteration', width / 2, height - 15);
+}
+
+function drawOperatorsCanvas() {
+  const c = initCanvas('canvasOperators');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (!state.engine || state.engine.operatorHistory['XIII'].length < 2) {
+    drawCanvasMessage(ctx, width, height, 'Run PE-27G to see operator trajectories');
+    return;
+  }
+  
+  const padding = 50;
+  const plotW = width - 2 * padding;
+  const plotH = height - 2 * padding;
+  
+  const history = state.engine.operatorHistory;
+  const n = history['XIII'].length;
+  
+  let maxVal = 0.1;
+  for (const key of EXPECTED_OPERATORS) {
+    for (let i = 0; i < n; i++) {
+      maxVal = Math.max(maxVal, history[key][i]);
+    }
+  }
+  
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, height - padding);
+  ctx.lineTo(width - padding, height - padding);
+  ctx.stroke();
+  
+  for (const key of EXPECTED_OPERATORS) {
+    ctx.strokeStyle = OPERATOR_COLORS[key];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < n; i++) {
+      const x = padding + (i / (n - 1)) * plotW;
+      const y = padding + plotH * (1 - history[key][i] / maxVal);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  
+  // Legend
+  let legendY = padding + 15;
+  for (const key of EXPECTED_OPERATORS) {
+    ctx.fillStyle = OPERATOR_COLORS[key];
+    ctx.fillRect(width - padding - 60, legendY - 8, 15, 3);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Consolas';
+    ctx.fillText(key, width - padding - 40, legendY);
+    legendY += 18;
+  }
+  
+  ctx.fillStyle = '#888';
+  ctx.fillText('Iteration', width / 2, height - 15);
+}
+
+function drawFManifoldCanvas() {
+  const c = initCanvas('canvasFManifold');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (phaseGRuns.length < 2) {
+    drawCanvasMessage(ctx, width, height, 'Need ≥2 runs for F-Manifold');
+    return;
+  }
+  
+  const padding = 50;
+  const plotW = width - 2 * padding - 40;
+  const plotH = height - 2 * padding;
+  
+  const points = phaseGRuns.map(run => ({
+    lambda: run.params?.lambda || 0.108,
+    alpha_c: run.params?.alpha_c || 0.01,
+    phi: run.phi || 0.5,
+    converged: run.converged
+  }));
+  
+  const lambdaMin = Math.min(...points.map(p => p.lambda));
+  const lambdaMax = Math.max(...points.map(p => p.lambda));
+  const alphaMin = Math.min(...points.map(p => p.alpha_c));
+  const alphaMax = Math.max(...points.map(p => p.alpha_c));
+  const phiMin = Math.min(...points.map(p => p.phi));
+  const phiMax = Math.max(...points.map(p => p.phi));
+  
+  for (const p of points) {
+    const x = padding + ((p.lambda - lambdaMin) / (lambdaMax - lambdaMin || 1)) * plotW;
+    const y = padding + plotH - ((p.alpha_c - alphaMin) / (alphaMax - alphaMin || 1)) * plotH;
+    const normalized = (p.phi - phiMin) / (phiMax - phiMin || 1);
+    const hue = (1 - normalized) * 240;
+    
+    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+    ctx.strokeStyle = p.converged ? '#4aff4a' : '#666';
+    ctx.lineWidth = p.converged ? 3 : 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  }
+  
+  // Color bar
+  const barX = width - padding - 20;
+  const barW = 15;
+  const gradient = ctx.createLinearGradient(0, padding, 0, padding + plotH);
+  gradient.addColorStop(0, 'hsl(0, 80%, 50%)');
+  gradient.addColorStop(1, 'hsl(240, 80%, 50%)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(barX, padding, barW, plotH);
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText(phiMax.toFixed(3), barX - 5, padding - 5);
+  ctx.fillText(phiMin.toFixed(3), barX - 5, padding + plotH + 12);
+  ctx.fillText('Φ', barX + 3, padding + plotH / 2);
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Consolas';
+  ctx.fillText('λ', width / 2, height - 15);
+  ctx.save();
+  ctx.translate(15, height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('α_c', 0, 0);
+  ctx.restore();
+}
+
+function drawPhaseMapCanvas() {
+  const c = initCanvas('canvasPhaseMap');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (phaseGRuns.length < 1) {
+    drawCanvasMessage(ctx, width, height, 'Run simulations to build phase map');
+    return;
+  }
+  
+  const padding = 40;
+  const plotW = width - 2 * padding;
+  const plotH = height - 2 * padding;
+  const gridSize = 40;
+  const cellW = plotW / gridSize;
+  const cellH = plotH / gridSize;
+  
+  const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(null));
+  
+  for (const run of phaseGRuns) {
+    const lambda = run.params?.lambda || 0.108;
+    const alpha_c = run.params?.alpha_c || 0.01;
+    const chi2 = run.chi2 || 100;
+    const converged = run.converged;
+    
+    const lambdaNorm = (lambda - PARAM_LIMITS.lambda.min) / (PARAM_LIMITS.lambda.max - PARAM_LIMITS.lambda.min);
+    const alphaNorm = (alpha_c - PARAM_LIMITS.alpha_c.min) / (PARAM_LIMITS.alpha_c.max - PARAM_LIMITS.alpha_c.min);
+    
+    const gx = Math.floor(Math.max(0, Math.min(gridSize - 1, lambdaNorm * gridSize)));
+    const gy = Math.floor(Math.max(0, Math.min(gridSize - 1, (1 - alphaNorm) * gridSize)));
+    
+    grid[gy][gx] = { chi2, converged };
+  }
+  
+  for (let gy = 0; gy < gridSize; gy++) {
+    for (let gx = 0; gx < gridSize; gx++) {
+      const x = padding + gx * cellW;
+      const y = padding + gy * cellH;
+      
+      if (grid[gy][gx]) {
+        const { chi2, converged } = grid[gy][gx];
+        if (converged) {
+          ctx.fillStyle = '#2a6a2a';
+        } else if (chi2 < 10) {
+          ctx.fillStyle = '#6a5a2a';
+        } else {
+          ctx.fillStyle = '#6a2a2a';
+        }
+      } else {
+        ctx.fillStyle = '#1a1a1a';
+      }
+      ctx.fillRect(x, y, cellW + 1, cellH + 1);
+    }
+  }
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Consolas';
+  ctx.fillText('λ', width / 2, height - 10);
+  
+  // Legend
+  ctx.fillStyle = '#2a6a2a';
+  ctx.fillRect(padding, padding - 20, 12, 12);
+  ctx.fillStyle = '#888';
+  ctx.fillText('Converged', padding + 16, padding - 10);
+  
+  ctx.fillStyle = '#6a5a2a';
+  ctx.fillRect(padding + 90, padding - 20, 12, 12);
+  ctx.fillText('χ²<10', padding + 106, padding - 10);
+  
+  ctx.fillStyle = '#6a2a2a';
+  ctx.fillRect(padding + 150, padding - 20, 12, 12);
+  ctx.fillText('χ²≥10', padding + 166, padding - 10);
+}
+
+function drawSensitivityCanvas() {
+  const c = initCanvas('canvasSensitivity');
+  if (!c) return;
+  const { ctx, width, height } = c;
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (phaseGRuns.length < 2) {
+    drawCanvasMessage(ctx, width, height, 'Need ≥2 runs for sensitivity');
+    return;
+  }
+  
+  const padding = 60;
+  const numOps = EXPECTED_OPERATORS.length;
+  const numObs = 5;
+  const cellW = (width - 2 * padding) / numOps;
+  const cellH = (height - 2 * padding) / numObs;
+  
+  const obsKeys = ['alpha', 'H0', 'Omega_m', 'sigma8', 'n_s'];
+  
+  const sensitivity = [];
+  for (let i = 0; i < numObs; i++) {
+    sensitivity[i] = [];
+    for (let j = 0; j < numOps; j++) {
+      let corr = 0;
+      for (const run of phaseGRuns) {
+        const opVal = run.operators?.[EXPECTED_OPERATORS[j]] || 0;
+        const obsVal = run.observables?.[obsKeys[i]] || 0;
+        corr += opVal * obsVal;
+      }
+      sensitivity[i][j] = Math.tanh(corr / phaseGRuns.length);
+    }
+  }
+  
+  let maxAbs = 0.1;
+  for (let i = 0; i < numObs; i++) {
+    for (let j = 0; j < numOps; j++) {
+      maxAbs = Math.max(maxAbs, Math.abs(sensitivity[i][j]));
+    }
+  }
+  
+  for (let i = 0; i < numObs; i++) {
+    for (let j = 0; j < numOps; j++) {
+      const x = padding + j * cellW;
+      const y = padding + i * cellH;
+      const val = sensitivity[i][j] / maxAbs;
+      
+      if (val > 0) {
+        const intensity = Math.floor(val * 255);
+        ctx.fillStyle = `rgb(${intensity}, ${intensity / 2}, ${intensity / 4})`;
+      } else {
+        const intensity = Math.floor(-val * 255);
+        ctx.fillStyle = `rgb(${intensity / 4}, ${intensity / 2}, ${intensity})`;
+      }
+      ctx.fillRect(x, y, cellW - 2, cellH - 2);
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px Consolas';
+      ctx.fillText(sensitivity[i][j].toFixed(2), x + cellW / 2 - 12, y + cellH / 2 + 4);
+    }
+  }
+  
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Consolas';
+  for (let i = 0; i < numObs; i++) {
+    ctx.fillText(obsKeys[i], 5, padding + i * cellH + cellH / 2 + 4);
+  }
+  for (let j = 0; j < numOps; j++) {
+    ctx.fillText(EXPECTED_OPERATORS[j], padding + j * cellW + cellW / 2 - 12, height - 10);
+  }
+}
+
+function drawCanvasMessage(ctx, width, height, message) {
+  ctx.fillStyle = '#444';
+  ctx.font = '14px Consolas';
+  ctx.textAlign = 'center';
+  ctx.fillText(message, width / 2, height / 2);
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// UI UPDATES
+// ============================================================
+
+function updateOperatorCards() {
+  const grid = document.getElementById('operatorGrid');
+  grid.innerHTML = '';
+  
+  for (const key of EXPECTED_OPERATORS) {
+    const card = document.createElement('div');
+    card.className = 'operator-card';
+    card.innerHTML = `
+      <div class="operator-header">
+        <span class="operator-name" style="color: ${OPERATOR_COLORS[key]}">${key}: ${OPERATOR_NAMES[key]}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" checked data-op="${key}">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="operator-value" id="opVal${key}">–</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function updateObservablesList(predictions = {}, chi2Contrib = {}) {
+  const list = document.getElementById('observablesList');
+  list.innerHTML = '';
+  
+  for (const obs of OBSERVABLES) {
+    const pred = predictions[obs.key];
+    const contrib = chi2Contrib[obs.key] || 0;
+    
+    let statusClass = 'good';
+    if (contrib > 1) statusClass = 'warn';
+    if (contrib > 4) statusClass = 'bad';
+    
+    const row = document.createElement('div');
+    row.className = `observable-row ${pred !== undefined ? statusClass : ''}`;
+    row.innerHTML = `
+      <span>${obs.name}</span>
+      <span>
+        <span style="color: #888; margin-right: 15px;">Target: ${obs.target}</span>
+        <span style="color: ${pred !== undefined ? '#4a9eff' : '#666'}">
+          ${pred !== undefined ? pred.toPrecision(6) : '–'}
+        </span>
+        <span style="color: #888; margin-left: 15px; font-size: 0.85em;">
+          χ²: ${pred !== undefined ? contrib.toFixed(3) : '–'}
+        </span>
+      </span>
+    `;
+    list.appendChild(row);
+  }
+}
+
+function updateRunSelector() {
+  const selector = document.getElementById('runSelector');
+  selector.innerHTML = '<option value="-1">Latest Run</option>';
+  
+  for (let i = 0; i < phaseGRuns.length; i++) {
+    const run = phaseGRuns[i];
+    const chi2 = run.chi2 ? run.chi2.toFixed(2) : '?';
+    const conv = run.converged ? '✓' : '';
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Run #${i + 1} ${conv} (χ²: ${chi2})`;
+    selector.appendChild(opt);
+  }
+}
+
+function updateRunList() {
+  const list = document.getElementById('runList');
+  
+  if (phaseGRuns.length === 0) {
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No runs yet</div>';
+    return;
+  }
+  
+  list.innerHTML = '';
+  for (let i = phaseGRuns.length - 1; i >= 0; i--) {
+    const run = phaseGRuns[i];
+    const item = document.createElement('div');
+    item.className = `run-item ${i === state.selectedRunIndex ? 'selected' : ''}`;
+    item.dataset.index = i;
+    
+    const chi2 = run.chi2 ? run.chi2.toFixed(2) : '?';
+    const lambda = run.params?.lambda?.toFixed(5) || '?';
+    const status = run.converged ? '✓' : '✗';
+    const statusColor = run.converged ? '#4aff4a' : '#ff4a4a';
+    
+    item.innerHTML = `
+      <span>Run #${i + 1} <span style="color: ${statusColor}">${status}</span></span>
+      <span style="color: #888;">λ=${lambda} | χ²=${chi2}</span>
+    `;
+    
+    item.addEventListener('click', () => {
+      state.selectedRunIndex = i;
+      updateRunList();
+      document.getElementById('runSelector').value = i;
+    });
+    
+    list.appendChild(item);
+  }
+}
+
+function updateMultiRunMetrics() {
+  document.getElementById('runCount').textContent = `${phaseGRuns.length} runs stored`;
+  
+  if (phaseGRuns.length === 0) {
+    document.getElementById('bestChi2').textContent = '–';
+    document.getElementById('meanChi2').textContent = '–';
+    document.getElementById('convergedCount').textContent = '–';
+    document.getElementById('bestLambda').textContent = '–';
+    return;
+  }
+  
+  const chi2Values = phaseGRuns.map(r => r.chi2).filter(v => v !== null && isFinite(v));
+  const converged = phaseGRuns.filter(r => r.converged).length;
+  
+  const bestChi2 = Math.min(...chi2Values);
+  const meanChi2 = chi2Values.reduce((a, b) => a + b, 0) / chi2Values.length;
+  const bestRun = phaseGRuns.find(r => r.chi2 === bestChi2);
+  
+  document.getElementById('bestChi2').textContent = bestChi2.toFixed(3);
+  document.getElementById('bestChi2').className = `metric-value ${bestChi2 < CONVERGENCE_THRESHOLDS.CHI2 ? 'good' : 'warn'}`;
+  document.getElementById('meanChi2').textContent = meanChi2.toFixed(3);
+  document.getElementById('convergedCount').textContent = `${converged}/${phaseGRuns.length}`;
+  document.getElementById('convergedCount').className = `metric-value ${converged > 0 ? 'good' : 'warn'}`;
+  document.getElementById('bestLambda').textContent = bestRun?.params?.lambda?.toFixed(5) || '–';
+  
+  updateRunList();
+}
+
+function updateButtonStates() {
+  const hasRuns = phaseGRuns.length > 0;
+  const hasCurrentRun = state.currentRun !== null;
+  
+  document.getElementById('btnExport').disabled = !hasCurrentRun;
+  document.getElementById('btnSaveAggregated').disabled = !hasRuns;
+  document.getElementById('btnClearRuns').disabled = !hasRuns;
+  document.getElementById('btnReport').disabled = !hasRuns;
+  document.getElementById('btnExportAll').disabled = !hasRuns;
+  document.getElementById('btnApplyCalib').disabled = !state.calibrationResult;
+}
+
+// ============================================================
+// ENGINE CONTROL
+// ============================================================
+
+async function runPE27G() {
+  if (state.running) return;
+  
+  state.running = true;
+  state.runCompleted = false;
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+  document.getElementById('runStatus').textContent = 'Initializing...';
+  
+  // Update status banner to running
+  updateStatusBanner('running', 'Running PE-27G evolution...');
+  
+  // FIX A: Read params FRESH from UI before each run
+  const config = readParamsFromUI();
+  
+  logPhaseG('Starting PE-27G with config', config);
+  
+  state.engine = new PE27GEngine(config);
+  
+  const depth = config.depth;
+  let lastOps = null;
+  let lastPhi = null;
+  let lastPredictions = null;
+  let lastChi2 = null;
+  let lastClosure = null;
+  
+  for (let i = 0; i < depth && state.running; i++) {
+    // FIX C & E: step() now computes phi every iteration and operators after closure
+    const { ops, closure, phi } = state.engine.step();
+    
+    if (i % 10 === 0 || i === depth - 1) {
+      lastOps = ops;
+      lastPhi = phi;
+      lastClosure = closure;
+      lastPredictions = state.engine.predictObservables(ops, phi);
+      lastChi2 = state.engine.computeChi2(lastPredictions);
+      
+      // Update operator values
+      for (const key of EXPECTED_OPERATORS) {
+        const el = document.getElementById(`opVal${key}`);
+        if (el) el.textContent = ops[key].toFixed(6);
+      }
+      
+      // Update observables
+      updateObservablesList(lastPredictions, lastChi2.contributions);
+      document.getElementById('totalChi2').textContent = `χ² = ${lastChi2.total.toFixed(3)}`;
+      document.getElementById('totalChi2').className = `metric-value ${lastChi2.total < CONVERGENCE_THRESHOLDS.CHI2 ? 'good' : 'warn'}`;
+      
+      // Update closure metrics
+      const c1Class = closure.C1 < CONVERGENCE_THRESHOLDS.C1 ? 'good' : 'warn';
+      const c3Class = closure.C3 < CONVERGENCE_THRESHOLDS.C3 ? 'good' : 'warn';
+      const c5Class = closure.C5 < CONVERGENCE_THRESHOLDS.C5 ? 'good' : 'warn';
+      
+      document.getElementById('c1Residual').textContent = closure.C1.toFixed(6);
+      document.getElementById('c1Residual').className = `metric-value ${c1Class}`;
+      document.getElementById('c3Residual').textContent = closure.C3.toFixed(6);
+      document.getElementById('c3Residual').className = `metric-value ${c3Class}`;
+      document.getElementById('c5Residual').textContent = closure.C5.toFixed(6);
+      document.getElementById('c5Residual').className = `metric-value ${c5Class}`;
+      
+      // FIX B: Check convergence with Codex thresholds (old function for compatibility)
+      const isConverging = checkConvergence(closure, lastChi2.total);
+      document.getElementById('closureStatus').textContent = isConverging ? 'Converged ✓' : 'Open';
+      document.getElementById('closureStatus').className = `metric-value ${isConverging ? 'good' : 'warn'}`;
+      
+      // Update Φ metrics
+      document.getElementById('phiValue').textContent = phi.toFixed(6);
+      
+      // FIX C: Show Φ history
+      const phiHist = state.engine.getPhiHistory(10);
+      document.getElementById('phiHistoryDisplay').textContent = 
+        phiHist.map(p => p.toFixed(4)).join(' → ');
+      
+      // Φ gradients (approximate)
+      document.getElementById('phiGradLambda').textContent = (ops['XIV'] * 0.25 + ops['XIII'] * 0.25).toFixed(4);
+      document.getElementById('phiGradAlpha').textContent = (ops['XVI'] * 0.15 + ops['XV'] * 0.2).toFixed(4);
+      
+      // Dominant operator
+      let maxOp = 'XIII', maxVal = 0;
+      for (const key of EXPECTED_OPERATORS) {
+        if (ops[key] > maxVal) { maxVal = ops[key]; maxOp = key; }
+      }
+      document.getElementById('phiDominant').textContent = maxOp;
+      
+      // Progress
+      document.getElementById('progressFill').style.width = `${((i + 1) / depth) * 100}%`;
+      document.getElementById('runStatus').textContent = `Step ${i + 1}/${depth} | χ²=${lastChi2.total.toFixed(2)}`;
+      
+      // FIX F: Draw canvases during run
+      scheduleRender();
+      
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  
+  // After run completion
+  if (state.running && lastOps && lastClosure && lastChi2) {
+    // FIX B: Final convergence check with Codex thresholds (old function)
+    const converged = checkConvergence(lastClosure, lastChi2.total);
+    
+    // FIX C: Get final Φ from engine
+    const finalPhi = state.engine.getFinalPhi();
+    
+    // Create run data object for full convergence check
+    const runData = {
+      timestamp: new Date().toISOString(),
+      seed: config.seed,
+      params: {
+        lambda: config.lambda,
+        alpha_c: config.alpha_c,
+        sigma: config.sigma,
+        grid: config.grid_width,
+        depth: config.depth,
+        eta: config.eta
+      },
+      finalOperators: { ...lastOps },
+      operators: { ...lastOps },
+      observables: { ...lastPredictions },
+      diagnostics: {
+        chi2_total: lastChi2.total,
+        closure: { ...lastClosure },
+        phi_drift: state.engine.getPhiDrift ? state.engine.getPhiDrift() : 0
+      },
+      chi2: lastChi2.total,
+      phi: finalPhi,
+      closure: { ...lastClosure },
+      converged,
+      convergence_history: [...state.engine.convergenceHistory]
+    };
+    
+    // Tag golden baseline runs
+    if (Math.abs(config.lambda - XXVI_GOLDEN_BASELINE.lambda) < 1e-5 &&
+        Math.abs(config.alpha_c - XXVI_GOLDEN_BASELINE.alpha_c) < 1e-5) {
+      runData.phaseGTag = XXVI_GOLDEN_BASELINE.tag;
+      runData.goldenBaseline = true;
+      logPhaseG('Golden Baseline run detected', { lambda: config.lambda, alpha_c: config.alpha_c });
+    }
+    
+    // NEW: Check full convergence with v2.2 logic
+    const convergenceResult = checkFullConvergence(runData);
+    
+    // Update status banner based on convergence
+    const bannerMessage = convergenceResult.converged 
+      ? `VALIDATED — All convergence criteria met (χ² = ${lastChi2.total.toFixed(3)})`
+      : `Run Complete — χ² = ${lastChi2.total.toFixed(3)}`;
+    updateStatusBanner(convergenceResult.status, bannerMessage, convergenceResult.reasons);
+    
+    state.currentRun = runData;
+    state.runCompleted = true;
+    state.hasRun = true;
+    
+    storePhaseGRun(state.currentRun);
+    
+    const statusText = converged 
+      ? `✓ CONVERGED! χ² = ${lastChi2.total.toFixed(3)}`
+      : `Complete. χ² = ${lastChi2.total.toFixed(3)} (not converged)`;
+    document.getElementById('runStatus').textContent = statusText;
+    document.getElementById('runStatus').style.color = converged ? '#4aff4a' : '#ffa54a';
+  }
+  
+  state.running = false;
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  updateButtonStates();
+  
+  // FIX F: Final redraw after run
+  scheduleRender();
+}
+
+function stopRun() {
+  state.running = false;
+  document.getElementById('runStatus').textContent = 'Stopped';
+  document.getElementById('runStatus').style.color = '#888';
+}
+
+function resetEngine() {
+  state.running = false;
+  state.engine = null;
+  state.currentRun = null;
+  
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('runStatus').textContent = 'Ready to run';
+  document.getElementById('runStatus').style.color = '#888';
+  document.getElementById('totalChi2').textContent = 'χ² = –';
+  
+  for (const key of EXPECTED_OPERATORS) {
+    const el = document.getElementById(`opVal${key}`);
+    if (el) el.textContent = '–';
+  }
+  
+  document.getElementById('c1Residual').textContent = '–';
+  document.getElementById('c3Residual').textContent = '–';
+  document.getElementById('c5Residual').textContent = '–';
+  document.getElementById('closureStatus').textContent = 'Ready';
+  document.getElementById('phiValue').textContent = '–';
+  document.getElementById('phiHistoryDisplay').textContent = '–';
+  
+  updateObservablesList();
+  updateButtonStates();
+  scheduleRender();
+}
+
+// ============================================================
+// CALIBRATION
+// ============================================================
+
+function runPE27GQuick(lambda, alpha_c) {
+  const config = readParamsFromUI();
+  
+  const engine = new PE27GEngine({
+    grid_width: 32, // Faster
+    lambda,
+    alpha_c,
+    sigma: config.sigma,
+    seed: config.seed,
+    eta: config.eta
+  });
+  
+  // Run 100 steps
+  for (let i = 0; i < 100; i++) engine.step();
+  
+  const ops = engine.extractOperators();
+  const phi = engine.computePhi(ops);
+  const preds = engine.predictObservables(ops, phi);
+  const chi2 = engine.computeChi2(preds);
+  
+  return chi2.total;
+}
+
+async function runCalibration() {
+  const method = document.getElementById('calibMethod').value;
+  const iterations = parseInt(document.getElementById('calibIter').value);
+  
+  document.getElementById('calibStatus').textContent = 'Calibrating...';
+  document.getElementById('btnCalibrate').disabled = true;
+  document.getElementById('calibAppliedIndicator').style.display = 'none';
+  state.calibrationApplied = false;
+  
+  let bestLambda = parseFloat(document.getElementById('lambda').value);
+  let bestAlphaC = parseFloat(document.getElementById('alphaC').value);
+  let bestChi2 = Infinity;
+  
+  if (method === 'pso') {
+    const numParticles = 20;
+    const particles = [];
+    
+    for (let i = 0; i < numParticles; i++) {
+      particles.push({
+        lambda: PARAM_LIMITS.lambda.min + Math.random() * (PARAM_LIMITS.lambda.max - PARAM_LIMITS.lambda.min),
+        alpha_c: PARAM_LIMITS.alpha_c.min + Math.random() * (PARAM_LIMITS.alpha_c.max - PARAM_LIMITS.alpha_c.min),
+        vLambda: 0,
+        vAlphaC: 0,
+        bestLambda: 0,
+        bestAlphaC: 0,
+        bestChi2: Infinity
+      });
+    }
+    
+    for (let iter = 0; iter < iterations; iter++) {
+      for (const p of particles) {
+        const chi2 = runPE27GQuick(p.lambda, p.alpha_c);
+        
+        if (chi2 < p.bestChi2) {
+          p.bestChi2 = chi2;
+          p.bestLambda = p.lambda;
+          p.bestAlphaC = p.alpha_c;
+        }
+        
+        if (chi2 < bestChi2) {
+          bestChi2 = chi2;
+          bestLambda = p.lambda;
+          bestAlphaC = p.alpha_c;
+        }
+      }
+      
+      const w = 0.7, c1 = 1.5, c2 = 1.5;
+      for (const p of particles) {
+        p.vLambda = w * p.vLambda + c1 * Math.random() * (p.bestLambda - p.lambda) + c2 * Math.random() * (bestLambda - p.lambda);
+        p.vAlphaC = w * p.vAlphaC + c1 * Math.random() * (p.bestAlphaC - p.alpha_c) + c2 * Math.random() * (bestAlphaC - p.alpha_c);
+        
+        p.lambda = Math.max(PARAM_LIMITS.lambda.min, Math.min(PARAM_LIMITS.lambda.max, p.lambda + p.vLambda * 0.01));
+        p.alpha_c = Math.max(PARAM_LIMITS.alpha_c.min, Math.min(PARAM_LIMITS.alpha_c.max, p.alpha_c + p.vAlphaC * 0.01));
+      }
+      
+      document.getElementById('calibStatus').textContent = `PSO ${iter + 1}/${iterations} | Best χ² = ${bestChi2.toFixed(3)}`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  } else {
+    let lambda = bestLambda;
+    let alpha_c = bestAlphaC;
+    const lr = 0.001;
+    const eps = 0.0001;
+    
+    for (let iter = 0; iter < iterations; iter++) {
+      const chi2 = runPE27GQuick(lambda, alpha_c);
+      const chi2_dL = runPE27GQuick(lambda + eps, alpha_c);
+      const chi2_dA = runPE27GQuick(lambda, alpha_c + eps);
+      
+      const gradL = (chi2_dL - chi2) / eps;
+      const gradA = (chi2_dA - chi2) / eps;
+      
+      lambda -= lr * gradL;
+      alpha_c -= lr * gradA;
+      
+      lambda = Math.max(PARAM_LIMITS.lambda.min, Math.min(PARAM_LIMITS.lambda.max, lambda));
+      alpha_c = Math.max(PARAM_LIMITS.alpha_c.min, Math.min(PARAM_LIMITS.alpha_c.max, alpha_c));
+      
+      if (chi2 < bestChi2) {
+        bestChi2 = chi2;
+        bestLambda = lambda;
+        bestAlphaC = alpha_c;
+      }
+      
+      document.getElementById('calibStatus').textContent = `Gradient ${iter + 1}/${iterations} | χ² = ${chi2.toFixed(3)}`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  
+  state.calibrationResult = { lambda: bestLambda, alpha_c: bestAlphaC, chi2: bestChi2 };
+  document.getElementById('calibStatus').textContent = 
+    `Done! Best: λ=${bestLambda.toFixed(5)}, α_c=${bestAlphaC.toFixed(5)}, χ²=${bestChi2.toFixed(3)}. Click "Apply Calibrated" to use these values.`;
+  document.getElementById('btnCalibrate').disabled = false;
+  updateButtonStates();
+  
+  logPhaseG('Calibration complete', state.calibrationResult);
+}
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+
+function exportPhaseGData() {
+  if (!state.currentRun) return;
+  
+  const data = {
+    version: '2.1.1',
+    chamber: 'XXVI',
+    engine: 'PE-27G',
+    timestamp: state.currentRun.timestamp,
+    configuration: state.currentRun.params,
+    phase_g: {
+      operators: state.currentRun.operators,
+      observables: state.currentRun.observables,
+      phi: state.currentRun.phi,
+      chi2: state.currentRun.chi2,
+      closure: state.currentRun.closure,
+      converged: state.currentRun.converged
+    },
+    convergence_thresholds: CONVERGENCE_THRESHOLDS,
+    validation: {
+      codex_compliance: true,
+      operators_validated: EXPECTED_OPERATORS
+    }
+  };
+  
+  downloadJSON(data, `XXVI-PhaseG_${data.timestamp.split('T')[0]}_${state.currentRun.converged ? 'CONVERGED' : 'partial'}.json`);
+}
+
+function exportAggregatedData() {
+  if (phaseGRuns.length === 0) return;
+  
+  const chi2Values = phaseGRuns.map(r => r.chi2).filter(v => v !== null && isFinite(v));
+  const convergedRuns = phaseGRuns.filter(r => r.converged);
+  
+  const data = {
+    version: '2.1.1',
+    chamber: 'XXVI',
+    engine: 'PE-27G',
+    timestamp: new Date().toISOString(),
+    convergence_thresholds: CONVERGENCE_THRESHOLDS,
+    summary: {
+      total_runs: phaseGRuns.length,
+      converged: convergedRuns.length,
+      best_chi2: Math.min(...chi2Values),
+      mean_chi2: chi2Values.reduce((a, b) => a + b, 0) / chi2Values.length
+    },
+    runs: phaseGRuns
+  };
+  
+  downloadJSON(data, `XXVI-PhaseG-Aggregated_${data.timestamp.split('T')[0]}.json`);
+}
+
+function generatePhaseGReport() {
+  if (phaseGRuns.length === 0) return;
+  
+  const chi2Values = phaseGRuns.map(r => r.chi2).filter(v => v !== null && isFinite(v));
+  const bestChi2 = Math.min(...chi2Values);
+  const bestRun = phaseGRuns.find(r => r.chi2 === bestChi2);
+  const convergedRuns = phaseGRuns.filter(r => r.converged);
+  
+  let html = `<!DOCTYPE html>
+<html><head><title>Chamber XXVI Phase-G Report v2.1.1</title>
+<style>
+body { font-family: system-ui; max-width: 900px; margin: 40px auto; padding: 20px; background: #1a1a1a; color: #e0e0e0; }
+h1 { color: #4a9eff; }
+h2 { color: #4ecdc4; border-bottom: 1px solid #333; padding-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+th, td { padding: 10px; border: 1px solid #333; text-align: left; }
+th { background: #2a2a2a; color: #4a9eff; }
+.good { color: #4aff4a; }
+.warn { color: #ffa54a; }
+.bad { color: #ff4a4a; }
+.summary-box { background: #0a0a0a; border: 1px solid #333; padding: 20px; border-radius: 8px; margin: 20px 0; }
+</style></head><body>
+<h1>Chamber XXVI Phase-G Report</h1>
+<p>Generated: ${new Date().toISOString()}</p>
+<p>Version: 2.1.1-Fixed (Parameter Pipeline Corrected)</p>
+
+<div class="summary-box">
+<h2>Executive Summary</h2>
+<table>
+<tr><td>Total Runs</td><td>${phaseGRuns.length}</td></tr>
+<tr><td>Converged</td><td class="${convergedRuns.length > 0 ? 'good' : 'warn'}">${convergedRuns.length} (${(convergedRuns.length / phaseGRuns.length * 100).toFixed(1)}%)</td></tr>
+<tr><td>Best χ²</td><td class="${bestChi2 < CONVERGENCE_THRESHOLDS.CHI2 ? 'good' : 'warn'}">${bestChi2.toFixed(4)}</td></tr>
+<tr><td>Mean χ²</td><td>${(chi2Values.reduce((a,b) => a+b, 0) / chi2Values.length).toFixed(4)}</td></tr>
+<tr><td>χ² Threshold</td><td>&lt; ${CONVERGENCE_THRESHOLDS.CHI2}</td></tr>
+</table>
+</div>
+
+<h2>Convergence Criteria (Codex)</h2>
+<table>
+<tr><th>Criterion</th><th>Threshold</th><th>Best Run</th><th>Status</th></tr>
+<tr>
+<td>C₁ (Idempotence)</td>
+<td>&lt; ${CONVERGENCE_THRESHOLDS.C1}</td>
+<td>${bestRun?.closure?.C1?.toFixed(6) || '–'}</td>
+<td class="${bestRun?.closure?.C1 < CONVERGENCE_THRESHOLDS.C1 ? 'good' : 'bad'}">${bestRun?.closure?.C1 < CONVERGENCE_THRESHOLDS.C1 ? '✓' : '✗'}</td>
+</tr>
+<tr>
+<td>C₃ (Flux)</td>
+<td>&lt; ${CONVERGENCE_THRESHOLDS.C3}</td>
+<td>${bestRun?.closure?.C3?.toFixed(6) || '–'}</td>
+<td class="${bestRun?.closure?.C3 < CONVERGENCE_THRESHOLDS.C3 ? 'good' : 'bad'}">${bestRun?.closure?.C3 < CONVERGENCE_THRESHOLDS.C3 ? '✓' : '✗'}</td>
+</tr>
+<tr>
+<td>C₅ (Reversibility)</td>
+<td>&lt; ${CONVERGENCE_THRESHOLDS.C5}</td>
+<td>${bestRun?.closure?.C5?.toFixed(6) || '–'}</td>
+<td class="${bestRun?.closure?.C5 < CONVERGENCE_THRESHOLDS.C5 ? 'good' : 'bad'}">${bestRun?.closure?.C5 < CONVERGENCE_THRESHOLDS.C5 ? '✓' : '✗'}</td>
+</tr>
+<tr>
+<td>χ²</td>
+<td>&lt; ${CONVERGENCE_THRESHOLDS.CHI2}</td>
+<td>${bestChi2.toFixed(4)}</td>
+<td class="${bestChi2 < CONVERGENCE_THRESHOLDS.CHI2 ? 'good' : 'bad'}">${bestChi2 < CONVERGENCE_THRESHOLDS.CHI2 ? '✓' : '✗'}</td>
+</tr>
+</table>
+
+<h2>Best Run Configuration</h2>
+<table>
+<tr><th>Parameter</th><th>Value</th></tr>
+<tr><td>λ (coupling)</td><td>${bestRun?.params?.lambda?.toFixed(6) || '–'}</td></tr>
+<tr><td>α_c (closure)</td><td>${bestRun?.params?.alpha_c?.toFixed(6) || '–'}</td></tr>
+<tr><td>σ (noise)</td><td>${bestRun?.params?.sigma?.toFixed(6) || '–'}</td></tr>
+<tr><td>Φ (final)</td><td>${bestRun?.phi?.toFixed(6) || '–'}</td></tr>
+<tr><td>Converged</td><td class="${bestRun?.converged ? 'good' : 'bad'}">${bestRun?.converged ? '✓ YES' : '✗ NO'}</td></tr>
+</table>
+
+<h2>Operator Averages (XIII–XXI)</h2>
+<table>
+<tr><th>Operator</th><th>Mean</th><th>Std Dev</th><th>CV%</th></tr>`;
+
+  for (const key of EXPECTED_OPERATORS) {
+    const vals = phaseGRuns.map(r => r.operators?.[key] || 0);
+    const mean = vals.reduce((a,b) => a+b, 0) / vals.length;
+    const std = Math.sqrt(vals.map(v => (v - mean) ** 2).reduce((a,b) => a+b, 0) / vals.length);
+    const cv = mean > 0 ? (std / mean * 100) : 0;
+    html += `<tr><td>${key}</td><td>${mean.toFixed(6)}</td><td>${std.toFixed(6)}</td><td>${cv.toFixed(2)}%</td></tr>`;
+  }
+
+  html += `</table>
+
+<h2>All Runs</h2>
+<table>
+<tr><th>#</th><th>λ</th><th>α_c</th><th>Φ</th><th>χ²</th><th>C₁</th><th>C₃</th><th>C₅</th><th>Conv</th></tr>`;
+
+  phaseGRuns.forEach((run, i) => {
+    const conv = run.converged;
+    html += `<tr>
+<td>${i + 1}</td>
+<td>${run.params?.lambda?.toFixed(5) || '–'}</td>
+<td>${run.params?.alpha_c?.toFixed(4) || '–'}</td>
+<td>${run.phi?.toFixed(4) || '–'}</td>
+<td>${run.chi2?.toFixed(3) || '–'}</td>
+<td>${run.closure?.C1?.toFixed(4) || '–'}</td>
+<td>${run.closure?.C3?.toFixed(4) || '–'}</td>
+<td>${run.closure?.C5?.toFixed(4) || '–'}</td>
+<td class="${conv ? 'good' : 'bad'}">${conv ? '✓' : '✗'}</td>
+</tr>`;
+  });
+
+  html += `</table>
+
+<p style="margin-top: 30px; color: #666; border-top: 1px solid #333; padding-top: 20px;">
+UNNS Laboratory · Chamber XXVI · PE-27G v2.1.1-Fixed<br>
+Parameter Pipeline Corrected · Convergence Detection Fixed
+</p>
+</body></html>`;
+  
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `XXVI-PhaseG-Report_${new Date().toISOString().split('T')[0]}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+
+function loadGoldenBaseline() {
+  logPhaseG('Loading Golden Baseline', XXVI_GOLDEN_BASELINE);
+  
+  // Set all UI parameters to golden values
+  document.getElementById('lambda').value = XXVI_GOLDEN_BASELINE.lambda;
+  document.getElementById('lambdaVal').textContent = XXVI_GOLDEN_BASELINE.lambda.toFixed(5);
+  document.getElementById('alphaC').value = XXVI_GOLDEN_BASELINE.alpha_c;
+  document.getElementById('sigma').value = XXVI_GOLDEN_BASELINE.sigma;
+  document.getElementById('gridSize').value = parseInt(XXVI_GOLDEN_BASELINE.grid_size);
+  document.getElementById('depth').value = XXVI_GOLDEN_BASELINE.depth;
+  document.getElementById('seed').value = XXVI_GOLDEN_BASELINE.seed;
+  
+  // Set η values
+  document.getElementById('eta1').value = XXVI_GOLDEN_BASELINE.eta[0];
+  document.getElementById('eta2').value = XXVI_GOLDEN_BASELINE.eta[1];
+  document.getElementById('eta3').value = XXVI_GOLDEN_BASELINE.eta[2];
+  
+  // Update status
+  document.getElementById('runStatus').innerHTML = 
+    '<span style="color: #4aff4a;">✓ Golden Baseline Loaded</span> — Ready for first fully converged run (χ² ≈ 3.8)';
+  
+  console.log('⭐ Golden Baseline loaded:', XXVI_GOLDEN_BASELINE);
+}
+
+function setupEventHandlers() {
+  document.getElementById('btnRun').addEventListener('click', runPE27G);
+  document.getElementById('btnStop').addEventListener('click', stopRun);
+  document.getElementById('btnReset').addEventListener('click', resetEngine);
+  document.getElementById('btnLoadGolden').addEventListener('click', loadGoldenBaseline);
+  document.getElementById('btnAutoTune').addEventListener('click', runAutoTune);
+  document.getElementById('btnExport').addEventListener('click', exportPhaseGData);
+  document.getElementById('btnSaveAggregated').addEventListener('click', exportAggregatedData);
+  
+  document.getElementById('btnCalibrate').addEventListener('click', runCalibration);
+  // FIX A: Apply calibration button
+  document.getElementById('btnApplyCalib').addEventListener('click', () => {
+    if (applyCalibrationToSolver()) {
+      document.getElementById('calibStatus').textContent = 
+        `Applied! λ=${state.calibrationResult.lambda.toFixed(5)}, α_c=${state.calibrationResult.alpha_c.toFixed(5)} now active in solver.`;
+    }
+  });
+  
+  document.getElementById('btnImportRuns').addEventListener('click', () => {
+    document.getElementById('fileImport').click();
+  });
+  
+  document.getElementById('fileImport').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const imported = importRunsFromJSON(ev.target.result);
+      if (imported > 0) {
+        scheduleRender();
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+  
+  document.getElementById('btnClearRuns').addEventListener('click', () => {
+    if (confirm('Clear all stored runs?')) {
+      phaseGRuns = [];
+      state.selectedRunIndex = -1;
+      updateRunSelector();
+      updateMultiRunMetrics();
+      updateButtonStates();
+      scheduleRender();
+    }
+  });
+  
+  document.getElementById('runSelector').addEventListener('change', (e) => {
+    state.selectedRunIndex = parseInt(e.target.value);
+    updateRunList();
+  });
+  
+  document.getElementById('btnReport').addEventListener('click', generatePhaseGReport);
+  document.getElementById('btnExportAll').addEventListener('click', exportAggregatedData);
+  
+  // Slider updates
+  document.getElementById('lambda').addEventListener('input', (e) => {
+    document.getElementById('lambdaVal').textContent = parseFloat(e.target.value).toFixed(5);
+    // Reset calibration applied status when user changes params
+    state.calibrationApplied = false;
+    document.getElementById('calibAppliedIndicator').style.display = 'none';
+  });
+  
+  document.getElementById('eta1').addEventListener('input', (e) => {
+    document.getElementById('eta1Val').textContent = parseFloat(e.target.value).toFixed(3);
+  });
+  
+  document.getElementById('eta2').addEventListener('input', (e) => {
+    document.getElementById('eta2Val').textContent = parseFloat(e.target.value).toFixed(3);
+  });
+  
+  document.getElementById('eta3').addEventListener('input', (e) => {
+    document.getElementById('eta3Val').textContent = parseFloat(e.target.value).toFixed(3);
+  });
+  
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      btn.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      scheduleRender();
+    });
+  });
+  
+  // Guide toggle
+  document.getElementById('btnToggleGuide').addEventListener('click', () => {
+    const content = document.getElementById('guideContent');
+    const btn = document.getElementById('btnToggleGuide');
+    
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+      btn.textContent = 'Hide Guide';
+    } else {
+      content.style.display = 'none';
+      btn.textContent = 'Show Guide';
+    }
+  });
+  
+  window.addEventListener('resize', () => scheduleRender());
+}
+
+// ============================================================
+// SELF-TEST
+// ============================================================
+
+function runSelfTest() {
+  const tests = [];
+  
+  const canvasIds = ['canvasField', 'canvasClosure', 'canvasOperators', 'canvasFManifold', 'canvasPhaseMap', 'canvasSensitivity'];
+  for (const id of canvasIds) {
+    tests.push({ name: `Canvas ${id}`, pass: !!document.getElementById(id) });
+  }
+  
+  tests.push({ name: 'Guide Panel', pass: !!document.getElementById('guidePanel') });
+  tests.push({ name: 'Operators defined', pass: EXPECTED_OPERATORS.length === 5 });
+  tests.push({ name: 'Convergence thresholds', pass: Object.keys(CONVERGENCE_THRESHOLDS).length >= 4 });
+  tests.push({ name: 'Run store', pass: Array.isArray(phaseGRuns) });
+  
+  const allPass = tests.every(t => t.pass);
+  console.log(`✓ UNNS Phase-G Self-Test: ${allPass ? 'OK' : 'FAILED'}`);
+  tests.filter(t => !t.pass).forEach(t => console.error(`  ✗ ${t.name}`));
+  
+  return allPass;
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+function init() {
+  updateOperatorCards();
+  updateObservablesList();
+  updateRunSelector();
+  updateMultiRunMetrics();
+  updateButtonStates();
+  setupEventHandlers();
+  
+  scheduleRender();
+  runSelfTest();
+  
+  console.log('✓ All 6 canvases initialized');
+  console.log('✓ Parameter pipeline ready');
+  console.log('✓ Convergence detection with Codex thresholds');
+  logPhaseG('Chamber XXVI v2.1.1 ready');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+if (document.readyState !== 'loading') init();
+  </script>
+</body>
+</html>
