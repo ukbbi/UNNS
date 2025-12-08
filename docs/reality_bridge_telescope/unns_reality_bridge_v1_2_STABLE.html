@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UNNS Reality Bridge Telescope — v1.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   UNNS Reality Bridge Telescope — Standalone v1.0
+   Hybrid Streams (Mode B) – Single-file implementation
+   ═══════════════════════════════════════════════════════════ */
+
+/* Root layout */
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 50% 20%, #001024, #000008 60%, #000000 100%);
+  color: #e6ffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+/* Isolated namespace */
+#unnsRealityBridge {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.unns-header {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  z-index: 120;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(0,20,60,0.95), rgba(0,0,0,0.9));
+  border: 1px solid rgba(0,255,255,0.45);
+  box-shadow: 0 0 25px rgba(0,255,255,0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.unns-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.35);
+}
+
+.badge-lab {
+  background: radial-gradient(circle at 30% 0%, #00ffff, #0066ff);
+  color: #000;
+}
+
+.badge-experiment {
+  background: radial-gradient(circle at 30% 0%, #ff00ff, #5500aa);
+  color: #fff;
+}
+
+.unns-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e6ffff;
+}
+
+/* Fullscreen button */
+#fullscreenBtn {
+  margin-left: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,255,255,0.5);
+  background: radial-gradient(circle at 30% 0%, #00121f, #002c44);
+  color: #a8ffff;
+  font-size: 11px;
+  cursor: pointer;
+}
+#fullscreenBtn:hover {
+  box-shadow: 0 0 18px rgba(0,255,255,0.5);
+}
+
+/* Container */
+.unns-reality-container {
+  position: absolute;
+  inset: 0;
+  margin: 0 auto;
+  width: min(1400px, 100vw - 40px);
+  height: min(840px, 100vh - 40px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 55% 45%, #00081c, #000111 70%, #000000 100%);
+  border-radius: 26px;
+  border: 2px solid rgba(0,255,255,0.6);
+  box-shadow:
+    0 0 45px rgba(0,255,255,0.4),
+    0 0 120px rgba(0,0,0,0.9);
+  overflow: hidden;
+}
+
+/* Telescope viewport */
+.telescope-viewport {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.telescope-canvas,
+.reality-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.reality-overlay {
+  pointer-events: none;
+}
+
+/* Generic UNNS panel */
+.unns-panel {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(0,12,40,0.96), rgba(0,0,0,0.9));
+  border-radius: 14px;
+  border: 1px solid rgba(0,255,255,0.4);
+  box-shadow: 0 0 24px rgba(0,255,255,0.35);
+  padding: 12px 14px;
+  font-size: 11px;
+  color: #e6ffff;
+  backdrop-filter: blur(14px);
+}
+
+/* Data feed */
+.data-feed {
+  top: 70px;
+  left: 18px;
+  width: 260px;
+}
+
+.data-feed h4 {
+  margin: 0 0 8px 0;
+  padding-bottom: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid rgba(0,255,255,0.35);
+}
+
+.data-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(0,255,255,0.15);
+}
+
+.data-label {
+  opacity: 0.8;
+}
+
+.data-value {
+  font-family: "Consolas", monospace;
+  font-weight: 600;
+  color: #ffffff;
+}
+.data-value.positive { color: #5bff7b; }
+.data-value.negative { color: #ff5b5b; }
+
+/* Hybrid status */
+.hybrid-status {
+  top: 18px;
+  left: 18px;
+  padding: 7px 11px;
+  font-size: 10px;
+  border-radius: 999px;
+  border-color: rgba(255,255,255,0.45);
+  box-shadow: 0 0 18px rgba(0,255,255,0.35);
+}
+#hybridStatus {
+  font-weight: 700;
+  margin-left: 4px;
+}
+.hybrid-online { color: #7dffb5; }
+.hybrid-offline { color: #ffb57d; }
+
+/* Control panel */
+.control-panel {
+  top: 18px;
+  right: 18px;
+  width: 260px;
+  padding-bottom: 10px;
+}
+
+.control-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: #a8ffff;
+}
+
+.control-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0,255,255,0.25);
+}
+
+.control-button {
+  display: block;
+  width: 100%;
+  margin: 3px 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  border-radius: 7px;
+  border: 1px solid rgba(0,255,255,0.65);
+  background: linear-gradient(135deg, #001325, #003355);
+  color: #a8ffff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+.control-button:hover {
+  box-shadow: 0 0 16px rgba(0,255,255,0.6);
+  transform: translateY(-1px);
+}
+.control-button.mode {
+  font-size: 10px;
+}
+.control-button.active {
+  background: linear-gradient(135deg, #006688, #00aacc);
+  color: #ffffff;
+}
+
+/* Reality modes */
+.reality-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #a8ffff;
+}
+.mode-toggle input {
+  accent-color: #00ffff;
+}
+
+/* Quantum display */
+.quantum-display {
+  bottom: 92px;
+  right: 18px;
+  width: 260px;
+  display: none;
+}
+.quantum-display.visible {
+  display: block;
+}
+.quantum-display h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #ff7dff;
+}
+.qubit-state {
+  display: flex;
+  justify-content: space-around;
+  margin: 8px 0;
+}
+.qubit {
+  text-align: center;
+}
+.qubit-value {
+  font-size: 20px;
+  color: #ff7dff;
+  text-shadow: 0 0 10px #ff7dff;
+  font-family: "Consolas", monospace;
+}
+
+/* Mathematical constants */
+.mathematical-constants {
+  position: absolute;
+  bottom: 16px;
+  right: 18px;
+  width: 250px;
+  display: none;
+}
+.mathematical-constants h4 {
+  margin: 0 0 8px 0;
+  color: #ffea75;
+  font-size: 12px;
+}
+.constant-item {
+  margin: 4px 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,0,0.08);
+}
+.constant-name {
+  font-size: 11px;
+  color: #ffe259;
+  font-weight: 600;
+}
+.constant-value {
+  font-family: "Consolas", monospace;
+  font-size: 10px;
+}
+
+/* Zoom + operator + coherence */
+.zoom-indicator {
+  position: absolute;
+  top: 260px; /* shifted down to avoid overlap */
+  left: 18px;
+  width: 230px;
+  font-size: 11px;
+}
+
+.info-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 1px 0;
+}
+
+.zoom-indicator {
+  position: absolute;
+  top: 305px; /* moved down a bit more to avoid diag bottom area */
+  left: 18px;
+  width: 230px;
+  font-size: 11px;
+  z-index: 49;
+}
+
+
+/* Poetic grammar */
+.poetic-grammar {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 70%;
+  padding: 10px 18px;
+  text-align: center;
+  font-size: 15px;
+  font-family: "Georgia", serif;
+  font-style: italic;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.14), rgba(0,0,0,0.92));
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255,255,255,0.6);
+  backdrop-filter: blur(10px);
+  animation: poetryFade 18s ease-in-out infinite;
+}
+
+/* Poetry fade */
+@keyframes poetryFade {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+}
+
+/* Zoom slider */
+.zoom-control {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+}
+.zoom-slider {
+  width: 100%;
+  height: 34px;
+  background: transparent;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.zoom-slider::-webkit-slider-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #001122, #00ffff);
+  border: 1px solid rgba(0,255,255,0.7);
+}
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: radial-gradient(circle, #ffffff, #00ffff);
+  box-shadow: 0 0 20px rgba(0,255,255,0.8);
+  cursor: pointer;
+}
+
+/* Prime database modal */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 210;
+  backdrop-filter: blur(18px);
+}
+.modal-content {
+  max-width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+  padding: 20px 24px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #000822, #001a33);
+  border: 2px solid rgba(255,0,255,0.65);
+  color: #ffe6ff;
+  box-shadow: 0 0 40px rgba(255,0,255,0.8);
+}
+.modal-content h2 {
+  margin-top: 0;
+  font-size: 18px;
+  text-align: center;
+}
+.prime-database {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+}
+.prime-number {
+  padding: 7px 0;
+  border-radius: 7px;
+  text-align: center;
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  background: rgba(255,0,255,0.15);
+  border: 1px solid rgba(255,0,255,0.8);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.prime-number:hover {
+  background: rgba(255,0,255,0.4);
+  box-shadow: 0 0 16px rgba(255,0,255,0.8);
+  transform: scale(1.06);
+}
+
+/* Seismic indicator strip */
+.seismic-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  border-top: 1px solid rgba(255,50,50,0.6);
+  overflow: hidden;
+}
+.seismic-wave {
+  stroke: #ff4a4a;
+  stroke-width: 2;
+  fill: none;
+  filter: drop-shadow(0 0 8px #ff0000);
+}
+
+/* Fractal background shimmer (subtle) */
+.fractal-noise {
+  position: absolute;
+  inset: -40%;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(0, 255, 255, 0.04) 0, transparent 55%),
+    radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.05) 0, transparent 50%),
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.03) 0, transparent 40%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: fractalDrift 60s linear infinite;
+}
+@keyframes fractalDrift {
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  50%  { transform: translate3d(-6%, -4%, 0) scale(1.05); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+/* Smaller screens fallback */
+@media (max-width: 900px) {
+  .unns-reality-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  .control-panel, .data-feed, .zoom-indicator, .operator-indicator {
+    font-size: 10px;
+  }
+  .control-panel {
+    width: 220px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="unnsRealityBridge">
+
+  <!-- Header -->
+  <div class="unns-header">
+    <span class="unns-badge badge-lab">Lab</span>
+    <span class="unns-badge badge-experiment">Reality Bridge</span>
+    <div class="unns-header-title">UNNS Reality Bridge Telescope · v1.0</div>
+    <button id="fullscreenBtn">⛶ Fullscreen</button>
+  </div>
+
+  <!-- Hybrid Status -->
+  <div class="unns-panel hybrid-status">
+    Hybrid Stream:
+    <span id="hybridStatus" class="hybrid-offline">Checking…</span>
+  </div>
+
+  <div class="unns-reality-container">
+    <div class="fractal-noise"></div>
+
+    <div class="telescope-viewport">
+      <canvas id="telescopeCanvas" class="telescope-canvas"></canvas>
+      <canvas id="realityOverlay" class="reality-overlay"></canvas>
+
+      <!-- Data Feed -->
+      <div class="unns-panel data-feed">
+        <h4>Reality Stream · Diagnostics</h4>
+        <div class="data-item">
+          <span class="data-label">Market Volatility</span>
+          <span id="marketVol" class="data-value">0.00</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Solar Activity</span>
+          <span id="solarActivity" class="data-value">0%</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Seismic Energy</span>
+          <span id="seismicEnergy" class="data-value">0.0 ML</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Quantum Entropy</span>
+          <span id="quantumEntropy" class="data-value">0.000</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Prime Density</span>
+          <span id="primeDensity" class="data-value">0.0%</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">Golden Ratio Δ</span>
+          <span id="goldenDelta" class="data-value">1.618</span>
+        </div>
+      </div>
+
+      <!-- Zoom + Coherence + Domain -->
+      <div class="unns-panel zoom-indicator">
+        <div class="info-line">
+          <span>Zoom</span>
+          <span id="zoomLevel">1.0x</span>
+        </div>
+        <div class="info-line">
+          <span>Domain</span>
+          <span id="currentDomain">Surface Reality</span>
+        </div>
+        <div class="info-line">
+          <span>UNNS Coherence</span>
+          <span id="coherenceScore">0%</span>
+        </div>
+        <div class="info-line">
+          <span>Reality Sync</span>
+          <span id="realitySync">0%</span>
+        </div>
+      </div>
+
+      <!-- Operator Indicator -->
+      <div class="unns-panel operator-indicator" id="operatorIndicator">
+        Operator VII — Structure (Surface Layer)
+      </div>
+
+      <!-- Control Panel -->
+      <div class="unns-panel control-panel">
+        <h3>Navigation</h3>
+        <button class="control-button" id="btnAutoExplore">▶ Auto Explore</button>
+        <button class="control-button" id="btnResonance">◎ Find Resonance</button>
+        <button class="control-button" id="btnGravity">⇣ Toggle Gravity</button>
+
+        <div class="control-section">
+          <h3>Reality Modes</h3>
+          <div class="reality-mode-selector">
+            <label class="mode-toggle">
+              <input id="marketMode" type="checkbox" checked> Stock Market
+            </label>
+            <label class="mode-toggle">
+              <input id="weatherMode" type="checkbox" checked> Weather Systems
+            </label>
+            <label class="mode-toggle">
+              <input id="seismicMode" type="checkbox" checked> Seismic Activity
+            </label>
+            <label class="mode-toggle">
+              <input id="quantumMode" type="checkbox"> Quantum Simulator
+            </label>
+          </div>
+        </div>
+
+        <div class="control-section">
+          <h3>Display Modes</h3>
+          <button class="control-button mode" id="modeFull">UNNS Full Mode</button>
+          <button class="control-button mode" id="modeMinimal">Minimal</button>
+          <button class="control-button mode" id="modePoetic">Poetic</button>
+          <button class="control-button mode" id="modeOperator">Operator XII Mode</button>
+        </div>
+
+        <div class="control-section">
+          <h3>Tools</h3>
+          <button class="control-button" id="btnPrimeDb">Prime Database</button>
+          <button class="control-button" id="btnConstants">Math Constants</button>
+          <button class="control-button" id="btnReset">Reset View</button>
+        </div>
+      </div>
+
+      <!-- Quantum Display -->
+      <div class="unns-panel quantum-display" id="quantumDisplay">
+        <h4>Quantum State Vector</h4>
+        <div class="qubit-state">
+          <div class="qubit">
+            <div>|0⟩</div>
+            <div id="qubit0" class="qubit-value">0.71</div>
+          </div>
+          <div class="qubit">
+            <div>|1⟩</div>
+            <div id="qubit1" class="qubit-value">0.71</div>
+          </div>
+        </div>
+        <div style="margin-top:7px; color:#ff7dff;">
+          Entanglement: <span id="entanglement">0.000</span>
+        </div>
+        <div style="margin-top:4px; color:#7dffff;">
+          Coherence: <span id="coherence">100%</span>
+        </div>
+      </div>
+
+      <!-- Mathematical constants -->
+      <div class="unns-panel mathematical-constants" id="mathConstants">
+        <h4>Universal Constants</h4>
+        <div class="constant-item">
+          <div class="constant-name">π (Pi)</div>
+          <div class="constant-value">3.14159265358979…</div>
+        </div>
+        <div class="constant-item">
+          <div class="constant-name">e (Euler)</div>
+          <div class="constant-value">2.71828182845904…</div>
+        </div>
+        <div class="constant-item">
+          <div class="constant-name">φ (Golden)</div>
+          <div class="constant-value">1.61803398874989…</div>
+        </div>
+        <div class="constant-item">
+          <div class="constant-name">γ (Euler–Mascheroni)</div>
+          <div class="constant-value">0.57721566490153…</div>
+        </div>
+        <div class="constant-item">
+          <div class="constant-name">Feigenbaum δ</div>
+          <div class="constant-value">4.66920160910299…</div>
+        </div>
+      </div>
+
+      <!-- Seismic strip -->
+      <div class="seismic-indicator">
+        <svg width="100%" height="50">
+          <path id="seismicWave" class="seismic-wave" d=""></path>
+        </svg>
+      </div>
+
+      <!-- Poetic grammar -->
+      <div class="poetic-grammar" id="poeticGrammar">
+        Reality whispers its UNNS signature in market fluctuations and stellar rhythms.
+      </div>
+
+      <!-- Zoom control -->
+      <div class="zoom-control">
+        <input id="zoomSlider" class="zoom-slider" type="range" min="0" max="100" value="0">
+      </div>
+
+      <!-- Prime modal -->
+      <div class="modal-overlay" id="primeModal">
+        <div class="modal-content">
+          <h2>Prime Number Database — First 100 Primes</h2>
+          <div id="primeGrid" class="prime-database"></div>
+          <button class="control-button" id="closePrimeModal" style="margin-top:14px;">Close</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   UNNS Reality Bridge Telescope – v1.0
+   Hybrid Streams (Mode B)
+   ============================================================ */
+
+class RealityBridgeTelescope {
+  constructor() {
+    this.canvas = document.getElementById("telescopeCanvas");
+    this.ctx = this.canvas.getContext("2d");
+    this.overlayCanvas = document.getElementById("realityOverlay");
+    this.overlayCtx = this.overlayCanvas.getContext("2d");
+
+    this.zoom = 1;
+    this.targetZoom = 1;
+    this.centerX = 0;
+    this.centerY = 0;
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.time = 0;
+
+    // Mode flags
+    this.autoExploring = false;
+    this.gravityEnabled = false;
+    this.displayMode = "full"; // full | minimal | poetic | operator
+
+    // Arrays for rendering
+    this.marketData = [];
+    this.weatherData = [];
+    this.seismicData = [];
+
+    this.particles = [];
+    this.resonancePoints = [];
+
+    // Hybrid stream
+    this.hybridOnline = false;
+    this.loadingHybrid = false;
+    this.lastHybridFetch = 0;
+    this.hybridFetchEvery = 30; // frames
+
+    this.marketStream = null;
+    this.weatherStream = null;
+    this.seismicStream = null;
+    this.solarStream = null;
+
+    // HYBRID VOLATILITY STATE
+    this.hybridVolatility = 0.20;     // minimum living baseline
+    this.lastDelta = 0;               // track last market delta
+
+    // Reality modes
+    this.modes = { market: true, weather: true, seismic: true, quantum: false };
+
+    // Constants
+    this.constants = {
+      pi: Math.PI,
+      e: Math.E,
+      phi: (1 + Math.sqrt(5)) / 2,
+      gamma: 0.5772156649,
+      feigenbaum: 4.669201609
+    };
+
+    this.primes = [
+      2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,
+      73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,
+      157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,
+      239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,
+      331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,
+      421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,
+      509,521,523,541
+    ];
+
+    this.poeticGrammars = {
+      surface: [
+        "Reality whispers its UNNS signature in market fluctuations and stellar rhythms.",
+        "Stock prices dance to the beat of prime number drums.",
+        "Weather fronts drag lattices of modular residues across the sky."
+      ],
+      prime: [
+        "Every crash traces a hidden prime spiral down the substrate.",
+        "Solar flares strobe at intervals only primes fully understand.",
+        "Economies drift along corridors carved by twin primes."
+      ],
+      modular: [
+        "Storm systems march through congruence classes of pressure.",
+        "Earth’s crust ticks in modular sequences of stress and release.",
+        "Exchange rates tile phase space like residues on a lattice."
+      ],
+      quantum: [
+        "Quantum portfolios hover in superposition, awaiting collapse.",
+        "Entangled qubits guess reality’s next macro move.",
+        "Algorithms fold Hilbert amplitudes back into market candles."
+      ],
+      entropy: [
+        "At maximal entropy, new economies nucleate from numerical noise.",
+        "Heat death is only another phase transition in UNNS space.",
+        "When information fades, recursion plants the next Seed."
+      ]
+    };
+
+    this.init();
+  }
+
+  /* ---------- Init ---------- */
+
+  init() {
+    this.resizeCanvas();
+    window.addEventListener("resize", () => this.resizeCanvas());
+
+    const viewport = this.canvas.parentElement;
+    viewport.addEventListener("mousemove", e => this.handleMouseMove(e));
+    viewport.addEventListener("click", e => this.handleClick(e));
+    viewport.addEventListener("wheel", e => this.handleWheel(e), { passive:false });
+
+    // Zoom slider sync
+    document.getElementById("zoomSlider").addEventListener("input", e => {
+      this.targetZoom = Math.pow(10, e.target.value / 20);
+    });
+
+    // Buttons
+    document.getElementById("btnAutoExplore").onclick = () => this.toggleAutoExplore();
+    document.getElementById("btnResonance").onclick = () => this.findResonance();
+    document.getElementById("btnGravity").onclick = () => this.toggleGravity();
+
+    document.getElementById("marketMode").onchange = e => this.toggleMode("market", e.target.checked);
+    document.getElementById("weatherMode").onchange = e => this.toggleMode("weather", e.target.checked);
+    document.getElementById("seismicMode").onchange = e => this.toggleMode("seismic", e.target.checked);
+    document.getElementById("quantumMode").onchange = e => this.toggleMode("quantum", e.target.checked);
+
+    document.getElementById("modeFull").onclick = () => this.setDisplayMode("full");
+    document.getElementById("modeMinimal").onclick = () => this.setDisplayMode("minimal");
+    document.getElementById("modePoetic").onclick = () => this.setDisplayMode("poetic");
+    document.getElementById("modeOperator").onclick = () => this.setDisplayMode("operator");
+
+    document.getElementById("btnPrimeDb").onclick = () => this.showPrimeDatabase();
+    document.getElementById("btnConstants").onclick = () => this.toggleConstants();
+    document.getElementById("btnReset").onclick = () => this.resetView();
+    document.getElementById("closePrimeModal").onclick = () => this.closePrimeDatabase();
+
+    // Fullscreen
+    document.getElementById("fullscreenBtn").onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      } else {
+        document.exitFullscreen().catch(()=>{});
+      }
+    };
+
+    this.initParticles();
+    this.initSyntheticStreams();
+
+    // Begin hybrid polling
+    this.loadHybridStreams();
+
+    this.animate();
+  }
+
+  resizeCanvas() {
+    const container = this.canvas.parentElement;
+    this.canvas.width = container.offsetWidth;
+    this.canvas.height = container.offsetHeight;
+    this.overlayCanvas.width = container.offsetWidth;
+    this.overlayCanvas.height = container.offsetHeight;
+    this.centerX = this.canvas.width / 2;
+    this.centerY = this.canvas.height / 2;
+  }
+
+  /* ---------- Data ---------- */
+
+  initSyntheticStreams() {
+    // Synthetic base arrays – used as fallback and for smooth continuity
+    for (let i = 0; i < 100; i++) {
+      this.marketData.push({
+        value: 100 + Math.sin(i * 0.12) * 10 + (Math.random() - 0.5) * 4,
+        volume: 300000 + Math.random() * 600000
+      });
+      this.weatherData.push({
+        pressure: 1013 + Math.sin(i * 0.07) * 15,
+        temp: 20 + Math.sin(i * 0.05) * 10
+      });
+      this.seismicData.push({
+        magnitude: Math.max(0, Math.random() * 2.2),
+        depth: Math.random() * 50
+      });
+    }
+  }
+
+  async loadHybridStreams() {
+    if (this.loadingHybrid) return; // prevent overlapping fetches
+    this.loadingHybrid = true;
+
+    let success = 0;
+
+    async function safe(url) {
+      try { return await fetch(url).then(r => r.json()); }
+      catch (e) { return null; }
+    }
+
+    const m  = await safe("/live/market.json");
+    const w  = await safe("/live/weather.json");
+    const s  = await safe("/live/seismic.json");
+    const so = await safe("/live/solar.json");
+
+    if (m)  { this.marketStream  = m;  success++; }
+    if (w)  { this.weatherStream = w;  success++; }
+    if (s)  { this.seismicStream = s; success++; }
+    if (so) { this.solarStream   = so; success++; }
+
+    this.hybridOnline = success >= 2;   // majority vote
+    this.updateHybridStatus(this.hybridOnline);
+
+    this.loadingHybrid = false;
+  }
+
+  updateHybridStatus(ok) {
+    const el = document.getElementById("hybridStatus");
+    if (ok) {
+      el.textContent = "Online (Hybrid Mode)";
+      el.classList.remove("hybrid-offline");
+      el.classList.add("hybrid-online");
+    } else {
+      el.textContent = "Offline – Using Synthetic Stream";
+      el.classList.remove("hybrid-online");
+      el.classList.add("hybrid-offline");
+    }
+  }
+
+  updateRealityFromHybrid() {
+    // Called in updateRealityData if hybridOnline = true
+    const m = this.marketStream;
+    const w = this.weatherStream;
+    const s = this.seismicStream;
+
+    if (m) {
+      // Push more real influence into the array
+      for (let i = 0; i < 6; i++) {
+        this.marketData.shift();
+        this.marketData.push({
+          value: m.value + (Math.random() - 0.5) * 0.6,
+          volume: m.volume,
+          volatility: m.volatility ?? null
+        });
+      }
+    }
+    if (w) {
+      for (let i = 0; i < 4; i++) {
+        this.weatherData.shift();
+        this.weatherData.push({
+          pressure: w.pressure + (Math.random() - 0.5) * 1.1,
+          temp: w.temperature + (Math.random() - 0.5) * 0.6
+        });
+      }
+    }
+    if (s) {
+      for (let i = 0; i < 4; i++) {
+        this.seismicData.shift();
+        this.seismicData.push({
+          magnitude: s.magnitude + (Math.random() - 0.5) * 0.03,
+          depth: s.depth
+        });
+      }
+    }
+  }
+
+  updateRealityData() {
+    if (this.hybridOnline) {
+      this.updateRealityFromHybrid();
+    } else {
+      // Slight synthetic evolution
+      this.marketData.shift();
+      const prev = this.marketData[this.marketData.length - 1];
+      this.marketData.push({
+        value: prev.value + (Math.random() - 0.5) * 2,
+        volume: 300000 + Math.random() * 600000
+      });
+
+      this.weatherData.shift();
+      const t = this.time;
+      this.weatherData.push({
+        pressure: 1013 + Math.sin(t * 0.01) * 15 + (Math.random() - 0.5) * 2,
+        temp: 20 + Math.sin(t * 0.008) * 8 + (Math.random() - 0.5) * 1.5
+      });
+
+      this.seismicData.shift();
+      this.seismicData.push({
+        magnitude: Math.max(0, Math.random() * 2.8 * Math.pow(Math.sin(t * 0.002), 2)),
+        depth: Math.random() * 50
+      });
+    }
+
+    // Diagnostics
+    // Calculate market delta
+    const currentMarketVal = this.marketData[this.marketData.length - 1].value;
+    const marketDelta = this.marketData.length > 1 ? 
+      currentMarketVal - this.marketData[this.marketData.length - 2].value : 0;
+
+    // Get raw JSON volatility
+    // Prefer real volatility if present
+    const jsonVol = this.marketStream?.volatility ??
+                    this.calculateVolatility(this.marketData.map(d => d.value));
+
+    // Apply hybrid volatility engine
+    const marketVol = this.updateHybridVolatility(jsonVol, marketDelta);
+    const mv = document.getElementById("marketVol");
+    mv.textContent = marketVol.toFixed(2);
+    mv.className = "data-value " + (marketVol > 15 ? "negative" : "positive");
+
+    const solarActivity = this.solarStream
+      ? Math.min(100, (this.solarStream.kp_index || 0) * 15)
+      : Math.abs(Math.sin(this.time * 0.002)) * 100;
+
+    document.getElementById("solarActivity").textContent = solarActivity.toFixed(0) + "%";
+
+    const lastSeismic = this.seismicData[this.seismicData.length - 1];
+    document.getElementById("seismicEnergy").textContent = lastSeismic.magnitude.toFixed(2) + " ML";
+
+    const quantumEntropy = Math.log2(this.zoom + 1) / 10;
+    document.getElementById("quantumEntropy").textContent = quantumEntropy.toFixed(3);
+
+    const primeDensity = this.calculatePrimeDensity(Math.floor(this.zoom * 120));
+    document.getElementById("primeDensity").textContent = (primeDensity * 100).toFixed(1) + "%";
+
+    const goldenDeviation = (() => {
+      if (this.zoom <= 1.02) return 0;
+      const v = this.zoom / (this.zoom - 1);
+      return Math.abs(this.constants.phi - v);
+    })();
+    const goldenDisplayed = this.constants.phi + Math.sin(this.time * 0.01) * 0.01;
+    document.getElementById("goldenDelta").textContent = goldenDisplayed.toFixed(3);
+
+    // Coherence score (hybrid metric)
+    const coherence = this.calculateCoherence(marketVol, lastSeismic.magnitude, solarActivity);
+    document.getElementById("coherenceScore").textContent = coherence.toFixed(0) + "%";
+  }
+
+  calculateCoherence(volatility, magnitude, solarAct) {
+    // Simple heuristic: low volatility, low quake, moderate solar = high coherence
+    let score = 100;
+    score -= Math.min(25, volatility * 0.8);
+    score -= magnitude * 6;
+    score -= Math.abs(solarAct - 40) * 0.25;
+    return Math.max(0, Math.min(100, score));
+  }
+
+  calculateVolatility(data) {
+    const mean = data.reduce((a, b) => a + b, 0) / data.length;
+    const variance = data.reduce((sum, val) => sum + (val - mean) ** 2, 0) / data.length;
+    return Math.sqrt(variance);
+  }
+
+  // HYBRID VOLATILITY ENGINE ------------------------------
+  updateHybridVolatility(jsonVol, delta) {
+    // 1. Natural exponential decay (volatility wants to calm down)
+    this.hybridVolatility = this.hybridVolatility * 0.97;
+
+    // 2. Clamp minimum (so it never looks dead)
+    if (this.hybridVolatility < 0.25) this.hybridVolatility = 0.25;
+
+    // 3. Real market spike — when fresh delta is present
+    let spike = Math.abs(delta);
+    if (spike > 0.005) this.hybridVolatility += spike * 4.0;
+
+    // 4. Micro turbulence (always alive)
+    this.hybridVolatility += (Math.random() - 0.5) * 0.02;
+
+    // 5. Blending real JSON volatility (40% real, 60% hybrid)
+    this.hybridVolatility =
+        this.hybridVolatility * 0.55 +      // hybrid memory
+        jsonVol * 3.2 +                     // amplify real volatility
+        Math.abs(delta) * 6.0;              // big response to delta
+
+    // 6. Clamp maximum
+    if (this.hybridVolatility > 99) this.hybridVolatility = 99;
+
+    // Update last delta
+    this.lastDelta = delta;
+
+    return this.hybridVolatility;
+  }
+
+  calculatePrimeDensity(n) {
+    if (n < 2) return 0;
+    let count = 0;
+    for (let i = 2; i <= n; i++) if (this.isPrime(i)) count++;
+    return count / n;
+  }
+  isPrime(n) {
+    if (n < 2) return false;
+    for (let i = 2; i <= Math.sqrt(n); i++) if (n % i === 0) return false;
+    return true;
+  }
+
+  /* ---------- Domain & Operators ---------- */
+
+  getDomain() {
+    if (this.zoom < 10) return "surface";
+    if (this.zoom < 100) return "prime";
+    if (this.zoom < 1000) return "modular";
+    if (this.zoom < 10000) return "quantum";
+    return "entropy";
+  }
+
+  updateOperatorIndicator() {
+    const d = this.getDomain();
+    const ops = {
+      surface: "Operator VII — Structure (Surface Layer)",
+      prime:   "Operator IX — Folding (Prime Layer)",
+      modular: "Operator XI — Emission (Modular Lattice)",
+      quantum: "Operator XII — Collapse (Quantum Realm)",
+      entropy: "Operator XIV — Phi-Scale (Entropy Core)"
+    };
+    document.getElementById("operatorIndicator").textContent = ops[d];
+  }
+
+  /* ---------- Drawing ---------- */
+
+  drawBaseLayer() {
+    const domain = this.getDomain();
+
+    if (this.displayMode === "poetic") {
+      // gentle nebulous foam only
+      this.drawQuantumFoam(true);
+      return;
+    }
+
+    this.ctx.save();
+    this.ctx.translate(this.centerX, this.centerY);
+    this.ctx.scale(this.zoom, this.zoom);
+    this.ctx.translate(-this.centerX, -this.centerY);
+
+    switch(domain) {
+      case "surface": this.drawSurfaceMatrix(); break;
+      case "prime":   this.drawPrimeConstellation(); break;
+      case "modular": this.drawModularLattice(); break;
+      case "quantum": this.drawQuantumFoam(false); break;
+      case "entropy": this.drawEntropySingularity(); break;
+    }
+
+    this.ctx.restore();
+  }
+
+  drawSurfaceMatrix() {
+    const gridSize = 30 / this.zoom;
+    const cols = Math.ceil(this.canvas.width / gridSize);
+    const rows = Math.ceil(this.canvas.height / gridSize);
+
+    for (let i = 0; i <= cols; i++) {
+      for (let j = 0; j <= rows; j++) {
+        const x = i * gridSize;
+        const y = j * gridSize;
+        const idx = (i + j) % this.marketData.length;
+        const v = this.marketData[idx].value;
+        const up = v >= 100;
+        const hue = up ? 130 : 0;
+        const brightness = Math.min(1, Math.abs(v - 100) / 25);
+
+        this.ctx.fillStyle = `hsla(${hue}, 80%, 55%, ${0.08 + brightness * 0.35})`;
+        this.ctx.fillRect(x, y, gridSize * 0.9, gridSize * 0.9);
+      }
+    }
+  }
+
+  drawPrimeConstellation() {
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+
+    for (let i = 0; i < this.primes.length; i++) {
+      const p = this.primes[i];
+      const angleOffset = (this.marketStream ? this.marketStream.volatility || 0 : 10) * 0.01;
+      const angle = p * this.constants.phi + angleOffset;
+      const radiusScale = 10 / this.zoom * (this.solarStream ? 1 + (this.solarStream.xray_flux || 0) * 0.02 : 1);
+      const r = Math.sqrt(p) * radiusScale;
+
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+
+      const mVal = this.marketData[i % this.marketData.length].value;
+      const corr = mVal / 100;
+      const hue = 120 * corr;
+      this.ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 3 / Math.sqrt(this.zoom), 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Twin prime connection
+      if (i > 0 && this.primes[i] - this.primes[i-1] === 2) {
+        const pPrev = this.primes[i-1];
+        const angPrev = pPrev * this.constants.phi + angleOffset;
+        const rPrev = Math.sqrt(pPrev) * radiusScale;
+        const x2 = cx + Math.cos(angPrev) * rPrev;
+        const y2 = cy + Math.sin(angPrev) * rPrev;
+
+        this.ctx.strokeStyle = `hsla(60, 100%, 55%, 0.55)`;
+        this.ctx.lineWidth = 1 / Math.sqrt(this.zoom);
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+      }
+    }
+  }
+
+  drawModularLattice() {
+    const modulus = Math.min(Math.floor(this.zoom / 5), 60);
+    const baseRadius = 160 / Math.sqrt(this.zoom);
+
+    for (let i = 0; i < modulus; i++) {
+      const angle = (i / modulus) * Math.PI * 2;
+      const seismicIndex = i % this.seismicData.length;
+      const magnitude = this.seismicData[seismicIndex].magnitude;
+      const pressure = this.weatherData[seismicIndex % this.weatherData.length].pressure;
+      const nodeShift = (pressure - 1013) * 0.4;
+      const r = baseRadius + nodeShift;
+
+      const x = this.centerX + Math.cos(angle) * r;
+      const y = this.centerY + Math.sin(angle) * r;
+
+      this.ctx.strokeStyle = `hsla(${magnitude * 70}, 80%, 55%, 0.85)`;
+      this.ctx.lineWidth = (1 + magnitude) / Math.sqrt(this.zoom);
+
+      for (let j = i + 1; j < modulus; j++) {
+        if (this.gcd(i+1, j+1) === 1) {
+          const angle2 = (j / modulus) * Math.PI * 2;
+          const x2 = this.centerX + Math.cos(angle2) * r;
+          const y2 = this.centerY + Math.sin(angle2) * r;
+          this.ctx.beginPath();
+          this.ctx.moveTo(x, y);
+          this.ctx.lineTo(x2, y2);
+          this.ctx.stroke();
+        }
+      }
+    }
+  }
+
+  drawQuantumFoam(softer) {
+    const bubbles = softer ? 30 : 60;
+    for (let i = 0; i < bubbles; i++) {
+      const x = Math.random() * this.canvas.width;
+      const y = Math.random() * this.canvas.height;
+      const baseR = Math.random() * 26 / this.zoom + 4;
+      const ent = this.solarStream ? (this.solarStream.kp_index || 0) / 9 : 0.4;
+      const radius = baseR * (1 + ent);
+      const g = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
+      g.addColorStop(0, `rgba(255,0,255,${0.12 + ent * 0.4})`);
+      g.addColorStop(1, "rgba(255,0,255,0)");
+      this.ctx.fillStyle = g;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+
+  drawEntropySingularity() {
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+    const maxRadius = 280;
+
+    const vol = this.calculateVolatility(this.marketData.map(d=>d.value));
+    const lastSeismic = this.seismicData[this.seismicData.length - 1];
+    const solarAct = this.solarStream ? (this.solarStream.kp_index || 0) * 10 : 40;
+    const entropy = (vol + lastSeismic.magnitude * 15 + solarAct) / this.constants.phi;
+
+    for (let r = maxRadius; r > 0; r -= 12) {
+      const hue = (r / maxRadius * 360 + this.time * 0.8) % 360;
+      const alpha = (1 - r / maxRadius) * 0.7;
+      this.ctx.strokeStyle = `hsla(${hue}, 80%, 55%, ${alpha})`;
+      this.ctx.lineWidth = 2.6;
+      this.ctx.beginPath();
+
+      for (let angle = 0; angle <= Math.PI * 2; angle += 0.06) {
+        const idx = Math.floor(angle * 10) % this.marketData.length;
+        const mNoise = this.marketData[idx].value - 100;
+        const pNoise = this.weatherData[idx % this.weatherData.length].pressure - 1013;
+        const noise = (mNoise * 0.25 + pNoise * 0.18 + entropy * 0.1);
+        const rad = r + noise;
+        const x = cx + Math.cos(angle) * rad;
+        const y = cy + Math.sin(angle) * rad;
+        if (angle === 0) this.ctx.moveTo(x, y);
+        else this.ctx.lineTo(x, y);
+      }
+
+      this.ctx.closePath();
+      this.ctx.stroke();
+    }
+  }
+
+  gcd(a,b){ return b ? this.gcd(b,a%b) : a; }
+
+  /* ---------- Overlay Layers ---------- */
+
+  drawRealityLayer() {
+    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+
+    if (this.displayMode === "minimal") {
+      this.drawSeismicWaves();
+      return;
+    }
+
+    if (this.modes.market)  this.drawMarketOverlay();
+    if (this.modes.weather) this.drawWeatherSystems();
+    if (this.modes.seismic) this.drawSeismicWaves();
+    if (this.modes.quantum && this.getDomain() === "quantum") this.drawQuantumStates();
+  }
+
+  drawMarketOverlay() {
+    const w = this.overlayCanvas.width;
+    const h = this.overlayCanvas.height;
+    const step = w / this.marketData.length;
+
+    this.overlayCtx.strokeStyle = "rgba(0,255,120,0.7)";
+    this.overlayCtx.lineWidth = 2;
+    this.overlayCtx.beginPath();
+
+    for (let i = 0; i < this.marketData.length; i++) {
+      const v = this.marketData[i].value;
+      const x = i * step;
+      const y = h * 0.5 - (v - 100) * 2;
+      if (i === 0) this.overlayCtx.moveTo(x, y);
+      else this.overlayCtx.lineTo(x, y);
+
+      const volHeight = this.marketData[i].volume / 1200000 * 80;
+      this.overlayCtx.fillStyle = "rgba(0,255,120,0.18)";
+      this.overlayCtx.fillRect(x, h - volHeight, step * 0.7, volHeight);
+    }
+    this.overlayCtx.stroke();
+  }
+
+  drawWeatherSystems() {
+    for (let i = 0; i < 5; i++) {
+      const x = (Math.sin(this.time * 0.001 + i) + 1) * this.overlayCanvas.width / 2;
+      const y = (Math.cos(this.time * 0.0013 + i * 1.8) + 1) * this.overlayCanvas.height / 2;
+      const data = this.weatherData[(i * 18) % this.weatherData.length];
+      const pressure = data.pressure;
+      const radius = Math.abs(pressure - 1013) * 4 + 30;
+      const g = this.overlayCtx.createRadialGradient(x, y, 0, x, y, radius);
+
+      if (pressure >= 1013) {
+        g.addColorStop(0, "rgba(255,80,80,0.45)");
+        g.addColorStop(1, "rgba(255,80,80,0)");
+      } else {
+        g.addColorStop(0, "rgba(80,120,255,0.45)");
+        g.addColorStop(1, "rgba(80,120,255,0)");
+      }
+
+      this.overlayCtx.fillStyle = g;
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(x, y, radius, 0, Math.PI * 2);
+      this.overlayCtx.fill();
+    }
+  }
+
+  drawSeismicWaves() {
+    const path = document.getElementById("seismicWave");
+    let d = "M 0 25";
+    const samples = this.seismicData.length;
+    const width = window.innerWidth;
+    for (let i = 0; i < samples; i++) {
+      const x = (i / (samples-1)) * width;
+      const mag = this.seismicData[i].magnitude;
+      const y = 25 - mag * 9;
+      d += ` L ${x} ${y}`;
+    }
+    path.setAttribute("d", d);
+  }
+
+  drawQuantumStates() {
+    const display = document.getElementById("quantumDisplay");
+    display.classList.add("visible");
+
+    const t = this.time * 0.02;
+    const amp0 = Math.cos(t);
+    const amp1 = Math.sin(t);
+
+    document.getElementById("qubit0").textContent = Math.abs(amp0).toFixed(2);
+    document.getElementById("qubit1").textContent = Math.abs(amp1).toFixed(2);
+
+    const ent = Math.abs(amp0 * amp1);
+    document.getElementById("entanglement").textContent = ent.toFixed(3);
+
+    const decoherence = this.solarStream ? (this.solarStream.xray_flux || 0) * 0.08 : 0.02;
+    const coherence = 100 * Math.exp(-decoherence * this.time * 0.001);
+    document.getElementById("coherence").textContent = Math.max(0, coherence).toFixed(1) + "%";
+
+    // Simple circuit overlay
+    const cx = this.overlayCanvas.width / 2;
+    const cy = this.overlayCanvas.height / 2;
+    this.overlayCtx.strokeStyle = "rgba(255,0,255,0.85)";
+    this.overlayCtx.lineWidth = 2;
+
+    this.overlayCtx.strokeRect(cx - 32, cy - 28, 64, 56);
+    this.overlayCtx.fillStyle = "rgba(255,0,255,0.25)";
+    this.overlayCtx.fillRect(cx - 32, cy - 28, 64, 56);
+
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(cx + 110, cy - 20, 9, 0, Math.PI * 2);
+    this.overlayCtx.stroke();
+
+    this.overlayCtx.beginPath();
+    this.overlayCtx.moveTo(cx + 110, cy - 11);
+    this.overlayCtx.lineTo(cx + 110, cy + 30);
+    this.overlayCtx.stroke();
+
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(cx + 110, cy + 30, 14, 0, Math.PI * 2);
+    this.overlayCtx.stroke();
+  }
+
+  /* ---------- Particles & Resonance ---------- */
+
+  initParticles() {
+    const count = 160;
+    for (let i=0;i<count;i++) {
+      this.particles.push({
+        x: Math.random() * this.canvas.width,
+        y: Math.random() * this.canvas.height,
+        vx: (Math.random()-0.5) * 0.4,
+        vy: (Math.random()-0.5) * 0.4,
+        size: Math.random()*2+1,
+        color: `hsla(${Math.random()*360},70%,60%,0.85)`,
+        type: ["market","weather","seismic"][Math.floor(Math.random()*3)]
+      });
+    }
+  }
+
+  drawParticles() {
+    if (this.displayMode === "poetic") return;
+
+    this.ctx.globalAlpha = 0.7;
+    for (const p of this.particles) {
+      if (this.gravityEnabled) {
+        const dx = this.mouseX - p.x;
+        const dy = this.mouseY - p.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const g = 0.05;
+        p.vx += dx / dist * g;
+        p.vy += dy / dist * g;
+      }
+
+      if (p.type === "market" && this.modes.market) {
+        const mv = this.marketData[this.marketData.length-1].value;
+        p.vy += (mv - 100) * 0.001;
+      }
+      if (p.type === "weather" && this.modes.weather) {
+        const wp = this.weatherData[this.weatherData.length-1].pressure;
+        p.vx += (wp - 1013) * 0.0007;
+      }
+      if (p.type === "seismic" && this.modes.seismic) {
+        const mag = this.seismicData[this.seismicData.length-1].magnitude;
+        p.vx += (Math.random()-0.5) * mag * 0.15;
+        p.vy += (Math.random()-0.5) * mag * 0.15;
+      }
+
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = this.canvas.width;
+      if (p.x > this.canvas.width) p.x = 0;
+      if (p.y < 0) p.y = this.canvas.height;
+      if (p.y > this.canvas.height) p.y = 0;
+
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+
+      this.ctx.fillStyle = p.color;
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, p.size / Math.sqrt(this.zoom), 0, Math.PI*2);
+      this.ctx.fill();
+    }
+    this.ctx.globalAlpha = 1;
+  }
+
+  createResonance(x,y) {
+    this.resonancePoints.push({x,y,radius:0,life:80});
+  }
+
+  drawResonance() {
+    this.ctx.lineWidth = 2;
+    this.resonancePoints = this.resonancePoints.filter(r => {
+      r.radius += 3;
+      r.life -= 2;
+      if (r.life <= 0) return false;
+      this.ctx.strokeStyle = `rgba(255,255,120,${r.life/80})`;
+      this.ctx.beginPath();
+      this.ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2);
+      this.ctx.stroke();
+      return true;
+    });
+  }
+
+  /* ---------- UI & Events ---------- */
+
+  updatePoetry() {
+    const domain = this.getDomain();
+    const list = this.poeticGrammars[domain];
+    const index = Math.floor(this.time / 260) % list.length;
+    document.getElementById("poeticGrammar").textContent = list[index];
+  }
+
+  updateInfoPanel() {
+    document.getElementById("zoomLevel").textContent = this.zoom.toFixed(1) + "x";
+    const domainNames = {
+      surface: "Surface Reality",
+      prime: "Prime Markets",
+      modular: "Modular Weather",
+      quantum: "Quantum Finance",
+      entropy: "Entropy Singularity"
+    };
+    document.getElementById("currentDomain").textContent = domainNames[this.getDomain()];
+    const realitySync = Math.min(100, Math.max(0, Math.log10(this.zoom) * 30));
+    document.getElementById("realitySync").textContent = realitySync.toFixed(0) + "%";
+  }
+
+  handleWheel(e) {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    this.targetZoom *= factor;
+    this.targetZoom = Math.max(1, Math.min(100000, this.targetZoom));
+    document.getElementById("zoomSlider").value = Math.log10(this.targetZoom) * 20;
+  }
+
+  handleMouseMove(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    this.mouseX = e.clientX - rect.left;
+    this.mouseY = e.clientY - rect.top;
+  }
+
+  handleClick(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    this.createResonance(x, y);
+  }
+
+  toggleAutoExplore() {
+    this.autoExploring = !this.autoExploring;
+    const btn = document.getElementById("btnAutoExplore");
+    btn.textContent = this.autoExploring ? "■ Stop Auto Explore" : "▶ Auto Explore";
+    btn.classList.toggle("active", this.autoExploring);
+  }
+
+  findResonance() {
+    for (let i=0;i<7;i++) {
+      this.createResonance(
+        Math.random()*this.canvas.width,
+        Math.random()*this.canvas.height
+      );
+    }
+  }
+
+  toggleGravity() {
+    this.gravityEnabled = !this.gravityEnabled;
+    const btn = document.getElementById("btnGravity");
+    btn.classList.toggle("active", this.gravityEnabled);
+  }
+
+  toggleMode(mode, value) {
+    this.modes[mode] = value;
+    if (mode === "quantum" && !value) {
+      document.getElementById("quantumDisplay").classList.remove("visible");
+    }
+  }
+
+  setDisplayMode(m) {
+    this.displayMode = m;
+
+    for (const id of ["modeFull","modeMinimal","modePoetic","modeOperator"]) {
+      document.getElementById(id).classList.remove("active");
+    }
+    const map = {
+      full: "modeFull",
+      minimal: "modeMinimal",
+      poetic: "modePoetic",
+      operator: "modeOperator"
+    };
+    document.getElementById(map[m]).classList.add("active");
+  }
+
+  toggleConstants() {
+    const el = document.getElementById("mathConstants");
+    el.style.display = (el.style.display === "block") ? "none" : "block";
+  }
+
+  showPrimeDatabase() {
+    const grid = document.getElementById("primeGrid");
+    grid.innerHTML = "";
+    this.primes.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "prime-number";
+      div.textContent = p;
+      div.onclick = () => {
+        this.targetZoom = p;
+        document.getElementById("zoomSlider").value = Math.log10(p) * 20;
+        this.closePrimeDatabase();
+      };
+      grid.appendChild(div);
+    });
+    document.getElementById("primeModal").style.display = "flex";
+  }
+
+  closePrimeDatabase() {
+    document.getElementById("primeModal").style.display = "none";
+  }
+
+  resetView() {
+    this.targetZoom = 1;
+    this.autoExploring = false;
+    document.getElementById("zoomSlider").value = 0;
+    document.getElementById("btnAutoExplore").textContent = "▶ Auto Explore";
+    document.getElementById("btnAutoExplore").classList.remove("active");
+    document.getElementById("quantumDisplay").classList.remove("visible");
+  }
+
+  /* ---------- Animation Loop ---------- */
+
+  animate() {
+    // Clear base canvas with slight trail
+    this.ctx.fillStyle = "rgba(0,0,0,0.18)";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Smooth zoom
+    this.zoom += (this.targetZoom - this.zoom) * 0.12;
+
+    // Auto-explore
+    if (this.autoExploring) {
+      this.targetZoom *= 1.004;
+      if (this.targetZoom > 40000) this.targetZoom = 1;
+    }
+
+    // Hybrid polling
+    if (this.time % 45 === 0) {
+      this.loadHybridStreams();
+    }
+
+    // Reality update & drawing
+    if (this.time % 4 === 0) {
+      this.updateRealityData();
+    }
+
+    this.drawBaseLayer();
+    this.drawRealityLayer();
+    this.drawParticles();
+    this.drawResonance();
+
+    // UI & poetry
+    this.updateInfoPanel();
+    this.updateOperatorIndicator();
+    this.updatePoetry();
+
+    this.time++;
+    requestAnimationFrame(() => this.animate());
+  }
+}
+
+/* ---------- Boot ---------- */
+const telescope = new RealityBridgeTelescope();
+</script>
+</body>
+</html>
