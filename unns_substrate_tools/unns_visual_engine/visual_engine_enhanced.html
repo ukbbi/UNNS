@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Visual Engine - Substrate Instrument</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 40px rgba(100, 126, 234, 0.8); }
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #ffd700;
+            margin-top: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .control-panel {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 300px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .control-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .control-group select option {
+            background: #333;
+        }
+
+        .value-display {
+            text-align: center;
+            margin-top: 0.3rem;
+            font-size: 1.1rem;
+            color: #00ff88;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 0.4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            color: #333;
+        }
+
+        .operator-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .operator-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .operator-toggle.enabled {
+            background: rgba(255, 215, 0, 0.2);
+            border-left: 3px solid #ffd700;
+        }
+
+        .operator-symbol {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-right: 0.5rem;
+        }
+
+        .operator-name {
+            flex: 1;
+            font-size: 0.85rem;
+        }
+
+        .operator-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #555;
+            transition: all 0.3s ease;
+        }
+
+        .operator-toggle.enabled .operator-status {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 120px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #canvas {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .info-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 320px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: #00ff88;
+        }
+
+        .invariant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            cursor: help;
+        }
+
+        .invariant-label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .invariant-value {
+            display: flex;
+            align-items: center;
+        }
+
+        .invariant-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+        }
+
+        .invariant-green { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .invariant-amber { background: #ffd700; box-shadow: 0 0 10px #ffd700; }
+        .invariant-red { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+
+        .operator-trace {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            color: #00ff88;
+        }
+
+        .explanation-box {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .sparkline {
+            width: 100%;
+            height: 60px;
+            margin-top: 0.5rem;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+            max-width: 250px;
+        }
+
+        .section-header {
+            font-size: 0.9rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UNNS VISUAL ENGINE</h1>
+        <div class="subtitle">SUBSTRATE INSTRUMENT — OPERATOR LABORATORY</div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-group">
+            <label>Seed (M)</label>
+            <input type="range" id="mSlider" min="1" max="100" value="7">
+            <div class="value-display" id="mValue">7</div>
+        </div>
+
+        <div class="control-group">
+            <label>Parameter (N)</label>
+            <input type="range" id="nSlider" min="1" max="100" value="13">
+            <div class="value-display" id="nValue">13</div>
+        </div>
+
+        <div class="control-group">
+            <label>Node Count</label>
+            <input type="range" id="nodeSlider" min="10" max="200" value="50">
+            <div class="value-display" id="nodeCount">50</div>
+        </div>
+
+        <div class="section-header">Operator Stack</div>
+        <div id="operatorToggles"></div>
+
+        <div class="section-header">Projection</div>
+        <div class="control-group">
+            <select id="projectionMode">
+                <option value="2d" selected>2D Abstract</option>
+                <option value="tau">τ-Geometry 3D</option>
+                <option value="collapse">Collapse View</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Rotation</label>
+            <input type="range" id="rotationSlider" min="0" max="360" value="45">
+            <div class="value-display" id="rotationValue">45°</div>
+        </div>
+
+        <div class="section-header">Audio</div>
+        <div class="control-group">
+            <select id="audioMode">
+                <option value="off" selected>Audio Off</option>
+                <option value="value">Follow Value</option>
+                <option value="structure">Follow Structure</option>
+                <option value="operator">Follow Operator</option>
+            </select>
+        </div>
+
+        <button class="btn" onclick="generateVisualization()">Regenerate</button>
+        <button class="btn" onclick="exportState()">Export JSON</button>
+        <button class="btn" id="tauFlowBtn" onclick="toggleTauFlow()">▶ Start τ-Flow</button>
+        <button class="btn" onclick="resetTauFlow()">⟳ Reset τ-Flow</button>
+        <button class="btn" onclick="toggleEvolution()">Evolution View</button>
+        <a class="btn" href="visual_engine_guide.html" target="_blank" rel="noopener" style="display: block; text-align: center; text-decoration: none;">📖 Open Guide</a>
+        
+        <div id="tauFlowStatus" style="display: none; margin-top: 1rem; padding: 0.5rem; background: rgba(255, 215, 0, 0.1); border-radius: 5px; text-align: center; font-size: 0.75rem; color: #ffd700; letter-spacing: 1px;">τ-FLOW READY</div>
+    </div>
+
+    <div class="info-panel">
+        <div class="section-header">Operator Trace</div>
+        <div class="operator-trace" id="operatorTrace">Awaiting execution...</div>
+
+        <div class="section-header">Invariant Diagnostics</div>
+        <div id="invariantDiagnostics"></div>
+
+        <div class="section-header">Structure Classification</div>
+        <div class="info-item">
+            <div class="info-label">Type</div>
+            <div class="info-value" id="structureType">—</div>
+        </div>
+
+        <div class="section-header">State Metrics</div>
+        <div class="info-item">
+            <div class="info-label">Entropy (Distribution)</div>
+            <div class="info-value" id="entropyValue">—</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Curvature</div>
+            <div class="info-value" id="curvatureValue">—</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Depth</div>
+            <div class="info-value" id="depthValue">—</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Survival Rate</div>
+            <div class="info-value" id="survivalValue">—</div>
+        </div>
+
+        <button class="btn" onclick="explainPattern()" style="margin-top: 1rem;">Why This Pattern?</button>
+        <div id="explanationBox"></div>
+
+        <div id="evolutionChart" style="display: none;">
+            <div class="section-header">τ-Flow Evolution</div>
+            <canvas class="sparkline" id="evolutionCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // UNNS Substrate Instrument
+        // Operator-driven recursive mathematical exploration
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth - 700;
+        canvas.height = window.innerHeight - 150;
+
+        // ============================================================
+        // CORE UNNS STATE & OPERATORS
+        // ============================================================
+
+        class UNNSState {
+            constructor(seed) {
+                this.seed = seed;
+                this.values = [seed];
+                this.entropy = 0;
+                this.curvature = 0;
+                this.depth = 0;
+                this.collapsed = false;
+                this.operatorHistory = [];
+                this.preCollapseCount = 1;
+            }
+
+            clone() {
+                const newState = new UNNSState(this.seed);
+                newState.values = [...this.values];
+                newState.entropy = this.entropy;
+                newState.curvature = this.curvature;
+                newState.depth = this.depth;
+                newState.collapsed = this.collapsed;
+                newState.operatorHistory = [...this.operatorHistory];
+                newState.survivedIndices = this.survivedIndices ? new Set(this.survivedIndices) : null;
+                newState.preCollapseCount = this.preCollapseCount;
+                return newState;
+            }
+        }
+
+        // Operator: Φ (Generate) - Recursive expansion
+        const PhiOperator = {
+            name: 'Generate',
+            symbol: 'Φ',
+            enabled: true,
+            apply: function(state, param) {
+                const newState = state.clone();
+                const n = param || 10;
+                
+                for (let i = 0; i < n; i++) {
+                    const prev = newState.values[newState.values.length - 1];
+                    const next = (prev * 1.618033988749895) + (state.seed * Math.sin(i * 0.1));
+                    newState.values.push(next);
+                }
+                
+                newState.depth++;
+                newState.operatorHistory.push('Φ');
+                return newState;
+            }
+        };
+
+        // Operator: Ψ (Normalize) - Structural constraints
+        const PsiOperator = {
+            name: 'Normalize',
+            symbol: 'Ψ',
+            enabled: true,
+            apply: function(state) {
+                const newState = state.clone();
+                const max = Math.max(...newState.values.map(Math.abs));
+                
+                if (max > 0) {
+                    newState.values = newState.values.map(v => (v / max) * 100);
+                }
+                
+                newState.operatorHistory.push('Ψ');
+                return newState;
+            }
+        };
+
+        // Operator: τ (Curvature) - Damping / distortion
+        const TauOperator = {
+            name: 'Curvature',
+            symbol: 'τ',
+            enabled: true,
+            apply: function(state) {
+                const newState = state.clone();
+                const variance = calculateVariance(newState.values);
+                newState.curvature = Math.log(1 + variance) / 10;
+                
+                // Apply curvature damping
+                newState.values = newState.values.map((v, i) => {
+                    const dampFactor = Math.exp(-newState.curvature * i * 0.1);
+                    return v * dampFactor;
+                });
+                
+                newState.operatorHistory.push('τ');
+                return newState;
+            }
+        };
+
+        // Operator: XII (Collapse) - Survival filtering
+        const CollapseOperator = {
+            name: 'Collapse',
+            symbol: 'XII',
+            enabled: true,
+            apply: function(state) {
+                const newState = state.clone();
+                
+                // Store pre-collapse count
+                newState.preCollapseCount = newState.values.length;
+                
+                const mean = newState.values.reduce((a, b) => a + b, 0) / newState.values.length;
+                const threshold = Math.abs(mean) * 0.3;
+                
+                const survived = [];
+                const survivedIndices = new Set();
+                newState.values.forEach((v, idx) => {
+                    if (Math.abs(v) > threshold) {
+                        survived.push(v);
+                        survivedIndices.add(idx);
+                    }
+                });
+                
+                newState.survivedIndices = survivedIndices;
+                
+                if (survived.length > 3) {
+                    newState.values = survived;
+                } else {
+                    newState.collapsed = true;
+                }
+                
+                newState.operatorHistory.push('XII');
+                return newState;
+            }
+        };
+
+        const operators = [PhiOperator, PsiOperator, TauOperator, CollapseOperator];
+
+        // ============================================================
+        // INVARIANT DIAGNOSTICS SYSTEM
+        // ============================================================
+
+        function calculateInvariants(stateBefore, stateAfter, operators) {
+            const varBefore = calculateVariance(stateBefore.values);
+            const varAfter = calculateVariance(stateAfter.values);
+            
+            // Calculate recursive coherence via difference smoothness
+            const diffs = [];
+            for (let i = 0; i < stateAfter.values.length - 1; i++) {
+                diffs.push(stateAfter.values[i + 1] - stateAfter.values[i]);
+            }
+            const diffVariance = calculateVariance(diffs);
+            
+            // Survival ratio: post-collapse / pre-collapse
+            const survivalRatio = stateAfter.preCollapseCount > 0 ? 
+                stateAfter.values.length / stateAfter.preCollapseCount : 1.0;
+            
+            return {
+                tauStability: varBefore > 0 ? varAfter / varBefore : 1,
+                survivalRatio: survivalRatio,
+                coherence: 1 / (1 + diffVariance * 0.01), // Measures recursive smoothness
+                commutativity: calculateCommutativity(stateBefore, operators),
+                resonance: calculateResonance(stateAfter.values)
+            };
+        }
+
+        function calculateVariance(values) {
+            if (values.length === 0) return 0;
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            return values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+        }
+
+        function shannonEntropy(values) {
+            if (values.length === 0) return 0;
+            
+            // Create histogram with 10 bins
+            const bins = 10;
+            const hist = new Array(bins).fill(0);
+            
+            // Find range
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min || 1;
+            
+            // Populate histogram
+            values.forEach(v => {
+                const i = Math.floor(((v - min) / range) * (bins - 0.001));
+                const binIndex = Math.max(0, Math.min(bins - 1, i));
+                hist[binIndex]++;
+            });
+            
+            // Calculate Shannon entropy
+            return hist.reduce((H, count) => {
+                if (count === 0) return H;
+                const p = count / values.length;
+                return H - p * Math.log2(p);
+            }, 0);
+        }
+
+        function calculateCommutativity(state, operators) {
+            // Simplified: measure operator order sensitivity
+            const enabled = operators.filter(op => op.enabled);
+            if (enabled.length < 2) return 1;
+            
+            // Apply in order vs reverse
+            let s1 = state.clone();
+            let s2 = state.clone();
+            
+            enabled.forEach(op => { s1 = op.apply(s1); });
+            [...enabled].reverse().forEach(op => { s2 = op.apply(s2); });
+            
+            const diff = s1.values.reduce((sum, v, i) => {
+                return sum + Math.abs(v - (s2.values[i] || 0));
+            }, 0);
+            
+            return Math.exp(-diff / 1000);
+        }
+
+        function calculateResonance(values) {
+            if (values.length < 3) return 0;
+            
+            // FFT-like resonance detection (simplified)
+            let maxCorr = 0;
+            for (let lag = 1; lag < Math.min(values.length / 2, 10); lag++) {
+                let corr = 0;
+                for (let i = 0; i < values.length - lag; i++) {
+                    corr += values[i] * values[i + lag];
+                }
+                maxCorr = Math.max(maxCorr, Math.abs(corr));
+            }
+            
+            return Math.tanh(maxCorr / 10000);
+        }
+
+        function classifyInvariant(name, value) {
+            const thresholds = {
+                tauStability: { green: [0.8, 1.2], amber: [0.5, 1.5] },
+                survivalRatio: { green: [0.7, 1.0], amber: [0.4, 1.0] },
+                coherence: { green: [0.7, 1.0], amber: [0.4, 0.7] },
+                commutativity: { green: [0.8, 1.0], amber: [0.5, 0.8] },
+                resonance: { green: [0.5, 1.0], amber: [0.2, 0.5] }
+            };
+            
+            const t = thresholds[name];
+            if (!t) return 'amber';
+            
+            if (value >= t.green[0] && value <= t.green[1]) return 'green';
+            if (value >= t.amber[0] && value <= t.amber[1]) return 'amber';
+            return 'red';
+        }
+
+        // ============================================================
+        // τ-FLOW PHASE SYSTEM
+        // ============================================================
+
+        function classifyTauPhase(invariants) {
+            if (invariants.survivalRatio < 0.3) return 'collapse';
+            if (invariants.tauStability < 0.7) return 'emergence';
+            if (invariants.tauStability > 1.2) return 'overcurved';
+            return 'stable';
+        }
+
+        const tauEvents = [];
+
+        function recordTauEvent(step, type, detail) {
+            tauEvents.push({ step, type, detail });
+        }
+
+        // ============================================================
+        // STRUCTURE CLASSIFIER
+        // ============================================================
+
+        function classifyStructure(state, invariants) {
+            if (state.collapsed) return 'Collapsed';
+            
+            if (invariants.resonance > 0.6 && invariants.tauStability > 0.8) {
+                return 'Ordered Recursive';
+            }
+            
+            if (invariants.tauStability > 0.7 && state.curvature < 2) {
+                return 'Stable Curved';
+            }
+            
+            if (invariants.survivalRatio < 0.5 || invariants.commutativity < 0.5) {
+                return 'Emergent Transitional';
+            }
+            
+            if (invariants.coherence < 0.3) {
+                return 'Chaotic';
+            }
+            
+            return 'Stable Curved';
+        }
+
+        // ============================================================
+        // NODE & CONNECTION SYSTEM
+        // ============================================================
+
+        class Node {
+            constructor(x, y, value, stateRef, index) {
+                this.x = x;
+                this.y = y;
+                this.baseX = x;
+                this.baseY = y;
+                this.value = value;
+                this.stateRef = stateRef;
+                this.index = index;
+                this.survivedCollapse = true;
+                this.anomaly = false;
+                this.z = 0;
+                this.radius = 8;
+                this.color = 'rgba(102, 126, 234, 0.9)';
+            }
+
+            update() {
+                this.x = this.baseX + Math.sin(time * 0.02 + this.index * 0.1) * 3;
+                this.y = this.baseY + Math.cos(time * 0.02 + this.index * 0.1) * 3;
+            }
+
+            draw() {
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 1.5);
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(0.5, this.color.replace('0.9', '0.5'));
+                gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add glow
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                if (this.anomaly) {
+                    ctx.strokeStyle = '#ff4444';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        class Connection {
+            constructor(node1, node2, strength) {
+                this.node1 = node1;
+                this.node2 = node2;
+                this.strength = strength;
+            }
+
+            draw() {
+                const alpha = Math.min(this.strength * 0.5, 0.4);
+                ctx.beginPath();
+                ctx.moveTo(this.node1.x, this.node1.y);
+                ctx.lineTo(this.node2.x, this.node2.y);
+                ctx.strokeStyle = `rgba(102, 126, 234, ${alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        // ============================================================
+        // τ-GEOMETRY 3D PROJECTION
+        // ============================================================
+
+        function tauField(node, state, evolutionTime) {
+            // τ as evolving field, not static scalar
+            // evolutionTime is tauTime during flow, animation time otherwise
+            const base = state.curvature * 80;
+            const wave = Math.sin(evolutionTime * 0.03 + node.index * 0.2);
+            const entropyShift = Math.log1p(Math.abs(node.value));
+            return base * wave * entropyShift;
+        }
+
+        function calculateTauGeometry(node, state) {
+            // Initial τ-curvature pressure (will be animated)
+            const localEntropy = Math.abs(node.value - state.values[0]);
+            node.z = state.curvature * Math.sin(localEntropy * 0.1) * 80;
+            
+            if (state.collapsed) {
+                node.z *= 0.1; // Collapse forces z → 0
+            }
+            
+            return node;
+        }
+
+        function project3D(node, rotX, rotY) {
+            const x = node.baseX - canvas.width / 2;
+            const y = node.baseY - canvas.height / 2;
+            const z = node.z;
+            
+            // Rotation
+            const cosX = Math.cos(rotX);
+            const sinX = Math.sin(rotX);
+            const cosY = Math.cos(rotY);
+            const sinY = Math.sin(rotY);
+            
+            const y1 = y * cosX - z * sinX;
+            const z1 = y * sinX + z * cosX;
+            const x2 = x * cosY + z1 * sinY;
+            const z2 = -x * sinY + z1 * cosY;
+            
+            // Perspective
+            const perspective = 600;
+            const scale = perspective / (perspective + z2);
+            
+            return {
+                x: x2 * scale + canvas.width / 2,
+                y: y1 * scale + canvas.height / 2,
+                scale: scale
+            };
+        }
+
+        // ============================================================
+        // AUDIO SYNTHESIS
+        // ============================================================
+
+        let audioContext = null;
+        let oscillators = [];
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playStructuralAudio(state, invariants, mode) {
+            stopAudio();
+            
+            if (!audioContext || mode === 'off') return;
+            
+            let frequencies = [];
+            
+            if (mode === 'value') {
+                // Audio follows raw values
+                const baseFreq = 200;
+                state.values.slice(0, 5).forEach((v, i) => {
+                    const normalized = Math.abs(v) / 100;
+                    frequencies.push(baseFreq + normalized * 400);
+                });
+            } else if (mode === 'structure') {
+                // Audio follows invariants
+                const baseFreq = 200 + (invariants.resonance * 400);
+                const damping = Math.exp(-state.curvature * 0.5);
+                
+                state.values.slice(0, 5).forEach((v, i) => {
+                    frequencies.push(baseFreq * (1 + i * 0.5) * damping);
+                });
+            } else if (mode === 'operator') {
+                // Audio follows operator stack depth and composition
+                const baseFreq = 150;
+                const opCount = state.operatorHistory.length;
+                
+                // Each operator contributes a harmonic
+                state.operatorHistory.slice(0, 5).forEach((op, i) => {
+                    const opFreq = {
+                        'Φ': 1.618, // Golden ratio
+                        'Ψ': 1.414, // √2
+                        'τ': 1.732, // √3
+                        'XII': 2.0  // Octave
+                    }[op] || 1.0;
+                    
+                    frequencies.push(baseFreq * opFreq * (i + 1));
+                });
+            }
+            
+            // Generate audio for calculated frequencies
+            frequencies.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                const oscType = mode === 'structure' && invariants.resonance > 0.5 ? 'sine' : 
+                               mode === 'operator' ? 'square' : 'triangle';
+                osc.type = oscType;
+                osc.frequency.value = freq;
+                
+                const gainValue = mode === 'operator' ? 0.03 : 0.05;
+                gain.gain.value = gainValue * (mode === 'structure' ? invariants.survivalRatio : 1.0);
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                osc.start();
+                oscillators.push({ osc, gain });
+            });
+        }
+
+        function stopAudio() {
+            oscillators.forEach(({ osc, gain }) => {
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+                osc.stop(audioContext.currentTime + 0.5);
+            });
+            oscillators = [];
+        }
+
+        // ============================================================
+        // RUN HISTORY & EVOLUTION
+        // ============================================================
+
+        const runHistory = [];
+        const maxHistory = 50;
+        
+        // τ-Flow Evolution System
+        const tauFlowHistory = [];
+        const MAX_TAU_STEPS = 300;
+        let tauTime = 0;
+        let tauFlowInterval = null;
+        let tauFlowActive = false;
+
+        function recordRun(state, invariants, classification) {
+            runHistory.push({
+                timestamp: Date.now(),
+                operatorStack: state.operatorHistory,
+                invariants: { ...invariants },
+                classification: classification,
+                entropy: state.entropy,
+                curvature: state.curvature
+            });
+            
+            if (runHistory.length > maxHistory) {
+                runHistory.shift();
+            }
+        }
+        
+        function tauFlowStep() {
+            if (!currentState || currentState.collapsed) {
+                stopTauFlow();
+                return;
+            }
+            
+            const prevState = currentState.clone();
+            
+            // Classify τ-phase
+            const prevInvariants = calculateInvariants(prevState, currentState, operators);
+            const tauPhase = classifyTauPhase(prevInvariants);
+            
+            // Operator gating based on τ-phase
+            const enabledOps = [];
+            operators.forEach(op => {
+                if (!op.enabled) return;
+                
+                if (op.symbol === 'Φ' && tauPhase === 'emergence') enabledOps.push(op);
+                else if (op.symbol === 'Ψ' && tauPhase === 'stable') enabledOps.push(op);
+                else if (op.symbol === 'τ') enabledOps.push(op); // Always
+                else if (op.symbol === 'XII' && tauPhase === 'collapse') enabledOps.push(op);
+                else if (tauPhase === 'stable' || tauPhase === 'overcurved') enabledOps.push(op);
+            });
+            
+            // Apply gated operators iteratively
+            enabledOps.forEach(op => {
+                currentState = op.apply(currentState, 10);
+            });
+            
+            // Evolve τ as dynamic field with damping and noise
+            const lambda = 0.05;
+            const epsilon = 0.02;
+            currentState.curvature = 
+                currentState.curvature * Math.exp(-lambda * currentState.entropy)
+                + epsilon * (Math.random() - 0.5);
+            
+            // Recompute diagnostics
+            currentState.entropy = shannonEntropy(currentState.values);
+            const invariants = calculateInvariants(prevState, currentState, operators);
+            const classification = classifyStructure(currentState, invariants);
+            
+            currentInvariants = invariants;
+            currentClassification = classification;
+            
+            // Structural effects of τ
+            applyTauStructuralEffects(currentState, invariants, tauPhase);
+            
+            // Record τ-flow state
+            tauFlowHistory.push({
+                step: tauTime,
+                state: currentState.clone(),
+                invariants: { ...invariants },
+                classification: classification,
+                phase: tauPhase,
+                topology: { nodes: nodes.length, edges: connections.length }
+            });
+            
+            if (tauFlowHistory.length > MAX_TAU_STEPS) {
+                tauFlowHistory.shift();
+            }
+            
+            // Update UI
+            updateInvariantDisplay(invariants);
+            updateMetrics(currentState, invariants);
+            document.getElementById('structureType').textContent = classification;
+            document.getElementById('tauFlowStatus').textContent = `τ-FLOW ${tauPhase.toUpperCase()} · STEP ${tauTime}`;
+            
+            // Update evolution chart if visible
+            if (document.getElementById('evolutionChart').style.display === 'block') {
+                drawEvolutionChart();
+            }
+            
+            // Update nodes to reference evolving state
+            updateNodesFromState(currentState);
+            
+            tauTime++;
+            
+            // Check for collapse
+            if (currentState.collapsed) {
+                stopTauFlow();
+                recordTauEvent(tauTime, 'collapse', 'XII operator triggered');
+                document.getElementById('tauFlowStatus').textContent = `τ-FLOW TERMINATED (XII) · STEP ${tauTime}`;
+            }
+        }
+        
+        function applyTauStructuralEffects(state, invariants, phase) {
+            // τ-driven node survival/death
+            const tauPressureThreshold = 2.5;
+            const nodesToRemove = [];
+            
+            nodes.forEach((node, i) => {
+                const tauPressure = Math.abs(node.z) / 80 + state.curvature;
+                if (tauPressure > tauPressureThreshold && nodes.length > 5) {
+                    nodesToRemove.push(i);
+                }
+            });
+            
+            if (nodesToRemove.length > 0) {
+                nodesToRemove.reverse().forEach(i => {
+                    nodes.splice(i, 1);
+                });
+                recordTauEvent(tauTime, 'node-death', `${nodesToRemove.length} nodes removed`);
+            }
+            
+            // τ-driven node spawning
+            if (phase === 'emergence' && nodes.length < 100 && Math.random() < 0.3) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 150 + Math.random() * 200;
+                const x = canvas.width / 2 + Math.cos(angle) * radius;
+                const y = canvas.height / 2 + Math.sin(angle) * radius;
+                const value = state.values[Math.floor(Math.random() * state.values.length)];
+                const newNode = new Node(x, y, value, state, nodes.length);
+                nodes.push(newNode);
+                recordTauEvent(tauTime, 'node-birth', 'Emergence phase spawn');
+            }
+            
+            // τ-driven edge rewiring
+            const edgesToRemove = [];
+            connections.forEach((conn, i) => {
+                const tauDamping = Math.exp(-state.curvature * 0.5);
+                conn.strength *= tauDamping;
+                
+                if (conn.strength < 0.05) {
+                    edgesToRemove.push(i);
+                }
+            });
+            
+            edgesToRemove.reverse().forEach(i => {
+                connections.splice(i, 1);
+            });
+            
+            // Rebuild connections if needed
+            if (connections.length < nodes.length * 0.5 && nodes.length > 1) {
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < Math.min(i + 5, nodes.length); j++) {
+                        const diff = Math.abs(nodes[i].value - nodes[j].value);
+                        const strength = Math.exp(-diff / 50 - state.curvature * 0.1);
+                        if (strength > 0.1) {
+                            connections.push(new Connection(nodes[i], nodes[j], strength));
+                        }
+                    }
+                }
+            }
+        }
+        
+        function startTauFlow() {
+            if (tauFlowActive) return;
+            
+            tauFlowActive = true;
+            tauTime = 0;
+            tauFlowHistory.length = 0;
+            
+            document.getElementById('tauFlowBtn').textContent = '⏸ Pause τ-Flow';
+            document.getElementById('tauFlowBtn').classList.add('active');
+            document.getElementById('tauFlowStatus').style.display = 'block';
+            
+            // τ-Flow runs at 5 Hz (200ms interval)
+            tauFlowInterval = setInterval(tauFlowStep, 200);
+        }
+        
+        function stopTauFlow() {
+            if (!tauFlowActive) return;
+            
+            tauFlowActive = false;
+            
+            if (tauFlowInterval) {
+                clearInterval(tauFlowInterval);
+                tauFlowInterval = null;
+            }
+            
+            document.getElementById('tauFlowBtn').textContent = '▶ Start τ-Flow';
+            document.getElementById('tauFlowBtn').classList.remove('active');
+        }
+        
+        function toggleTauFlow() {
+            if (tauFlowActive) {
+                stopTauFlow();
+            } else {
+                startTauFlow();
+            }
+        }
+        
+        function resetTauFlow() {
+            stopTauFlow();
+            tauTime = 0;
+            tauFlowHistory.length = 0;
+            tauEvents.length = 0;
+            generateVisualization();
+            document.getElementById('tauFlowStatus').textContent = 'τ-FLOW READY';
+        }
+        
+        function updateNodesFromState(state) {
+            const projectionMode = document.getElementById('projectionMode').value;
+            
+            nodes.forEach((node, i) => {
+                const valueIndex = i % state.values.length;
+                node.value = state.values[valueIndex];
+                
+                // τ-driven position drift (only in τ-geometry mode during flow)
+                if (tauFlowActive && projectionMode === 'tau') {
+                    const tauGradient = state.curvature * 0.5;
+                    const angleToCenter = Math.atan2(
+                        canvas.height / 2 - node.baseY,
+                        canvas.width / 2 - node.baseX
+                    );
+                    
+                    // Nodes drift toward/away from center based on τ
+                    const driftMagnitude = tauGradient * (state.curvature > 1 ? -1 : 1);
+                    node.baseX += Math.cos(angleToCenter) * driftMagnitude;
+                    node.baseY += Math.sin(angleToCenter) * driftMagnitude;
+                    
+                    // Keep nodes on canvas
+                    node.baseX = Math.max(50, Math.min(canvas.width - 50, node.baseX));
+                    node.baseY = Math.max(50, Math.min(canvas.height - 50, node.baseY));
+                }
+                
+                // Update τ-geometry from evolving state
+                if (projectionMode === 'tau') {
+                    const localEntropy = Math.abs(node.value - state.values[0]);
+                    node.z = state.curvature * Math.sin(localEntropy * 0.1) * 80;
+                    if (state.collapsed) {
+                        node.z *= 0.1;
+                    }
+                }
+            });
+        }
+
+        function toggleEvolution() {
+            const chart = document.getElementById('evolutionChart');
+            const display = chart.style.display === 'none' ? 'block' : 'none';
+            chart.style.display = display;
+            
+            if (display === 'block') {
+                drawEvolutionChart();
+            }
+        }
+
+        function drawEvolutionChart() {
+            const canvas = document.getElementById('evolutionCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Sync canvas resolution with CSS size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Use τ-flow history if active, otherwise run history
+            const history = tauFlowHistory.length > 0 ? tauFlowHistory : runHistory;
+            
+            if (history.length < 2) {
+                ctx.fillStyle = '#888';
+                ctx.font = '10px monospace';
+                ctx.fillText('Awaiting τ-flow data...', 10, h / 2);
+                return;
+            }
+            
+            // Draw phase bands (background)
+            if (tauFlowHistory.length > 0) {
+                const phaseColors = {
+                    'emergence': 'rgba(100, 200, 255, 0.1)',
+                    'stable': 'rgba(0, 255, 136, 0.1)',
+                    'overcurved': 'rgba(255, 200, 0, 0.1)',
+                    'collapse': 'rgba(255, 68, 68, 0.2)'
+                };
+                
+                let currentPhase = tauFlowHistory[0].phase;
+                let phaseStart = 0;
+                
+                tauFlowHistory.forEach((entry, i) => {
+                    if (entry.phase !== currentPhase || i === tauFlowHistory.length - 1) {
+                        const x1 = (phaseStart / (tauFlowHistory.length - 1)) * w;
+                        const x2 = (i / (tauFlowHistory.length - 1)) * w;
+                        
+                        ctx.fillStyle = phaseColors[currentPhase] || 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillRect(x1, 0, x2 - x1, h);
+                        
+                        currentPhase = entry.phase;
+                        phaseStart = i;
+                    }
+                });
+            }
+            
+            // Multi-invariant plot
+            const invariantKeys = ['tauStability', 'survivalRatio', 'coherence'];
+            const colors = ['#00ff88', '#ffd700', '#ff6b6b'];
+            
+            invariantKeys.forEach((key, idx) => {
+                const values = history.map(r => r.invariants[key]);
+                const max = Math.max(...values, 1);
+                const min = Math.min(...values, 0);
+                const range = max - min || 1;
+                
+                ctx.strokeStyle = colors[idx];
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                
+                values.forEach((v, i) => {
+                    const x = (i / (values.length - 1)) * w;
+                    const y = h - ((v - min) / range) * (h - 20) - 10;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+            });
+            
+            ctx.globalAlpha = 1.0;
+            
+            // Event markers
+            if (tauFlowHistory.length > 0) {
+                tauEvents.forEach(event => {
+                    if (event.step < tauFlowHistory.length) {
+                        const x = (event.step / (tauFlowHistory.length - 1)) * w;
+                        
+                        ctx.strokeStyle = event.type === 'collapse' ? '#ff4444' : 
+                                         event.type === 'node-death' ? '#ff8800' : '#44ff88';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([2, 2]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, h);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                });
+            }
+            
+            // Current phase label
+            if (tauFlowHistory.length > 0) {
+                const current = tauFlowHistory[tauFlowHistory.length - 1];
+                ctx.font = 'bold 9px monospace';
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText(current.phase.toUpperCase(), 5, 12);
+                
+                // Topology info
+                if (current.topology) {
+                    ctx.font = '8px monospace';
+                    ctx.fillStyle = '#888';
+                    ctx.fillText(`N:${current.topology.nodes} E:${current.topology.edges}`, 5, h - 4);
+                }
+            }
+            
+            // Legend
+            ctx.font = '8px monospace';
+            const legendY = h - 14;
+            invariantKeys.forEach((key, idx) => {
+                ctx.fillStyle = colors[idx];
+                const x = 5 + idx * 80;
+                ctx.fillText(key.slice(0, 7), x, legendY);
+            });
+        }
+
+        // ============================================================
+        // EXPLANATION GENERATOR
+        // ============================================================
+
+        function explainPattern() {
+            if (!currentState || !currentInvariants) return;
+            
+            const box = document.getElementById('explanationBox');
+            
+            const activeOps = operators.filter(op => op.enabled).map(op => op.symbol).join(' → ');
+            const dominantInvariant = Object.entries(currentInvariants)
+                .reduce((a, b) => Math.abs(b[1]) > Math.abs(a[1]) ? b : a)[0];
+            
+            let explanation = `<strong>Active Operators:</strong> ${activeOps}<br><br>`;
+            explanation += `<strong>Dominant Invariant:</strong> ${dominantInvariant}<br><br>`;
+            
+            if (currentState.collapsed) {
+                explanation += `<strong>Collapse occurred</strong> because the XII operator filtered out values below the variance threshold, leaving only seed-level structure.`;
+            } else if (currentInvariants.resonance > 0.6) {
+                explanation += `<strong>Resonance detected</strong> - the sequence exhibits harmonic patterns due to Φ expansion and τ damping creating periodic structure.`;
+            } else if (currentInvariants.tauStability < 0.5) {
+                explanation += `<strong>High curvature instability</strong> - τ operator introduced significant damping, reducing variance and compressing the value range.`;
+            } else {
+                explanation += `<strong>Stable recursive structure</strong> - operators produced balanced expansion with controlled variance.`;
+            }
+            
+            explanation += `<br><br><strong>Classification:</strong> ${currentClassification}`;
+            
+            box.innerHTML = `<div class="explanation-box">${explanation}</div>`;
+        }
+
+        // ============================================================
+        // VISUALIZATION GENERATION
+        // ============================================================
+
+        let nodes = [];
+        let connections = [];
+        let time = 0;
+        let animationId = null;
+        let currentState = null;
+        let currentInvariants = null;
+        let currentClassification = '';
+
+        function generateVisualization() {
+            // Stop any active τ-flow
+            stopTauFlow();
+            
+            // Stop animation
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            // Get parameters
+            const m = parseInt(document.getElementById('mSlider').value);
+            const n = parseInt(document.getElementById('nSlider').value);
+            const nodeCount = parseInt(document.getElementById('nodeSlider').value);
+            
+            // Initialize state
+            let state = new UNNSState(m);
+            const initialState = state.clone();
+            
+            // Apply enabled operators
+            const enabledOps = operators.filter(op => op.enabled);
+            enabledOps.forEach(op => {
+                state = op.apply(state, n);
+            });
+            
+            // Calculate entropy using Shannon distribution entropy
+            state.entropy = shannonEntropy(state.values);
+            
+            // Calculate invariants
+            const invariants = calculateInvariants(initialState, state, operators);
+            currentInvariants = invariants;
+            
+            // Classify structure
+            const classification = classifyStructure(state, invariants);
+            currentClassification = classification;
+            currentState = state;
+            
+            // Record run
+            recordRun(state, invariants, classification);
+            
+            // Update evolution view if visible
+            if (document.getElementById('evolutionChart').style.display === 'block') {
+                drawEvolutionChart();
+            }
+            
+            // Generate nodes
+            nodes = [];
+            const maxNodes = Math.min(state.values.length, nodeCount);
+            
+            // Ensure minimum nodes for visibility
+            const actualNodeCount = Math.max(maxNodes, 5);
+            
+            for (let i = 0; i < actualNodeCount; i++) {
+                const angle = (i / actualNodeCount) * Math.PI * 2;
+                const radius = 150 + i * 5;
+                const x = canvas.width / 2 + Math.cos(angle) * radius;
+                const y = canvas.height / 2 + Math.sin(angle) * radius;
+                
+                // Use modulo to cycle through available values
+                const valueIndex = i % state.values.length;
+                const value = state.values[valueIndex];
+                
+                const node = new Node(x, y, value, state, i);
+                
+                // Track if this node survived collapse
+                if (state.survivedIndices && state.survivedIndices.has(valueIndex)) {
+                    node.survivedCollapse = true;
+                } else if (!state.survivedIndices) {
+                    node.survivedCollapse = true; // No collapse occurred
+                } else {
+                    node.survivedCollapse = false;
+                }
+                
+                // Apply τ-geometry
+                const projectionMode = document.getElementById('projectionMode').value;
+                if (projectionMode === 'tau') {
+                    calculateTauGeometry(node, state);
+                }
+                
+                // Mark anomalies
+                const mean = state.values.reduce((a, b) => a + b, 0) / state.values.length;
+                const stdDev = Math.sqrt(calculateVariance(state.values));
+                if (Math.abs(node.value - mean) > 2 * stdDev) {
+                    node.anomaly = true;
+                    node.color = 'rgba(255, 68, 68, 0.8)';
+                }
+                
+                nodes.push(node);
+            }
+            
+            // Generate connections
+            connections = [];
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < Math.min(i + 5, nodes.length); j++) {
+                    const diff = Math.abs(nodes[i].value - nodes[j].value);
+                    const strength = Math.exp(-diff / 100);
+                    connections.push(new Connection(nodes[i], nodes[j], strength));
+                }
+            }
+            
+            // Update UI
+            updateOperatorTrace(state);
+            updateInvariantDisplay(invariants);
+            updateMetrics(state, invariants);
+            document.getElementById('structureType').textContent = classification;
+            
+            // Audio
+            const audioMode = document.getElementById('audioMode').value;
+            if (audioMode !== 'off') {
+                initAudio();
+                playStructuralAudio(state, invariants, audioMode);
+            } else {
+                stopAudio();
+            }
+            
+            // Start animation
+            animate();
+        }
+
+        function updateOperatorTrace(state) {
+            const trace = state.operatorHistory.join(' → ') || 'No operators applied';
+            document.getElementById('operatorTrace').textContent = trace;
+        }
+
+        function updateInvariantDisplay(invariants) {
+            const container = document.getElementById('invariantDiagnostics');
+            container.innerHTML = '';
+            
+            const tooltips = {
+                tauStability: 'Ratio of variance before/after τ operator. Green: stable damping (0.8-1.2).',
+                survivalRatio: 'Fraction of values surviving XII collapse. Green: minimal loss (≥70%).',
+                coherence: 'Recursive smoothness via difference variance. Green: smooth progression (≥0.7).',
+                commutativity: 'Order-independence of operator stack. Green: commutative (≥0.8).',
+                resonance: 'Harmonic correlation in value sequence. Green: strong periodicity (≥0.5).'
+            };
+            
+            Object.entries(invariants).forEach(([name, value]) => {
+                const classification = classifyInvariant(name, value);
+                const item = document.createElement('div');
+                item.className = 'invariant-item';
+                item.title = tooltips[name];
+                
+                item.innerHTML = `
+                    <span class="invariant-label">${name}</span>
+                    <span class="invariant-value">
+                        ${value.toFixed(3)}
+                        <span class="invariant-indicator invariant-${classification}"></span>
+                    </span>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        function updateMetrics(state, invariants) {
+            document.getElementById('entropyValue').textContent = state.entropy.toFixed(3);
+            document.getElementById('curvatureValue').textContent = state.curvature.toFixed(3);
+            document.getElementById('depthValue').textContent = state.depth;
+            document.getElementById('survivalValue').textContent = (invariants.survivalRatio * 100).toFixed(1) + '%';
+        }
+
+        // ============================================================
+        // ANIMATION LOOP
+        // ============================================================
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const projectionMode = document.getElementById('projectionMode').value;
+            const rotX = parseInt(document.getElementById('rotationSlider').value) * 0.01;
+            const rotY = rotX * 0.5;
+            
+            if (projectionMode === 'tau') {
+                // Animate τ field independently
+                const evolutionTime = tauFlowActive ? tauTime : time;
+                
+                nodes.forEach(node => {
+                    if (currentState) {
+                        node.z = tauField(node, currentState, evolutionTime);
+                    }
+                });
+                
+                // 3D projection with τ-geometry
+                const sortedNodes = [...nodes].sort((a, b) => b.z - a.z);
+                
+                // Depth-sort connections
+                const sortedConnections = [...connections].sort((a, b) => {
+                    const avgZa = (a.node1.z + a.node2.z) / 2;
+                    const avgZb = (b.node1.z + b.node2.z) / 2;
+                    return avgZb - avgZa;
+                });
+                
+                sortedConnections.forEach(conn => {
+                    const p1 = project3D(conn.node1, rotX, rotY);
+                    const p2 = project3D(conn.node2, rotX, rotY);
+                    
+                    // Depth-modulated alpha
+                    const avgZ = (conn.node1.z + conn.node2.z) / 2;
+                    const depthAlpha = Math.min(0.5, Math.abs(avgZ) / 100) * conn.strength;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(102, 126, 234, ${depthAlpha})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                });
+                
+                sortedNodes.forEach(node => {
+                    node.update();
+                    const p = project3D(node, rotX, rotY);
+                    
+                    // τ affects size (visual pressure)
+                    const tauPressure = 1 + node.z / 200;
+                    const size = Math.max(node.radius * p.scale * tauPressure, 3);
+                    
+                    // τ affects opacity
+                    const alpha = 0.4 + Math.min(0.6, Math.abs(node.z) / 80);
+                    const nodeColor = node.color.replace('0.9', alpha.toFixed(2));
+                    
+                    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 1.5);
+                    gradient.addColorStop(0, nodeColor);
+                    gradient.addColorStop(0.5, nodeColor.replace(alpha.toFixed(2), (alpha * 0.5).toFixed(2)));
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    
+                    ctx.shadowBlur = 8 * alpha;
+                    ctx.shadowColor = nodeColor;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    if (node.anomaly) {
+                        ctx.strokeStyle = '#ff4444';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            } else if (projectionMode === 'collapse') {
+                // Collapse view - highlight survivors with post-collapse dynamics
+                const survivors = nodes.filter(n => n.survivedCollapse);
+                const nonSurvivors = nodes.filter(n => !n.survivedCollapse);
+                
+                // Collapse severity (visual intensity)
+                const severity = currentInvariants ? (1 - currentInvariants.survivalRatio) : 0;
+                
+                // Visually destroy non-survivors (compress toward center)
+                nonSurvivors.forEach(node => {
+                    if (currentState && currentState.collapsed) {
+                        const angleToCenter = Math.atan2(
+                            canvas.height / 2 - node.baseY,
+                            canvas.width / 2 - node.baseX
+                        );
+                        node.baseX += Math.cos(angleToCenter) * 2;
+                        node.baseY += Math.sin(angleToCenter) * 2;
+                    }
+                    
+                    node.update();
+                    ctx.globalAlpha = 0.1;
+                    node.draw();
+                    ctx.globalAlpha = 1.0;
+                });
+                
+                // Rebuild connections between survivors only
+                const survivorConnections = [];
+                for (let i = 0; i < survivors.length; i++) {
+                    for (let j = i + 1; j < survivors.length; j++) {
+                        const diff = Math.abs(survivors[i].value - survivors[j].value);
+                        const strength = Math.exp(-diff / 50);
+                        if (strength > 0.1) {
+                            survivorConnections.push({
+                                node1: survivors[i],
+                                node2: survivors[j],
+                                strength: strength
+                            });
+                        }
+                    }
+                }
+                
+                // Draw survivor connections with severity modulation
+                survivorConnections.forEach(conn => {
+                    const alpha = conn.strength * 0.5 * (0.5 + severity * 0.5);
+                    ctx.beginPath();
+                    ctx.moveTo(conn.node1.x, conn.node1.y);
+                    ctx.lineTo(conn.node2.x, conn.node2.y);
+                    ctx.strokeStyle = `rgba(255, 215, 0, ${alpha})`;
+                    ctx.lineWidth = 1.5 + severity;
+                    ctx.stroke();
+                });
+                
+                // Draw survivors with post-collapse drift
+                survivors.forEach(node => {
+                    // Post-collapse reorganization drift
+                    node.baseX += Math.sin(time * 0.01 + node.index) * 0.5;
+                    node.baseY += Math.cos(time * 0.01 + node.index) * 0.5;
+                    node.update();
+                    
+                    // Severity-modulated glow
+                    const glowIntensity = 10 + severity * 20;
+                    ctx.shadowBlur = glowIntensity;
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+                    
+                    node.color = 'rgba(255, 215, 0, 0.9)'; // Gold for survivors
+                    node.draw();
+                    node.color = 'rgba(102, 126, 234, 0.9)'; // Reset
+                    
+                    ctx.shadowBlur = 0;
+                });
+            } else {
+                // 2D abstract view
+                connections.forEach(conn => conn.draw());
+                nodes.forEach(node => {
+                    node.update();
+                    node.draw();
+                });
+            }
+            
+            time++;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ============================================================
+        // EXPORT & UTILITY
+        // ============================================================
+
+        function exportState() {
+            if (!currentState) return;
+            
+            const exportData = {
+                mode: tauFlowHistory.length > 0 ? 'tau-flow' : 'single-run',
+                timestamp: new Date().toISOString(),
+                seed: currentState.seed,
+                operatorStack: currentState.operatorHistory,
+                invariants: currentInvariants,
+                classification: currentClassification,
+                metrics: {
+                    entropy: currentState.entropy,
+                    curvature: currentState.curvature,
+                    depth: currentState.depth,
+                    valueCount: currentState.values.length
+                },
+                values: currentState.values.slice(0, 20)
+            };
+            
+            // Include τ-flow history if available
+            if (tauFlowHistory.length > 0) {
+                const currentPhase = classifyTauPhase(currentInvariants);
+                
+                exportData.steps = tauFlowHistory.length;
+                exportData.tauPhase = currentPhase;
+                exportData.topology = {
+                    nodes: nodes.length,
+                    edges: connections.length
+                };
+                exportData.events = tauEvents.map(e => ({
+                    step: e.step,
+                    type: e.type,
+                    detail: e.detail
+                }));
+                exportData.history = tauFlowHistory.map(entry => ({
+                    step: entry.step,
+                    invariants: entry.invariants,
+                    classification: entry.classification,
+                    phase: entry.phase,
+                    topology: entry.topology
+                }));
+            }
+            
+            const json = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `unns_${exportData.mode}_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================================
+        // UI INITIALIZATION
+        // ============================================================
+
+        function initOperatorToggles() {
+            const container = document.getElementById('operatorToggles');
+            
+            operators.forEach((op, index) => {
+                const toggle = document.createElement('div');
+                toggle.className = 'operator-toggle' + (op.enabled ? ' enabled' : '');
+                toggle.innerHTML = `
+                    <span class="operator-symbol">${op.symbol}</span>
+                    <span class="operator-name">${op.name}</span>
+                    <span class="operator-status"></span>
+                `;
+                
+                toggle.onclick = () => {
+                    op.enabled = !op.enabled;
+                    toggle.classList.toggle('enabled');
+                    generateVisualization();
+                };
+                
+                container.appendChild(toggle);
+            });
+        }
+
+        // Event listeners
+        document.getElementById('mSlider').addEventListener('input', (e) => {
+            document.getElementById('mValue').textContent = e.target.value;
+        });
+
+        document.getElementById('nSlider').addEventListener('input', (e) => {
+            document.getElementById('nValue').textContent = e.target.value;
+        });
+
+        document.getElementById('nodeSlider').addEventListener('input', (e) => {
+            document.getElementById('nodeCount').textContent = e.target.value;
+        });
+
+        document.getElementById('rotationSlider').addEventListener('input', (e) => {
+            document.getElementById('rotationValue').textContent = e.target.value + '°';
+        });
+
+        document.getElementById('projectionMode').addEventListener('change', generateVisualization);
+        document.getElementById('audioMode').addEventListener('change', generateVisualization);
+
+        // Initialize
+        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        initOperatorToggles();
+        generateVisualization();
+        
+        // Initialize τ-flow status
+        document.getElementById('tauFlowStatus').textContent = 'τ-FLOW READY';
+    </script>
+</body>
+</html>
