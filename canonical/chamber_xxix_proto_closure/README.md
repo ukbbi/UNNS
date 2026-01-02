@@ -12,11 +12,11 @@ Chamber XXIX establishes the *structural cause* of collapse phenomena previously
 
 - **`chamber_xxix_v0.2.6_FINAL.html`**  
   Interactive UNNS laboratory implementing deterministic proto-closure evaluation  
-  :contentReference[oaicite:0]{index=0}
+  
 
 - **`Mechanisms Structural Closure and Proto-Closure in the UNNS Substrate.pdf`**  
   Formal theoretical paper defining proto-closure, structural collapse, and refinement criteria  
-  :contentReference[oaicite:1]{index=1}
+  
 
 ---
 
