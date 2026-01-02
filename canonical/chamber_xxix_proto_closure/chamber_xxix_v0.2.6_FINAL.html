@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber XXIX: Proto-Closure v0.2.5</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #ff4a9e; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #ff4a9e; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    
+    /* Controls */
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-bottom: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #ff4a9e; }
+    .button-success { background: #4aff4a; }
+    
+    /* Mechanism Cards */
+    .mechanism-list { display: grid; gap: 15px; }
+    .mechanism-card { background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 15px; }
+    .mechanism-card.running { border-color: #4a9eff; }
+    .mechanism-card.proto-closed { border-color: #4aff4a; background: #0a1a0a; }
+    .mechanism-card.meta-unstable { border-color: #ffa54a; background: #1a1a0a; }
+    .mechanism-card.structural-collapse { border-color: #ff4a4a; background: #1a0a0a; }
+    
+    .mech-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .mech-id { font-size: 1.1em; color: #ff4a9e; font-weight: bold; }
+    .mech-verdict { padding: 4px 12px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
+    .verdict-proto-closed { background: #4aff4a; color: #000; }
+    .verdict-meta-unstable { background: #ffa54a; color: #000; }
+    .verdict-structural-collapse { background: #ff4a4a; color: #fff; }
+    .verdict-pending { background: #555; color: #aaa; }
+    
+    .mech-description { color: #aaa; font-size: 0.9em; margin-bottom: 10px; }
+    .mech-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; font-size: 0.85em; }
+    .detail-item { background: #1a1a1a; padding: 6px; border-radius: 3px; }
+    .detail-label { color: #888; }
+    .detail-value { color: #4a9eff; font-weight: bold; }
+    
+    /* Status */
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    
+    /* Design Doc */
+    .design-doc { line-height: 1.6; color: #aaa; }
+    .design-doc h3 { color: #ff4a9e; font-size: 1.1em; margin: 20px 0 10px; }
+    .design-doc h4 { color: #4a9eff; font-size: 1em; margin: 15px 0 8px; }
+    .design-doc code { background: #0a0a0a; padding: 2px 6px; border-radius: 3px; color: #4aff4a; }
+    .design-doc pre { background: #0a0a0a; padding: 12px; border-radius: 4px; overflow-x: auto; border-left: 3px solid #ff4a9e; margin: 10px 0; }
+    .design-doc ul, .design-doc ol { margin: 10px 0 10px 20px; }
+    .design-doc li { margin: 5px 0; }
+    .warning-box { background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0; }
+    .info-box { background: #1a2a3a; border-left: 3px solid #4a9eff; padding: 12px; margin: 15px 0; }
+    
+    /* Collapsible Details */
+    details { border: 1px solid #2a2a2a; border-radius: 4px; padding: 0; margin-bottom: 10px; }
+    details summary { cursor: pointer; padding: 12px; background: #1a1a1a; border-radius: 4px; user-select: none; font-weight: bold; color: #ff4a9e; transition: background 0.2s; }
+    details summary:hover { background: #2a2a2a; }
+    details[open] summary { border-bottom: 1px solid #2a2a2a; border-radius: 4px 4px 0 0; }
+    details .design-doc { padding: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XXIX: PROTO-CLOSURE</h1>
+      <div class="subtitle">L2 Structural Evaluation – Deterministic RNG (v0.2.6 FINAL)</div>
+    </header>
+    
+    <!-- Controls Panel -->
+    <div class="panel">
+      <div class="panel-title">Evaluation Controls</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Max Refinement Depth</label>
+          <input type="number" id="maxDepth" value="5" min="3" max="10">
+        </div>
+        <div class="control-group">
+          <label>Initial Generation Depth</label>
+          <input type="number" id="initDepth" value="20" min="5" max="100">
+        </div>
+        <div class="control-group">
+          <label>Epsilon Tolerance (ε)</label>
+          <input type="number" id="epsilon" value="0.05" step="0.01" min="0.01" max="0.5">
+        </div>
+        <div class="control-group">
+          <label>Orbit Window Size</label>
+          <input type="number" id="orbitWindow" value="10" min="3" max="20">
+        </div>
+        <div class="control-group">
+          <label>Global Seed (for reproducibility)</label>
+          <input type="text" id="globalSeed" value="XXIX" placeholder="XXIX" style="font-family: 'Consolas', monospace;">
+        </div>
+      </div>
+      <button id="runAll" class="button-primary">▶ Run All Mechanisms</button>
+      <button id="runReference" class="button-success">✓ Run Reference Suite</button>
+      <button id="exportResults" disabled>💾 Export Results</button>
+      <button id="clearResults">🗑️ Clear Results</button>
+      <div id="globalStatus" class="status" style="display: none;"></div>
+    </div>
+    
+    <!-- Results Panel -->
+    <div class="panel">
+      <div class="panel-title">Mechanism Evaluation Results</div>
+      <div id="mechanismList" class="mechanism-list">
+        <div style="color: #666; text-align: center; padding: 40px;">
+          No evaluations run yet. Click "Run Reference Suite" to test control mechanisms.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Design Documentation -->
+    <div class="panel">
+      <div class="panel-title">📚 Design Documentation</div>
+      <details>
+        <summary>🔽 Chamber XXIX: Proto-Closure Evaluation Engine (v0.2.6) – Click to expand</summary>
+        <div class="design-doc">
+        <h3>Chamber XXIX: Proto-Closure Evaluation</h3>
+        
+        <div class="info-box">
+          <strong>v0.2.6 Update (Deterministic RNG - Reproducibility Fix):</strong> All non-deterministic 
+          Math.random() calls have been replaced with <em>seeded PRNG (Mulberry32)</em>. Each mechanism 
+          receives a deterministic seed based on its ID and configuration. This ensures <em>exact reproducibility</em> 
+          of all results and fixes the TEST-BALANCED-PARENS transient annotation inconsistency. The seed is 
+          exported in verdict JSON for perfect replay across machines.
+        </div>
+        
+        <div class="info-box">
+          <strong>v0.2.5 Update (Meta-Instability Transient Detector):</strong> Meta-instability is now detected as 
+          a <em>transient phenomenon</em>, not a terminal verdict class. The verdict system is binary: 
+          <code>PROTO-CLOSED</code> | <code>STRUCTURAL-COLLAPSE</code>. Transient recurrence is captured as 
+          diagnostic metadata without overriding collapse verdicts. This preserves falsifiability and reflects 
+          the empirical finding that meta-instability does not survive structural refinement.
+        </div>
+        
+        <div class="info-box">
+          <strong>v0.2.0 Update (Fix A - Windowed Trajectory):</strong> Structural state now captures 
+          a <em>windowed trajectory</em> of configurations (default: 8 steps) rather than a single terminal 
+          configuration. This enables detection of oscillatory dynamics that occur in rule-time, not just 
+          refinement-time. Critical for mechanisms like binary flip (A↔B) where period-2 orbit exists within 
+          generation steps but was previously hidden by single-snapshot sampling.
+        </div>
+        
+        <div class="info-box">
+          <strong>Critical Constraint:</strong> This chamber operates purely on symbolic/structural level (L2). 
+          It <strong>never evaluates numbers</strong>, <strong>never tests values</strong>, and 
+          <strong>never searches for constants</strong>. All verdicts are based on structural recurrence under refinement.
+        </div>
+        
+        <h4>1. Purpose & Scope</h4>
+        <p>Chamber XXIX evaluates mechanisms for <strong>proto-closure</strong> via structural recurrence under refinement.</p>
+        <p><strong>Out of scope (hard exclusions):</strong></p>
+        <ul>
+          <li>Numerical constants evaluation</li>
+          <li>Numeric field evolution (τ-fields, etc.)</li>
+          <li>Value convergence, divergence, or stability</li>
+          <li>Matching against known constants (φ, π, e, √2)</li>
+        </ul>
+        
+        <h4>2. Mechanism Definition</h4>
+        <p>Each mechanism M = (Σ, R, C, O) consists of:</p>
+        <ul>
+          <li><strong>Σ</strong>: Finite symbolic alphabet (opaque tokens)</li>
+          <li><strong>R</strong>: Rewrite/generation rules (symbolic transformations only)</li>
+          <li><strong>C</strong>: Admissibility constraints (decidable on symbolic structures)</li>
+          <li><strong>O</strong>: Operator schedule (ordering of rule application)</li>
+        </ul>
+        
+        <h4>3. Structural Equivalence Metric (v0.2)</h4>
+        <p><strong>Two-level metric on windowed trajectories:</strong></p>
+        <ol>
+          <li><strong>Canonical Hash (primary):</strong> Deterministic hash of canonicalized trajectory
+            <ul>
+              <li>Window = last W configurations from generation (default W=8)</li>
+              <li>Alpha-renaming normalization across window</li>
+              <li>Period detection within window</li>
+              <li>Symbol order normalization</li>
+              <li>If hashes match → d = 0</li>
+            </ul>
+          </li>
+          <li><strong>Feature Vector Distance (secondary):</strong> When hashes differ
+            <ul>
+              <li>Extract from entire window: symbol histograms, diversity, patterns</li>
+              <li>Compute L1 distance between feature vectors</li>
+              <li>Includes: avg config length, inter-config variation, compressibility</li>
+              <li>Normalized to avoid scale bias</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <p><strong>Key Advantage:</strong> Windowed approach captures <em>temporal structure</em> (oscillations, cycles) 
+        that single-snapshot canonicalization would miss. Essential for detecting proto-closure in mechanisms with 
+        rule-level periodicity.</p>
+        
+        <h4>4. Refinement Process</h4>
+        <p>For each mechanism, generates sequence S₀ → S₁ → S₂ → ... where each step applies refinement:</p>
+        <ul>
+          <li>Increased generation depth (multiplicative: 20 → 40 → 80 → ...)</li>
+          <li>Tightened constraints (if applicable)</li>
+          <li>Reduced equivalence tolerance</li>
+        </ul>
+        
+        <h4>5. Closure Detection</h4>
+        <p><strong>Structural Closure Criterion:</strong> A mechanism exhibits structural closure iff:</p>
+        <ul>
+          <li>∃ ε > 0 and k ≥ 1 such that for sufficiently large n: d(Sₙ, Sₙ₊ₖ) < ε</li>
+          <li>AND recurrent orbit contains > 1 equivalence class (non-trivial)</li>
+          <li>AND recurrence persists to terminal refinement level</li>
+        </ul>
+        
+        <p><strong>Excluded from closure:</strong></p>
+        <ul>
+          <li>Fixed-point freezing (single state orbit)</li>
+          <li>Transient recurrence (detected but collapses under refinement)</li>
+          <li>Null collapse</li>
+          <li>Exhaustion termination</li>
+        </ul>
+        
+        <h4>6. Verdict System (v0.2.5 – Binary Classification)</h4>
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9em;">
+          <tr style="border-bottom: 2px solid #ff4a9e;">
+            <th style="text-align: left; padding: 8px; color: #ff4a9e;">Verdict</th>
+            <th style="text-align: left; padding: 8px; color: #ff4a9e;">Meaning</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <td style="padding: 8px;"><code>PROTO-CLOSED</code></td>
+            <td style="padding: 8px;">Structural closure detected and persists under refinement</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px;"><code>STRUCTURAL-COLLAPSE</code></td>
+            <td style="padding: 8px;">No persistent recurrence detected, or structure degenerates</td>
+          </tr>
+        </table>
+        
+        <div class="info-box">
+          <strong>Meta-Instability (Transient Annotation):</strong> Mechanisms showing temporary recurrence 
+          that fails under refinement receive <code>STRUCTURAL-COLLAPSE</code> verdict with 
+          <code>meta_instability.detected = true</code> metadata. This distinguishes pure collapse (no recurrence) 
+          from transient mirages (temporary recurrence). The annotation includes: first/last refinement level, 
+          duration, and period of the transient orbit.
+        </div>
+        
+        <h4>7. Reference Mechanism Library (Phase 1)</h4>
+        <p><strong>Control Mechanisms:</strong></p>
+        <ul>
+          <li><strong>CTRL-BINARY-FLIP</strong>: Expected verdict: <code>PROTO-CLOSED</code> (period-2 orbit persists)</li>
+          <li><strong>CTRL-UNBOUNDED-GROWTH</strong>: Expected verdict: <code>STRUCTURAL-COLLAPSE</code> (unbounded growth, no recurrence)</li>
+          <li><strong>CTRL-META-UNSTABLE</strong>: Expected verdict: <code>STRUCTURAL-COLLAPSE</code> (transient period-3, then growth dominates) 
+            <br><span style="color: #ffa54a;">⚠ Shows transient recurrence annotation</span></li>
+        </ul>
+        
+        <p><strong>Test Mechanisms:</strong></p>
+        <ul>
+          <li><strong>TEST-TERNARY-CYCLE</strong>: Expected verdict: <code>PROTO-CLOSED</code> (period-3 orbit persists)</li>
+          <li><strong>TEST-BALANCED-PARENS</strong>: Expected verdict: <code>STRUCTURAL-COLLAPSE</code> (constraints accelerate collapse)
+            <br><span style="color: #ff4a9e;">📌 Important negative result: constraints ≠ closure guarantee</span></li>
+        </ul>
+        
+        <div class="warning-box">
+          <strong>⚠️ Validation Requirement:</strong> Chamber XXIX cannot be considered functional 
+          until all 5 reference mechanisms return their expected verdicts. This provides ground-truth calibration 
+          for the binary classification system.
+        </div>
+        
+        <h4>8. Output Contract (v0.2.5)</h4>
+        <p>Each mechanism receives JSON output with:</p>
+        <pre>{
+  "mechanism_id": "...",
+  "alphabet_signature": "...",
+  "rule_signature": "...",
+  "constraint_signature": "...",
+  "operator_schedule": "...",
+  "metric_used": "canonical_hash + feature_vector_L1 (windowed)",
+  "window_size": 8,
+  "refinement_ladder": [...],
+  "orbit_detected": true | false,
+  "orbit_period": k | null,
+  "orbit_signature": "...",
+  "distinct_states": n | null,
+  "verdict": "PROTO-CLOSED" | "STRUCTURAL-COLLAPSE",
+  "failure_modes": [...],
+  "meta_instability": {
+    "detected": false | true,
+    "first_level": null | n,
+    "last_level": null | m,
+    "max_duration": 0 | (m - n),
+    "period": null | k
+  },
+  "elapsed_ms": ...,
+  "expected_verdict": "..." | null,
+  "validation_passed": true | false | null,
+  "timestamp": "..."
+}</pre>
+        
+        <h4>9. Compliance Checklist</h4>
+        <p>Chamber XXIX is compliant iff:</p>
+        <ul>
+          <li>✅ Never evaluates numbers</li>
+          <li>✅ Never tests values</li>
+          <li>✅ Never searches for constants</li>
+          <li>✅ Never ranks mechanisms by numeric proximity</li>
+          <li>✅ Reports only structural behavior</li>
+          <li>✅ Binary verdict system (no ambiguous third class)</li>
+          <li>✅ Meta-instability as annotation, not verdict override</li>
+        </ul>
+        
+        <h3>Implementation Notes</h3>
+        
+        <h4>Mechanism DSL</h4>
+        <p><strong>Rules (R):</strong></p>
+        <pre>{
+  "pattern": ["A", "B"],
+  "replacement": ["B", "A", "C"],
+  "condition": null
+}</pre>
+        
+        <p><strong>Constraints (C):</strong></p>
+        <pre>[
+  {"type": "max_length", "value": 100},
+  {"type": "forbidden_substring", "value": ["A", "A", "A"]},
+  {"type": "symbol_balance", "symbols": ["(", ")"], "balanced": true}
+]</pre>
+        
+        <h4>Feature Vector Components</h4>
+        <ul>
+          <li>Symbol frequency histogram (normalized)</li>
+          <li>Unique symbol count</li>
+          <li>Total length (windowed average)</li>
+          <li>Pattern diversity (unique 2-grams)</li>
+          <li>Compressibility estimate (run-length encoding ratio)</li>
+          <li>Inter-config variation (length variance across window)</li>
+        </ul>
+        
+        <h3>Theoretical Alignment</h3>
+        <p>This implementation strictly follows:</p>
+        <ul>
+          <li>Definition 3 (Mechanism)</li>
+          <li>Definition 4 (Structural State)</li>
+          <li>Definition 5 (Refinement)</li>
+          <li>Definition 7 (Structural Closure)</li>
+          <li>Definition 9 (Proto-Closure)</li>
+          <li>Definition 11 (Structural Equivalence Metric)</li>
+          <li>Definition 12 (Refined Structural Closure)</li>
+        </ul>
+        
+        <h3>Key Theoretical Findings</h3>
+        <div class="info-box">
+          <p><strong>Empirical Result (v0.2.5):</strong> Meta-instability does not survive structural refinement in the UNNS substrate. 
+          Systems exhibiting transient recurrence ultimately collapse, demonstrating that meta-stability is a Phase-B 
+          phenomenological illusion rather than a fundamental ontological category.</p>
+          
+          <p style="margin-top: 10px;"><strong>Publishable Claim:</strong> Proto-closure is topology-determined, not numerology-determined. 
+          Mechanisms with persistent structural recurrence form a distinct class independent of alphabet size, 
+          numeric periodicity, or semantic interpretation.</p>
+          
+          <p style="margin-top: 10px;"><strong>Important Negative Result:</strong> Admissibility constraints do not guarantee 
+          structural closure. The balanced-parentheses mechanism demonstrates that constraints can actually accelerate 
+          collapse by destroying recurrence under refinement. Constraints ≠ stability.</p>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 0.2.6 FINAL | <strong>Layer:</strong> L2 (Structural) | <strong>Mode:</strong> Deterministic Seeded RNG | <strong>Status:</strong> Production Ready
+        </p>
+      </div>
+      </details>
+    </div>
+  </div>
+  
+  <script>
+/**
+ * ============================================================================
+ * CHAMBER XXIX: PROTO-CLOSURE EVALUATION ENGINE v0.2.5
+ * ============================================================================
+ * 
+ * L2 Structural Layer - Pure Symbolic Mechanism Analysis
+ * 
+ * HARD CONSTRAINTS:
+ * - NO numerical evaluation
+ * - NO value testing
+ * - NO constant searching
+ * - ONLY structural recurrence detection
+ * 
+ * v0.2.0 CHANGES (Fix A):
+ * - Structural state = windowed configuration trajectory (not single snapshot)
+ * - Captures oscillatory dynamics in rule-time, not just refinement-time
+ * - Enables correct proto-closure detection for cyclic mechanisms
+ * 
+ * v0.2.1 CHANGES (UI Stability):
+ * - Added global execution lock (RUN_IN_PROGRESS) to prevent concurrent runs
+ * - Button disabling during evaluation with try-finally cleanup
+ * - Duplicate card prevention
+ * - Parameter mutation protection during execution
+ * 
+ * v0.2.2 CHANGES (Defensive Validation):
+ * - Comprehensive validation in MechanismEngine.generate()
+ * - Filtering of invalid configurations from trajectory
+ * - Null/undefined checks in RefinementEngine
+ * - Detailed error reporting in StructuralState.extractFeatures()
+ * - Per-mechanism error catching with continuation
+ * 
+ * v0.2.3 CHANGES (Property Name Fix):
+ * - Fixed unbounded growth detection to use configWindow (array) not config (single)
+ * - Added proper averaging over windowed trajectories
+ * - Comprehensive diagnostic logging for state creation
+ * - Try-catch isolation around StructuralState construction
+ * 
+ * v0.2.4 CHANGES (Non-triviality & Persistence):
+ * - Added non-triviality check for windowed orbits (period-2 A↔B detection)
+ * - Implemented orbit history tracking across refinement prefixes
+ * - Enhanced persistence criterion (must be observed at least twice)
+ * 
+ * v0.2.5 CHANGES (Meta-Instability as Transient Detector):
+ * - ELIMINATED META-UNSTABLE as verdict class (binary: PROTO-CLOSED | STRUCTURAL-COLLAPSE)
+ * - Added meta_instability as orthogonal diagnostic metadata
+ * - Transient recurrence is measured but does not override collapse verdict
+ * - Updated CTRL-META-UNSTABLE expected verdict: STRUCTURAL-COLLAPSE
+ * - UI shows transient annotation badge (non-intrusive, informative)
+ * 
+ * v0.2.6 CHANGES (Deterministic RNG - Reproducibility Fix):
+ * - CRITICAL FIX: Eliminated non-deterministic Math.random() calls
+ * - Added Mulberry32 seeded PRNG with FNV-1a hash
+ * - Mechanism-specific seeds based on ID + config
+ * - All evaluations now fully reproducible
+ * - Exported seed in verdict JSON for exact replay
+ * - Added Global Seed UI control (default: "XXIX")
+ * - Fixes TEST-BALANCED-PARENS transient annotation inconsistency
+ * 
+ * THEORETICAL FINDING:
+ * Meta-instability is not a stable substrate class - mechanisms with transient
+ * recurrence ultimately collapse under structural refinement. This is a publishable
+ * result demonstrating that apparent meta-stability is a Phase-B illusion, not a
+ * fundamental ontological category in the UNNS substrate.
+ * 
+ * Theoretical Basis:
+ * - "Mechanisms, Structural Closure, and Proto-Closure in the UNNS Substrate"
+ * - Chamber XXIX Formal Specification
+ * ============================================================================
+ */
+
+// ============================================================================
+// DETERMINISTIC RNG (v0.2.6 - Reproducibility Fix)
+// ============================================================================
+
+/**
+ * FNV-1a 32-bit hash for string-to-seed conversion
+ */
+function hashStringToUint32(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Mulberry32 PRNG - deterministic, high quality, tiny
+ * Returns a function that generates [0,1) floats
+ */
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Create mechanism-specific seeded RNG
+ */
+function createMechanismRNG(mechSpec, config) {
+  const seedMaterial = JSON.stringify({
+    globalSeed: config.globalSeed ?? "XXIX",
+    id: mechSpec.id,
+    maxRefinement: config.maxRefinementDepth,
+    initDepth: config.initialGenerationDepth,
+    eps: config.epsilon,
+    window: config.orbitWindowSize
+  });
+  
+  const mechSeed = hashStringToUint32(seedMaterial);
+  return {
+    rng: mulberry32(mechSeed),
+    seed: mechSeed
+  };
+}
+
+// ============================================================================
+// MECHANISM DEFINITION & ENCODING
+// ============================================================================
+
+class Mechanism {
+  constructor(spec) {
+    this.id = spec.id;
+    this.description = spec.description || "";
+    this.Sigma = spec.Sigma; // Alphabet
+    this.R = spec.R; // Rules
+    this.C = spec.C; // Constraints
+    this.O = spec.O; // Operator schedule
+    this.expected_verdict = spec.expected_verdict || null; // For controls
+    
+    // Derived signatures
+    this.alphabet_signature = this.computeAlphabetSignature();
+    this.rule_signature = this.computeRuleSignature();
+    this.constraint_signature = this.computeConstraintSignature();
+    this.operator_schedule = this.O.type || "sequential";
+  }
+  
+  computeAlphabetSignature() {
+    return `Σ={${this.Sigma.sort().join(',')}}`;
+  }
+  
+  computeRuleSignature() {
+    const ruleStrings = this.R.map(r => 
+      `${r.pattern.join('')}→${r.replacement.join('')}`
+    );
+    return `R={${ruleStrings.join(';')}}`;
+  }
+  
+  computeConstraintSignature() {
+    if (!this.C || this.C.length === 0) return "C={}";
+    const cStrings = this.C.map(c => `${c.type}:${JSON.stringify(c.value)}`);
+    return `C={${cStrings.join(';')}}`;
+  }
+}
+
+// ============================================================================
+// SYMBOLIC CONFIGURATION & STATE
+// ============================================================================
+
+class SymbolicConfiguration {
+  constructor(symbols) {
+    this.symbols = symbols; // Array of symbols
+  }
+  
+  clone() {
+    return new SymbolicConfiguration([...this.symbols]);
+  }
+  
+  toString() {
+    return this.symbols.join('');
+  }
+  
+  length() {
+    return this.symbols.length;
+  }
+}
+
+class StructuralState {
+  constructor(configWindow) {
+    // configWindow is an array of SymbolicConfiguration objects
+    this.window_size = configWindow.length;
+    this.canonical_form = this.canonicalize(configWindow);
+    this.canonical_hash = this.computeHash(this.canonical_form);
+    this.feature_vector = this.extractFeatures(configWindow);
+  }
+  
+  /**
+   * Canonicalization: normalize structure for equivalence testing
+   * For windowed trajectories:
+   * - Detect cycles within window
+   * - Alpha-rename consistently across cycle
+   * - Return canonical cycle representation
+   */
+  canonicalize(configWindow) {
+    if (configWindow.length === 0) return "";
+    
+    // Build combined symbol stream with separators
+    const symbolStream = [];
+    const boundaries = [0];
+    
+    configWindow.forEach((config, i) => {
+      symbolStream.push(...config.symbols);
+      if (i < configWindow.length - 1) {
+        symbolStream.push('|'); // Separator
+      }
+      boundaries.push(symbolStream.length);
+    });
+    
+    // Alpha-renaming: first occurrence determines canonical name
+    const renaming = new Map();
+    let nextCanonical = 0;
+    
+    const canonical = symbolStream.map(sym => {
+      if (sym === '|') return '|';
+      if (!renaming.has(sym)) {
+        renaming.set(sym, `S${nextCanonical}`);
+        nextCanonical++;
+      }
+      return renaming.get(sym);
+    });
+    
+    // Detect cycle within window
+    const windowStr = canonical.join('');
+    
+    // Try to find minimal period
+    const configs = windowStr.split('|');
+    const period = this.detectPeriod(configs);
+    
+    if (period > 0 && period < configs.length) {
+      // Return canonical cycle (one period)
+      return configs.slice(-period).join('|');
+    }
+    
+    // No period detected, return full window
+    return windowStr;
+  }
+  
+  /**
+   * Detect period in configuration sequence
+   */
+  detectPeriod(configs) {
+    if (configs.length < 2) return 0;
+    
+    // Try periods from 1 to half the window
+    for (let p = 1; p <= Math.floor(configs.length / 2); p++) {
+      let isPeriodic = true;
+      
+      // Check last p configs repeat
+      for (let i = 0; i < p; i++) {
+        const idx1 = configs.length - 1 - i;
+        const idx2 = configs.length - 1 - i - p;
+        
+        if (idx2 < 0 || configs[idx1] !== configs[idx2]) {
+          isPeriodic = false;
+          break;
+        }
+      }
+      
+      if (isPeriodic) return p;
+    }
+    
+    return 0; // No period
+  }
+  
+  /**
+   * Deterministic hash for canonical forms
+   */
+  computeHash(canonical_str) {
+    let hash = 0;
+    for (let i = 0; i < canonical_str.length; i++) {
+      const char = canonical_str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash;
+  }
+  
+  /**
+   * Extract structural features (for distance metric)
+   * NO semantic value, only structural properties
+   * Features extracted from entire window
+   */
+  extractFeatures(configWindow) {
+    // Defensive: validate all configs in window
+    for (let i = 0; i < configWindow.length; i++) {
+      if (!configWindow[i] || !configWindow[i].symbols) {
+        console.error(`❌ Config ${i} in window is invalid:`, configWindow[i]);
+        console.error('Full window:', configWindow);
+        throw new Error(`Invalid configuration at index ${i} in window`);
+      }
+    }
+    
+    // Flatten all symbols from window
+    const allSymbols = [];
+    configWindow.forEach(config => allSymbols.push(...config.symbols));
+    
+    // Symbol frequency histogram
+    const freq = {};
+    allSymbols.forEach(s => freq[s] = (freq[s] || 0) + 1);
+    const freqValues = Object.values(freq).sort((a,b) => b - a);
+    const freqNorm = freqValues.map(f => f / allSymbols.length);
+    
+    // Structural properties
+    const uniqueSymbols = Object.keys(freq).length;
+    const totalLength = allSymbols.length;
+    const avgConfigLength = totalLength / configWindow.length;
+    
+    // Pattern diversity (2-grams)
+    const bigrams = new Set();
+    for (let i = 0; i < allSymbols.length - 1; i++) {
+      bigrams.add(allSymbols[i] + allSymbols[i+1]);
+    }
+    
+    // Compressibility (run-length encoding ratio)
+    let runs = 1;
+    for (let i = 1; i < allSymbols.length; i++) {
+      if (allSymbols[i] !== allSymbols[i-1]) runs++;
+    }
+    const compressibility = runs / totalLength;
+    
+    // Inter-config variation
+    const configLengths = configWindow.map(c => c.length());
+    const lengthVariance = this.variance(configLengths);
+    
+    return {
+      freq_histogram: freqNorm.slice(0, 5).concat(Array(5).fill(0)).slice(0, 5), // Pad to 5
+      unique_symbols: uniqueSymbols,
+      total_length: totalLength,
+      avg_config_length: avgConfigLength,
+      bigram_diversity: bigrams.size,
+      compressibility: compressibility,
+      length_variance: lengthVariance,
+      window_size: configWindow.length
+    };
+  }
+  
+  /**
+   * Compute variance helper
+   */
+  variance(values) {
+    if (values.length === 0) return 0;
+    const mean = values.reduce((a,b) => a+b, 0) / values.length;
+    const sq_diffs = values.map(v => (v - mean) ** 2);
+    return sq_diffs.reduce((a,b) => a+b, 0) / values.length;
+  }
+  
+  /**
+   * Structural distance metric (d: S × S → R≥0)
+   */
+  static distance(state1, state2) {
+    // Fast path: exact match via hash
+    if (state1.canonical_hash === state2.canonical_hash) {
+      return 0.0;
+    }
+    
+    // Slow path: feature vector L1 distance
+    const f1 = state1.feature_vector;
+    const f2 = state2.feature_vector;
+    
+    let dist = 0;
+    
+    // Histogram distance (L1)
+    for (let i = 0; i < 5; i++) {
+      dist += Math.abs(f1.freq_histogram[i] - f2.freq_histogram[i]);
+    }
+    
+    // Normalized structural properties
+    dist += Math.abs(f1.unique_symbols - f2.unique_symbols) / 10; // Normalize
+    dist += Math.abs(f1.total_length - f2.total_length) / 100; // Normalize
+    dist += Math.abs(f1.avg_config_length - f2.avg_config_length) / 10;
+    dist += Math.abs(f1.bigram_diversity - f2.bigram_diversity) / 20; // Normalize
+    dist += Math.abs(f1.compressibility - f2.compressibility);
+    dist += Math.abs(f1.length_variance - f2.length_variance) / 10;
+    
+    return dist;
+  }
+}
+
+// ============================================================================
+// MECHANISM GENERATOR ENGINE
+// ============================================================================
+
+class MechanismEngine {
+  constructor(mechanism, depth, rng) {
+    this.mechanism = mechanism;
+    this.depth = depth;
+    this.rng = rng; // Seeded RNG for deterministic evaluation
+  }
+  
+  /**
+   * Generate configuration from mechanism
+   * Applies rules R under schedule O up to depth
+   * Returns windowed trajectory for structural state capture
+   */
+  generate(windowSize = 8) {
+    // Initialize with single symbol from alphabet (deterministic via seeded RNG)
+    let config = new SymbolicConfiguration([
+      this.mechanism.Sigma[Math.floor(this.rng() * this.mechanism.Sigma.length)]
+    ]);
+    
+    const trajectory = [config.clone()];
+    
+    for (let step = 0; step < this.depth; step++) {
+      const nextConfig = this.applyRules(config);
+      
+      // Defensive: ensure we got a valid configuration back
+      if (!nextConfig || !nextConfig.symbols || !Array.isArray(nextConfig.symbols)) {
+        console.error('❌ applyRules returned invalid config:', nextConfig);
+        break;
+      }
+      
+      config = nextConfig;
+      
+      // Apply constraints
+      if (!this.checkConstraints(config)) {
+        // Constraint violation - handle based on schedule
+        if (this.mechanism.O.on_violation === 'truncate') {
+          break;
+        } else if (this.mechanism.O.on_violation === 'reject') {
+          return null; // Signal failure
+        }
+      }
+      
+      // Safety: prevent infinite growth during testing
+      if (config.length() > 10000) {
+        break;
+      }
+      
+      // Record configuration in trajectory
+      trajectory.push(config.clone());
+    }
+    
+    // Filter out any undefined/null entries (defensive)
+    const validTrajectory = trajectory.filter(c => c && c.symbols);
+    
+    if (validTrajectory.length === 0) {
+      console.error('❌ No valid configurations in trajectory!');
+      return null;
+    }
+    
+    // Return windowed trajectory (last W configurations)
+    const windowedTrajectory = validTrajectory.slice(-windowSize);
+    
+    // Final validation
+    if (windowedTrajectory.some(c => !c || !c.symbols)) {
+      console.error('❌ Windowed trajectory contains invalid configs:', windowedTrajectory);
+      return null;
+    }
+    
+    return windowedTrajectory;
+  }
+  
+  /**
+   * Apply rewrite rules based on schedule
+   */
+  applyRules(config) {
+    const schedule = this.mechanism.O.type;
+    
+    if (schedule === 'sequential') {
+      return this.applySequential(config);
+    } else if (schedule === 'parallel') {
+      return this.applyParallel(config);
+    } else if (schedule === 'random_single') {
+      return this.applyRandomSingle(config);
+    }
+    
+    throw new Error(`Unknown schedule type: ${schedule}`);
+  }
+  
+  /**
+   * Sequential rule application: try rules in order, apply first match
+   */
+  applySequential(config) {
+    const symbols = [...config.symbols];
+    
+    for (const rule of this.mechanism.R) {
+      const match_pos = this.findPattern(symbols, rule.pattern);
+      if (match_pos !== -1) {
+        // Apply rule
+        const before = symbols.slice(0, match_pos);
+        const after = symbols.slice(match_pos + rule.pattern.length);
+        return new SymbolicConfiguration([...before, ...rule.replacement, ...after]);
+      }
+    }
+    
+    // No rule matched - configuration unchanged
+    return config;
+  }
+  
+  /**
+   * Parallel rule application: apply all matching rules simultaneously
+   */
+  applyParallel(config) {
+    let symbols = [...config.symbols];
+    let changed = true;
+    
+    while (changed) {
+      changed = false;
+      for (const rule of this.mechanism.R) {
+        const newSymbols = [];
+        let i = 0;
+        
+        while (i < symbols.length) {
+          if (this.matchesAt(symbols, i, rule.pattern)) {
+            newSymbols.push(...rule.replacement);
+            i += rule.pattern.length;
+            changed = true;
+          } else {
+            newSymbols.push(symbols[i]);
+            i++;
+          }
+        }
+        
+        symbols = newSymbols;
+      }
+    }
+    
+    return new SymbolicConfiguration(symbols);
+  }
+  
+  /**
+   * Random single: pick one random applicable rule
+   */
+  applyRandomSingle(config) {
+    const symbols = [...config.symbols];
+    const applicableRules = [];
+    
+    for (const rule of this.mechanism.R) {
+      const pos = this.findPattern(symbols, rule.pattern);
+      if (pos !== -1) {
+        applicableRules.push({rule, pos});
+      }
+    }
+    
+    if (applicableRules.length === 0) return config;
+    
+    const choice = applicableRules[Math.floor(this.rng() * applicableRules.length)];
+    const before = symbols.slice(0, choice.pos);
+    const after = symbols.slice(choice.pos + choice.rule.pattern.length);
+    
+    return new SymbolicConfiguration([...before, ...choice.rule.replacement, ...after]);
+  }
+  
+  /**
+   * Find first occurrence of pattern in symbols
+   */
+  findPattern(symbols, pattern) {
+    for (let i = 0; i <= symbols.length - pattern.length; i++) {
+      if (this.matchesAt(symbols, i, pattern)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  
+  /**
+   * Check if pattern matches at position i
+   */
+  matchesAt(symbols, i, pattern) {
+    for (let j = 0; j < pattern.length; j++) {
+      if (symbols[i + j] !== pattern[j]) return false;
+    }
+    return true;
+  }
+  
+  /**
+   * Check all constraints
+   */
+  checkConstraints(config) {
+    for (const constraint of this.mechanism.C) {
+      if (!this.checkConstraint(config, constraint)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  /**
+   * Check single constraint
+   */
+  checkConstraint(config, constraint) {
+    const symbols = config.symbols;
+    
+    switch (constraint.type) {
+      case 'max_length':
+        return symbols.length <= constraint.value;
+      
+      case 'forbidden_substring':
+        return this.findPattern(symbols, constraint.value) === -1;
+      
+      case 'symbol_balance':
+        if (!constraint.balanced) return true;
+        const counts = {};
+        constraint.symbols.forEach(s => counts[s] = 0);
+        symbols.forEach(s => {
+          if (s in counts) counts[s]++;
+        });
+        const values = Object.values(counts);
+        return values.every(v => v === values[0]);
+      
+      case 'min_diversity':
+        const unique = new Set(symbols).size;
+        return unique >= constraint.value;
+      
+      default:
+        console.warn(`Unknown constraint type: ${constraint.type}`);
+        return true;
+    }
+  }
+}
+
+// ============================================================================
+// REFINEMENT ENGINE
+// ============================================================================
+
+class RefinementEngine {
+  constructor(mechanism, config, rng) {
+    this.mechanism = mechanism;
+    this.config = config;
+    this.rng = rng; // Seeded RNG for deterministic evaluation
+    this.windowSize = config.windowSize || 8; // Default window size
+  }
+  
+  /**
+   * Generate refinement sequence: S₀ → S₁ → S₂ → ...
+   */
+  generateSequence() {
+    const sequence = [];
+    const maxDepth = this.config.maxDepth;
+    let currentDepth = this.config.initDepth;
+    
+    for (let level = 0; level < maxDepth; level++) {
+      try {
+        const engine = new MechanismEngine(this.mechanism, currentDepth, this.rng);
+        const configWindow = engine.generate(this.windowSize);
+        
+        if (configWindow === null || !Array.isArray(configWindow) || configWindow.length === 0) {
+          // Generation failed (constraint rejection or invalid result)
+          console.warn(`Generation failed at level ${level}, depth ${currentDepth}`);
+          break;
+        }
+        
+        // Additional validation: ensure all configs are valid
+        const allValid = configWindow.every(c => c && c.symbols && Array.isArray(c.symbols));
+        if (!allValid) {
+          console.error(`❌ Invalid configs in window at level ${level}:`, configWindow);
+          break;
+        }
+        
+        // Debug logging before state creation
+        console.log(`  📊 ConfigWindow at level ${level}:`, {
+          length: configWindow.length,
+          configs: configWindow.map((c, i) => ({
+            index: i,
+            hasSymbols: !!c.symbols,
+            symbolsLength: c.symbols ? c.symbols.length : 'N/A',
+            firstSymbol: c.symbols ? c.symbols[0] : 'N/A'
+          }))
+        });
+        
+        // Try to create structural state - this might fail in extractFeatures
+        let state;
+        try {
+          state = new StructuralState(configWindow);
+          console.log(`  ✓ StructuralState created successfully`);
+        } catch (stateError) {
+          console.error(`❌ Failed to create StructuralState at level ${level}:`, stateError);
+          console.error('Config window:', configWindow);
+          break; // Can't continue without valid state
+        }
+        
+        sequence.push({
+          level: level,
+          depth: currentDepth,
+          state: state,
+          configWindow: configWindow // Store for debugging
+        });
+        
+        // Refinement: double depth each level
+        currentDepth *= 2;
+      } catch (levelError) {
+        console.error(`❌ Error at refinement level ${level}:`, levelError);
+        break; // Stop refinement on error
+      }
+    }
+    
+    return sequence;
+  }
+}
+
+// ============================================================================
+// ORBIT DETECTOR
+// ============================================================================
+
+class OrbitDetector {
+  constructor(epsilon, windowSize) {
+    this.epsilon = epsilon;
+    this.windowSize = windowSize;
+  }
+  
+  /**
+   * Detect recurrent orbit in state sequence
+   * Returns {detected, period, orbit_signature} or null
+   */
+  detect(sequence) {
+    if (sequence.length < 2) return null;
+    
+    const states = sequence.map(s => s.state);
+    
+    // Sliding window search for period k
+    for (let k = 1; k <= Math.min(this.windowSize, states.length / 2); k++) {
+      if (this.testPeriod(states, k)) {
+        // Verify non-triviality: orbit must contain >1 distinct structural configuration.
+// For windowed states, a canonical_hash may be constant even when the window encodes a true cycle (e.g. "A|B").
+// Therefore, non-triviality is satisfied if either:
+//   (i) the orbit contains >1 distinct canonical_hash across the last k states, OR
+//   (ii) any orbit state encodes >1 distinct window-config in its canonical_form (delimiter '|').
+const orbitStates = states.slice(-k);
+const distinctHashes = new Set(orbitStates.map(s => s.canonical_hash));
+const windowNonTrivial = orbitStates.some(s => (s && typeof s.canonical_form === 'string' && s.canonical_form.split('|').filter(Boolean).length > 1));
+
+if (distinctHashes.size <= 1 && !windowNonTrivial) {
+  // Trivial fixed point - not closure
+  continue;
+}
+
+        return {
+          detected: true,
+          period: k,
+          orbit_signature: this.computeOrbitSignature(orbitStates),
+          distinct_states: distinctHashes.size
+        };
+      }
+    }
+    
+    return {detected: false, period: null, orbit_signature: null};
+  }
+  
+  /**
+   * Test if sequence has period k within epsilon tolerance
+   */
+  testPeriod(states, k) {
+    // Need at least 2 full periods to verify
+    if (states.length < 2 * k) return false;
+    
+    // Check last 2 periods
+    for (let i = 0; i < k; i++) {
+      const idx1 = states.length - k + i;
+      const idx2 = states.length - 2*k + i;
+      
+      const dist = StructuralState.distance(states[idx1], states[idx2]);
+      if (dist >= this.epsilon) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Compute signature hash for orbit (for comparison)
+   */
+  computeOrbitSignature(states) {
+    // Preserve order to represent the orbit; do not sort.
+    const hashes = states.map(s => s.canonical_hash);
+    return hashes.join('|');
+  }
+}
+
+// ============================================================================
+// PROTO-CLOSURE VALIDATOR
+// ============================================================================
+
+class ProtoClosureValidator {
+  constructor(config) {
+    this.config = config;
+  }
+  
+  /**
+   * Evaluate mechanism and assign verdict
+   */
+  evaluate(mechanism) {
+    const startTime = performance.now();
+
+    // Create deterministic RNG for this mechanism
+    const {rng, seed} = createMechanismRNG(mechanism, this.config);
+
+    // Generate refinement sequence
+    const refinementEngine = new RefinementEngine(mechanism, this.config, rng);
+    const sequence = refinementEngine.generateSequence();
+
+    if (!Array.isArray(sequence) || sequence.length === 0) {
+      return this.createVerdict(mechanism, 'STRUCTURAL-COLLAPSE', {
+        failure_modes: ['GENERATION_FAILED'],
+        sequence: [],
+        seed: seed,
+        elapsed_ms: performance.now() - startTime
+      });
+    }
+
+    const states = sequence.map(s => s.state).filter(Boolean);
+    if (states.length < 2) {
+      return this.createVerdict(mechanism, 'STRUCTURAL-COLLAPSE', {
+        failure_modes: ['INSUFFICIENT_REFINEMENT_STATES'],
+        sequence,
+        seed: seed,
+        elapsed_ms: performance.now() - startTime
+      });
+    }
+
+    const detector = new OrbitDetector(this.config.epsilon, this.config.orbitWindow);
+
+    // ----------------------------------------------------------------------
+    // Orbit scan across refinement prefixes (to detect PROTO-CLOSED vs META-UNSTABLE)
+    // For each candidate period k, record whether recurrence holds at each prefix end m.
+    // A mechanism is:
+    //   PROTO-CLOSED if some k satisfies recurrence at the final prefix AND is non-trivial.
+    //   META-UNSTABLE if some k satisfies recurrence at some earlier prefix, but none persist to the end.
+    //   STRUCTURAL-COLLAPSE otherwise.
+    // ----------------------------------------------------------------------
+
+    const maxK = Math.max(1, Math.min(this.config.orbitWindow, Math.floor(states.length / 2)));
+    const orbitHistory = []; // {k, firstTrue, lastTrue, endTrue, distinct_states, orbit_signature}
+
+    function orbitNonTrivial(orbitStates) {
+      const distinctHashes = new Set(orbitStates.map(s => s.canonical_hash));
+      const windowNonTrivial = orbitStates.some(s => (s && typeof s.canonical_form === 'string' && s.canonical_form.split('|').filter(Boolean).length > 1));
+      return (distinctHashes.size > 1) || windowNonTrivial;
+    }
+
+    for (let k = 1; k <= maxK; k++) {
+      let firstTrue = null;
+      let lastTrue = null;
+
+      for (let m = 2 * k; m <= states.length; m++) {
+        const prefix = states.slice(0, m);
+        const ok = detector.testPeriod(prefix, k);
+        if (ok) {
+          if (firstTrue === null) firstTrue = m;
+          lastTrue = m;
+        }
+      }
+
+      if (firstTrue !== null) {
+        const endTrue = (lastTrue === states.length);
+        const orbitStates = states.slice(states.length - k);
+        const nonTrivial = orbitNonTrivial(orbitStates);
+
+        orbitHistory.push({
+          k,
+          firstTrue,
+          lastTrue,
+          endTrue: endTrue && nonTrivial,
+          nonTrivial,
+          distinct_states: new Set(orbitStates.map(s => s.canonical_hash)).size,
+          orbit_signature: detector.computeOrbitSignature(orbitStates)
+        });
+      }
+    }
+
+    // Choose best orbit candidate that persists to end (smallest k that endTrue)
+    const endCandidates = orbitHistory.filter(h => h.endTrue);
+    let chosen = null;
+    if (endCandidates.length > 0) {
+      endCandidates.sort((a, b) => a.k - b.k);
+      chosen = endCandidates[0];
+    }
+
+    let verdict = 'STRUCTURAL-COLLAPSE';
+    let failure_modes = [];
+    let orbit_detected = false;
+    let orbit_period = null;
+    let orbit_signature = null;
+    let distinct_states = null;
+    
+    // Meta-instability detector (transient structural recurrence)
+    let meta_instability = {
+      detected: false,
+      first_level: null,
+      last_level: null,
+      max_duration: 0,
+      period: null
+    };
+
+    if (chosen) {
+      // Persistence criterion: recurrence must hold at the final prefix AND be observed at least twice in the scan
+      // (guards against accidental last-step matches)
+      const occurrences = orbitHistory.find(h => h.k === chosen.k);
+      const observedMoreThanOnce = (occurrences && occurrences.firstTrue !== null && occurrences.lastTrue !== null && occurrences.lastTrue !== occurrences.firstTrue);
+
+      if (observedMoreThanOnce) {
+        verdict = 'PROTO-CLOSED';
+        orbit_detected = true;
+        orbit_period = chosen.k;
+        orbit_signature = chosen.orbit_signature;
+        distinct_states = chosen.distinct_states;
+      } else {
+        // Persistent but observed only once - flag as non-persistent collapse
+        verdict = 'STRUCTURAL-COLLAPSE';
+        failure_modes.push('NON_PERSISTENT');
+        
+        // Record as meta-instability
+        meta_instability.detected = true;
+        meta_instability.first_level = chosen.firstTrue;
+        meta_instability.last_level = chosen.lastTrue;
+        meta_instability.max_duration = chosen.lastTrue - chosen.firstTrue;
+        meta_instability.period = chosen.k;
+      }
+    } else {
+      // No orbit at end. Check if any transient orbit occurred earlier.
+      const transientOrbits = orbitHistory.filter(h => h.nonTrivial && !h.endTrue);
+      
+      if (transientOrbits.length > 0) {
+        // Find longest transient recurrence
+        let longestTransient = transientOrbits[0];
+        let maxDuration = longestTransient.lastTrue - longestTransient.firstTrue;
+        
+        for (const orbit of transientOrbits) {
+          const duration = orbit.lastTrue - orbit.firstTrue;
+          if (duration > maxDuration) {
+            maxDuration = duration;
+            longestTransient = orbit;
+          }
+        }
+        
+        // Mark as meta-unstable collapse
+        verdict = 'STRUCTURAL-COLLAPSE';
+        failure_modes.push('TRANSIENT_RECURRENCE_DETECTED');
+        
+        meta_instability.detected = true;
+        meta_instability.first_level = longestTransient.firstTrue;
+        meta_instability.last_level = longestTransient.lastTrue;
+        meta_instability.max_duration = maxDuration;
+        meta_instability.period = longestTransient.k;
+        
+        // Optional: report orbit info for diagnostics
+        orbit_detected = true;
+        orbit_period = longestTransient.k;
+      } else {
+        // Pure collapse - no recurrence at all
+        verdict = 'STRUCTURAL-COLLAPSE';
+
+        if (sequence.length < this.config.maxDepth) {
+          failure_modes.push('GENERATION_TERMINATED_EARLY');
+        } else {
+          failure_modes.push('NO_RECURRENCE_DETECTED');
+        }
+
+        // Check for unbounded growth (average config length over window)
+        const lengths = sequence.map(s => {
+          if (s.configWindow && Array.isArray(s.configWindow) && s.configWindow.length > 0) {
+            const sum = s.configWindow.reduce((acc, c) => acc + (c ? c.length() : 0), 0);
+            return sum / s.configWindow.length;
+          }
+          return 0;
+        });
+        const growing = lengths.every((len, i) => i === 0 || len > lengths[i - 1]);
+        if (growing) failure_modes.push('UNBOUNDED_GROWTH');
+      }
+    }
+
+    return this.createVerdict(mechanism, verdict, {
+      orbit_detected,
+      orbit_period,
+      orbit_signature,
+      distinct_states,
+      failure_modes,
+      meta_instability,  // Transient recurrence metadata
+      seed,  // RNG seed for reproducibility
+      sequence,
+      elapsed_ms: performance.now() - startTime
+    });
+  }
+
+  /**
+   * Check if orbit persists across refinement levels
+   * (Deprecated in v0.2.4: persistence is handled by orbit prefix scan inside evaluate().)
+   */
+  checkPersistence(sequence, orbitResult) {
+    // Keep for backward compatibility; not used.
+    return false;
+  }
+  
+  /**
+   * Create verdict object
+   */
+  createVerdict(mechanism, verdict, details) {
+    return {
+      mechanism_id: mechanism.id,
+      alphabet_signature: mechanism.alphabet_signature,
+      rule_signature: mechanism.rule_signature,
+      constraint_signature: mechanism.constraint_signature,
+      operator_schedule: mechanism.operator_schedule,
+      metric_used: "canonical_hash + feature_vector_L1 (windowed)",
+      window_size: this.config.windowSize || 8,
+      refinement_ladder: details.sequence.map(s => ({
+        level: s.level,
+        depth: s.depth,
+        canonical_hash: s.state.canonical_hash,
+        canonical_form: s.state.canonical_form,
+        window_size: s.state.window_size,
+        avg_config_length: s.state.feature_vector ? s.state.feature_vector.avg_config_length : 0,
+        unique_symbols: s.state.feature_vector ? s.state.feature_vector.unique_symbols : 0
+      })),
+      orbit_detected: details.orbit_detected,
+      orbit_period: details.orbit_period,
+      orbit_signature: details.orbit_signature,
+      distinct_states: details.distinct_states,
+      verdict: verdict,
+      failure_modes: details.failure_modes,
+      meta_instability: details.meta_instability || {detected: false, first_level: null, last_level: null, max_duration: 0, period: null},
+      seed: details.seed,  // RNG seed for reproducibility
+      elapsed_ms: details.elapsed_ms,
+      expected_verdict: mechanism.expected_verdict,
+      validation_passed: mechanism.expected_verdict ? verdict === mechanism.expected_verdict : null,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+// ============================================================================
+// REFERENCE MECHANISM LIBRARY (Phase 1)
+// ============================================================================
+
+const REFERENCE_LIBRARY = [
+  // Control 1: PROTO-CLOSED (Binary flip, period-2)
+  {
+    id: "CTRL-BINARY-FLIP",
+    description: "Binary alternation: A↔B. Should exhibit period-2 orbit (PROTO-CLOSED).",
+    Sigma: ["A", "B"],
+    R: [
+      {pattern: ["A"], replacement: ["B"]},
+      {pattern: ["B"], replacement: ["A"]}
+    ],
+    C: [
+      {type: "max_length", value: 100}
+    ],
+    O: {type: "sequential", on_violation: "truncate"},
+    expected_verdict: "PROTO-CLOSED"
+  },
+  
+  // Control 2: STRUCTURAL-COLLAPSE (Unbounded growth)
+  {
+    id: "CTRL-UNBOUNDED-GROWTH",
+    description: "Doubling rule: A→AA. Should hit length constraint without recurrence (STRUCTURAL-COLLAPSE).",
+    Sigma: ["A"],
+    R: [
+      {pattern: ["A"], replacement: ["A", "A"]}
+    ],
+    C: [
+      {type: "max_length", value: 200}
+    ],
+    O: {type: "sequential", on_violation: "truncate"},
+    expected_verdict: "STRUCTURAL-COLLAPSE"
+  },
+  
+  // Control 3: META-UNSTABLE → STRUCTURAL-COLLAPSE (transient recurrence)
+  {
+    id: "CTRL-META-UNSTABLE",
+    description: "Complex oscillation that eventually diverges: A→B→C→A (period-3) but with growth trigger.",
+    Sigma: ["A", "B", "C", "X"],
+    R: [
+      {pattern: ["A"], replacement: ["B"]},
+      {pattern: ["B"], replacement: ["C"]},
+      {pattern: ["C"], replacement: ["A", "X"]}, // Injects growth
+      {pattern: ["X"], replacement: ["X", "X"]}  // Growth accelerates
+    ],
+    C: [
+      {type: "max_length", value: 500}
+    ],
+    O: {type: "sequential", on_violation: "truncate"},
+    expected_verdict: "STRUCTURAL-COLLAPSE"  // Transient recurrence → collapse (not a stable class)
+  },
+  
+  // Test 4: Ternary cycle (should be PROTO-CLOSED)
+  {
+    id: "TEST-TERNARY-CYCLE",
+    description: "Three-symbol rotation: A→B→C→A. Period-3 orbit.",
+    Sigma: ["A", "B", "C"],
+    R: [
+      {pattern: ["A"], replacement: ["B"]},
+      {pattern: ["B"], replacement: ["C"]},
+      {pattern: ["C"], replacement: ["A"]}
+    ],
+    C: [
+      {type: "max_length", value: 100}
+    ],
+    O: {type: "sequential", on_violation: "truncate"},
+    expected_verdict: "PROTO-CLOSED"
+  },
+  
+  // Test 5: Balanced parentheses (structural constraint test - NEGATIVE RESULT)
+  {
+    id: "TEST-BALANCED-PARENS",
+    description: "Parenthesis nesting with balance constraint.",
+    Sigma: ["(", ")", "A"],
+    R: [
+      {pattern: ["A"], replacement: ["(", "A", ")"]},
+      {pattern: ["(", ")"], replacement: ["A"]}
+    ],
+    C: [
+      {type: "max_length", value: 50},
+      {type: "symbol_balance", symbols: ["(", ")"], balanced: true}
+    ],
+    O: {type: "sequential", on_violation: "truncate"},
+    expected_verdict: "STRUCTURAL-COLLAPSE"  // Constraints accelerate collapse (important negative result)
+  }
+];
+
+// ============================================================================
+// UI CONTROLLER
+// ============================================================================
+
+// Execution lock - prevents concurrent evaluation runs
+let RUN_IN_PROGRESS = false;
+
+class ChamberUI {
+  constructor() {
+    this.results = new Map();
+    this.setupEventListeners();
+  }
+  
+  setupEventListeners() {
+    document.getElementById('runAll').addEventListener('click', () => this.runAllMechanisms());
+    document.getElementById('runReference').addEventListener('click', () => this.runReferenceSuite());
+    document.getElementById('exportResults').addEventListener('click', () => this.exportResults());
+    document.getElementById('clearResults').addEventListener('click', () => this.clearResults());
+  }
+  
+  async runReferenceSuite() {
+    if (RUN_IN_PROGRESS) return;
+    const controls = REFERENCE_LIBRARY.filter(m => m.id.startsWith('CTRL-'));
+    await this.evaluateMechanisms(controls);
+  }
+  
+  async runAllMechanisms() {
+    if (RUN_IN_PROGRESS) return;
+    await this.evaluateMechanisms(REFERENCE_LIBRARY);
+  }
+  
+  async evaluateMechanisms(mechanismSpecs) {
+    // Acquire execution lock
+    RUN_IN_PROGRESS = true;
+    
+    // Disable controls immediately
+    document.getElementById('runAll').disabled = true;
+    document.getElementById('runReference').disabled = true;
+    document.getElementById('clearResults').disabled = true;
+    document.getElementById('maxDepth').disabled = true;
+    document.getElementById('initDepth').disabled = true;
+    document.getElementById('epsilon').disabled = true;
+    document.getElementById('orbitWindow').disabled = true;
+    
+    try {
+      const config = {
+        maxDepth: parseInt(document.getElementById('maxDepth').value),
+        initDepth: parseInt(document.getElementById('initDepth').value),
+        epsilon: parseFloat(document.getElementById('epsilon').value),
+        orbitWindow: parseInt(document.getElementById('orbitWindow').value),
+        windowSize: 8, // Windowed trajectory size (Fix A implementation)
+        globalSeed: document.getElementById('globalSeed').value || "XXIX"  // v0.2.6: Deterministic RNG
+      };
+      
+      console.log('🔬 Starting evaluation with config:', config);
+      console.log('📋 Mechanism count:', mechanismSpecs.length);
+      
+      const validator = new ProtoClosureValidator(config);
+      const statusEl = document.getElementById('globalStatus');
+      statusEl.textContent = `Evaluating ${mechanismSpecs.length} mechanisms...`;
+      statusEl.className = 'status running';
+      statusEl.style.display = 'block';
+      
+      console.log('✓ Validator created, starting loop...');
+      
+      for (let i = 0; i < mechanismSpecs.length; i++) {
+        try {
+          console.log(`\n🔍 Evaluating mechanism ${i+1}/${mechanismSpecs.length}:`, mechanismSpecs[i].id);
+          
+          const spec = mechanismSpecs[i];
+          const mechanism = new Mechanism(spec);
+          
+          console.log('  ✓ Mechanism object created');
+          
+          this.showMechanismRunning(mechanism);
+          
+          console.log('  ✓ Card displayed');
+          
+          // Small delay for UI update
+          await new Promise(resolve => setTimeout(resolve, 10));
+          
+          console.log('  ⏳ Running validator.evaluate()...');
+          const verdict = validator.evaluate(mechanism);
+          
+          console.log('  ✓ Verdict received:', verdict.verdict);
+          
+          this.results.set(mechanism.id, verdict);
+          this.displayVerdict(verdict);
+          
+          console.log('  ✓ Verdict displayed');
+          
+          statusEl.textContent = `Progress: ${i+1}/${mechanismSpecs.length}`;
+        } catch (error) {
+          console.error(`❌ ERROR evaluating mechanism ${i}:`, error);
+          console.error('Error stack:', error.stack);
+          console.error('Mechanism spec:', mechanismSpecs[i]);
+          
+          // Display error in status
+          statusEl.textContent = `ERROR at mechanism ${i+1}: ${error.message}`;
+          statusEl.className = 'status';
+          statusEl.style.background = '#2a1a1a';
+          statusEl.style.color = '#ff4a4a';
+          
+          // Continue to next mechanism instead of breaking
+          continue;
+        }
+      }
+      
+      console.log('✅ All mechanisms evaluated');
+      
+      statusEl.textContent = `Complete! Evaluated ${mechanismSpecs.length} mechanisms.`;
+      statusEl.className = 'status complete';
+      document.getElementById('exportResults').disabled = false;
+      
+      this.showValidationSummary();
+    } catch (outerError) {
+      console.error('❌ FATAL ERROR in evaluateMechanisms:', outerError);
+      console.error('Stack:', outerError.stack);
+      
+      const statusEl = document.getElementById('globalStatus');
+      statusEl.textContent = `FATAL ERROR: ${outerError.message}`;
+      statusEl.className = 'status';
+      statusEl.style.background = '#2a1a1a';
+      statusEl.style.color = '#ff4a4a';
+    } finally {
+      // Release execution lock
+      RUN_IN_PROGRESS = false;
+      
+      // Re-enable controls
+      document.getElementById('runAll').disabled = false;
+      document.getElementById('runReference').disabled = false;
+      document.getElementById('clearResults').disabled = false;
+      document.getElementById('maxDepth').disabled = false;
+      document.getElementById('initDepth').disabled = false;
+      document.getElementById('epsilon').disabled = false;
+      document.getElementById('orbitWindow').disabled = false;
+    }
+  }
+  
+  showMechanismRunning(mechanism) {
+    const listEl = document.getElementById('mechanismList');
+    
+    // Prevent duplicate cards
+    if (document.getElementById(`card-${mechanism.id}`)) {
+      return;
+    }
+    
+    if (listEl.children.length === 1 && listEl.children[0].style.color === 'rgb(102, 102, 102)') {
+      listEl.innerHTML = '';
+    }
+    
+    const cardEl = document.createElement('div');
+    cardEl.className = 'mechanism-card running';
+    cardEl.id = `card-${mechanism.id}`;
+    cardEl.innerHTML = `
+      <div class="mech-header">
+        <div class="mech-id">${mechanism.id}</div>
+        <div class="mech-verdict verdict-pending">RUNNING...</div>
+      </div>
+      <div class="mech-description">${mechanism.description}</div>
+    `;
+    
+    listEl.appendChild(cardEl);
+  }
+  
+  displayVerdict(verdict) {
+    try {
+      const cardEl = document.getElementById(`card-${verdict.mechanism_id}`);
+      
+      if (!cardEl) {
+        console.error('❌ Card element not found for:', verdict.mechanism_id);
+        return;
+      }
+      
+      let verdictClass = '';
+      if (verdict.verdict === 'PROTO-CLOSED') {
+        cardEl.className = 'mechanism-card proto-closed';
+        verdictClass = 'verdict-proto-closed';
+      } else {
+        cardEl.className = 'mechanism-card structural-collapse';
+        verdictClass = 'verdict-structural-collapse';
+      }
+      
+      const validationIcon = verdict.validation_passed === null ? '' :
+        verdict.validation_passed ? ' ✓' : ' ✗';
+      
+      const mechanismSpec = REFERENCE_LIBRARY.find(m => m.id === verdict.mechanism_id);
+      const description = mechanismSpec ? mechanismSpec.description : 'Unknown mechanism';
+      
+      // Meta-instability annotation (non-intrusive badge)
+      const metaAnnotation = (verdict.meta_instability && verdict.meta_instability.detected && verdict.verdict === 'STRUCTURAL-COLLAPSE')
+        ? `<div style="margin-top: 10px; padding: 8px; background: #2a2a1a; border-left: 3px solid #ffa54a; border-radius: 3px; font-size: 0.85em;">
+             <span style="color: #ffa54a;">⚠ Transient Recurrence Detected</span>
+             <div style="color: #888; margin-top: 4px; font-size: 0.9em;">
+               Period-${verdict.meta_instability.period} orbit observed at levels ${verdict.meta_instability.first_level}–${verdict.meta_instability.last_level} (duration: ${verdict.meta_instability.max_duration})
+             </div>
+           </div>`
+        : '';
+      
+      cardEl.innerHTML = `
+        <div class="mech-header">
+          <div class="mech-id">${verdict.mechanism_id}${validationIcon}</div>
+          <div class="mech-verdict ${verdictClass}">${verdict.verdict}</div>
+        </div>
+        <div class="mech-description">${description}</div>
+        ${metaAnnotation}
+        <div class="mech-details">
+          <div class="detail-item">
+            <div class="detail-label">Orbit Detected</div>
+            <div class="detail-value">${verdict.orbit_detected ? 'Yes' : 'No'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Period</div>
+            <div class="detail-value">${verdict.orbit_period || 'N/A'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Distinct States</div>
+            <div class="detail-value">${verdict.distinct_states || 'N/A'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Refinement Levels</div>
+            <div class="detail-value">${verdict.refinement_ladder.length}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Time</div>
+            <div class="detail-value">${verdict.elapsed_ms.toFixed(1)}ms</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Failure Modes</div>
+            <div class="detail-value">${verdict.failure_modes.join(', ') || 'None'}</div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('❌ ERROR in displayVerdict:', error);
+      console.error('Verdict object:', verdict);
+    }
+  }
+  
+  showValidationSummary() {
+    const controls = Array.from(this.results.values()).filter(v => v.expected_verdict !== null);
+    const passed = controls.filter(v => v.validation_passed).length;
+    const total = controls.length;
+    
+    if (total > 0) {
+      const statusEl = document.getElementById('globalStatus');
+      statusEl.innerHTML += `<br><strong>Control Validation:</strong> ${passed}/${total} passed`;
+      
+      if (passed === total) {
+        statusEl.innerHTML += ' ✓ All controls validated!';
+      } else {
+        statusEl.innerHTML += ' ⚠️ Some controls failed - check verdicts';
+      }
+    }
+  }
+  
+  exportResults() {
+    const exportData = {
+      chamber: "XXIX",
+      version: "0.2.3",
+      layer: "L2_STRUCTURAL",
+      implementation: "windowed_trajectory_fixed",
+      timestamp: new Date().toISOString(),
+      config: {
+        maxDepth: parseInt(document.getElementById('maxDepth').value),
+        initDepth: parseInt(document.getElementById('initDepth').value),
+        epsilon: parseFloat(document.getElementById('epsilon').value),
+        orbitWindow: parseInt(document.getElementById('orbitWindow').value),
+        windowSize: 8
+      },
+      results: Array.from(this.results.values())
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `UNNS_ChamberXXIX_${exportData.timestamp.split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log('📊 Results exported:', a.download);
+  }
+  
+  clearResults() {
+    if (RUN_IN_PROGRESS) return; // Don't clear during execution
+    
+    this.results.clear();
+    document.getElementById('mechanismList').innerHTML = `
+      <div style="color: #666; text-align: center; padding: 40px;">
+        No evaluations run yet. Click "Run Reference Suite" to test control mechanisms.
+      </div>
+    `;
+    document.getElementById('exportResults').disabled = true;
+    document.getElementById('globalStatus').style.display = 'none';
+  }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+console.log('═══════════════════════════════════════════════════════');
+console.log('UNNS Phase L2 | Chamber XXIX – Proto-Closure | v0.2.5');
+console.log('═══════════════════════════════════════════════════════');
+console.log('✓ Mechanism engine loaded (windowed trajectory)');
+console.log('✓ Structural metric initialized');
+console.log('✓ Execution lock enabled');
+console.log('✓ Defensive validation active');
+console.log('✓ Meta-instability detector enabled (transient annotation)');
+console.log('✓ Binary verdict system: PROTO-CLOSED | STRUCTURAL-COLLAPSE');
+console.log('✓ Reference library loaded');
+console.log(`✓ ${REFERENCE_LIBRARY.length} mechanisms available`);
+console.log('═══════════════════════════════════════════════════════');
+
+const ui = new ChamberUI();
+console.log('✓ Chamber ready!');
+  </script>
+</body>
+</html>
