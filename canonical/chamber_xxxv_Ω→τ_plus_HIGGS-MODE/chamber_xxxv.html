@@ -1,0 +1,2544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XXXV (INLINE)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .badges { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+    .badge { background: #2a2a2a; padding: 5px 15px; border-radius: 15px; font-size: 0.85em; }
+    .badge.phase { background: #2a3a4a; color: #4a9eff; }
+    .badge.locked { background: #4a2a2a; color: #ff4a4a; }
+    .badge.active { background: #2a4a2a; color: #4aff4a; }
+    
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+    
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    
+    .controls { display: flex; flex-direction: column; gap: 15px; }
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    .control-group input[type="number"], 
+    .control-group input[type="range"], 
+    .control-group select { 
+      background: #0a0a0a; 
+      border: 1px solid #3a3a3a; 
+      color: #e0e0e0; 
+      padding: 8px; 
+      border-radius: 4px; 
+      font-family: inherit; 
+    }
+    .control-group input:disabled,
+    .control-group select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .control-group .readonly-note {
+      font-size: 0.75em;
+      color: #ff4a4a;
+      margin-top: 2px;
+    }
+    
+    /* Seed info display */
+    .seed-info {
+      margin-top: 8px;
+      padding: 8px;
+      background: #0a0a0a;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      font-size: 0.8em;
+    }
+    .seed-info-line {
+      margin: 3px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .seed-info-label {
+      color: #888;
+    }
+    .seed-info-value {
+      color: #4a9eff;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+    }
+    .seed-warning {
+      margin-top: 8px;
+      padding: 8px;
+      background: #3a2a1a;
+      border: 1px solid #5a3a1a;
+      border-left: 3px solid #ffa54a;
+      border-radius: 4px;
+      font-size: 0.75em;
+      color: #ffa54a;
+      line-height: 1.4;
+    }
+    .seed-duplicate {
+      margin-top: 8px;
+      padding: 8px;
+      background: #2a2a3a;
+      border: 1px solid #3a3a5a;
+      border-left: 3px solid #4a9eff;
+      border-radius: 4px;
+      font-size: 0.75em;
+      color: #4a9eff;
+      line-height: 1.4;
+    }
+    
+    /* Collapsible sections */
+    .collapsible-header {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+    }
+    .collapsible-header:hover {
+      opacity: 0.8;
+    }
+    .collapsible-icon {
+      transition: transform 0.3s ease;
+      font-size: 1.2em;
+      color: #4a9eff;
+    }
+    .collapsible-icon.expanded {
+      transform: rotate(90deg);
+    }
+    .collapsible-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .collapsible-content.collapsed {
+      max-height: 0;
+    }
+    .collapsible-content.expanded {
+      max-height: 5000px;
+    }
+    
+    button { 
+      background: #2a4a7a; 
+      border: none; 
+      color: #e0e0e0; 
+      padding: 12px 24px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-family: inherit; 
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover:not(:disabled) { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    button.primary { background: #4a9eff; font-weight: bold; }
+    button.danger { background: #7a2a2a; }
+    button.danger:hover:not(:disabled) { background: #8a3a3a; }
+    
+    .pipeline-viz { display: flex; align-items: center; gap: 15px; margin: 20px 0; }
+    .pipeline-stage { 
+      flex: 1; 
+      background: #0a0a0a; 
+      border: 2px solid #2a2a2a; 
+      border-radius: 8px; 
+      padding: 15px; 
+      text-align: center;
+    }
+    .pipeline-stage.active { border-color: #4a9eff; }
+    .pipeline-stage .stage-label { 
+      font-size: 1.1em; 
+      color: #4a9eff; 
+      margin-bottom: 10px; 
+      font-weight: bold;
+    }
+    .pipeline-stage .stage-metric { 
+      font-size: 0.85em; 
+      color: #888; 
+      margin: 3px 0;
+    }
+    .pipeline-stage .stage-value { 
+      color: #e0e0e0; 
+      font-weight: bold;
+    }
+    .pipeline-arrow { 
+      font-size: 2em; 
+      color: #4a9eff; 
+    }
+    
+    .viz-grid { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 15px; 
+      margin: 20px 0; 
+    }
+    .viz-panel { 
+      background: #000; 
+      border: 1px solid #2a2a2a; 
+      border-radius: 8px; 
+      padding: 15px;
+      min-height: 300px;
+    }
+    .viz-panel canvas { 
+      width: 100%; 
+      height: 100%; 
+    }
+    .viz-label { 
+      color: #4a9eff; 
+      font-size: 0.9em; 
+      margin-bottom: 10px; 
+      text-align: center;
+    }
+    
+    .metrics-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+      gap: 12px; 
+    }
+    .metric { 
+      background: #0a0a0a; 
+      padding: 12px; 
+      border-radius: 4px; 
+      border: 1px solid #2a2a2a; 
+    }
+    .metric-label { 
+      font-size: 0.8em; 
+      color: #888; 
+      margin-bottom: 5px; 
+    }
+    .metric-value { 
+      font-size: 1.2em; 
+      color: #4a9eff; 
+      font-weight: bold; 
+    }
+    .metric-value.good { color: #4aff4a; }
+    .metric-value.warn { color: #ffa54a; }
+    .metric-value.bad { color: #ff4a4a; }
+    
+    .invariants-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 15px 0; 
+      font-size: 0.9em;
+    }
+    .invariants-table th { 
+      background: #0a0a0a; 
+      color: #4a9eff; 
+      padding: 10px; 
+      text-align: left; 
+      border-bottom: 2px solid #2a2a2a;
+    }
+    .invariants-table td { 
+      padding: 8px; 
+      border-bottom: 1px solid #1a1a1a; 
+    }
+    .invariants-table .status-pass { color: #4aff4a; }
+    .invariants-table .status-warn { color: #ffa54a; }
+    .invariants-table .status-fail { color: #ff4a4a; }
+    
+    .verdict-box { 
+      background: linear-gradient(135deg, #1a1a2a 0%, #1a2a1a 100%); 
+      border: 2px solid #2a2a2a; 
+      border-radius: 8px; 
+      padding: 20px; 
+      margin: 20px 0;
+    }
+    .verdict-box.pass { 
+      border-color: #4aff4a; 
+      background: linear-gradient(135deg, #1a2a1a 0%, #2a3a1a 100%); 
+    }
+    .verdict-box.fail { 
+      border-color: #ff4a4a; 
+      background: linear-gradient(135deg, #2a1a1a 0%, #3a2a2a 100%); 
+    }
+    .verdict-box.invalid { 
+      border-color: #ffa54a; 
+      background: linear-gradient(135deg, #2a2a1a 0%, #3a3a2a 100%); 
+    }
+    .verdict-title { 
+      font-size: 1.5em; 
+      font-weight: bold; 
+      margin-bottom: 15px; 
+    }
+    .verdict-title.pass { color: #4aff4a; }
+    .verdict-title.fail { color: #ff4a4a; }
+    .verdict-title.invalid { color: #ffa54a; }
+    .verdict-content { 
+      line-height: 1.8; 
+      color: #ccc; 
+    }
+    
+    .log-panel { 
+      background: #0a0a0a; 
+      border: 1px solid #2a2a2a; 
+      border-radius: 4px; 
+      padding: 15px; 
+      max-height: 400px; 
+      overflow-y: auto; 
+      font-family: 'Courier New', monospace; 
+      font-size: 0.85em;
+    }
+    .log-entry { 
+      margin: 3px 0; 
+      line-height: 1.4;
+    }
+    .log-entry.header { 
+      color: #4a9eff; 
+      font-weight: bold; 
+      margin-top: 10px;
+    }
+    .log-entry.pass { color: #4aff4a; }
+    .log-entry.fail { color: #ff4a4a; }
+    .log-entry.warn { color: #ffa54a; }
+    
+    .progress-bar { 
+      width: 100%; 
+      height: 4px; 
+      background: #1a1a1a; 
+      border-radius: 2px; 
+      overflow: hidden; 
+      margin-top: 15px; 
+    }
+    .progress-fill { 
+      height: 100%; 
+      background: #4a9eff; 
+      transition: width 0.3s; 
+      width: 0%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚗️ CHAMBER XXXV: Ω→τ COUPLED TESTBED</h1>
+      <div class="subtitle">Testing τ-Operator Admissibility Post-Ω4b Selection (INLINE MODE)</div>
+      <div class="badges">
+        <span class="badge phase">Phase F</span>
+        <span class="badge locked">Ω4b Fixed</span>
+        <span class="badge active">τ Candidate Testing</span>
+        <span class="badge warn" style="background: #4a3a2a; color: #ffa54a;">Inline Mode</span>
+      </div>
+    </header>
+    
+    <div class="layout">
+      <!-- LEFT COLUMN: Controls -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Ensemble Configuration</div>
+          <div class="controls">
+            <div class="control-group">
+              <label>Ensemble Size M</label>
+              <input type="number" id="ensembleSize" value="100" disabled>
+              <span class="readonly-note">Inherited from XXXIV</span>
+            </div>
+            <div class="control-group">
+              <label>Node Count n</label>
+              <input type="number" id="nodeCount" value="32" disabled>
+              <span class="readonly-note">Inherited from XXXIV</span>
+            </div>
+            <div class="control-group">
+              <label>Generator Family</label>
+              <select id="generatorFamily" disabled>
+                <option value="erdos-renyi">Erdős-Rényi</option>
+                <option value="watts-strogatz">Watts-Strogatz</option>
+                <option value="barabasi-albert">Barabási-Albert</option>
+              </select>
+              <span class="readonly-note">Locked from XXXIV</span>
+            </div>
+            <div class="control-group">
+              <label>RNG Seed</label>
+              <input type="text" id="rngSeed" value="137042">
+              <!-- Seed Info Display -->
+              <div id="seedInfoDisplay" class="seed-info" style="display: none;">
+                <div class="seed-info-line">
+                  <span class="seed-info-label">Effective Seed:</span>
+                  <span class="seed-info-value" id="effectiveSeedValue">—</span>
+                </div>
+                <div class="seed-info-line">
+                  <span class="seed-info-label">Mode:</span>
+                  <span class="seed-info-value" id="seedModeValue">—</span>
+                </div>
+              </div>
+              <!-- Large Seed Warning -->
+              <div id="seedWarning" class="seed-warning" style="display: none;">
+                ⚠️ <strong>Large seed detected:</strong> Input hashed to 32-bit seed using FNV-1a. 
+                Different large numbers will produce different seeds deterministically.
+              </div>
+              <!-- Duplicate Seed Notice -->
+              <div id="seedDuplicate" class="seed-duplicate" style="display: none;">
+                🔄 <strong>Already tested:</strong> This seed was tested previously in this session.
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Ω4b Configuration</div>
+          <div class="controls">
+            <div class="control-group">
+              <label>Keep Fraction f</label>
+              <input type="range" id="keepFraction" min="0.1" max="0.5" step="0.05" value="0.3" disabled>
+              <span id="keepFractionValue" style="color: #ff4a4a;">0.30 (LOCKED)</span>
+            </div>
+            <div class="control-group">
+              <label>V Target Mode</label>
+              <select id="vTargetMode" disabled>
+                <option value="median">Median (canonical)</option>
+                <option value="mean">Mean</option>
+              </select>
+              <span class="readonly-note">Canonical Ω4b</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">τ Operator Selection</div>
+          <div class="controls">
+            <div class="control-group">
+              <label>τ Family</label>
+              <select id="tauFamily">
+                <option value="tau_A">τA: Laplacian Heat-Flow</option>
+                <option value="tau_B" selected>τB: Spectral Band-Limiter</option>
+                <option value="tau_C">τC: Divergence Minimizer</option>
+                <option value="tau_D">τD: Curvature Equalizer</option>
+                <option value="tau_E">τE: Multi-Scale</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Iterations T</label>
+              <input type="number" id="tauIterations" value="10" min="1" max="100">
+            </div>
+            <div class="control-group">
+              <label>Step Size λ <span id="lambdaValue">0.05</span></label>
+              <input type="range" id="tauLambda" min="0.01" max="0.5" step="0.01" value="0.05">
+            </div>
+            <div class="control-group">
+              <label>Constraint Strength μ <span id="muValue">0.02</span></label>
+              <input type="range" id="tauMu" min="0.01" max="0.2" step="0.01" value="0.02">
+            </div>
+            <div class="control-group">
+              <label>εᵥ Lock (V tolerance)</label>
+              <input type="number" id="epsilonV" value="0.05" step="0.01" min="0.01" max="0.2">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Admissibility Guardrails</div>
+          <div class="controls">
+            <div class="control-group">
+              <label>Δ (min residual improvement)</label>
+              <input type="number" id="deltaGuardrail" value="0.002" step="0.001" min="0.001" max="0.1">
+            </div>
+            <div class="control-group">
+              <label>δ (max invariant drift)</label>
+              <input type="number" id="driftGuardrail" value="0.05" step="0.01" min="0.01" max="0.2">
+            </div>
+            <div class="control-group">
+              <label>Acceptance Band [a, b]</label>
+              <input type="text" id="acceptanceBand" value="0.2, 0.5" placeholder="min, max">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Run Controls</div>
+          <div class="controls">
+            <button id="runPipeline" class="primary">▶ Run Ω→τ Pipeline</button>
+            <button id="stopPipeline" disabled>⏸ Stop</button>
+            <button id="resetTau">⟳ Reset τ Only</button>
+            <button id="exportData" disabled>💾 Export Results</button>
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- RIGHT COLUMN: Visualization & Results -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Pipeline Flow</div>
+          <div class="pipeline-viz">
+            <div class="pipeline-stage" id="stageE">
+              <div class="stage-label">E</div>
+              <div class="stage-metric">Size: <span class="stage-value" id="sizeE">—</span></div>
+              <div class="stage-metric">V̄: <span class="stage-value" id="vE">—</span></div>
+              <div class="stage-metric">R<sub>Λ</sub>: <span class="stage-value" id="rlE">—</span></div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" id="stageOmega">
+              <div class="stage-label">Ω4b(E)</div>
+              <div class="stage-metric">Size: <span class="stage-value" id="sizeOmega">—</span></div>
+              <div class="stage-metric">V̄: <span class="stage-value" id="vOmega">—</span></div>
+              <div class="stage-metric">R<sub>Λ</sub>: <span class="stage-value" id="rlOmega">—</span></div>
+              <div class="stage-metric">Accept: <span class="stage-value" id="acceptOmega">—</span></div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" id="stageTau">
+              <div class="stage-label">τ(E<sub>Ω</sub>)</div>
+              <div class="stage-metric">V̄: <span class="stage-value" id="vTau">—</span></div>
+              <div class="stage-metric">R<sub>Λ</sub>: <span class="stage-value" id="rlTau">—</span></div>
+              <div class="stage-metric">CR: <span class="stage-value" id="crTau">—</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Visualization</div>
+          <div class="viz-grid">
+            <div class="viz-panel">
+              <div class="viz-label">V Distribution Evolution</div>
+              <canvas id="canvasVDist" width="400" height="300"></canvas>
+            </div>
+            <div class="viz-panel">
+              <div class="viz-label">R<sub>Λ</sub> Contraction Path</div>
+              <canvas id="canvasRLPath" width="400" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Core Metrics</div>
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">Baseline R<sub>Λ</sub></div>
+              <div class="metric-value" id="metricRL0">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Post-Ω R<sub>Λ</sub></div>
+              <div class="metric-value" id="metricRLOmega">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Post-τ R<sub>Λ</sub></div>
+              <div class="metric-value" id="metricRLTau">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Contraction Ratio</div>
+              <div class="metric-value" id="metricCR">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Acceptance Rate</div>
+              <div class="metric-value" id="metricAccept">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Max Invariant Drift</div>
+              <div class="metric-value" id="metricDrift">—</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Protected Macro-Invariants</div>
+          <table class="invariants-table">
+            <thead>
+              <tr>
+                <th>Invariant</th>
+                <th>Baseline</th>
+                <th>Post-τ</th>
+                <th>Drift %</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="invariantsTableBody">
+              <tr>
+                <td>Scaled Spectral Radius</td>
+                <td id="inv1Baseline">—</td>
+                <td id="inv1PostTau">—</td>
+                <td id="inv1Drift">—</td>
+                <td id="inv1Status">—</td>
+              </tr>
+              <tr>
+                <td>Energy per Node</td>
+                <td id="inv2Baseline">—</td>
+                <td id="inv2PostTau">—</td>
+                <td id="inv2Drift">—</td>
+                <td id="inv2Status">—</td>
+              </tr>
+              <tr>
+                <td>Degree Entropy</td>
+                <td id="inv3Baseline">—</td>
+                <td id="inv3PostTau">—</td>
+                <td id="inv3Drift">—</td>
+                <td id="inv3Status">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="verdictPanel" style="display: none;">
+          <!-- Verdict will be inserted here -->
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Run Log</div>
+          <div class="log-panel" id="logPanel">
+            <div class="log-entry">Chamber XXXV initialized. Awaiting run...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="collapsible-header" onclick="toggleGuide()">
+        <span class="collapsible-icon" id="guideIcon">▶</span>
+        <div class="panel-title" style="margin: 0; padding: 0; border: none;">📚 Laboratory Guide</div>
+      </div>
+      <div class="collapsible-content collapsed" id="guideContent">
+        <div style="line-height: 1.6; color: #aaa; padding-top: 15px;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Chamber XXXV: Ω→τ Coupled Pipeline</h3>
+        
+        <p><strong>Purpose:</strong> This chamber tests whether τ-operators become admissible only after Ω4b selection by measuring residual contraction, macro-invariant protection, and τ-locking windows.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">✅ Validated Passing Seeds</h3>
+        
+        <p>The following seeds have been validated with these <strong>exact settings</strong>:</p>
+        
+        <div style="background: #0a1a2a; border: 2px solid #2a4a6a; border-radius: 6px; padding: 15px; margin: 15px 0;">
+          <h4 style="color: #4a9eff; font-size: 0.95em; margin-bottom: 10px;">⚙️ Configuration Used</h4>
+          <table style="width: 100%; font-size: 0.85em; line-height: 1.8;">
+            <tr>
+              <td style="color: #888; width: 50%;">τ Family:</td>
+              <td style="color: #4aff4a; font-weight: bold;">τB: Spectral Band-Limiter</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">Iterations T:</td>
+              <td style="color: #e0e0e0;">10</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">Step Size λ:</td>
+              <td style="color: #e0e0e0;">0.05</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">Constraint Strength μ:</td>
+              <td style="color: #e0e0e0;">0.02</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">εᵥ Lock (V tolerance):</td>
+              <td style="color: #e0e0e0;">0.05</td>
+            </tr>
+            <tr style="border-top: 1px solid #2a2a2a;">
+              <td style="color: #888; padding-top: 8px;">Δ (min residual improvement):</td>
+              <td style="color: #e0e0e0; padding-top: 8px;">0.002</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">δ (max invariant drift):</td>
+              <td style="color: #e0e0e0;">0.05</td>
+            </tr>
+            <tr>
+              <td style="color: #888;">Acceptance Band [a, b]:</td>
+              <td style="color: #e0e0e0;">0.2, 0.5</td>
+            </tr>
+          </table>
+          <p style="margin-top: 12px; font-size: 0.8em; color: #ffa54a; font-style: italic;">
+            💡 Use these exact settings to reproduce the results below
+          </p>
+        </div>
+        
+        <div style="background: #1a2a1a; border: 1px solid #2a4a2a; border-radius: 6px; padding: 15px; margin: 15px 0;">
+          <h4 style="color: #4aff4a; font-size: 1em; margin-bottom: 12px;">🟢 Small Seeds (Direct Mapping)</h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
+            <tr style="border-bottom: 1px solid #2a2a2a;">
+              <th style="text-align: left; padding: 6px; color: #4aff4a;">Seed</th>
+              <th style="text-align: right; padding: 6px; color: #4aff4a;">CR</th>
+              <th style="text-align: left; padding: 6px; color: #4aff4a;">Status</th>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">137042</td>
+              <td style="padding: 6px; text-align: right; color: #ffa54a;">—</td>
+              <td style="padding: 6px; color: #888;">Canonical (Phase F default)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">1640</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">6.3%</td>
+              <td style="padding: 6px; color: #4aff4a;">✓ PASS</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">1671</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">5.6%</td>
+              <td style="padding: 6px; color: #4aff4a;">✓ PASS</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">1811</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">8.9%</td>
+              <td style="padding: 6px; color: #4aff4a;">✓ PASS</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">4850</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">20.2%</td>
+              <td style="padding: 6px; color: #4aff4a;">✓ PASS</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">137044</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">28.1%</td>
+              <td style="padding: 6px; color: #4aff4a;">✓ PASS (high CR)</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-family: 'Courier New', monospace;">588148</td>
+              <td style="padding: 6px; text-align: right; color: #ffa54a;">51.8%</td>
+              <td style="padding: 6px; color: #ffa54a;">✓ PASS (marginal)</td>
+            </tr>
+          </table>
+          <p style="margin-top: 10px; font-size: 0.8em; color: #888;">
+            <strong>CR</strong> = Contraction Ratio (RL_tau / RL_baseline). Lower is better.
+          </p>
+        </div>
+        
+        <div style="background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 6px; padding: 15px; margin: 15px 0;">
+          <h4 style="color: #4a9eff; font-size: 1em; margin-bottom: 12px;">🔷 Large Seeds (FNV-1a Hashed)</h4>
+          <p style="font-size: 0.85em; margin-bottom: 10px;">Seeds larger than 2^32-1 are hashed deterministically. Tested with same configuration above:</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8em;">
+            <tr style="border-bottom: 1px solid #2a2a2a;">
+              <th style="text-align: left; padding: 6px; color: #4a9eff;">Raw Input</th>
+              <th style="text-align: right; padding: 6px; color: #4a9eff;">→ Hash</th>
+              <th style="text-align: right; padding: 6px; color: #4a9eff;">CR</th>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace; font-size: 0.75em;">5125458795456987457895426700</td>
+              <td style="padding: 6px; text-align: right; font-family: 'Courier New', monospace;">1306975018</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">13.0%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 6px; font-family: 'Courier New', monospace; font-size: 0.75em;">4569874525895424700</td>
+              <td style="padding: 6px; text-align: right; font-family: 'Courier New', monospace;">3199416829</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">5.9%</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-family: 'Courier New', monospace; font-size: 0.75em;">5125458795456987457895429900</td>
+              <td style="padding: 6px; text-align: right; font-family: 'Courier New', monospace;">602815471</td>
+              <td style="padding: 6px; text-align: right; color: #4aff4a;">23.9%</td>
+            </tr>
+          </table>
+          <p style="margin-top: 10px; font-size: 0.8em; color: #888;">
+            All large seeds passed with the configuration above. Each produces a unique, reproducible ensemble.
+          </p>
+        </div>
+        
+        <div style="background: #2a2a1a; border-left: 3px solid #ffa54a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ffa54a;">💡 Quick Start (Default Settings Loaded):</strong>
+          <ol style="margin: 8px 0 0 20px; line-height: 1.6; font-size: 0.9em;">
+            <li>Default settings above are already loaded in the UI</li>
+            <li>Just change the seed to <strong>1811</strong> → expect PASS with CR ≈ 8.9%</li>
+            <li>Or try <strong>137044</strong> for strong contraction → expect CR ≈ 28%</li>
+            <li>Experiment with large seeds to test hash mapping</li>
+            <li>Compare τ_B vs τ_E performance on same seed</li>
+          </ol>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Theoretical Foundation</h3>
+        
+        <p>The <strong>Ω→τ coupling hypothesis</strong> asserts that certain geometric operators (τ) act as stabilizers only when applied to ensembles pre-selected by Ω4b. The pipeline evaluates:</p>
+        
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>E → Ω4b(E):</strong> Canonical bandpass selection (fixed from Chamber XXXIV)</li>
+          <li><strong>Ω4b(E) → τ(E<sub>Ω</sub>):</strong> Geometric stabilization under test</li>
+          <li><strong>Admissibility criteria:</strong> Residual contraction + invariant protection + nondegeneracy</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">τ-Operator Families</h3>
+        
+        <div style="background: #0a0a0a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p><strong style="color: #4aff4a;">τA: Laplacian Heat-Flow</strong> — Diffusive smoothing via discrete heat equation</p>
+          <p style="margin-top: 8px;"><strong style="color: #4a9eff;">τB: Spectral Band-Limiter</strong> — Mode filtering without target shift (100% pass rate tested)</p>
+          <p style="margin-top: 8px;"><strong style="color: #ff4a9e;">τC: Divergence Minimizer</strong> — Constrained flux optimization</p>
+          <p style="margin-top: 8px;"><strong style="color: #ffa54a;">τD: Curvature Equalizer</strong> — Local curvature variance reduction</p>
+          <p style="margin-top: 8px;"><strong style="color: #9e4aff;">τE: Multi-Scale</strong> — Coarse-grain + refine pipeline (75% pass rate tested)</p>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Admissibility Criteria</h3>
+        
+        <p>A τ-operator is <strong>admissible post-Ω4b</strong> if it satisfies ALL of:</p>
+        
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Ω-fixedness:</strong> Does not modify V<sub>target</sub> or re-run Ω</li>
+          <li><strong>Residual contraction:</strong> R<sub>Λ</sub>(τ(E<sub>Ω</sub>)) ≤ R<sub>Λ</sub>(E<sub>Ω</sub>) - Δ</li>
+          <li><strong>Macro-invariant protection:</strong> All protected drifts ≤ δ</li>
+          <li><strong>Nondegeneracy:</strong> Ω acceptance rate ∈ [a, b]</li>
+          <li><strong>Structural well-posedness:</strong> τ is deterministic and maps structures to structures</li>
+        </ol>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Seed Specifications</h3>
+        
+        <div style="background: #0a0a0a; padding: 12px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin-bottom: 8px;"><strong>Supported Range:</strong> 0 to 2^32-1 (direct) or any integer (hashed)</p>
+          <p style="margin-bottom: 8px;"><strong>Safe Input:</strong> Integers &lt; 2^53-1 for optimal precision</p>
+          <p style="margin-bottom: 8px;"><strong>Large Seeds:</strong> &gt;2^32-1 automatically hashed via FNV-1a</p>
+          <p><strong>Reproducibility:</strong> Same seed → identical results (verified)</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.85em;">
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Example</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Behavior</th>
+            <th style="text-align: center; padding: 8px; color: #4a9eff;">Status</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; font-family: 'Courier New', monospace;">137042</td>
+            <td style="padding: 8px;">Direct uint32 mapping</td>
+            <td style="text-align: center; padding: 8px; color: #4aff4a;">✓ Good</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; font-family: 'Courier New', monospace;">5125458...429900</td>
+            <td style="padding: 8px;">Hashed to 602815471</td>
+            <td style="text-align: center; padding: 8px; color: #ffa54a;">⚠️ Hashed</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; font-family: 'Courier New', monospace;">3.14159</td>
+            <td style="padding: 8px;">String-hashed (non-integer)</td>
+            <td style="text-align: center; padding: 8px; color: #ffa54a;">⚠️ Hashed</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-family: 'Courier New', monospace;">NaN / Infinity</td>
+            <td style="padding: 8px;">Invalid input rejected</td>
+            <td style="text-align: center; padding: 8px; color: #ff4a4a;">✗ Avoid</td>
+          </tr>
+        </table>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Verdict Logic</h3>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9em;">
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Verdict</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Meaning</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #4aff4a;">PASS</td>
+            <td style="padding: 8px;">τ is admissible — genuine post-Ω stabilizer</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #ff4a4a;">FAIL (residual)</td>
+            <td style="padding: 8px;">No residual contraction beyond Δ</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #ff4a4a;">FAIL (invariant)</td>
+            <td style="padding: 8px;">Protected invariant drift exceeds δ</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px; color: #ff4a4a;">FAIL (no lock)</td>
+            <td style="padding: 8px;">No stable parameter window found</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; color: #ffa54a;">INVALID</td>
+            <td style="padding: 8px;">Upstream Ω conditions not met</td>
+          </tr>
+        </table>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Operational Protocol</h3>
+        
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Verify Ω4b lock:</strong> Ensemble configuration from XXXIV (read-only)</li>
+          <li><strong>Select τ family:</strong> Choose operator and configure parameters</li>
+          <li><strong>Set guardrails:</strong> Δ, δ, [a,b] thresholds</li>
+          <li><strong>Run pipeline:</strong> E → Ω4b(E) → τ(E<sub>Ω</sub>)</li>
+          <li><strong>Evaluate verdict:</strong> Explicit PASS/FAIL with diagnostics</li>
+          <li><strong>Export results:</strong> Full JSON with reproducibility signature</li>
+        </ol>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Critical Constraints:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>Ω4b parameters are LOCKED — τ cannot modify or re-run Ω</li>
+            <li>V<sub>target</sub> is canonical — must remain fixed throughout</li>
+            <li>Verdicts are binary — no probabilistic or averaged outcomes</li>
+            <li>All τ randomness must be seed-controlled</li>
+            <li>Protected invariants are guarded — violations trigger FAIL</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">🔬 Scientific Significance</h3>
+        
+        <p><strong>Why This Matters:</strong></p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Coupling validation:</strong> Tests whether Ω→τ is a genuine two-layer architecture</li>
+          <li><strong>Admissibility framework:</strong> Establishes rigorous criteria for post-selection operators</li>
+          <li><strong>Falsifiability:</strong> Explicit rejection modes prevent circular validation</li>
+          <li><strong>Phase F foundation:</strong> Connects Ω-stratum (XXXIV) to geometry operators</li>
+          <li><strong>Complementarity discovery:</strong> τ_B and τ_E show regime-dependent performance</li>
+        </ul>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 1.0.1 (seedfix) | <strong>Engine:</strong> GraphEnsembleEngine | <strong>Phase:</strong> F (Coupled Operators) | <strong>Status:</strong> Production Ready
+        </p>
+      </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+// ============================================================================
+// UNNS LABORATORY — CHAMBER XXXV: Ω→τ COUPLED PIPELINE
+// ============================================================================
+// Testing τ-operator admissibility post-Ω4b selection
+// Implements the formal coupling hypothesis with explicit verdict logic
+// ============================================================================
+
+console.log('╔═══════════════════════════════════════════════════════╗');
+console.log('  UNNS Phase F | Chamber XXXV — Ω→τ Pipeline | v1.0.0  ');
+console.log('╚═══════════════════════════════════════════════════════╝');
+
+// ============================================================================
+// GRAPH STRUCTURE & ENSEMBLE ENGINE
+// ============================================================================
+
+class Graph {
+  constructor(n) {
+    this.n = n;
+    this.adj = Array(n).fill(null).map(() => Array(n).fill(0));
+    this.degrees = Array(n).fill(0);
+  }
+  
+  addEdge(i, j) {
+    if (i === j) return;
+    if (this.adj[i][j] === 0) {
+      this.adj[i][j] = 1;
+      this.adj[j][i] = 1;
+      this.degrees[i]++;
+      this.degrees[j]++;
+      this._rho = undefined; // Invalidate cache
+    }
+  }
+  
+  removeEdge(i, j) {
+    if (this.adj[i][j] === 1) {
+      this.adj[i][j] = 0;
+      this.adj[j][i] = 0;
+      this.degrees[i]--;
+      this.degrees[j]--;
+      this._rho = undefined; // Invalidate cache
+    }
+  }
+  
+  getEdgeCount() {
+    let count = 0;
+    for (let i = 0; i < this.n; i++) {
+      for (let j = i + 1; j < this.n; j++) {
+        if (this.adj[i][j] === 1) count++;
+      }
+    }
+    return count;
+  }
+  
+  getLaplacian() {
+    const L = Array(this.n).fill(null).map(() => Array(this.n).fill(0));
+    for (let i = 0; i < this.n; i++) {
+      L[i][i] = this.degrees[i];
+      for (let j = 0; j < this.n; j++) {
+        if (i !== j) {
+          L[i][j] = -this.adj[i][j];
+        }
+      }
+    }
+    return L;
+  }
+  
+  getSpectralRadius() {
+    // Return cached value if available
+    if (this._rho !== undefined) return this._rho;
+    
+    // Approximate using power iteration with early convergence
+    const A = this.adj;
+    const n = this.n;
+    let v = Array(n).fill(1.0 / Math.sqrt(n));
+    
+    const MAX_ITERS = 20; // Reduced from 50 for speed
+    const CONVERGENCE_TOL = 1e-6;
+    let prev_lambda = 0;
+    
+    for (let iter = 0; iter < MAX_ITERS; iter++) {
+      const Av = Array(n).fill(0);
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          Av[i] += A[i][j] * v[j];
+        }
+      }
+      const norm = Math.sqrt(Av.reduce((s, x) => s + x*x, 0));
+      if (norm === 0) {
+        this._rho = 0;
+        return 0;
+      }
+      v = Av.map(x => x / norm);
+      
+      // Check convergence every 5 iterations
+      if (iter % 5 === 0 && iter > 0) {
+        let lambda = 0;
+        for (let i = 0; i < n; i++) {
+          let Av_i = 0;
+          for (let j = 0; j < n; j++) {
+            Av_i += A[i][j] * v[j];
+          }
+          lambda += v[i] * Av_i;
+        }
+        
+        if (Math.abs(lambda - prev_lambda) < CONVERGENCE_TOL) {
+          this._rho = Math.abs(lambda);
+          return this._rho;
+        }
+        prev_lambda = lambda;
+      }
+    }
+    
+    let lambda = 0;
+    for (let i = 0; i < n; i++) {
+      let Av_i = 0;
+      for (let j = 0; j < n; j++) {
+        Av_i += A[i][j] * v[j];
+      }
+      lambda += v[i] * Av_i;
+    }
+    this._rho = Math.abs(lambda);
+    return this._rho;
+  }
+  
+  getLaplacianTrace() {
+    return this.degrees.reduce((s, d) => s + d, 0);
+  }
+  
+  getDegreeEntropy() {
+    const total = this.degrees.reduce((s, d) => s + d, 0);
+    if (total === 0) return 0;
+    const probs = this.degrees.map(d => d / total);
+    let entropy = 0;
+    for (const p of probs) {
+      if (p > 0) entropy -= p * Math.log(p);
+    }
+    return entropy;
+  }
+  
+  clone() {
+    const g = new Graph(this.n);
+    for (let i = 0; i < this.n; i++) {
+      for (let j = 0; j < this.n; j++) {
+        g.adj[i][j] = this.adj[i][j];
+      }
+      g.degrees[i] = this.degrees[i];
+    }
+    return g;
+  }
+}
+
+class SeededRNG {
+  constructor(seed) {
+    this.state = seed >>> 0;
+  }
+  
+  random() {
+    this.state = (this.state * 1664525 + 1013904223) >>> 0;
+    return this.state / 4294967296;
+  }
+  
+  gaussian() {
+    let u1 = this.random();
+    let u2 = this.random();
+    if (u1 < 1e-10) u1 = 1e-10;
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  
+  randomInt(max) {
+    return Math.floor(this.random() * max);
+  }
+}
+
+class EnsembleEngine {
+  constructor(config) {
+    this.M = config.ensemble_size || 100;
+    this.n = config.node_count || 32;
+    this.generator = config.generator || 'erdos-renyi';
+    this.seed = config.seed || 137042;
+    this.rng = new SeededRNG(this.seed);
+    
+    this.ensemble = [];
+    this.V_values = [];
+    this.I_values = [];
+    this.V_target = null;
+    
+    // Ω4b parameters
+    this.omega_keep_fraction = config.omega_keep_fraction || 0.3;
+    this.omega_ensemble = null;
+    this.omega_indices = null;
+    
+    // τ parameters
+    this.tau_ensemble = null;
+  }
+  
+  generateEnsemble() {
+    log('Generating ensemble...', 'header');
+    this.ensemble = [];
+    
+    for (let i = 0; i < this.M; i++) {
+      const g = this.generateGraph();
+      this.ensemble.push(g);
+    }
+    
+    this.computeObservables();
+    log(`Generated ${this.M} structures (n=${this.n})`);
+  }
+  
+  generateGraph() {
+    const g = new Graph(this.n);
+    
+    if (this.generator === 'erdos-renyi') {
+      const p = 0.2;
+      for (let i = 0; i < this.n; i++) {
+        for (let j = i + 1; j < this.n; j++) {
+          if (this.rng.random() < p) {
+            g.addEdge(i, j);
+          }
+        }
+      }
+    } else if (this.generator === 'watts-strogatz') {
+      const k = 4;
+      const beta = 0.3;
+      // Ring lattice
+      for (let i = 0; i < this.n; i++) {
+        for (let j = 1; j <= k/2; j++) {
+          g.addEdge(i, (i + j) % this.n);
+        }
+      }
+      // Rewire
+      for (let i = 0; i < this.n; i++) {
+        for (let j = 1; j <= k/2; j++) {
+          if (this.rng.random() < beta) {
+            g.removeEdge(i, (i + j) % this.n);
+            let target = this.rng.randomInt(this.n);
+            while (target === i || g.adj[i][target] === 1) {
+              target = this.rng.randomInt(this.n);
+            }
+            g.addEdge(i, target);
+          }
+        }
+      }
+    } else if (this.generator === 'barabasi-albert') {
+      const m = 2;
+      // Start with complete graph on m nodes
+      for (let i = 0; i < m; i++) {
+        for (let j = i + 1; j < m; j++) {
+          g.addEdge(i, j);
+        }
+      }
+      // Add remaining nodes with preferential attachment
+      for (let i = m; i < this.n; i++) {
+        const degrees = g.degrees.slice(0, i);
+        const totalDeg = degrees.reduce((s, d) => s + d, 0);
+        const targets = new Set();
+        while (targets.size < m && targets.size < i) {
+          const r = this.rng.random() * totalDeg;
+          let cumSum = 0;
+          for (let j = 0; j < i; j++) {
+            cumSum += degrees[j];
+            if (r <= cumSum) {
+              targets.add(j);
+              break;
+            }
+          }
+        }
+        targets.forEach(j => g.addEdge(i, j));
+      }
+    }
+    
+    return g;
+  }
+  
+  computeObservables() {
+    this.V_values = [];
+    this.I_values = [];
+    
+    for (const g of this.ensemble) {
+      // V proxy: α*ρ/n + β*Tr(L)/n + γ*H(deg)
+      const rho = g.getSpectralRadius();
+      const trL = g.getLaplacianTrace();
+      const H = g.getDegreeEntropy();
+      
+      const alpha = 1.0, beta = 0.5, gamma = 0.3;
+      const V = alpha * (rho / g.n) + beta * (trL / g.n) + gamma * H;
+      this.V_values.push(V);
+      
+      // Protected invariants
+      const I = {
+        scaled_spectral_radius: rho / g.n,
+        energy_per_node: trL / g.n,
+        degree_entropy: H
+      };
+      this.I_values.push(I);
+    }
+    
+    // Compute V_target (median)
+    const sorted = [...this.V_values].sort((a, b) => a - b);
+    this.V_target = sorted[Math.floor(sorted.length / 2)];
+    
+    log(`V_target = ${this.V_target.toFixed(6)} (median)`);
+  }
+  
+  computeRL(ensemble, V_values) {
+    const V_mean = V_values.reduce((s, v) => s + v, 0) / V_values.length;
+    const epsilon = 1e-6;
+    return Math.abs(V_mean - this.V_target) / Math.max(Math.abs(this.V_target), epsilon);
+  }
+  
+  applyOmega4b() {
+    log('Applying Ω4b selection...', 'header');
+    
+    const scores = this.V_values.map(V => -Math.abs(V - this.V_target));
+    const indexed = scores.map((score, idx) => ({score, idx}));
+    indexed.sort((a, b) => b.score - a.score);
+    
+    const k = Math.floor(this.omega_keep_fraction * this.M);
+    this.omega_indices = indexed.slice(0, k).map(item => item.idx);
+    this.omega_ensemble = this.omega_indices.map(idx => this.ensemble[idx]);
+    
+    const accept_rate = this.omega_indices.length / this.M;
+    log(`Ω4b: kept ${this.omega_indices.length}/${this.M} structures (${(accept_rate*100).toFixed(1)}%)`);
+    
+    return {
+      ensemble: this.omega_ensemble,
+      indices: this.omega_indices,
+      accept_rate: accept_rate
+    };
+  }
+  
+  applyTau(tau_family, tau_params) {
+    log(`Applying τ operator: ${tau_family}...`, 'header');
+    
+    if (!this.omega_ensemble) {
+      log('ERROR: Ω4b not applied yet', 'fail');
+      return null;
+    }
+    
+    this.tau_ensemble = this.omega_ensemble.map(g => {
+      switch(tau_family) {
+        case 'tau_A': return this.tau_A_laplacian(g, tau_params);
+        case 'tau_B': return this.tau_B_spectral(g, tau_params);
+        case 'tau_C': return this.tau_C_divergence(g, tau_params);
+        case 'tau_D': return this.tau_D_curvature(g, tau_params);
+        case 'tau_E': return this.tau_E_multiscale(g, tau_params);
+        default: return g.clone();
+      }
+    });
+    
+    log(`τ operator applied to ${this.tau_ensemble.length} structures`);
+    
+    return this.tau_ensemble;
+  }
+  
+  // τA: Laplacian heat-flow smoothing
+  tau_A_laplacian(g, params) {
+    const g_new = g.clone();
+    const lambda = params.lambda || 0.1;
+    const T = Math.min(params.iterations || 10, 100); // Hard cap at 100
+    const epsilon_V = params.epsilon_V || 0.05;
+    
+    let prev_energy = g_new.getLaplacianTrace();
+    const PLATEAU_THRESHOLD = 1e-9;
+    const MAX_PLATEAU_COUNT = 3;
+    let plateau_count = 0;
+    
+    // Iterative diffusion on edge weights
+    for (let t = 0; t < T; t++) {
+      const delta_w = Array(g.n).fill(null).map(() => Array(g.n).fill(0));
+      
+      for (let i = 0; i < g.n; i++) {
+        for (let j = 0; j < g.n; j++) {
+          if (i !== j) {
+            const L_ij = g_new.degrees[i] * (i === j ? 1 : 0) - g_new.adj[i][j];
+            delta_w[i][j] -= lambda * L_ij;
+          }
+        }
+      }
+      
+      // Apply small perturbation (threshold to maintain binary adjacency)
+      for (let i = 0; i < g.n; i++) {
+        for (let j = i + 1; j < g.n; j++) {
+          const change = delta_w[i][j];
+          if (Math.abs(change) > 0.3 && g_new.adj[i][j] === 1) {
+            // Probabilistic edge removal
+            if (this.rng.random() < Math.abs(change) * lambda) {
+              g_new.removeEdge(i, j);
+            }
+          } else if (Math.abs(change) > 0.3 && g_new.adj[i][j] === 0) {
+            // Probabilistic edge addition
+            if (this.rng.random() < Math.abs(change) * lambda) {
+              g_new.addEdge(i, j);
+            }
+          }
+        }
+      }
+      
+      // Plateau detection
+      const curr_energy = g_new.getLaplacianTrace();
+      if (Math.abs(curr_energy - prev_energy) < PLATEAU_THRESHOLD) {
+        plateau_count++;
+        if (plateau_count >= MAX_PLATEAU_COUNT) {
+          // τ-lock detected
+          break;
+        }
+      } else {
+        plateau_count = 0;
+      }
+      prev_energy = curr_energy;
+    }
+    
+    return g_new;
+  }
+  
+  // τB: Spectral band-limiter
+  tau_B_spectral(g, params) {
+    const g_new = g.clone();
+    const lambda = params.lambda || 0.1;
+    const mu = params.mu || 0.05;
+    const T = Math.min(params.iterations || 10, 100); // Hard cap at 100
+    
+    let prev_spectral_radius = g_new.getSpectralRadius();
+    const PLATEAU_THRESHOLD = 1e-9;
+    const MAX_PLATEAU_COUNT = 3;
+    let plateau_count = 0;
+    
+    // Simplified spectral filtering via degree-based rewiring
+    for (let t = 0; t < T; t++) {
+      // Find high-degree nodes (high-frequency components)
+      const avg_deg = g_new.degrees.reduce((s, d) => s + d, 0) / g_new.n;
+      const high_deg_nodes = [];
+      const low_deg_nodes = [];
+      
+      for (let i = 0; i < g_new.n; i++) {
+        if (g_new.degrees[i] > avg_deg * 1.5) {
+          high_deg_nodes.push(i);
+        } else if (g_new.degrees[i] < avg_deg * 0.5) {
+          low_deg_nodes.push(i);
+        }
+      }
+      
+      // If no rewiring possible, exit early
+      if (high_deg_nodes.length === 0 || low_deg_nodes.length === 0) {
+        break;
+      }
+      
+      // Rewire edges from high-degree to low-degree nodes
+      const rewires = Math.min(3, high_deg_nodes.length, low_deg_nodes.length);
+      for (let r = 0; r < rewires; r++) {
+        const hi = high_deg_nodes[this.rng.randomInt(high_deg_nodes.length)];
+        const lo = low_deg_nodes[this.rng.randomInt(low_deg_nodes.length)];
+        
+        // Find an edge from hi to remove
+        for (let j = 0; j < g_new.n; j++) {
+          if (g_new.adj[hi][j] === 1 && j !== lo) {
+            g_new.removeEdge(hi, j);
+            g_new.addEdge(lo, j);
+            break;
+          }
+        }
+      }
+      
+      // Plateau detection (every 5 iterations to reduce overhead)
+      if (t % 5 === 0) {
+        const curr_spectral_radius = g_new.getSpectralRadius();
+        if (Math.abs(curr_spectral_radius - prev_spectral_radius) < PLATEAU_THRESHOLD) {
+          plateau_count++;
+          if (plateau_count >= MAX_PLATEAU_COUNT) {
+            // τ-lock detected
+            break;
+          }
+        } else {
+          plateau_count = 0;
+        }
+        prev_spectral_radius = curr_spectral_radius;
+      }
+    }
+    
+    return g_new;
+  }
+  
+  // τC: Divergence minimizer
+  tau_C_divergence(g, params) {
+    const g_new = g.clone();
+    const lambda = params.lambda || 0.1;
+    const epsilon_V = params.epsilon_V || 0.05;
+    const T = Math.min(params.iterations || 10, 100); // Hard cap at 100
+    
+    let prev_variance = 0;
+    const PLATEAU_THRESHOLD = 1e-9;
+    const MAX_PLATEAU_COUNT = 3;
+    let plateau_count = 0;
+    
+    // Minimize local "divergence" = degree variance
+    for (let t = 0; t < T; t++) {
+      const avg_deg = g_new.degrees.reduce((s, d) => s + d, 0) / g_new.n;
+      const deviations = g_new.degrees.map(d => Math.abs(d - avg_deg));
+      
+      // Find max deviation node
+      let max_dev_node = 0;
+      for (let i = 1; i < g_new.n; i++) {
+        if (deviations[i] > deviations[max_dev_node]) {
+          max_dev_node = i;
+        }
+      }
+      
+      // If deviation is negligible, exit early
+      if (deviations[max_dev_node] < 1e-6) {
+        break;
+      }
+      
+      // Adjust degree toward average
+      if (g_new.degrees[max_dev_node] > avg_deg) {
+        // Remove an edge
+        for (let j = 0; j < g_new.n; j++) {
+          if (g_new.adj[max_dev_node][j] === 1) {
+            g_new.removeEdge(max_dev_node, j);
+            break;
+          }
+        }
+      } else if (g_new.degrees[max_dev_node] < avg_deg) {
+        // Add an edge
+        for (let j = 0; j < g_new.n; j++) {
+          if (g_new.adj[max_dev_node][j] === 0 && j !== max_dev_node) {
+            g_new.addEdge(max_dev_node, j);
+            break;
+          }
+        }
+      }
+      
+      // Plateau detection
+      const curr_variance = deviations.reduce((s, d) => s + d*d, 0) / g_new.n;
+      if (Math.abs(curr_variance - prev_variance) < PLATEAU_THRESHOLD) {
+        plateau_count++;
+        if (plateau_count >= MAX_PLATEAU_COUNT) {
+          // τ-lock detected
+          break;
+        }
+      } else {
+        plateau_count = 0;
+      }
+      prev_variance = curr_variance;
+    }
+    
+    return g_new;
+  }
+  
+  // τD: Curvature equalizer
+  tau_D_curvature(g, params) {
+    const g_new = g.clone();
+    const mu = params.mu || 0.05;
+    const T = Math.min(params.iterations || 10, 100); // Hard cap at 100
+    
+    let prev_curv_variance = 0;
+    const PLATEAU_THRESHOLD = 1e-9;
+    const MAX_PLATEAU_COUNT = 3;
+    let plateau_count = 0;
+    
+    // Use degree-based "curvature" proxy
+    for (let t = 0; t < T; t++) {
+      const curvatures = g_new.degrees.map(d => d * d); // quadratic proxy
+      const mean_curv = curvatures.reduce((s, c) => s + c, 0) / g_new.n;
+      
+      let made_change = false;
+      
+      // Equalize curvatures
+      for (let i = 0; i < g_new.n; i++) {
+        const delta = curvatures[i] - mean_curv;
+        if (Math.abs(delta) > mean_curv * mu) {
+          if (delta > 0 && g_new.degrees[i] > 1) {
+            // Reduce degree
+            for (let j = 0; j < g_new.n; j++) {
+              if (g_new.adj[i][j] === 1) {
+                g_new.removeEdge(i, j);
+                made_change = true;
+                break;
+              }
+            }
+          } else if (delta < 0 && g_new.degrees[i] < g_new.n - 1) {
+            // Increase degree
+            for (let j = 0; j < g_new.n; j++) {
+              if (g_new.adj[i][j] === 0 && i !== j) {
+                g_new.addEdge(i, j);
+                made_change = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // If no changes made, exit early
+      if (!made_change) {
+        break;
+      }
+      
+      // Plateau detection
+      const curr_curv_variance = curvatures.reduce((s, c) => {
+        const diff = c - mean_curv;
+        return s + diff * diff;
+      }, 0) / g_new.n;
+      
+      if (Math.abs(curr_curv_variance - prev_curv_variance) < PLATEAU_THRESHOLD) {
+        plateau_count++;
+        if (plateau_count >= MAX_PLATEAU_COUNT) {
+          // τ-lock detected
+          break;
+        }
+      } else {
+        plateau_count = 0;
+      }
+      prev_curv_variance = curr_curv_variance;
+    }
+    
+    return g_new;
+  }
+  
+  // τE: Multi-scale
+  tau_E_multiscale(g, params) {
+    // ═══════════════════════════════════════════════════════════════════════
+    // τ_E: True Multi-Scale Stabilization Operator
+    // ═══════════════════════════════════════════════════════════════════════
+    // 
+    // Algorithm:
+    //   1. Coarsen: Partition nodes by degree into k groups (supernodes)
+    //   2. Build quotient graph: Groups become nodes, inter-group edges preserved
+    //   3. Stabilize coarse: Apply spectral stabilization on quotient
+    //   4. Lift: Map coarse changes back via inter-group rewiring
+    //   5. Fine tune: Local stabilization at original scale
+    //
+    // Guarantees distinct from τ_B:
+    //   - Works on quotient graph (multi-scale structure)
+    //   - Different rewiring strategy (coarse-guided)
+    //   - Parameter scaling (λ_coarse = λ/2, λ_fine = λ)
+    //   - Two-phase optimization
+    //
+    // Date implemented: 2026-01-09 (replaces placeholder)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const g_new = g.clone();
+    const lambda = params.lambda || 0.1;
+    const epsilon_V = params.epsilon_V || 0.05;
+    const T = Math.min(params.iterations || 10, 100);
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 1: COARSE-GRAINING
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // Partition nodes by degree into k groups
+    const k = 4; // Number of coarse groups
+    const degrees = g_new.degrees.slice();
+    const sorted_nodes = Array.from({length: g_new.n}, (_, i) => i)
+      .sort((a, b) => degrees[b] - degrees[a]);
+    
+    // Assign nodes to groups (stratified by degree)
+    const groups = Array(k).fill(null).map(() => []);
+    for (let i = 0; i < g_new.n; i++) {
+      const group_idx = Math.floor(i * k / g_new.n);
+      groups[group_idx].push(sorted_nodes[i]);
+    }
+    
+    // Build node -> group mapping
+    const node_to_group = Array(g_new.n);
+    for (let gid = 0; gid < k; gid++) {
+      for (const node of groups[gid]) {
+        node_to_group[node] = gid;
+      }
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 2: BUILD QUOTIENT GRAPH
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // Count inter-group and intra-group edges
+    const quotient_adj = Array(k).fill(null).map(() => Array(k).fill(0));
+    const intra_group_edges = Array(k).fill(0);
+    
+    for (let i = 0; i < g_new.n; i++) {
+      const gi = node_to_group[i];
+      for (let j = i + 1; j < g_new.n; j++) {
+        if (g_new.adj[i][j] === 1) {
+          const gj = node_to_group[j];
+          if (gi === gj) {
+            intra_group_edges[gi]++;
+          } else {
+            quotient_adj[gi][gj]++;
+            quotient_adj[gj][gi]++;
+          }
+        }
+      }
+    }
+    
+    // Quotient graph "degrees"
+    const quotient_degrees = quotient_adj.map(row => row.reduce((s, x) => s + x, 0));
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 3: COARSE-SCALE STABILIZATION
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // Target: Balance inter-group connectivity
+    // Strategy: Rewire to equalize quotient degrees (spectral stabilization)
+    
+    const T_coarse = Math.max(3, Math.floor(T / 3)); // 1/3 iterations on coarse scale
+    const lambda_coarse = lambda * 0.5; // Gentler at coarse scale
+    
+    for (let t = 0; t < T_coarse; t++) {
+      // Find imbalanced group pairs
+      const avg_quotient_deg = quotient_degrees.reduce((s, d) => s + d, 0) / k;
+      
+      // Find overconnected and underconnected groups
+      let max_group = 0, min_group = 0;
+      for (let i = 0; i < k; i++) {
+        if (quotient_degrees[i] > quotient_degrees[max_group]) max_group = i;
+        if (quotient_degrees[i] < quotient_degrees[min_group]) min_group = i;
+      }
+      
+      // If already balanced, exit coarse phase
+      if (Math.abs(quotient_degrees[max_group] - quotient_degrees[min_group]) < 2) {
+        break;
+      }
+      
+      // Probabilistic acceptance (like Metropolis)
+      const p_rewire = lambda_coarse;
+      if (this.rng.random() < p_rewire) {
+        // Find intermediate group to facilitate rewiring
+        let mid_group = -1;
+        for (let i = 0; i < k; i++) {
+          if (i !== max_group && i !== min_group) {
+            if (quotient_adj[max_group][i] > 0) {
+              mid_group = i;
+              break;
+            }
+          }
+        }
+        
+        if (mid_group >= 0) {
+          // Coarse rewiring decision recorded
+          // (will be lifted to fine scale in Phase 4)
+          quotient_adj[max_group][mid_group]--;
+          quotient_adj[mid_group][max_group]--;
+          quotient_adj[min_group][mid_group]++;
+          quotient_adj[mid_group][min_group]++;
+          
+          // Update quotient degrees
+          quotient_degrees[max_group]--;
+          quotient_degrees[min_group]++;
+        }
+      }
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 4: LIFTING (Map coarse changes to fine scale)
+    // ─────────────────────────────────────────────────────────────────────
+    
+    const T_lift = Math.max(2, Math.floor(T / 4));
+    
+    for (let t = 0; t < T_lift; t++) {
+      // Find groups with imbalanced quotient degrees
+      const target_quotient_deg = quotient_degrees.reduce((s, d) => s + d, 0) / k;
+      
+      for (let gi = 0; gi < k; gi++) {
+        const deviation = quotient_degrees[gi] - target_quotient_deg;
+        
+        if (Math.abs(deviation) < 0.5) continue; // Already balanced
+        
+        if (deviation > 0) {
+          // Group gi is overconnected → remove inter-group edge
+          const node_i = groups[gi][this.rng.randomInt(groups[gi].length)];
+          
+          // Find edge from node_i to another group
+          for (let node_j = 0; node_j < g_new.n; node_j++) {
+            if (g_new.adj[node_i][node_j] === 1 && node_to_group[node_j] !== gi) {
+              g_new.removeEdge(node_i, node_j);
+              break;
+            }
+          }
+        } else {
+          // Group gi is underconnected → add inter-group edge
+          const node_i = groups[gi][this.rng.randomInt(groups[gi].length)];
+          
+          // Find non-connected node in another group
+          let edge_added = false;
+          outer_lift_loop: for (let gj = 0; gj < k; gj++) {
+            if (gj === gi) continue;
+            for (const node_j of groups[gj]) {
+              if (g_new.adj[node_i][node_j] === 0) {
+                g_new.addEdge(node_i, node_j);
+                edge_added = true;
+                break outer_lift_loop;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 5: FINE-SCALE TUNING
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // Local spectral stabilization at original scale
+    const T_fine = T - T_coarse - T_lift;
+    
+    let prev_spectral_radius = g_new.getSpectralRadius();
+    const PLATEAU_THRESHOLD = 1e-9;
+    const MAX_PLATEAU_COUNT = 3;
+    let plateau_count = 0;
+    
+    for (let t = 0; t < T_fine; t++) {
+      // Find high-degree and low-degree nodes
+      const avg_deg = g_new.degrees.reduce((s, d) => s + d, 0) / g_new.n;
+      const high_deg_nodes = [];
+      const low_deg_nodes = [];
+      
+      for (let i = 0; i < g_new.n; i++) {
+        if (g_new.degrees[i] > avg_deg * 1.5) {
+          high_deg_nodes.push(i);
+        } else if (g_new.degrees[i] < avg_deg * 0.5) {
+          low_deg_nodes.push(i);
+        }
+      }
+      
+      if (high_deg_nodes.length === 0 || low_deg_nodes.length === 0) break;
+      
+      // Fine-scale rewiring (within-scale, not cross-group biased)
+      const rewires = Math.min(2, high_deg_nodes.length, low_deg_nodes.length);
+      for (let r = 0; r < rewires; r++) {
+        const hi = high_deg_nodes[this.rng.randomInt(high_deg_nodes.length)];
+        const lo = low_deg_nodes[this.rng.randomInt(low_deg_nodes.length)];
+        
+        // Rewire edge from hi to lo
+        for (let j = 0; j < g_new.n; j++) {
+          if (g_new.adj[hi][j] === 1 && j !== lo) {
+            g_new.removeEdge(hi, j);
+            g_new.addEdge(lo, j);
+            break;
+          }
+        }
+      }
+      
+      // Plateau detection
+      if (t % 3 === 0) {
+        const curr_spectral_radius = g_new.getSpectralRadius();
+        if (Math.abs(curr_spectral_radius - prev_spectral_radius) < PLATEAU_THRESHOLD) {
+          plateau_count++;
+          if (plateau_count >= MAX_PLATEAU_COUNT) break;
+        } else {
+          plateau_count = 0;
+        }
+        prev_spectral_radius = curr_spectral_radius;
+      }
+    }
+    
+    return g_new;
+  }
+  
+  computeInvariants(ensemble) {
+    const invariants = {
+      scaled_spectral_radius: [],
+      energy_per_node: [],
+      degree_entropy: []
+    };
+    
+    for (const g of ensemble) {
+      const rho = g.getSpectralRadius();
+      const trL = g.getLaplacianTrace();
+      const H = g.getDegreeEntropy();
+      
+      invariants.scaled_spectral_radius.push(rho / g.n);
+      invariants.energy_per_node.push(trL / g.n);
+      invariants.degree_entropy.push(H);
+    }
+    
+    return {
+      scaled_spectral_radius: invariants.scaled_spectral_radius.reduce((s, x) => s + x, 0) / ensemble.length,
+      energy_per_node: invariants.energy_per_node.reduce((s, x) => s + x, 0) / ensemble.length,
+      degree_entropy: invariants.degree_entropy.reduce((s, x) => s + x, 0) / ensemble.length
+    };
+  }
+  
+  evaluateAdmissibility(guardrails) {
+    log('Computing baseline metrics...');
+    const verdict = {
+      pass: false,
+      reason: '',
+      details: {}
+    };
+    
+    // Compute baseline metrics
+    const RL_baseline = this.computeRL(this.ensemble, this.V_values);
+    log(`RL_baseline = ${RL_baseline.toFixed(6)}`);
+    
+    // Compute Ω metrics
+    log('Computing Ω metrics...');
+    const omega_V_values = this.omega_indices.map(idx => this.V_values[idx]);
+    const RL_omega = this.computeRL(this.omega_ensemble, omega_V_values);
+    log(`RL_omega = ${RL_omega.toFixed(6)}`);
+    
+    // Compute τ metrics (with progress logging)
+    log(`Computing τ metrics for ${this.tau_ensemble.length} structures...`);
+    const tau_V_values = [];
+    const progress_interval = Math.max(1, Math.floor(this.tau_ensemble.length / 5));
+    
+    for (let idx = 0; idx < this.tau_ensemble.length; idx++) {
+      const g = this.tau_ensemble[idx];
+      if (idx % progress_interval === 0) {
+        log(`  Processing structure ${idx+1}/${this.tau_ensemble.length}...`);
+      }
+      
+      const rho = g.getSpectralRadius();
+      const trL = g.getLaplacianTrace();
+      const H = g.getDegreeEntropy();
+      const alpha = 1.0, beta = 0.5, gamma = 0.3;
+      const V = alpha * (rho / g.n) + beta * (trL / g.n) + gamma * H;
+      tau_V_values.push(V);
+    }
+    
+    log('Computing post-τ residual...');
+    const RL_tau = this.computeRL(this.tau_ensemble, tau_V_values);
+    log(`RL_tau = ${RL_tau.toFixed(6)}`);
+    
+    verdict.details.RL_baseline = RL_baseline;
+    verdict.details.RL_omega = RL_omega;
+    verdict.details.RL_tau = RL_tau;
+    verdict.details.contraction_ratio = RL_tau / RL_omega;
+    verdict.details.accept_rate = this.omega_indices.length / this.M;
+    
+    // Check nondegeneracy
+    const [a, b] = guardrails.acceptance_band;
+    if (verdict.details.accept_rate < a || verdict.details.accept_rate > b) {
+      verdict.pass = false;
+      verdict.reason = 'INVALID — Ω acceptance rate outside [a,b]';
+      return verdict;
+    }
+    
+    // Check residual contraction
+    const improvement = RL_omega - RL_tau;
+    if (improvement < guardrails.delta) {
+      verdict.pass = false;
+      verdict.reason = 'FAIL (residual) — No contraction beyond Δ';
+      verdict.details.improvement = improvement;
+      return verdict;
+    }
+    
+    // Check invariant protection
+    const I_baseline = this.computeInvariants(this.ensemble);
+    const I_tau = this.computeInvariants(this.tau_ensemble);
+    
+    const drifts = {
+      scaled_spectral_radius: Math.abs(I_tau.scaled_spectral_radius - I_baseline.scaled_spectral_radius) / Math.max(Math.abs(I_baseline.scaled_spectral_radius), 1e-6),
+      energy_per_node: Math.abs(I_tau.energy_per_node - I_baseline.energy_per_node) / Math.max(Math.abs(I_baseline.energy_per_node), 1e-6),
+      degree_entropy: Math.abs(I_tau.degree_entropy - I_baseline.degree_entropy) / Math.max(Math.abs(I_baseline.degree_entropy), 1e-6)
+    };
+    
+    verdict.details.I_baseline = I_baseline;
+    verdict.details.I_tau = I_tau;
+    verdict.details.drifts = drifts;
+    verdict.details.max_drift = Math.max(...Object.values(drifts));
+    
+    if (verdict.details.max_drift > guardrails.drift) {
+      verdict.pass = false;
+      verdict.reason = 'FAIL (invariant) — Protected drift exceeds δ';
+      return verdict;
+    }
+    
+    // All checks passed
+    verdict.pass = true;
+    verdict.reason = 'PASS — τ is admissible post-Ω4b';
+    return verdict;
+  }
+}
+
+// ============================================================================
+// UI & VISUALIZATION
+// ============================================================================
+
+const ui = {
+  // Controls
+  runBtn: document.getElementById('runPipeline'),
+  stopBtn: document.getElementById('stopPipeline'),
+  resetBtn: document.getElementById('resetTau'),
+  exportBtn: document.getElementById('exportData'),
+  
+  // Pipeline stages
+  stageE: document.getElementById('stageE'),
+  stageOmega: document.getElementById('stageOmega'),
+  stageTau: document.getElementById('stageTau'),
+  
+  // Canvases
+  canvasVDist: document.getElementById('canvasVDist'),
+  canvasRLPath: document.getElementById('canvasRLPath'),
+  
+  // Metrics
+  metricRL0: document.getElementById('metricRL0'),
+  metricRLOmega: document.getElementById('metricRLOmega'),
+  metricRLTau: document.getElementById('metricRLTau'),
+  metricCR: document.getElementById('metricCR'),
+  metricAccept: document.getElementById('metricAccept'),
+  metricDrift: document.getElementById('metricDrift'),
+  
+  // Log
+  logPanel: document.getElementById('logPanel'),
+  
+  // Verdict
+  verdictPanel: document.getElementById('verdictPanel'),
+  
+  // Progress
+  progressFill: document.getElementById('progressFill')
+};
+
+let engine = null;
+let running = false;
+let results = null;
+
+// Lambda/mu slider updates
+document.getElementById('tauLambda').addEventListener('input', e => {
+  document.getElementById('lambdaValue').textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+document.getElementById('tauMu').addEventListener('input', e => {
+  document.getElementById('muValue').textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+// Logging
+function log(message, type = 'normal') {
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = message;
+  ui.logPanel.appendChild(entry);
+  ui.logPanel.scrollTop = ui.logPanel.scrollHeight;
+  console.log(message);
+}
+
+// ---------------------------------------------------------
+// Seed handling (fixes JS precision / aliasing for large seeds)
+// ---------------------------------------------------------
+// JavaScript Numbers lose integer precision above 2^53-1.
+// To preserve determinism for *any* user-entered seed, we:
+//  - keep the raw seed string (for provenance)
+//  - derive a stable 32-bit seed used by the RNG
+//  - preserve legacy behavior for safe 32-bit integers
+function fnv1a32(str) {
+  let h = 0x811c9dc5; // 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193); // 16777619
+  }
+  return h >>> 0;
+}
+
+function parseSeedToUint32(raw) {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return { raw: '0', seed32: 0, mode: 'empty→0' };
+
+  // Accept plain integers; reject floats/scientific for clarity.
+  const isInt = /^[-+]?\d+$/.test(s);
+  if (isInt) {
+    // Use BigInt to avoid precision loss when parsing.
+    let bi;
+    try { bi = BigInt(s); } catch (_) { bi = null; }
+    if (bi !== null) {
+      // Legacy: if within uint32, use direct mapping.
+      if (bi >= 0n && bi <= 0xFFFFFFFFn) {
+        return { raw: s, seed32: Number(bi) >>> 0, mode: 'uint32-direct' };
+      }
+      // For larger magnitudes, derive a stable 32-bit seed from the raw string.
+      return { raw: s, seed32: fnv1a32(s), mode: 'string-hash' };
+    }
+  }
+
+  // Fallback: hash any other input (including scientific notation) deterministically.
+  return { raw: s, seed32: fnv1a32(s), mode: 'string-hash' };
+}
+
+// ========================================
+// SEED TRACKING & DISPLAY
+// ========================================
+
+// Track tested seeds to detect duplicates
+const testedSeeds = new Set();
+
+/**
+ * Update seed info display with effective seed and warnings
+ */
+function updateSeedDisplay(seedInfo) {
+  const infoDisplay = document.getElementById('seedInfoDisplay');
+  const warningDisplay = document.getElementById('seedWarning');
+  const duplicateDisplay = document.getElementById('seedDuplicate');
+  const effectiveSeedValue = document.getElementById('effectiveSeedValue');
+  const seedModeValue = document.getElementById('seedModeValue');
+  
+  if (!seedInfo) {
+    infoDisplay.style.display = 'none';
+    warningDisplay.style.display = 'none';
+    duplicateDisplay.style.display = 'none';
+    return;
+  }
+  
+  // Show effective seed and mode
+  effectiveSeedValue.textContent = seedInfo.seed32.toString();
+  seedModeValue.textContent = seedInfo.mode;
+  infoDisplay.style.display = 'block';
+  
+  // Show warning for string-hashed seeds
+  if (seedInfo.mode === 'string-hash') {
+    warningDisplay.style.display = 'block';
+  } else {
+    warningDisplay.style.display = 'none';
+  }
+  
+  // Show duplicate notice if seed was already tested
+  if (testedSeeds.has(seedInfo.seed32)) {
+    duplicateDisplay.style.display = 'block';
+  } else {
+    duplicateDisplay.style.display = 'none';
+  }
+}
+
+/**
+ * Parse and display seed info on input change
+ */
+function onSeedInputChange() {
+  const seedRaw = document.getElementById('rngSeed').value.trim();
+  if (seedRaw === '') {
+    updateSeedDisplay(null);
+    return;
+  }
+  
+  const seedInfo = parseSeedToUint32(seedRaw);
+  updateSeedDisplay(seedInfo);
+  
+  // Log to console for debugging
+  console.log(`Seed parsed: raw="${seedInfo.raw}" → seed32=${seedInfo.seed32} (mode: ${seedInfo.mode})`);
+}
+
+// Attach event listener to seed input
+document.getElementById('rngSeed').addEventListener('input', onSeedInputChange);
+document.getElementById('rngSeed').addEventListener('change', onSeedInputChange);
+
+// Initial display
+onSeedInputChange();
+
+// ========================================
+// GUIDE TOGGLE
+// ========================================
+
+function toggleGuide() {
+  const content = document.getElementById('guideContent');
+  const icon = document.getElementById('guideIcon');
+  
+  if (content.classList.contains('collapsed')) {
+    content.classList.remove('collapsed');
+    content.classList.add('expanded');
+    icon.classList.add('expanded');
+    icon.textContent = '▼';
+  } else {
+    content.classList.remove('expanded');
+    content.classList.add('collapsed');
+    icon.classList.remove('expanded');
+    icon.textContent = '▶';
+  }
+}
+
+// Run pipeline
+ui.runBtn.addEventListener('click', async () => {
+  log('[RUN START]', 'header');
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.verdictPanel.style.display = 'none';
+  
+  try {
+    // Parse config
+	    const seedRaw = (document.getElementById('rngSeed').value || '').trim();
+	    const seedInfo = parseSeedToUint32(seedRaw);
+	    const config = {
+	      ensemble_size: parseInt(document.getElementById('ensembleSize').value),
+	      node_count: parseInt(document.getElementById('nodeCount').value),
+	      generator: document.getElementById('generatorFamily').value,
+	      // Effective 32-bit seed used by the RNG
+	      seed: seedInfo.seed32,
+	      // Raw user seed (for provenance / export)
+	      seed_raw: seedInfo.raw,
+	      seed_mode: seedInfo.mode,
+	      omega_keep_fraction: parseFloat(document.getElementById('keepFraction').value)
+	    };
+    
+    const tau_family = document.getElementById('tauFamily').value;
+    const tau_params = {
+      lambda: parseFloat(document.getElementById('tauLambda').value),
+      mu: parseFloat(document.getElementById('tauMu').value),
+      iterations: parseInt(document.getElementById('tauIterations').value),
+      epsilon_V: parseFloat(document.getElementById('epsilonV').value)
+    };
+    
+    const guardrails = {
+      delta: parseFloat(document.getElementById('deltaGuardrail').value),
+      drift: parseFloat(document.getElementById('driftGuardrail').value),
+      acceptance_band: document.getElementById('acceptanceBand').value.split(',').map(x => parseFloat(x.trim()))
+    };
+    
+	    log(`Config: M=${config.ensemble_size}, n=${config.node_count}, seed32=${config.seed} (raw: ${config.seed_raw}, mode: ${config.seed_mode})`);
+    log(`τ family: ${tau_family}, T=${tau_params.iterations}, λ=${tau_params.lambda}`);
+    log(`Guardrails: Δ=${guardrails.delta}, δ=${guardrails.drift}, [a,b]=[${guardrails.acceptance_band}]`);
+    
+    ui.progressFill.style.width = '0%';
+    
+    // Initialize engine
+    engine = new EnsembleEngine(config);
+    
+    // Stage 1: Generate E
+    log('─'.repeat(50));
+    log('STAGE 1: Generate Ensemble E', 'header');
+    engine.generateEnsemble();
+    const RL_baseline = engine.computeRL(engine.ensemble, engine.V_values);
+    
+    updatePipelineStage('E', {
+      size: engine.M,
+      V: engine.V_values.reduce((s, v) => s + v, 0) / engine.M,
+      RL: RL_baseline
+    });
+    
+    ui.metricRL0.textContent = RL_baseline.toFixed(6);
+    ui.progressFill.style.width = '33%';
+    
+    renderVDistribution([engine.V_values], ['Baseline'], engine.V_target);
+    renderRLPath([RL_baseline]);
+    
+    await sleep(500);
+    if (!running) return;
+    
+    // Stage 2: Apply Ω4b
+    log('─'.repeat(50));
+    log('STAGE 2: Apply Ω4b Selection', 'header');
+    const omega_result = engine.applyOmega4b();
+    const omega_V_values = omega_result.indices.map(idx => engine.V_values[idx]);
+    const RL_omega = engine.computeRL(omega_result.ensemble, omega_V_values);
+    
+    updatePipelineStage('Omega', {
+      size: omega_result.ensemble.length,
+      V: omega_V_values.reduce((s, v) => s + v, 0) / omega_V_values.length,
+      RL: RL_omega,
+      accept: omega_result.accept_rate
+    });
+    
+    ui.metricRLOmega.textContent = RL_omega.toFixed(6);
+    ui.metricAccept.textContent = (omega_result.accept_rate * 100).toFixed(1) + '%';
+    ui.progressFill.style.width = '66%';
+    
+    renderVDistribution([engine.V_values, omega_V_values], ['Baseline', 'Post-Ω'], engine.V_target);
+    renderRLPath([RL_baseline, RL_omega]);
+    
+    await sleep(500);
+    if (!running) return;
+    
+    // Stage 3: Apply τ
+    log('─'.repeat(50));
+    log('STAGE 3: Apply τ Operator', 'header');
+    engine.applyTau(tau_family, tau_params);
+    
+    const tau_V_values = [];
+    for (const g of engine.tau_ensemble) {
+      const rho = g.getSpectralRadius();
+      const trL = g.getLaplacianTrace();
+      const H = g.getDegreeEntropy();
+      const alpha = 1.0, beta = 0.5, gamma = 0.3;
+      const V = alpha * (rho / g.n) + beta * (trL / g.n) + gamma * H;
+      tau_V_values.push(V);
+    }
+    const RL_tau = engine.computeRL(engine.tau_ensemble, tau_V_values);
+    const CR = RL_tau / RL_omega;
+    
+    updatePipelineStage('Tau', {
+      V: tau_V_values.reduce((s, v) => s + v, 0) / tau_V_values.length,
+      RL: RL_tau,
+      CR: CR
+    });
+    
+    ui.metricRLTau.textContent = RL_tau.toFixed(6);
+    ui.metricCR.textContent = CR.toFixed(3);
+    ui.progressFill.style.width = '100%';
+    
+    renderVDistribution([engine.V_values, omega_V_values, tau_V_values], ['Baseline', 'Post-Ω', 'Post-τ'], engine.V_target);
+    renderRLPath([RL_baseline, RL_omega, RL_tau]);
+    
+    await sleep(500);
+    
+    // Evaluate admissibility
+    log('─'.repeat(50));
+    log('EVALUATING ADMISSIBILITY...', 'header');
+    const verdict = engine.evaluateAdmissibility(guardrails);
+    
+    // Only update invariants table if they were computed (didn't fail early)
+    if (verdict.details && verdict.details.I_baseline && verdict.details.I_tau && verdict.details.drifts) {
+      updateInvariantsTable(verdict.details.I_baseline, verdict.details.I_tau, verdict.details.drifts, guardrails.drift);
+      ui.metricDrift.textContent = (verdict.details.max_drift * 100).toFixed(2) + '%';
+      ui.metricDrift.className = verdict.details.max_drift <= guardrails.drift ? 'metric-value good' : 'metric-value bad';
+    } else {
+      // Clear invariants table if not computed
+      ui.metricDrift.textContent = '—';
+      ui.metricDrift.className = 'metric-value';
+      ['inv1', 'inv2', 'inv3'].forEach(prefix => {
+        document.getElementById(`${prefix}Baseline`).textContent = '—';
+        document.getElementById(`${prefix}PostTau`).textContent = '—';
+        document.getElementById(`${prefix}Drift`).textContent = '—';
+        document.getElementById(`${prefix}Status`).textContent = '—';
+        document.getElementById(`${prefix}Status`).className = '';
+      });
+    }
+    
+    displayVerdict(verdict, tau_family, tau_params, guardrails);
+    
+    log('─'.repeat(50));
+    log(`VERDICT: ${verdict.reason}`, verdict.pass ? 'pass' : 'fail');
+    log('[RUN END]', 'header');
+    
+    // Complete results structure for Phase F compliance
+    results = {
+	      meta: {
+	        version: '1.0.1', // seed parsing fix (prevents large-seed aliasing)
+        phase: 'F',
+        chamber: 'XXXV',
+        pipeline: 'Omega4b_to_Tau',
+        upstream: 'XXXIV (inline)',
+        timestamp: new Date().toISOString()
+      },
+      config: config,
+      omega: {
+        mode: '4b',
+        keep_fraction: config.omega_keep_fraction,
+        indices: engine.omega_indices,
+        acceptance_rate: verdict.details.accept_rate,
+        V_target: engine.V_target
+      },
+      tau: {
+        family: tau_family,
+        params: tau_params
+      },
+      metrics: {
+        RL_baseline: verdict.details.RL_baseline,
+        RL_omega: verdict.details.RL_omega,
+        RL_tau: verdict.details.RL_tau,
+        contraction_ratio: verdict.details.contraction_ratio,
+        improvement: verdict.details.RL_omega - verdict.details.RL_tau
+      },
+      invariants: verdict.details.I_baseline && verdict.details.I_tau ? {
+        baseline: verdict.details.I_baseline,
+        post_tau: verdict.details.I_tau,
+        drifts: verdict.details.drifts,
+        max_drift: verdict.details.max_drift
+      } : null,
+      guardrails: guardrails,
+      verdict: verdict,
+      reproducibility: {
+        seed: config.seed,
+        generator: config.generator,
+        ensemble_size: config.ensemble_size,
+        node_count: config.node_count,
+        signature: `Ω4b→τ:${tau_family}:n${config.node_count}:M${config.ensemble_size}:seed${config.seed}`
+      }
+    };
+    
+    // Track tested seed
+    testedSeeds.add(config.seed);
+    
+    ui.exportBtn.disabled = false;
+    
+  } catch (error) {
+    log(`ERROR: ${error.message}`, 'fail');
+    console.error('Pipeline error:', error);
+  } finally {
+    running = false;
+    ui.stopBtn.disabled = true;
+    ui.runBtn.disabled = false;
+    // Enable export only if results were successfully generated
+    if (!results) {
+      ui.exportBtn.disabled = true;
+    }
+  }
+});
+
+// Stop button
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  log('Run stopped by user', 'warn');
+  ui.runBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+});
+
+// Reset button
+ui.resetBtn.addEventListener('click', () => {
+  if (engine && engine.omega_ensemble) {
+    engine.tau_ensemble = null;
+    log('τ effects reset (Ω preserved)', 'warn');
+    updatePipelineStage('Tau', { V: '—', RL: '—', CR: '—' });
+  }
+});
+
+// Export button
+ui.exportBtn.addEventListener('click', () => {
+  if (!results || !results.verdict) {
+    log('No completed run to export', 'warn');
+    return;
+  }
+  
+  const blob = new Blob([JSON.stringify(results, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const datestamp = results.meta.timestamp.split('T')[0];
+  a.download = `LPF-OmegaTau_${results.tau.family}_${datestamp}_seed${results.config.seed}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  log(`Exported: ${a.download}`, 'pass');
+});
+
+// Update pipeline stage displays
+function updatePipelineStage(stage, data) {
+  const prefix = stage === 'E' ? '' : stage === 'Omega' ? 'Omega' : 'Tau';
+  
+  if (data.size !== undefined) {
+    document.getElementById(`size${stage}`).textContent = data.size;
+  }
+  if (data.V !== undefined) {
+    document.getElementById(`v${stage}`).textContent = typeof data.V === 'number' ? data.V.toFixed(4) : data.V;
+  }
+  if (data.RL !== undefined) {
+    document.getElementById(`rl${stage}`).textContent = typeof data.RL === 'number' ? data.RL.toFixed(4) : data.RL;
+  }
+  if (data.accept !== undefined) {
+    document.getElementById(`acceptOmega`).textContent = (data.accept * 100).toFixed(1) + '%';
+  }
+  if (data.CR !== undefined) {
+    document.getElementById(`crTau`).textContent = typeof data.CR === 'number' ? data.CR.toFixed(3) : data.CR;
+  }
+  
+  document.getElementById(`stage${stage}`).classList.add('active');
+}
+
+// Render V distribution histogram
+function renderVDistribution(datasets, labels, V_target) {
+  const canvas = ui.canvasVDist;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const padding = 40;
+  const w = canvas.width - 2 * padding;
+  const h = canvas.height - 2 * padding;
+  
+  // Determine global range
+  const all_values = datasets.flat();
+  const V_min = Math.min(...all_values);
+  const V_max = Math.max(...all_values);
+  
+  const colors = ['#4a9eff', '#4aff4a', '#ff4a9e'];
+  
+  // Draw histograms
+  const bins = 20;
+  const bin_width = (V_max - V_min) / bins;
+  
+  datasets.forEach((data, idx) => {
+    const hist = Array(bins).fill(0);
+    data.forEach(v => {
+      const bin = Math.min(bins - 1, Math.floor((v - V_min) / bin_width));
+      hist[bin]++;
+    });
+    
+    const max_count = Math.max(...hist);
+    ctx.strokeStyle = colors[idx];
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    
+    for (let i = 0; i < bins; i++) {
+      const x = padding + (i / bins) * w;
+      const y = padding + h - (hist[i] / max_count) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+  });
+  
+  // Draw V_target line
+  if (V_target !== null) {
+    const x = padding + ((V_target - V_min) / (V_max - V_min)) * w;
+    ctx.strokeStyle = '#ffa54a';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(x, padding);
+    ctx.lineTo(x, padding + h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.fillStyle = '#ffa54a';
+    ctx.font = '12px Consolas';
+    ctx.fillText('V_target', x + 5, padding + 15);
+  }
+  
+  // Draw axes
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding + h);
+  ctx.lineTo(padding + w, padding + h);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + h);
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText(V_min.toFixed(3), padding, padding + h + 15);
+  ctx.fillText(V_max.toFixed(3), padding + w - 30, padding + h + 15);
+  
+  // Legend
+  ctx.font = '11px Consolas';
+  labels.forEach((label, idx) => {
+    ctx.fillStyle = colors[idx];
+    ctx.fillText(label, padding + w - 100, padding + 15 + idx * 15);
+  });
+}
+
+// Render R_Lambda contraction path
+function renderRLPath(values) {
+  const canvas = ui.canvasRLPath;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (values.length < 2) return;
+  
+  const padding = 40;
+  const w = canvas.width - 2 * padding;
+  const h = canvas.height - 2 * padding;
+  
+  const RL_max = Math.max(...values) * 1.1;
+  const RL_min = 0;
+  
+  // Draw path
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  
+  for (let i = 0; i < values.length; i++) {
+    const x = padding + (i / (values.length - 1)) * w;
+    const y = padding + h - ((values[i] - RL_min) / (RL_max - RL_min)) * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Draw markers
+  ctx.fillStyle = '#4aff4a';
+  for (let i = 0; i < values.length; i++) {
+    const x = padding + (i / (values.length - 1)) * w;
+    const y = padding + h - ((values[i] - RL_min) / (RL_max - RL_min)) * h;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  
+  // Draw axes
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding + h);
+  ctx.lineTo(padding + w, padding + h);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + h);
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText('Baseline', padding, padding + h + 15);
+  ctx.fillText('Post-Ω', padding + w/2 - 20, padding + h + 15);
+  ctx.fillText('Post-τ', padding + w - 40, padding + h + 15);
+  
+  ctx.fillText(RL_max.toFixed(3), padding - 35, padding + 5);
+  ctx.fillText(RL_min.toFixed(3), padding - 35, padding + h + 5);
+  
+  // Title
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.fillText('R_Λ Contraction', padding, padding - 10);
+}
+
+// Update invariants table
+function updateInvariantsTable(I_baseline, I_tau, drifts, drift_threshold) {
+  const fields = [
+    {name: 'scaled_spectral_radius', prefix: 'inv1'},
+    {name: 'energy_per_node', prefix: 'inv2'},
+    {name: 'degree_entropy', prefix: 'inv3'}
+  ];
+  
+  fields.forEach(field => {
+    document.getElementById(`${field.prefix}Baseline`).textContent = I_baseline[field.name].toFixed(4);
+    document.getElementById(`${field.prefix}PostTau`).textContent = I_tau[field.name].toFixed(4);
+    
+    const drift_pct = (drifts[field.name] * 100).toFixed(2);
+    document.getElementById(`${field.prefix}Drift`).textContent = drift_pct + '%';
+    
+    const status_cell = document.getElementById(`${field.prefix}Status`);
+    if (drifts[field.name] <= drift_threshold) {
+      status_cell.textContent = '✓';
+      status_cell.className = 'status-pass';
+    } else if (drifts[field.name] <= drift_threshold * 2) {
+      status_cell.textContent = '⚠';
+      status_cell.className = 'status-warn';
+    } else {
+      status_cell.textContent = '✗';
+      status_cell.className = 'status-fail';
+    }
+  });
+}
+
+// Display verdict
+function displayVerdict(verdict, tau_family, tau_params, guardrails) {
+  const panel = ui.verdictPanel;
+  panel.style.display = 'block';
+  
+  const verdict_class = verdict.pass ? 'pass' : (verdict.reason.includes('INVALID') ? 'invalid' : 'fail');
+  
+  let details_html = `
+    <div><strong>Configuration:</strong> ${tau_family}, T=${tau_params.iterations}, λ=${tau_params.lambda}, μ=${tau_params.mu}</div>
+    <div style="margin-top: 10px;"><strong>Metrics:</strong></div>
+    <ul style="margin-left: 20px; line-height: 1.8;">
+      <li>R<sub>Λ</sub>: ${verdict.details.RL_baseline.toFixed(4)} → ${verdict.details.RL_omega.toFixed(4)} → ${verdict.details.RL_tau.toFixed(4)}</li>
+      <li>Contraction ratio: ${verdict.details.contraction_ratio.toFixed(3)}</li>
+      <li>Acceptance rate: ${(verdict.details.accept_rate * 100).toFixed(1)}%</li>
+      ${verdict.details.max_drift !== undefined ? `<li>Max invariant drift: ${(verdict.details.max_drift * 100).toFixed(2)}%</li>` : ''}
+    </ul>
+  `;
+  
+  if (verdict.pass) {
+    details_html += `
+      <div style="margin-top: 15px; padding: 10px; background: rgba(74, 255, 74, 0.1); border-left: 3px solid #4aff4a; border-radius: 4px;">
+        <strong>Admissibility confirmed:</strong> ${tau_family} exhibits stable residual contraction (${((1 - verdict.details.contraction_ratio) * 100).toFixed(1)}% reduction) while preserving protected macro-invariants (max drift ${(verdict.details.max_drift * 100).toFixed(2)}%, threshold ${(guardrails.drift * 100).toFixed(0)}%).
+      </div>
+    `;
+  } else {
+    const improvement = verdict.details.improvement !== undefined ? verdict.details.improvement : (verdict.details.RL_omega - verdict.details.RL_tau);
+    details_html += `
+      <div style="margin-top: 15px; padding: 10px; background: rgba(255, 74, 74, 0.1); border-left: 3px solid #ff4a4a; border-radius: 4px;">
+        <strong>Failure mode:</strong> ${verdict.reason}
+        ${improvement !== undefined ? `<div style="margin-top: 5px;">Residual improvement: ${improvement.toFixed(4)} (required: ${guardrails.delta})</div>` : ''}
+      </div>
+    `;
+  }
+  
+  panel.innerHTML = `
+    <div class="verdict-box ${verdict_class}">
+      <div class="verdict-title ${verdict_class}">${verdict.reason}</div>
+      <div class="verdict-content">
+        ${details_html}
+      </div>
+    </div>
+  `;
+}
+
+// Sleep utility
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+console.log('✅ Chamber ready!');
+console.log('╚═══════════════════════════════════════════════════════╝');
+  </script>
+</body>
+</html>
