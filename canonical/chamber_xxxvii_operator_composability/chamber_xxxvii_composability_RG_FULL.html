@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber XXXVII v0.3.0 (Operator Composability)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Consolas', 'Monaco', monospace; 
+      background: #0a0a0a; 
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+    .container { 
+      max-width: 1600px; 
+      margin: 0 auto; 
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 300px 1fr 320px;
+      grid-template-rows: auto 1fr auto;
+      gap: 20px;
+      min-height: 100vh;
+    }
+    header { 
+      grid-column: 1 / -1;
+      text-align: center; 
+      padding: 20px; 
+      border-bottom: 2px solid #2a2a2a; 
+    }
+    h1 { 
+      font-size: 1.8em; 
+      color: #4a9eff; 
+      letter-spacing: 2px; 
+      margin-bottom: 10px;
+    }
+    .subtitle { 
+      color: #888; 
+      font-size: 0.9em; 
+    }
+    
+    /* Layout sections */
+    .left-column { 
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .center-column { 
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .right-column { 
+      grid-column: 3;
+      grid-row: 2;
+    }
+    .bottom-panel {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+    
+    /* Panel styles */
+    .panel { 
+      background: #1a1a1a; 
+      border: 1px solid #2a2a2a; 
+      border-radius: 8px; 
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+    .panel-title { 
+      font-size: 1.1em; 
+      color: #4a9eff; 
+      margin-bottom: 15px; 
+      padding-bottom: 10px; 
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-subtitle {
+      font-size: 0.85em;
+      color: #888;
+      margin-top: -10px;
+      margin-bottom: 15px;
+    }
+    
+    /* Controls */
+    .control-group { 
+      margin-bottom: 15px; 
+    }
+    label { 
+      font-size: 0.9em; 
+      color: #aaa; 
+      margin-bottom: 5px; 
+      display: block;
+    }
+    input[type="number"], select { 
+      width: 100%;
+      background: #0a0a0a; 
+      border: 1px solid #3a3a3a; 
+      color: #e0e0e0; 
+      padding: 8px; 
+      border-radius: 4px; 
+      font-family: inherit;
+      font-size: 0.9em;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    button { 
+      background: #2a4a7a; 
+      border: none; 
+      color: #e0e0e0; 
+      padding: 10px 20px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-family: inherit;
+      font-size: 0.9em;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    button:hover { 
+      background: #3a5a8a; 
+    }
+    button:disabled { 
+      background: #1a1a1a; 
+      color: #555; 
+      cursor: not-allowed; 
+    }
+    button.primary { 
+      background: #4a9eff; 
+    }
+    button.primary:hover { 
+      background: #5aaaff; 
+    }
+    
+    /* Pipeline cards */
+    .pipeline-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .pipeline-card {
+      background: #0a0a0a;
+      border: 2px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 15px;
+      position: relative;
+    }
+    .pipeline-card.active {
+      border-color: #4a9eff;
+      box-shadow: 0 0 10px rgba(74, 158, 255, 0.3);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .card-title {
+      font-size: 1em;
+      color: #4a9eff;
+      font-weight: bold;
+    }
+    .card-badge {
+      font-size: 0.75em;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    .badge-pass {
+      background: #2a4a2a;
+      color: #4aff4a;
+    }
+    .badge-fail {
+      background: #4a2a2a;
+      color: #ff4a4a;
+    }
+    .badge-pending {
+      background: #3a3a2a;
+      color: #ffa54a;
+    }
+    .card-metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 0.85em;
+    }
+    .metric-label {
+      color: #888;
+    }
+    .metric-value {
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+    }
+    .metric-value.good {
+      color: #4aff4a;
+    }
+    .metric-value.bad {
+      color: #ff4a4a;
+    }
+    
+    /* Operator tabs */
+    .operator-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    .tab {
+      flex: 1;
+      background: #0a0a0a;
+      border: 1px solid #3a3a3a;
+      color: #888;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      background: #1a1a1a;
+      color: #aaa;
+    }
+    .tab.active {
+      background: #2a4a7a;
+      color: #4a9eff;
+      border-color: #4a9eff;
+    }
+    .operator-params {
+      display: none;
+    }
+    .operator-params.active {
+      display: block;
+    }
+    
+    /* Decision panel */
+    .decision-gates {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .gate {
+      background: #0a0a0a;
+      border: 2px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .gate.pass {
+      border-color: #4aff4a;
+      background: #1a2a1a;
+    }
+    .gate.fail {
+      border-color: #ff4a4a;
+      background: #2a1a1a;
+    }
+    .gate-title {
+      font-size: 1.1em;
+      color: #4a9eff;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .gate-status {
+      font-size: 0.9em;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .gate-check {
+      font-size: 2em;
+      margin: 10px 0;
+    }
+    .verdict-panel {
+      background: #0a0a0a;
+      border: 3px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .verdict-panel.pass {
+      border-color: #4aff4a;
+      background: linear-gradient(135deg, #1a2a1a 0%, #1a2a2a 100%);
+    }
+    .verdict-panel.fail {
+      border-color: #ff4a4a;
+      background: linear-gradient(135deg, #2a1a1a 0%, #2a1a2a 100%);
+    }
+    .verdict-title {
+      font-size: 1.4em;
+      color: #4a9eff;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .verdict-result {
+      font-size: 2em;
+      margin: 15px 0;
+      font-weight: bold;
+    }
+    .verdict-result.pass {
+      color: #4aff4a;
+    }
+    .verdict-result.fail {
+      color: #ff4a4a;
+    }
+    
+    /* Status messages */
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 0.85em;
+    }
+    .status.info {
+      background: #1a2a3a;
+      color: #4a9eff;
+    }
+    .status.success {
+      background: #1a3a2a;
+      color: #4aff4a;
+    }
+    .status.error {
+      background: #3a1a2a;
+      color: #ff4a4a;
+    }
+    
+    /* Progress bar */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a9eff 0%, #4aff4a 100%);
+      transition: width 0.3s;
+      width: 0%;
+    }
+    
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      color: #4a9eff;
+      margin-left: 5px;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 250px;
+      background-color: #1a1a1a;
+      color: #e0e0e0;
+      text-align: left;
+      border-radius: 6px;
+      padding: 10px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -125px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      border: 1px solid #4a9eff;
+      font-size: 0.8em;
+      line-height: 1.4;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    /* Locked indicator */
+    .locked {
+      color: #ffa54a;
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
+  #guide-toggle-indicator {
+  font-size: 0.9em;
+  color: #4a9eff;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XXXVII: OPERATOR COMPOSABILITY</h1>
+      <div class="subtitle">τ→κ/σ/Φ Composability Testing · Phase P · v0.3.0 (Production Ready)</div>
+    </header>
+    
+    <!-- LEFT COLUMN: Locked Inputs -->
+    <div class="left-column">
+      <div class="panel">
+        <div class="panel-title">
+          Locked Configuration
+          <span class="locked">🔒</span>
+        </div>
+        <div class="panel-subtitle">From validated chambers (XXXIV/XXXV)</div>
+        
+        <div class="control-group">
+          <label>Ensemble Size (n) <span class="locked">🔒</span></label>
+          <input type="number" id="n" value="50" disabled>
+        </div>
+        
+        <div class="control-group">
+          <label>Iteration Depth (M) <span class="locked">🔒</span></label>
+          <input type="number" id="M" value="100" disabled>
+        </div>
+        
+        <div class="control-group">
+          <label>Generator <span class="locked">🔒</span></label>
+          <select id="generator" disabled>
+            <option value="barabasi-albert" selected>Barabási-Albert</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label>Ω Variant <span class="locked">🔒</span></label>
+          <select id="omega-variant" disabled>
+            <option value="omega4b" selected>Ω4b (Stability-based)</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label>Keep Fraction (f) <span class="locked">🔒</span></label>
+          <input type="number" id="keep-fraction" value="0.30" step="0.05" disabled>
+        </div>
+        
+        <div class="control-group">
+          <label>Seed</label>
+          <input type="number" id="seed" value="137042">
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">Tolerances</div>
+        
+        <div class="control-group">
+          <label>δ_τ (τ drift tolerance)</label>
+          <input type="number" id="delta-tau" value="0.15" step="0.01">
+        </div>
+        
+        <div class="control-group">
+          <label>δ_2 (O₂ drift tolerance)</label>
+          <input type="number" id="delta-2" value="0.15" step="0.01">
+        </div>
+      </div>
+      
+      <button id="runPipeline" class="primary">▶ Run Pipeline</button>
+      <button id="exportData" disabled>💾 Export JSON</button>
+      
+      <div id="statusMessage" class="status info" style="display: none;"></div>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+    </div>
+    
+    <!-- CENTER COLUMN: Pipeline Cards -->
+    <div class="center-column">
+      <div class="panel">
+        <div class="panel-title">Operator Pipeline</div>
+        <div class="panel-subtitle">E → Ω4b(E) → τ(Ω4b(E)) → O₂(τ(Ω4b(E)))</div>
+        
+        <div class="pipeline-cards">
+          <!-- Card 1: E -->
+          <div class="pipeline-card" id="card-E">
+            <div class="card-header">
+              <div class="card-title">1. Ensemble E</div>
+              <div class="card-badge badge-pending">READY</div>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Size (n)</span>
+              <span class="metric-value" id="metric-n">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">R_E (baseline)</span>
+              <span class="metric-value" id="metric-RE">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Generator</span>
+              <span class="metric-value" id="metric-gen">—</span>
+            </div>
+          </div>
+          
+          <!-- Card 2: Ω4b(E) -->
+          <div class="pipeline-card" id="card-Omega">
+            <div class="card-header">
+              <div class="card-title">2. Ω4b(E)</div>
+              <div class="card-badge badge-pending" id="badge-omega">PENDING</div>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Keep Fraction</span>
+              <span class="metric-value" id="metric-keep">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">R₀</span>
+              <span class="metric-value" id="metric-R0">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Selected</span>
+              <span class="metric-value" id="metric-selected">—</span>
+            </div>
+          </div>
+          
+          <!-- Card 3: τ(...) -->
+          <div class="pipeline-card" id="card-tau">
+            <div class="card-header">
+              <div class="card-title">3. τ(Ω4b(E))</div>
+              <div class="card-badge badge-pending" id="badge-tau">PENDING</div>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">τ Variant</span>
+              <span class="metric-value" id="metric-tau-var">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">R₁</span>
+              <span class="metric-value" id="metric-R1">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">CR_τ = R₁/R₀</span>
+              <span class="metric-value" id="metric-CRtau">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Δ_τ(I)</span>
+              <span class="metric-value" id="metric-delta-tau-val">—</span>
+            </div>
+          </div>
+          
+          <!-- Card 4: O₂(τ(...)) -->
+          <div class="pipeline-card" id="card-O2">
+            <div class="card-header">
+              <div class="card-title">4. O₂(τ(...))</div>
+              <div class="card-badge badge-pending" id="badge-O2">PENDING</div>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">O₂ Operator</span>
+              <span class="metric-value" id="metric-O2-var">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">R₂</span>
+              <span class="metric-value" id="metric-R2">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">CR₂ = R₂/R₁</span>
+              <span class="metric-value" id="metric-CR2">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">CR_∘ = R₂/R₀</span>
+              <span class="metric-value" id="metric-CRcomp">—</span>
+            </div>
+            <div class="card-metric">
+              <span class="metric-label">Δ₂(I)</span>
+              <span class="metric-value" id="metric-delta-2-val">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RIGHT COLUMN: Operator Stack -->
+    <div class="right-column">
+      <div class="panel">
+  <div class="panel-title" style="cursor:pointer;" onclick="toggleHowTo()">
+    ▶ How to Use This Chamber
+    <span id="howto-toggle-indicator">▼</span>
+  </div>
+
+  <div id="howto-content" style="display:none; font-size:0.85em; line-height:1.6; color:#ccc;">
+
+    <p><strong>Purpose</strong></p>
+    <p>
+      This chamber tests whether a second operator (O₂)
+      can be <em>meaningfully composed</em> after τ stabilization.
+      It is a validation instrument, not a tuning playground.
+    </p>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>Standard workflow</strong></p>
+
+    <ol>
+      <li>
+        <strong>Leave parameters at default.</strong><br>
+        Defaults represent the calibrated Phase-P test regime.
+      </li>
+
+      <li>
+        <strong>Select an O₂ operator.</strong><br>
+        Choose σ, κ, or Φ from the O₂ selector.
+      </li>
+
+      <li>
+        <strong>Run the pipeline.</strong><br>
+        The chamber executes: E → Ω → τ → O₂ automatically.
+      </li>
+
+      <li>
+        <strong>Observe gate outcomes.</strong><br>
+        Focus on G<sub>τ</sub>, G<sub>2</sub>, and G<sub>∘</sub> — not raw scores.
+      </li>
+
+      <li>
+        <strong>Export JSON for analysis.</strong><br>
+        Use the export for batch statistics or cross-seed comparison.
+      </li>
+    </ol>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>Correct interpretation</strong></p>
+
+    <ul>
+      <li>
+        <strong>PASS means admissible.</strong><br>
+        The operator improves structure without violating composition.
+      </li>
+
+      <li>
+        <strong>FAIL does not mean “bad”.</strong><br>
+        It means the operator is not admissible in this context.
+      </li>
+
+      <li>
+        <strong>σ passing only sometimes is expected.</strong><br>
+        Renormalization has a domain of validity.
+      </li>
+    </ul>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>What not to do</strong></p>
+
+    <ul>
+      <li>Do not tune parameters to “force” PASS.</li>
+      <li>Do not compare raw residuals across operators.</li>
+      <li>Do not interpret κ or Φ failures as numerical errors.</li>
+    </ul>
+
+    <p style="color:#888; margin-top:10px;">
+      This chamber answers <em>“Is composition allowed?”</em><br>
+      It does not answer <em>“Which operator is best?”</em>
+    </p>
+
+  </div>
+</div>
+
+      
+        <div class="panel">
+  <div class="panel-title" style="cursor:pointer;" onclick="toggleGuide()">
+    📘 Chamber XXXVII – Guide
+    <span id="guide-toggle-indicator">▼</span>
+  </div>
+
+  <div id="guide-content" style="display:none; font-size:0.85em; line-height:1.6; color:#ccc;">
+
+    <p><strong>What this chamber tests</strong></p>
+    <p>
+      Chamber XXXVII evaluates whether a second operator O₂
+      can be <em>meaningfully composed</em> after τ stabilization.
+      Composition is stricter than contraction or entropy reduction.
+    </p>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>The operator pipeline</strong></p>
+    <pre style="background:#0a0a0a; padding:8px; border-radius:4px;">
+E → Ω → τ → O₂
+    </pre>
+
+    <ul>
+      <li><strong>Ω</strong> selects a stable subgraph</li>
+      <li><strong>τ</strong> creates dynamical coherence</li>
+      <li><strong>O₂</strong> attempts further improvement</li>
+    </ul>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>Gate meanings</strong></p>
+
+    <ul>
+      <li>
+        <strong>G_τ</strong> — τ is admissible<br>
+        <span style="color:#888;">CR_τ &lt; 1 and invariant drift is bounded</span>
+      </li>
+
+      <li>
+        <strong>G₂</strong> — O₂ is admissible on τ-output<br>
+        <span style="color:#888;">O₂ does not destroy τ-structure</span>
+      </li>
+
+      <li>
+        <strong>G_∘</strong> — composition is beneficial<br>
+        <span style="color:#888;">O₂ must improve on τ alone (CR_∘ &lt; CR_τ)</span>
+      </li>
+    </ul>
+
+    <hr style="border-color:#2a2a2a; margin:10px 0;">
+
+    <p><strong>Important interpretation notes</strong></p>
+
+    <ul>
+      <li>
+        <strong>FAIL ≠ useless.</strong><br>
+        An operator may reduce variance yet still be non-composable.
+      </li>
+      <li>
+        <strong>σ passing only sometimes is expected.</strong><br>
+        Renormalization has a domain of validity.
+      </li>
+      <li>
+        <strong>κ and Φ failures are structural, not numerical.</strong>
+      </li>
+    </ul>
+
+    <p style="color:#888; margin-top:10px;">
+      This chamber tests <em>admissibility</em>, not optimization.
+    </p>
+
+  </div>
+</div>
+
+      
+      <div class="panel">
+        <div class="panel-title">τ Stabilizer</div>
+        
+        <div class="control-group">
+          <label>τ Variant</label>
+          <select id="tau-variant">
+            <option value="tau_B" selected>τ_B (Baseline)</option>
+            <option value="tau_E">τ_E (Enhanced)</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label>λ (coupling)</label>
+          <input type="number" id="tau-lambda" value="0.10825" step="0.001">
+        </div>
+        
+        <div class="control-group">
+          <label>σ (noise)</label>
+          <input type="number" id="tau-sigma" value="0.02" step="0.01">
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">O₂ Second-Stage Operator</div>
+        
+        <div class="operator-tabs">
+          <div class="tab active" data-operator="kappa">κ</div>
+          <div class="tab" data-operator="sigma">σ</div>
+          <div class="tab" data-operator="phi">Φ</div>
+        </div>
+        
+        <!-- κ params -->
+        <div class="operator-params active" id="params-kappa">
+          <div class="panel-subtitle">Curvature Equalization</div>
+          <div class="control-group">
+            <label>α_κ (strength)</label>
+            <input type="number" id="kappa-alpha" value="0.1" step="0.01">
+          </div>
+          <div class="control-group">
+            <label>Iterations</label>
+            <input type="number" id="kappa-iters" value="50" step="10">
+          </div>
+          <div class="status info" style="font-size: 0.75em; padding: 8px;">
+            Tests curvature variance reduction and residual alignment.
+          </div>
+        </div>
+        
+        <!-- σ params -->
+        <div class="operator-params" id="params-sigma">
+          <div class="panel-subtitle">Scale Normalization</div>
+          <div class="control-group">
+            <label>α_σ (strength)</label>
+            <input type="number" id="sigma-alpha" value="0.5" step="0.1">
+          </div>
+          <div class="control-group">
+            <label>Target scale</label>
+            <input type="number" id="sigma-target" value="1.0" step="0.1">
+          </div>
+          <div class="status info" style="font-size: 0.75em; padding: 8px;">
+            Tests scale spread reduction (std normalized by 2π). Lower spread = better normalization.
+          </div>
+        </div>
+        
+        <!-- Φ params -->
+        <div class="operator-params" id="params-phi">
+          <div class="panel-subtitle">Topological Folding</div>
+          <div class="control-group">
+            <label>α_Φ (strength)</label>
+            <input type="number" id="phi-alpha" value="0.3" step="0.05">
+          </div>
+          <div class="control-group">
+            <label>Compression factor</label>
+            <input type="number" id="phi-compression" value="2" step="1" min="2" max="10">
+          </div>
+          <div class="status info" style="font-size: 0.75em; padding: 8px;">
+            Tests phase entropy. Lower entropy = better compression. Must preserve invariants (Δ₂ ≤ δ₂).
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- BOTTOM PANEL: Decision Gates & Verdict -->
+    <div class="bottom-panel">
+      <div class="panel">
+        <div class="panel-title">
+          Composability Gates
+          <span class="tooltip">ℹ️
+            <span class="tooltiptext">
+              Three gates must pass for composability:<br>
+              <strong>G_τ:</strong> τ admissible post-Ω<br>
+              <strong>G₂:</strong> O₂ admissible on τ-output<br>
+              <strong>G_∘:</strong> Composition beneficial (CR_∘ < CR_τ)
+            </span>
+          </span>
+        </div>
+        
+        <div class="decision-gates">
+          <!-- Gate τ -->
+          <div class="gate" id="gate-tau">
+            <div class="gate-title">
+              G_τ
+              <span class="tooltip">ℹ️
+                <span class="tooltiptext">
+                  <strong>τ Admissibility</strong><br>
+                  CR_τ < 1 AND Δ_τ(I) ≤ δ_τ
+                </span>
+              </span>
+            </div>
+            <div class="gate-status" id="gate-tau-status">PENDING</div>
+            <div class="gate-check" id="gate-tau-check">⏳</div>
+          </div>
+          
+          <!-- Gate 2 -->
+          <div class="gate" id="gate-2">
+            <div class="gate-title">
+              G₂
+              <span class="tooltip">ℹ️
+                <span class="tooltiptext">
+                  <strong>Second-Stage Admissibility</strong><br>
+                  CR₂ < 1 AND Δ₂(I) ≤ δ₂
+                </span>
+              </span>
+            </div>
+            <div class="gate-status" id="gate-2-status">PENDING</div>
+            <div class="gate-check" id="gate-2-check">⏳</div>
+          </div>
+          
+          <!-- Gate ∘ -->
+          <div class="gate" id="gate-comp">
+            <div class="gate-title">
+              G_∘
+              <span class="tooltip">ℹ️
+                <span class="tooltiptext">
+                  <strong>Composition Beneficial</strong><br>
+                  CR_∘ < CR_τ (strict improvement)
+                </span>
+              </span>
+            </div>
+            <div class="gate-status" id="gate-comp-status">PENDING</div>
+            <div class="gate-check" id="gate-comp-check">⏳</div>
+          </div>
+        </div>
+        
+        <div class="verdict-panel" id="verdict-panel">
+          <div class="verdict-title">Composability Verdict</div>
+          <div class="verdict-result" id="verdict-result">AWAITING DATA</div>
+          <div id="verdict-detail" style="color: #888; font-size: 0.9em; margin-top: 10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+// Chamber XXXVII INLINE v0.3.0 (Production Ready)
+console.log('╔═══════════════════════════════════════════════════════════╗');
+console.log('  CHAMBER XXXVII: τ→κ/σ/Φ Composability Testing · Phase P  ');
+console.log('  Version 0.3.0 - Production Ready                         ');
+console.log('╚═══════════════════════════════════════════════════════════╝');
+console.log('✓ Seeded RNG for τ (reproducible)');
+console.log('✓ Direct subgraph residual computation');
+console.log('✓ Phase-weighted clustering for real Δ measurement');
+console.log('✓ CR_τ and CR₂ floor to prevent division by near-zero');
+console.log('✓ Fixed σ scale metric and Φ entropy metric');
+console.log('✓ Circular phase differences (S¹ topology respected)');
+console.log('✓ Fixed UI metric ID mismatches (all metrics now update)');
+console.log('✓ Fixed updateGate to preserve PASS/FAIL labels');
+
+// ============================================================================
+// MATHEMATICAL UTILITIES
+// ============================================================================
+
+/**
+ * Compute phase difference on the circle S¹
+ * Wraps result to [-π, π] to respect circular topology
+ */
+function phaseDiff(a, b) {
+  let d = a - b;
+  d = ((d + Math.PI) % (2 * Math.PI)) - Math.PI;
+  if (d < -Math.PI) d += 2 * Math.PI;
+  return d;
+}
+
+/**
+ * Compute variance of an array
+ * Used for RG β-flow computation
+ */
+function variance(arr) {
+  const n = arr.length;
+  const mean = arr.reduce((a, b) => a + b, 0) / n;
+  return arr.reduce((s, x) => s + (x - mean) ** 2, 0) / n;
+}
+
+/**
+ * Compute σ-operator RG flow trajectory
+ * Iteratively applies σ operator and tracks variance evolution
+ */
+function sigmaFlow(tauInit, sigmaOp, steps = 10) {
+  const flow = [];
+  let tau = [...tauInit];
+  let g_prev = variance(tau);
+
+  for (let k = 0; k < steps; k++) {
+    const res = sigmaOp.apply({ tau, subgraph: null });
+    tau = res.tau;
+    const g = variance(tau);
+    flow.push({
+      step: k + 1,
+      g: g,
+      beta: g - g_prev,
+      beta_hat: (g - g_prev) / Math.max(g_prev, 1e-12)
+    });
+    g_prev = g;
+  }
+  return flow;
+}
+
+// ============================================================================
+// GRAPH UTILITIES
+// ============================================================================
+
+function computeResidualFromAdjacency(adjacency) {
+  // Compute residual directly from adjacency matrix
+  // Residual: variance of degree distribution
+  const n = adjacency.length;
+  const degrees = Array(n).fill(0);
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      degrees[i] += adjacency[i][j];
+    }
+  }
+  
+  const mean = degrees.reduce((a, b) => a + b, 0) / n;
+  const variance = degrees.reduce((sum, d) => sum + (d - mean) ** 2, 0) / n;
+  
+  return Math.sqrt(variance);
+}
+
+function computePhaseWeightedAdjacency(adjacency, phases) {
+  // Create weighted adjacency where edges are weighted by phase coherence
+  // Weight: exp(-|φ_j - φ_i|) where coherent phases → weight ≈ 1, incoherent → weight ≈ 0
+  const n = adjacency.length;
+  const weighted = Array(n).fill(null).map(() => Array(n).fill(0));
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (adjacency[i][j] > 0) {
+        if (phases && phases.length === n) {
+          // Weight by phase coherence (circular phase difference)
+          const phDiff = Math.abs(phaseDiff(phases[j], phases[i]));
+          weighted[i][j] = Math.exp(-phDiff);
+        } else {
+          // No phases → binary adjacency
+          weighted[i][j] = adjacency[i][j];
+        }
+      }
+    }
+  }
+  
+  return weighted;
+}
+
+function computeWeightedClustering(adjacency) {
+  // Compute weighted clustering coefficient
+  // For weighted graphs, triangles are weighted by geometric mean of edge weights
+  const n = adjacency.length;
+  let clusteringSum = 0;
+  
+  for (let i = 0; i < n; i++) {
+    const neighbors = [];
+    for (let j = 0; j < n; j++) {
+      if (adjacency[i][j] > 0) neighbors.push(j);
+    }
+    
+    if (neighbors.length >= 2) {
+      let weightedTriangles = 0;
+      let possibleTriangles = neighbors.length * (neighbors.length - 1) / 2;
+      
+      for (let p = 0; p < neighbors.length; p++) {
+        for (let q = p + 1; q < neighbors.length; q++) {
+          const w1 = adjacency[i][neighbors[p]];
+          const w2 = adjacency[i][neighbors[q]];
+          const w3 = adjacency[neighbors[p]][neighbors[q]];
+          if (w3 > 0) {
+            // Geometric mean of edge weights
+            weightedTriangles += Math.pow(w1 * w2 * w3, 1/3);
+          }
+        }
+      }
+      
+      clusteringSum += possibleTriangles > 0 ? weightedTriangles / possibleTriangles : 0;
+    }
+  }
+  
+  return clusteringSum / n;
+}
+
+function computeMacroInvariantsFromAdjacency(adjacency, phases = null) {
+  // Compute macro-invariants directly from adjacency matrix
+  // If phases provided, compute on phase-weighted adjacency
+  const n = adjacency.length;
+  
+  // Use phase-weighted adjacency if phases available
+  const effectiveAdj = phases ? computePhaseWeightedAdjacency(adjacency, phases) : adjacency;
+  
+  let totalEdges = 0;
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      totalEdges += adjacency[i][j]; // Binary count
+    }
+  }
+  
+  const degrees = Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      degrees[i] += adjacency[i][j];
+    }
+  }
+  const avgDegree = degrees.reduce((a, b) => a + b, 0) / n;
+  
+  // Compute clustering coefficient (weighted if phases provided)
+  const avgClustering = computeWeightedClustering(effectiveAdj);
+  
+  return {
+    edge_count: totalEdges,
+    avg_degree: avgDegree,
+    density: (2 * totalEdges) / (n * (n - 1)),
+    avg_clustering: avgClustering
+  };
+}
+
+class GraphEnsemble {
+  constructor(n, generator = 'barabasi-albert', seed = 137042) {
+    this.n = n;
+    this.generator = generator;
+    this.seed = seed;
+    this.rng = this.createSeededRNG(seed);
+    this.adjacency = this.generateGraph();
+  }
+  
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      randomInt(max) {
+        return Math.floor(this.random() * max);
+      }
+    };
+  }
+  
+  generateGraph() {
+    if (this.generator === 'barabasi-albert') {
+      return this.generateBarabasiAlbert();
+    }
+    throw new Error(`Unknown generator: ${this.generator}`);
+  }
+  
+  generateBarabasiAlbert(m = 2) {
+    const adj = Array(this.n).fill(null).map(() => Array(this.n).fill(0));
+    
+    // Start with complete graph on m+1 nodes
+    for (let i = 0; i <= m; i++) {
+      for (let j = i + 1; j <= m; j++) {
+        adj[i][j] = 1;
+        adj[j][i] = 1;
+      }
+    }
+    
+    // Preferential attachment
+    const degrees = Array(this.n).fill(0);
+    for (let i = 0; i <= m; i++) {
+      for (let j = 0; j < this.n; j++) {
+        degrees[i] += adj[i][j];
+      }
+    }
+    
+    for (let i = m + 1; i < this.n; i++) {
+      const targets = new Set();
+      let totalDegree = degrees.reduce((a, b) => a + b, 0);
+      
+      while (targets.size < m && totalDegree > 0) {
+        const r = this.rng.random() * totalDegree;
+        let cumsum = 0;
+        for (let j = 0; j < i; j++) {
+          cumsum += degrees[j];
+          if (cumsum >= r && !targets.has(j)) {
+            targets.add(j);
+            break;
+          }
+        }
+      }
+      
+      for (const j of targets) {
+        adj[i][j] = 1;
+        adj[j][i] = 1;
+        degrees[i]++;
+        degrees[j]++;
+      }
+    }
+    
+    return adj;
+  }
+  
+  computeResidual() {
+    // Simple residual: variance of degree distribution
+    const degrees = Array(this.n).fill(0);
+    for (let i = 0; i < this.n; i++) {
+      for (let j = 0; j < this.n; j++) {
+        degrees[i] += this.adjacency[i][j];
+      }
+    }
+    
+    const mean = degrees.reduce((a, b) => a + b, 0) / this.n;
+    const variance = degrees.reduce((sum, d) => sum + (d - mean) ** 2, 0) / this.n;
+    
+    return Math.sqrt(variance);
+  }
+  
+  getSelectedSubgraph(indices) {
+    const subadj = Array(indices.length).fill(null).map(() => Array(indices.length).fill(0));
+    for (let i = 0; i < indices.length; i++) {
+      for (let j = 0; j < indices.length; j++) {
+        subadj[i][j] = this.adjacency[indices[i]][indices[j]];
+      }
+    }
+    return subadj;
+  }
+  
+  computeMacroInvariants() {
+    // Compute protected macro-invariants
+    let totalEdges = 0;
+    for (let i = 0; i < this.n; i++) {
+      for (let j = i + 1; j < this.n; j++) {
+        totalEdges += this.adjacency[i][j];
+      }
+    }
+    
+    const degrees = Array(this.n).fill(0);
+    for (let i = 0; i < this.n; i++) {
+      for (let j = 0; j < this.n; j++) {
+        degrees[i] += this.adjacency[i][j];
+      }
+    }
+    const avgDegree = degrees.reduce((a, b) => a + b, 0) / this.n;
+    
+    return {
+      edge_count: totalEdges,
+      avg_degree: avgDegree,
+      density: (2 * totalEdges) / (this.n * (this.n - 1))
+    };
+  }
+}
+
+// ============================================================================
+// OPERATORS
+// ============================================================================
+
+class OperatorOmega4b {
+  constructor(keepFraction = 0.30) {
+    this.keepFraction = keepFraction;
+  }
+  
+  select(ensemble) {
+    // Ω4b: Select top keepFraction by local stability (degree variance proxy)
+    const degrees = Array(ensemble.n).fill(0);
+    for (let i = 0; i < ensemble.n; i++) {
+      for (let j = 0; j < ensemble.n; j++) {
+        degrees[i] += ensemble.adjacency[i][j];
+      }
+    }
+    
+    // Stability score: inverse of degree variance from neighbors
+    const stability = Array(ensemble.n).fill(0);
+    for (let i = 0; i < ensemble.n; i++) {
+      const neighbors = [];
+      for (let j = 0; j < ensemble.n; j++) {
+        if (ensemble.adjacency[i][j] > 0) {
+          neighbors.push(degrees[j]);
+        }
+      }
+      if (neighbors.length > 0) {
+        const mean = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+        const variance = neighbors.reduce((sum, d) => sum + (d - mean) ** 2, 0) / neighbors.length;
+        stability[i] = 1 / (1 + variance);
+      }
+    }
+    
+    // Sort by stability and keep top fraction
+    const indexed = stability.map((s, i) => ({score: s, index: i}));
+    indexed.sort((a, b) => b.score - a.score);
+    
+    const keepCount = Math.floor(ensemble.n * this.keepFraction);
+    const selectedIndices = indexed.slice(0, keepCount).map(x => x.index);
+    
+    return {
+      indices: selectedIndices,
+      subgraph: ensemble.getSelectedSubgraph(selectedIndices)
+    };
+  }
+}
+
+class OperatorTau {
+  constructor(variant = 'tau_B', lambda = 0.10825, sigma = 0.02, depth = 50, rng = null) {
+    this.variant = variant;
+    this.lambda = lambda;
+    this.sigma = sigma;
+    this.depth = depth;
+    this.rng = rng;
+  }
+  
+  apply(subgraph) {
+    // Simplified τ evolution on graph nodes
+    // Each node has a phase τ_i that evolves based on neighbors
+    const n = subgraph.length;
+    let tau = Array(n).fill(0).map(() => this.rng.random() * 2 * Math.PI);
+    
+    for (let step = 0; step < this.depth; step++) {
+      const tau_next = Array(n);
+      
+      for (let i = 0; i < n; i++) {
+        let sum_sin = 0;
+        let neighbor_count = 0;
+        
+        for (let j = 0; j < n; j++) {
+          if (subgraph[i][j] > 0) {
+            sum_sin += Math.sin(phaseDiff(tau[j], tau[i]));
+            neighbor_count++;
+          }
+        }
+        
+        if (neighbor_count > 0) {
+          tau_next[i] = tau[i] + this.lambda * sum_sin / neighbor_count;
+          if (this.sigma > 0) {
+            tau_next[i] += this.sigma * (this.rng.random() - 0.5) * 2;
+          }
+        } else {
+          tau_next[i] = tau[i];
+        }
+      }
+      
+      tau = tau_next;
+    }
+    
+    return {
+      tau: tau,
+      subgraph: subgraph
+    };
+  }
+  
+  computeResidual(result) {
+    // Phase coherence residual with circular phase difference
+    const tau = result.tau;
+    const n = tau.length;
+    let sum_diff_sq = 0;
+    let count = 0;
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (result.subgraph[i][j] > 0) {
+          const diff = phaseDiff(tau[j], tau[i]);
+          sum_diff_sq += diff * diff;
+          count++;
+        }
+      }
+    }
+    
+    return count > 0 ? Math.sqrt(sum_diff_sq / count) : 0;
+  }
+}
+
+class OperatorKappa {
+  constructor(alpha = 0.1, iterations = 50) {
+    this.alpha = alpha;
+    this.iterations = iterations;
+  }
+  
+  apply(tauResult) {
+    // Curvature equalization: reduce variance in phase differences
+    let tau = [...tauResult.tau];
+    const subgraph = tauResult.subgraph;
+    const n = tau.length;
+    
+    for (let iter = 0; iter < this.iterations; iter++) {
+      const curvatures = Array(n).fill(0);
+      
+      // Compute discrete curvature (phase second derivative) with circular differences
+      for (let i = 0; i < n; i++) {
+        let sum_lap = 0;
+        let neighbor_count = 0;
+        
+        for (let j = 0; j < n; j++) {
+          if (subgraph[i][j] > 0) {
+            sum_lap += phaseDiff(tau[j], tau[i]);
+            neighbor_count++;
+          }
+        }
+        
+        if (neighbor_count > 0) {
+          curvatures[i] = sum_lap / neighbor_count;
+        }
+      }
+      
+      // Equalize: move toward mean curvature
+      const meanCurv = curvatures.reduce((a, b) => a + b, 0) / n;
+      for (let i = 0; i < n; i++) {
+        tau[i] += this.alpha * (meanCurv - curvatures[i]);
+      }
+    }
+    
+    return {
+      tau: tau,
+      subgraph: subgraph
+    };
+  }
+  
+  computeResidual(result) {
+    // Same as τ residual with circular phase differences
+    const tau = result.tau;
+    const n = tau.length;
+    let sum_diff_sq = 0;
+    let count = 0;
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (result.subgraph[i][j] > 0) {
+          const diff = phaseDiff(tau[j], tau[i]);
+          sum_diff_sq += diff * diff;
+          count++;
+        }
+      }
+    }
+    
+    return count > 0 ? Math.sqrt(sum_diff_sq / count) : 0;
+  }
+  
+  computeCurvatureVariance(result) {
+    const tau = result.tau;
+    const subgraph = result.subgraph;
+    const n = tau.length;
+    const curvatures = Array(n).fill(0);
+    
+    for (let i = 0; i < n; i++) {
+      let sum_lap = 0;
+      let neighbor_count = 0;
+      
+      for (let j = 0; j < n; j++) {
+        if (subgraph[i][j] > 0) {
+          sum_lap += phaseDiff(tau[j], tau[i]);
+          neighbor_count++;
+        }
+      }
+      
+      if (neighbor_count > 0) {
+        curvatures[i] = sum_lap / neighbor_count;
+      }
+    }
+    
+    const mean = curvatures.reduce((a, b) => a + b, 0) / n;
+    const variance = curvatures.reduce((sum, k) => sum + (k - mean) ** 2, 0) / n;
+    return variance;
+  }
+}
+
+class OperatorSigma {
+  constructor(alpha = 0.5, targetScale = 1.0) {
+    this.alpha = alpha;
+    this.targetScale = targetScale;
+  }
+  
+  apply(tauResult) {
+    // Scale normalization: rescale phases to target spread
+    let tau = [...tauResult.tau];
+    const n = tau.length;
+    
+    // Compute current scale
+    const mean = tau.reduce((a, b) => a + b, 0) / n;
+    const variance = tau.reduce((sum, t) => sum + (t - mean) ** 2, 0) / n;
+    const currentScale = Math.sqrt(variance);
+    
+    if (currentScale > 1e-10) {
+      const scaleFactor = this.targetScale / currentScale;
+      const blendFactor = this.alpha * scaleFactor + (1 - this.alpha);
+      
+      for (let i = 0; i < n; i++) {
+        tau[i] = mean + (tau[i] - mean) * blendFactor;
+      }
+    }
+    
+    return {
+      tau: tau,
+      subgraph: tauResult.subgraph
+    };
+  }
+  
+  computeResidual(result) {
+    const tau = result.tau;
+    const n = tau.length;
+    let sum_diff_sq = 0;
+    let count = 0;
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (result.subgraph[i][j] > 0) {
+          const diff = phaseDiff(tau[j], tau[i]);
+          sum_diff_sq += diff * diff;
+          count++;
+        }
+      }
+    }
+    
+    return count > 0 ? Math.sqrt(sum_diff_sq / count) : 0;
+  }
+  
+  computeScaleSpread(result) {
+    const tau = result.tau;
+    const n = tau.length;
+    const mean = tau.reduce((a, b) => a + b, 0) / n;
+    const variance = tau.reduce((sum, t) => sum + (t - mean) ** 2, 0) / n;
+    const std = Math.sqrt(variance);
+    // Return absolute std normalized by phase range (2π) instead of mean
+    return std / (2 * Math.PI);
+  }
+}
+
+class OperatorPhi {
+  constructor(alpha = 0.3, compressionFactor = 2) {
+    this.alpha = alpha;
+    this.compressionFactor = compressionFactor;
+  }
+  
+  apply(tauResult) {
+    // Topological folding: periodic compression
+    let tau = [...tauResult.tau];
+    const n = tau.length;
+    
+    // Fold phases by compression factor
+    for (let i = 0; i < n; i++) {
+      const folded = (tau[i] * this.compressionFactor) % (2 * Math.PI);
+      tau[i] = this.alpha * folded + (1 - this.alpha) * tau[i];
+    }
+    
+    return {
+      tau: tau,
+      subgraph: tauResult.subgraph
+    };
+  }
+  
+  computeResidual(result) {
+    const tau = result.tau;
+    const n = tau.length;
+    let sum_diff_sq = 0;
+    let count = 0;
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (result.subgraph[i][j] > 0) {
+          const diff = phaseDiff(tau[j], tau[i]);
+          sum_diff_sq += diff * diff;
+          count++;
+        }
+      }
+    }
+    
+    return count > 0 ? Math.sqrt(sum_diff_sq / count) : 0;
+  }
+  
+  computePhaseEntropy(result) {
+    // Measure phase distribution entropy (lower = more compressed/structured)
+    const tau = result.tau;
+    const n = tau.length;
+    const bins = 10;
+    const hist = Array(bins).fill(0);
+    
+    for (let i = 0; i < n; i++) {
+      const bin = Math.floor((tau[i] / (2 * Math.PI)) * bins) % bins;
+      hist[bin]++;
+    }
+    
+    let entropy = 0;
+    for (let i = 0; i < bins; i++) {
+      if (hist[i] > 0) {
+        const p = hist[i] / n;
+        entropy -= p * Math.log2(p);
+      }
+    }
+    
+    // Normalized entropy: lower values indicate better compression
+    return entropy / Math.log2(bins);
+  }
+}
+
+// ============================================================================
+// PIPELINE RUNNER
+// ============================================================================
+
+class ComposabilityPipeline {
+  constructor(config) {
+    this.config = config;
+    this.results = {
+      E: null,
+      Omega: null,
+      Tau: null,
+      O2: null
+    };
+    this.gates = {
+      G_tau: false,
+      G_2: false,
+      G_comp: false
+    };
+  }
+  
+  async run() {
+    console.log('🚀 Running composability pipeline...');
+    
+    // Step 1: Generate ensemble E
+    updateStatus('Generating ensemble E...', 'info');
+    updateProgress(10);
+    await sleep(100);
+    
+    const E = new GraphEnsemble(
+      this.config.n,
+      this.config.generator,
+      this.config.seed
+    );
+    const R_E = E.computeResidual();
+    const invariants_E = E.computeMacroInvariants();
+    
+    this.results.E = {
+      ensemble: E,
+      R_E: R_E,
+      invariants: invariants_E
+    };
+    
+    updateCard('E', {
+      n: this.config.n,
+      RE: R_E.toFixed(4),
+      gen: this.config.generator
+    });
+    
+    console.log(`  ✓ E generated: R_E = ${R_E.toFixed(4)}`);
+    
+    // Step 2: Apply Ω4b
+    updateStatus('Applying Ω4b selection...', 'info');
+    updateProgress(30);
+    await sleep(100);
+    
+    const omega = new OperatorOmega4b(this.config.keepFraction);
+    const omegaResult = omega.select(E);
+    
+    // Compute R₀ directly from subgraph adjacency
+    const R_0 = computeResidualFromAdjacency(omegaResult.subgraph);
+    const invariants_0 = computeMacroInvariantsFromAdjacency(omegaResult.subgraph);
+    
+    this.results.Omega = {
+      indices: omegaResult.indices,
+      subgraph: omegaResult.subgraph,
+      R_0: R_0,
+      invariants: invariants_0
+    };
+    
+    updateCard('Omega', {
+      keep: (this.config.keepFraction * 100).toFixed(0) + '%',
+      R0: R_0.toFixed(4),
+      selected: omegaResult.indices.length
+    }, 'pass');
+    
+    console.log(`  ✓ Ω4b applied: R₀ = ${R_0.toFixed(4)}, selected = ${omegaResult.indices.length}`);
+    
+    // Step 3: Apply τ
+    updateStatus('Applying τ stabilizer...', 'info');
+    updateProgress(50);
+    await sleep(100);
+    
+    // Create seeded RNG for τ (derived from original ensemble seed)
+    const createSeededRNG = (seed) => {
+      let state = seed >>> 0;
+      return {
+        random() {
+          state = (state * 1664525 + 1013904223) >>> 0;
+          return state / 4294967296;
+        },
+        randomInt(max) {
+          return Math.floor(this.random() * max);
+        }
+      };
+    };
+    const tauRNG = createSeededRNG(this.config.seed + 1000);
+    
+    const tau = new OperatorTau(
+      this.config.tauVariant,
+      this.config.tauLambda,
+      this.config.tauSigma,
+      this.config.M,
+      tauRNG
+    );
+    const tauResult = tau.apply(omegaResult.subgraph);
+    const R_1 = tau.computeResidual(tauResult);
+    
+    // Capture g for RG β-flow (variance before O₂)
+    const g_tau = variance(tauResult.tau);
+    
+    // Compute CR_τ with floor protection
+    const eps = 1e-8;
+    const CR_tau = R_1 / Math.max(R_0, eps);
+    
+    // Compute invariants after τ using phase-weighted adjacency
+    // This captures how τ affects effective topology through phase coherence
+    const invariants_1 = computeMacroInvariantsFromAdjacency(tauResult.subgraph, tauResult.tau);
+    
+    // Compute actual invariant drift (weighted clustering changes when phases affect structure)
+    const Delta_tau = Math.abs(invariants_1.avg_clustering - invariants_0.avg_clustering) / 
+                      (invariants_0.avg_clustering + 1e-10);
+    
+    this.results.Tau = {
+      result: tauResult,
+      R_1: R_1,
+      CR_tau: CR_tau,
+      Delta_tau: Delta_tau,
+      invariants: invariants_1
+    };
+    
+    // Check G_τ
+    const G_tau_pass = (CR_tau < 1.0) && (Delta_tau <= this.config.deltaTau);
+    this.gates.G_tau = G_tau_pass;
+    
+    updateCard('tau', {
+      "tau-var": this.config.tauVariant,
+      R1: R_1.toFixed(4),
+      CRtau: CR_tau.toFixed(4),
+      "delta-tau-val": Delta_tau.toFixed(4)
+    }, G_tau_pass ? 'pass' : 'fail');
+    
+    updateGate('tau', G_tau_pass, CR_tau, Delta_tau, this.config.deltaTau);
+    
+    console.log(`  ✓ τ applied: R₁ = ${R_1.toFixed(4)}, CR_τ = ${CR_tau.toFixed(4)}, Δ_τ = ${Delta_tau.toFixed(4)}`);
+    console.log(`  → G_τ: ${G_tau_pass ? 'PASS' : 'FAIL'}`);
+    
+    // Step 4: Apply O₂
+    updateStatus(`Applying ${this.config.O2Operator} operator...`, 'info');
+    updateProgress(70);
+    await sleep(100);
+    
+    let o2, o2Result, R_2, operatorSpecific;
+    
+    if (this.config.O2Operator === 'kappa') {
+      o2 = new OperatorKappa(this.config.kappaAlpha, this.config.kappaIters);
+      o2Result = o2.apply(tauResult);
+      R_2 = o2.computeResidual(o2Result);
+      operatorSpecific = {
+        curvatureVariance: o2.computeCurvatureVariance(o2Result)
+      };
+    } else if (this.config.O2Operator === 'sigma') {
+      o2 = new OperatorSigma(this.config.sigmaAlpha, this.config.sigmaTarget);
+      o2Result = o2.apply(tauResult);
+      R_2 = o2.computeResidual(o2Result);
+      
+      // Compute RG flow trajectory for σ operator (export-only, does not affect pipeline)
+      const sigma_flow = sigmaFlow(
+        tauResult.tau,
+        o2,
+        10  // number of RG steps (tunable, export-only)
+      );
+      
+      operatorSpecific = {
+        scaleSpread: o2.computeScaleSpread(o2Result),
+        RG_flow: sigma_flow
+      };
+    } else if (this.config.O2Operator === 'phi') {
+      o2 = new OperatorPhi(this.config.phiAlpha, this.config.phiCompression);
+      o2Result = o2.apply(tauResult);
+      R_2 = o2.computeResidual(o2Result);
+      operatorSpecific = {
+        phaseEntropy: o2.computePhaseEntropy(o2Result)
+      };
+    }
+    
+    // Capture g′ for RG β-flow (variance after O₂)
+    const g_o2 = variance(o2Result.tau);
+    const beta_sigma = g_o2 - g_tau;
+    const beta_hat = beta_sigma / Math.max(g_tau, 1e-12);
+    
+    // Compute contraction ratios with floor to prevent division by near-zero
+    const CR_2 = R_2 / Math.max(R_1, eps);
+    const CR_comp = R_2 / Math.max(R_0, eps);
+    
+    // Compute invariants after O₂ using phase-weighted adjacency
+    const invariants_2 = computeMacroInvariantsFromAdjacency(o2Result.subgraph, o2Result.tau);
+    
+    // Compute actual invariant drift for O₂ (relative to Ω baseline)
+    const Delta_2 = Math.abs(invariants_2.avg_clustering - invariants_0.avg_clustering) / 
+                    (invariants_0.avg_clustering + 1e-10);
+    
+    this.results.O2 = {
+      operator: this.config.O2Operator,
+      result: o2Result,
+      R_2: R_2,
+      CR_2: CR_2,
+      CR_comp: CR_comp,
+      Delta_2: Delta_2,
+      invariants: invariants_2,
+      operatorSpecific: operatorSpecific,
+      g_before: g_tau,
+      g_after: g_o2,
+      beta: beta_sigma,
+      beta_hat: beta_hat
+    };
+    
+    // Check G₂
+    const G_2_pass = (CR_2 < 1.0) && (Delta_2 <= this.config.delta2);
+    this.gates.G_2 = G_2_pass;
+    
+    // Check G_∘
+    const G_comp_pass = (CR_comp < CR_tau);
+    this.gates.G_comp = G_comp_pass;
+    
+    updateCard('O2', {
+      "O2-var": this.config.O2Operator,
+      R2: R_2.toFixed(4),
+      CR2: CR_2.toFixed(4),
+      CRcomp: CR_comp.toFixed(4),
+      "delta-2-val": Delta_2.toFixed(4)
+    }, (G_2_pass && G_comp_pass) ? 'pass' : 'fail');
+    
+    updateGate('2', G_2_pass, CR_2, Delta_2, this.config.delta2);
+    updateGate('comp', G_comp_pass, CR_comp, CR_tau, null);
+    
+    console.log(`  ✓ O₂ applied: R₂ = ${R_2.toFixed(4)}, CR₂ = ${CR_2.toFixed(4)}, CR_∘ = ${CR_comp.toFixed(4)}`);
+    console.log(`  → G₂: ${G_2_pass ? 'PASS' : 'FAIL'}`);
+    console.log(`  → G_∘: ${G_comp_pass ? 'PASS' : 'FAIL'}`);
+    
+    // Final verdict
+    updateProgress(100);
+    const allPass = this.gates.G_tau && this.gates.G_2 && this.gates.G_comp;
+    updateVerdict(allPass, this.gates);
+    
+    if (allPass) {
+      updateStatus('✅ COMPOSABLE: All gates passed', 'success');
+      console.log('🎯 VERDICT: COMPOSABLE PASS');
+    } else {
+      const failedGates = [];
+      if (!this.gates.G_tau) failedGates.push('G_τ');
+      if (!this.gates.G_2) failedGates.push('G₂');
+      if (!this.gates.G_comp) failedGates.push('G_∘');
+      updateStatus(`❌ NON-COMPOSABLE: Failed gates: ${failedGates.join(', ')}`, 'error');
+      console.log(`❌ VERDICT: NON-COMPOSABLE (failed: ${failedGates.join(', ')})`);
+    }
+    
+    document.getElementById('exportData').disabled = false;
+  }
+  
+  exportJSON() {
+    const exportData = {
+      version: '0.3.0',
+      chamber: 'XXXVII',
+      title: 'Operator Composability Testing (Production Ready)',
+      timestamp: new Date().toISOString(),
+      notes: [
+        'v0.3.0 fixes (FINAL):',
+        '- CR_τ floor to prevent division by near-zero',
+        '- Circular phase differences (respects S¹ topology)',
+        '- All phase operators now mathematically correct',
+        '',
+        'v0.2.x fixes (retained):',
+        '- Seeded RNG for τ (reproducible results)',
+        '- Direct subgraph residual computation',
+        '- Phase-weighted clustering for real Δ measurement',
+        '- CR₂ floor to prevent division by near-zero',
+        '- Fixed σ scale metric (normalized by 2π)',
+        '- Fixed Φ metric (phaseEntropy, lower = better compression)',
+        '- Fixed UI metric ID mismatches',
+        '- Fixed updateGate to preserve PASS/FAIL labels'
+      ],
+      config: this.config,
+      results: {
+        E: {
+          R_E: this.results.E.R_E,
+          invariants: this.results.E.invariants
+        },
+        Omega: {
+          R_0: this.results.Omega.R_0,
+          selected_count: this.results.Omega.indices.length,
+          invariants: this.results.Omega.invariants
+        },
+        Tau: {
+          R_1: this.results.Tau.R_1,
+          CR_tau: this.results.Tau.CR_tau,
+          Delta_tau: this.results.Tau.Delta_tau,
+          invariants: this.results.Tau.invariants
+        },
+        O2: {
+          operator: this.results.O2.operator,
+          R_2: this.results.O2.R_2,
+          CR_2: this.results.O2.CR_2,
+          CR_comp: this.results.O2.CR_comp,
+          Delta_2: this.results.O2.Delta_2,
+          invariants: this.results.O2.invariants,
+          operatorSpecific: this.results.O2.operatorSpecific,
+          RG: {
+            g_before: this.results.O2.g_before,
+            g_after: this.results.O2.g_after,
+            beta: this.results.O2.beta,
+            beta_hat: this.results.O2.beta_hat
+          }
+        }
+      },
+      gates: {
+        G_tau: this.gates.G_tau,
+        G_2: this.gates.G_2,
+        G_comp: this.gates.G_comp
+      },
+      verdict: this.gates.G_tau && this.gates.G_2 && this.gates.G_comp ? 'COMPOSABLE PASS' : 'NON-COMPOSABLE'
+    };
+    
+    return exportData;
+  }
+}
+
+// ============================================================================
+// UI MANAGEMENT
+// ============================================================================
+
+let currentPipeline = null;
+
+function updateStatus(message, type = 'info') {
+  const statusEl = document.getElementById('statusMessage');
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+  statusEl.style.display = 'block';
+}
+
+function updateProgress(percent) {
+  document.getElementById('progressFill').style.width = `${percent}%`;
+}
+
+function updateCard(cardName, metrics, status = null) {
+  const cardMap = {
+    'E': 'card-E',
+    'Omega': 'card-Omega',
+    'tau': 'card-tau',
+    'O2': 'card-O2'
+  };
+  
+  const cardId = cardMap[cardName];
+  const card = document.getElementById(cardId);
+  
+  if (status) {
+    card.classList.add('active');
+    const badge = card.querySelector('.card-badge');
+    if (status === 'pass') {
+      badge.textContent = 'PASS';
+      badge.className = 'card-badge badge-pass';
+    } else if (status === 'fail') {
+      badge.textContent = 'FAIL';
+      badge.className = 'card-badge badge-fail';
+    }
+  }
+  
+  // Update metrics
+  for (const [key, value] of Object.entries(metrics)) {
+    const metricEl = document.getElementById(`metric-${key}`);
+    if (metricEl) {
+      metricEl.textContent = value;
+      
+      // Color coding for ratios
+      if (key.startsWith('CR') || key.startsWith('Delta')) {
+        const numVal = parseFloat(value);
+        if (!isNaN(numVal)) {
+          if (key.startsWith('CR') && numVal < 1.0) {
+            metricEl.classList.add('good');
+          } else if (key.startsWith('CR') && numVal >= 1.0) {
+            metricEl.classList.add('bad');
+          } else if (key.startsWith('Delta') && numVal <= 0.15) {
+            metricEl.classList.add('good');
+          } else if (key.startsWith('Delta') && numVal > 0.15) {
+            metricEl.classList.add('bad');
+          }
+        }
+      }
+    }
+  }
+}
+
+function updateGate(gateName, pass, primaryMetric, secondaryMetric, tolerance) {
+  const gateMap = {
+    'tau': 'gate-tau',
+    '2': 'gate-2',
+    'comp': 'gate-comp'
+  };
+  
+  const gateId = gateMap[gateName];
+  const gate = document.getElementById(gateId);
+  const statusEl = document.getElementById(`${gateId}-status`);
+  const checkEl = document.getElementById(`${gateId}-check`);
+  
+  if (pass) {
+    gate.classList.add('pass');
+    checkEl.textContent = '✓';
+    checkEl.style.color = '#4aff4a';
+  } else {
+    gate.classList.add('fail');
+    checkEl.textContent = '✗';
+    checkEl.style.color = '#ff4a4a';
+  }
+  
+  // Add metric details while preserving status label
+  let details = '';
+  if (gateName === 'tau' || gateName === '2') {
+    details = `CR < 1: ${primaryMetric.toFixed(4)} ${primaryMetric < 1 ? '✓' : '✗'}<br>`;
+    details += `Δ ≤ ${tolerance}: ${secondaryMetric.toFixed(4)} ${secondaryMetric <= tolerance ? '✓' : '✗'}`;
+  } else {
+    details = `CR_∘ < CR_τ: ${primaryMetric.toFixed(4)} < ${secondaryMetric.toFixed(4)} ${primaryMetric < secondaryMetric ? '✓' : '✗'}`;
+  }
+  
+  statusEl.innerHTML = `${pass ? 'PASS' : 'FAIL'}<div style="font-size: 0.75em; margin-top: 5px; color: #888;">${details}</div>`;
+}
+
+function updateVerdict(pass, gates) {
+  const panel = document.getElementById('verdict-panel');
+  const result = document.getElementById('verdict-result');
+  const detail = document.getElementById('verdict-detail');
+  
+  if (pass) {
+    panel.classList.add('pass');
+    result.textContent = 'COMPOSABLE PASS';
+    result.classList.add('pass');
+    detail.textContent = 'All three gates passed. The operator composition is structurally valid.';
+  } else {
+    panel.classList.add('fail');
+    result.textContent = 'NON-COMPOSABLE';
+    result.classList.add('fail');
+    
+    const failedGates = [];
+    if (!gates.G_tau) failedGates.push('G_τ (τ inadmissible)');
+    if (!gates.G_2) failedGates.push('G₂ (O₂ inadmissible)');
+    if (!gates.G_comp) failedGates.push('G_∘ (no improvement)');
+    
+    detail.textContent = `Failed: ${failedGates.join(', ')}`;
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
+// Operator tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.operator-params').forEach(p => p.classList.remove('active'));
+    
+    tab.classList.add('active');
+    const operator = tab.dataset.operator;
+    document.getElementById(`params-${operator}`).classList.add('active');
+  });
+});
+
+// Run pipeline
+document.getElementById('runPipeline').addEventListener('click', async () => {
+  console.log('Starting pipeline execution...');
+  
+  // Reset UI
+  document.getElementById('runPipeline').disabled = true;
+  document.getElementById('exportData').disabled = true;
+  document.querySelectorAll('.pipeline-card').forEach(card => {
+    card.classList.remove('active');
+    card.querySelector('.card-badge').className = 'card-badge badge-pending';
+    card.querySelector('.card-badge').textContent = 'PENDING';
+  });
+  document.querySelectorAll('.gate').forEach(gate => {
+    gate.classList.remove('pass', 'fail');
+    gate.querySelector('.gate-status').innerHTML = 'PENDING';
+    gate.querySelector('.gate-check').textContent = '⏳';
+    gate.querySelector('.gate-check').style.color = '';
+  });
+  document.getElementById('verdict-panel').classList.remove('pass', 'fail');
+  document.getElementById('verdict-result').textContent = 'COMPUTING...';
+  document.getElementById('verdict-result').className = 'verdict-result';
+  updateProgress(0);
+  
+  // Get active O₂ operator
+  const activeTab = document.querySelector('.tab.active');
+  const O2Operator = activeTab.dataset.operator;
+  
+  // Build config
+  const config = {
+    n: parseInt(document.getElementById('n').value),
+    M: parseInt(document.getElementById('M').value),
+    generator: document.getElementById('generator').value,
+    omegaVariant: document.getElementById('omega-variant').value,
+    keepFraction: parseFloat(document.getElementById('keep-fraction').value),
+    seed: parseInt(document.getElementById('seed').value),
+    deltaTau: parseFloat(document.getElementById('delta-tau').value),
+    delta2: parseFloat(document.getElementById('delta-2').value),
+    tauVariant: document.getElementById('tau-variant').value,
+    tauLambda: parseFloat(document.getElementById('tau-lambda').value),
+    tauSigma: parseFloat(document.getElementById('tau-sigma').value),
+    O2Operator: O2Operator,
+    kappaAlpha: parseFloat(document.getElementById('kappa-alpha').value),
+    kappaIters: parseInt(document.getElementById('kappa-iters').value),
+    sigmaAlpha: parseFloat(document.getElementById('sigma-alpha').value),
+    sigmaTarget: parseFloat(document.getElementById('sigma-target').value),
+    phiAlpha: parseFloat(document.getElementById('phi-alpha').value),
+    phiCompression: parseInt(document.getElementById('phi-compression').value)
+  };
+  
+  console.log('Config:', config);
+  
+  currentPipeline = new ComposabilityPipeline(config);
+  
+  try {
+    await currentPipeline.run();
+  } catch (error) {
+    console.error('Pipeline error:', error);
+    updateStatus(`Error: ${error.message}`, 'error');
+  } finally {
+    document.getElementById('runPipeline').disabled = false;
+  }
+});
+
+// Export data
+document.getElementById('exportData').addEventListener('click', () => {
+  if (!currentPipeline) {
+    alert('No pipeline data to export');
+    return;
+  }
+  
+  const exportData = currentPipeline.exportJSON();
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const timestamp = new Date().toISOString().split('T')[0];
+  a.download = `UNNS_XXXVII_Composability_${exportData.results.O2.operator}_${timestamp}_seed${exportData.config.seed}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+  updateStatus('Data exported successfully', 'success');
+});
+
+console.log('✅ Chamber XXXVII v0.3.0 ready (Production Ready)');
+console.log('═══════════════════════════════════════════════════════════');
+  function toggleGuide() {
+  const content = document.getElementById('guide-content');
+  const indicator = document.getElementById('guide-toggle-indicator');
+  const open = content.style.display === 'block';
+
+  content.style.display = open ? 'none' : 'block';
+  indicator.textContent = open ? '▼' : '▲';
+}
+function toggleHowTo() {
+  const content = document.getElementById('howto-content');
+  const indicator = document.getElementById('howto-toggle-indicator');
+  const open = content.style.display === 'block';
+
+  content.style.display = open ? 'none' : 'block';
+  indicator.textContent = open ? '▼' : '▲';
+}
+
+  </script>
+</body>
+</html>
