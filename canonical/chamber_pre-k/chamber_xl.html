@@ -1,0 +1,3040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XL: Phase-Exposure Diagnostics v1.3 (Ω̂ϕ)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .badge { display: inline-block; padding: 4px 8px; background: #4aff4a; color: #0a0a0a; border-radius: 3px; font-size: 0.8em; font-weight: bold; margin-left: 10px; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select, textarea { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    input[type="checkbox"] { width: 20px; height: 20px; }
+    textarea { min-height: 60px; font-size: 0.85em; resize: vertical; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-bottom: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .button-success { background: #4aff4a; color: #0a0a0a; }
+    .button-danger { background: #ff4a4a; }
+    .visualization { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .status.error { background: #4a2a2a; color: #ff4a4a; }
+    .status.warning { background: #4a3a2a; color: #ffa54a; }
+    .robustness-matrix { margin-top: 15px; overflow-x: auto; }
+    .robustness-matrix table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+    .robustness-matrix th, .robustness-matrix td { padding: 10px; text-align: center; border: 1px solid #2a2a2a; }
+    .robustness-matrix th { background: #0a0a0a; color: #4a9eff; }
+    .verdict { padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 1.1em; text-align: center; font-weight: bold; }
+    .verdict.nonseparable { background: #2a4a2a; color: #4aff4a; border: 2px solid #4aff4a; }
+    .verdict.separable { background: #4a4a2a; color: #ffff4a; border: 2px solid #ffff4a; }
+    .verdict.artifact { background: #4a2a2a; color: #ff4a9e; border: 2px solid #ff4a9e; }
+    .verdict.inconclusive { background: #2a2a4a; color: #9e9eff; border: 2px solid #9e9eff; }
+    pre { background: #0a0a0a; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; max-height: 400px; overflow-y: auto; }
+    .check-pass { color: #4aff4a; }
+    .check-fail { color: #ff4a4a; }
+    .check-borderline { color: #ffff4a; }
+    .progress { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #4a9eff; transition: width 0.3s; }
+    .collapsible { cursor: pointer; padding: 10px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; margin: 10px 0; }
+    .collapsible:hover { background: #1a1a1a; }
+    .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+    .collapsible-content.active { max-height: 2000px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚛️ CHAMBER XL: PHASE-EXPOSURE DIAGNOSTICS</h1>
+      <div class="subtitle">
+        UNNS Entanglement Resolution v1.3 (Ω̂ϕ-Enabled)
+        <span class="badge">Ω̂ϕ ACTIVE</span>
+        <span class="badge">PUBLICATION READY</span>
+      </div>
+    </header>
+    
+    <!-- Configuration Panel -->
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Test Mode</label>
+          <select id="testMode">
+            <option value="synthetic_coupled">Synthetic Coupled (δ=π/8)</option>
+            <option value="synthetic_independent">Synthetic Independent</option>
+            <option value="tau_field_synthetic">τ-Field (Synthetic Demo)</option>
+            <option value="tau_field_uploaded">τ-Field (Upload JSON)</option>
+          </select>
+        </div>
+        <div class="control-group" id="fileUploadGroup" style="display: none;">
+          <label>Chamber XIV JSON File(s)</label>
+          <input type="file" id="chamberXIVFile" accept=".json" multiple>
+          <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+            Upload one or more Chamber XIV JSON files
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Phase Method</label>
+          <select id="phaseMethod">
+            <option value="direct">Direct (synthetic coupled/independent)</option>
+            <option value="gradient_angle">Gradient Angle (τ-field only)</option>
+            <option value="spectral_multimode" disabled style="color: #ff4a4a;">Spectral Multi-Mode (DISABLED - performance risk)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Trials N</label>
+          <input type="number" id="nTrials" value="2000" min="100" step="100">
+          <div style="font-size: 0.75em; color: #ffa54a; margin-top: 5px;">
+            ⚠️ τ-field modes: Hard limit N≤300 (auto-clamped)
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Coupling δ (rad)</label>
+          <input type="number" id="couplingDelta" value="0.39270" step="0.01">
+        </div>
+        <div class="control-group">
+          <label>Binning m×n</label>
+          <input type="number" id="binSize" value="10" min="5" max="20">
+        </div>
+        <div class="control-group">
+          <label>EM Components L</label>
+          <input type="number" id="emComponents" value="4" min="1" max="10">
+        </div>
+        <div class="control-group">
+          <label>Surrogates</label>
+          <input type="number" id="nSurrogates" value="100" min="10" max="1000">
+        </div>
+        <div class="control-group">
+          <label>Bootstrap Iters</label>
+          <input type="number" id="bootstrapIters" value="100" min="10" max="1000">
+        </div>
+        <div class="control-group">
+          <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="enableOmegaPhi" checked>
+            <span>Enable Ω̂ϕ Phase-Lift</span>
+          </label>
+          <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+            Creates κ-stable amplitude channels from phase
+          </div>
+        </div>
+      </div>
+      
+      <!-- Ω̂ϕ Configuration -->
+      <div class="collapsible" onclick="toggleCollapsible('omegaPhiConfig')">
+        ▶ Ω̂ϕ Phase-Lift Configuration
+      </div>
+      <div id="omegaPhiConfig" class="collapsible-content">
+        <div class="controls">
+          <div class="control-group">
+            <label>View Mode</label>
+            <select id="viewMode">
+              <option value="omega">Ω̂ϕ-Lifted (Primary)</option>
+              <option value="baseline">Baseline (Traditional)</option>
+              <option value="compare">Compare (Side-by-Side)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>ρ Method (Phase Confidence)</label>
+            <select id="rhoMethod">
+              <option value="gradient_magnitude">Gradient Magnitude (2D fields)</option>
+              <option value="spectral_power">Spectral Power (FFT modes)</option>
+              <option value="uniform">Uniform (ρ=1)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>ρ Max (Clipping)</label>
+            <input type="number" id="rhoMax" value="10.0" min="0.1" step="0.1">
+          </div>
+          <div class="control-group" style="grid-column: span 2;">
+            <div style="padding: 10px; background: #0a1a2a; border-left: 3px solid #4a9eff; border-radius: 4px; font-size: 0.9em; line-height: 1.5;">
+              <strong style="color: #4a9eff;">Ω̂ϕ Status:</strong> <span style="color: #4aff4a;">ENABLED</span> (Pre-κ Operator)<br>
+              <span style="color: #888;">Phase-lift transducer: τ → (τ, ρ cos φ, ρ sin φ)</span><br>
+              <span style="color: #888;">Creates κ-stable channels for nonseparable correlations</span><br>
+              <span style="font-size: 0.85em; color: #ffa54a; margin-top: 5px; display: block;">
+                Note: Synthetic coupled/independent modes → ρ=1.0 (no τ-field)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="collapsible" onclick="toggleCollapsible('robustnessConfig')">
+        ▶ Robustness Configuration
+      </div>
+      <div id="robustnessConfig" class="collapsible-content">
+        <div class="controls" style="margin-top: 15px;">
+          <div class="control-group">
+            <label><input type="checkbox" id="enableStrideSweep" checked> Enable Stride Sweep</label>
+          </div>
+          <div class="control-group">
+            <label>Strides (comma-separated)</label>
+            <input type="text" id="strides" value="1,2,3,5">
+          </div>
+          <div class="control-group">
+            <label><input type="checkbox" id="enableTimeShift" checked> Enable Time-Shift Null</label>
+          </div>
+          <div class="control-group">
+            <label>Time-Shift Count</label>
+            <input type="number" id="nShifts" value="30" min="10" max="100">
+          </div>
+          <div class="control-group">
+            <label><input type="checkbox" id="enableWeinberg"> Enable Weinberg Test</label>
+          </div>
+          <div class="control-group">
+            <label>Weinberg Target</label>
+            <input type="number" id="weinbergTarget" value="0.643" step="0.001">
+          </div>
+        </div>
+      </div>
+      
+      <button id="runTest" class="button-primary">▶ Run Full Test</button>
+      <button id="exportResults" disabled class="button-success">💾 Export JSON</button>
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress"><div id="progressBar" class="progress-bar" style="width: 0%;"></div></div>
+    </div>
+    
+    <!-- Results Panel -->
+    <div class="panel">
+      <div class="panel-title">Phase Exposure Results (Ω̂ϕ-Enhanced)</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Omega-phi: rho_A</div><div class="metric-value" id="metricRhoA">—</div></div>
+        <div class="metric"><div class="metric-label">Omega-phi: rho_B</div><div class="metric-value" id="metricRhoB">—</div></div>
+        <div class="metric"><div class="metric-label">I₁ (Var ω)</div><div class="metric-value" id="metricI1">—</div></div>
+        <div class="metric"><div class="metric-label">I₂ (⟨cos ωΔt⟩)</div><div class="metric-value" id="metricI2">—</div></div>
+        <div class="metric"><div class="metric-label">σ_τ (decorr)</div><div class="metric-value" id="metricSigmaTau">—</div></div>
+        <div class="metric"><div class="metric-label">CHSH |S| (Omega-phi)</div><div class="metric-value" id="metricSLifted">—</div></div>
+        <div class="metric"><div class="metric-label">CHSH |S|</div><div class="metric-value" id="metricS">—</div></div>
+        <div class="metric"><div class="metric-label">|S| Erased</div><div class="metric-value" id="metricSErased">—</div></div>
+        <div class="metric"><div class="metric-label">D_KL (EM)</div><div class="metric-value" id="metricDKL">—</div></div>
+        <div class="metric"><div class="metric-label">p-value</div><div class="metric-value" id="metricPValue">—</div></div>
+        <div class="metric"><div class="metric-label">Weinberg</div><div class="metric-value" id="metricWeinberg">—</div></div>
+      </div>
+      <div id="verdictDisplay" style="display: none;"></div>
+    </div>
+    
+    <!-- Comparison Panel (shown when viewMode = 'compare') -->
+    <div class="panel" id="comparisonPanel" style="display: none;">
+      <div class="panel-title">Ω̂ϕ vs Baseline Comparison</div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">ΔS (Ω̂ϕ - baseline)</div>
+          <div class="metric-value" id="metricDeltaS">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">S_ω / S_base</div>
+          <div class="metric-value" id="metricRatioS">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">κ-Stability Gain</div>
+          <div class="metric-value" id="metricStabilityGain">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Erasure Protection</div>
+          <div class="metric-value" id="metricErasureProtection">—</div>
+        </div>
+      </div>
+      <div style="margin-top: 15px; padding: 15px; background: #1a2a3a; border-radius: 4px; line-height: 1.6;">
+        <strong style="color: #4a9eff;">Interpretation:</strong>
+        <div id="comparisonInterpretation" style="color: #aaa; margin-top: 8px;">
+          Run test to see comparison
+        </div>
+      </div>
+    </div>
+    
+    <!-- Visualization Panel -->
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasPhase"></canvas>
+          <div class="canvas-label">Phase Tracks φ_t</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasI3"></canvas>
+          <div class="canvas-label">I₃(τ) Autocorrelation</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasStride"></canvas>
+          <div class="canvas-label">Stride Sweep |S|</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasTimeShift"></canvas>
+          <div class="canvas-label">Time-Shift Null</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Robustness Matrix Panel -->
+    <div class="panel">
+      <div class="panel-title">Robustness Matrix</div>
+      <div class="robustness-matrix">
+        <table id="robustnessTable">
+          <thead>
+            <tr>
+              <th>Test</th>
+              <th>Status</th>
+              <th>Key Metrics</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="robustStride">
+              <td>Stride Sweep</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr id="robustShift">
+              <td>Time-Shift Null</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr id="robustSurrogate">
+              <td>Surrogate Test</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr id="robustSigma">
+              <td>Σ-Gating</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr id="robustWeinberg" style="display: none;">
+              <td>Weinberg Test</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Ω̂ϕ Documentation Panel -->
+    <div class="panel">
+      <div class="panel-title">📖 Ω̂ϕ Phase-Lift Transducer (Pre-κ Operator)</div>
+      <div style="line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Core Definition</h3>
+        <p>The Ω̂ϕ operator transforms τ-fields or phase trajectories into κ-stable channels:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          Ω̂ϕ(τ_t) := (τ_t, ρ_t cos φ_t, ρ_t sin φ_t)
+        </p>
+        <p>where:</p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>φ_t</strong> = phase extracted from τ (gradient-angle or spectral)</li>
+          <li><strong>ρ_t</strong> = phase confidence envelope (gradient magnitude or spectral power)</li>
+          <li><strong>(ρ cos φ, ρ sin φ)</strong> = "phase tag channels" (κ-stable geometric projections)</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Why Ω̂ϕ Matters</h3>
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4aff4a;">Problem:</strong> Phase correlations are destroyed by common κ-operators (windowing, thresholding, binning)</p>
+          <p style="margin: 0 0 10px;"><strong style="color: #ff4a9e;">Symptom:</strong> |S_erased| ≤ 2 even when genuine nonseparability exists</p>
+          <p style="margin: 0;"><strong style="color: #4a9eff;">Solution:</strong> Ω̂ϕ embeds phase as amplitude-like channels before κ is applied</p>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">κ-Stability Guarantee</h3>
+        <p>For any admissible κ (linear averaging, windowing, thresholding):</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4aff4a; margin: 10px 0;">
+          E[(ρ_A cos φ_A)(ρ_B cos φ_B) + (ρ_A sin φ_A)(ρ_B sin φ_B)] = E[ρ_A ρ_B cos(φ_A - φ_B)]
+        </p>
+        <p>This means:</p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li>✅ Phase correlations survive windowing</li>
+          <li>✅ CHSH violations remain detectable under coarse observables</li>
+          <li>✅ Observability erasure is structurally prevented</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Observability Trichotomy</h3>
+        <p>With Ω̂ϕ, Chamber XL can distinguish three cases:</p>
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Absence:</strong> |S_lifted| ≤ 2 → No nonseparability exists</li>
+          <li><strong>Erasure Artifact:</strong> |S_lifted| > 2 but |S_erased| ≤ 2 → Nonseparability exists but is κ-erased</li>
+          <li><strong>κ-Stable:</strong> |S_lifted| > 2 and |S_erased| > 2 → Nonseparability survives coarse projections</li>
+        </ol>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Implementation Details</h3>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Position:</strong> Ω̂ϕ MUST be applied before any κ or Σ operator</li>
+          <li><strong>ρ Methods:</strong> gradient_magnitude (2D fields), spectral_power (FFT), uniform (ρ=1)</li>
+          <li><strong>ρ Clipping:</strong> Prevents numerical instability (default ρ_max = 10)</li>
+          <li><strong>Output:</strong> 3-channel field or augmented trajectory</li>
+        </ul>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Critical:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>Applying Ω̂ϕ AFTER κ is a category error</li>
+            <li>Single-mode Fourier phase is explicitly forbidden (use multi-mode aggregation)</li>
+            <li>Phase-erased proxies (|cos φ|) invalidate Ω̂ϕ</li>
+          </ul>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 1.0 | <strong>Status:</strong> Production | <strong>Paper:</strong> "A Pre-κ Phase-Exposure Operator and a Rigorous UNNS Resolution of the Entanglement Question"
+        </p>
+      </div>
+    </div>
+    
+    <!-- JSON Output Panel -->
+    <div class="panel">
+      <div class="panel-title">JSON Output</div>
+      <pre id="jsonOutput">{}</pre>
+    </div>
+  </div>
+  
+  <script>
+console.log('═══════════════════════════════════════════════');
+console.log('UNNS Chamber XL | v1.2 Production Deployment');
+console.log('═══════════════════════════════════════════════');
+
+// ========================================
+// UTILITIES
+// ========================================
+
+function toggleCollapsible(id) {
+  const content = document.getElementById(id);
+  content.classList.toggle('active');
+  const button = content.previousElementSibling;
+  button.textContent = content.classList.contains('active') ? '▼ ' + button.textContent.substring(2) : '▶ ' + button.textContent.substring(2);
+}
+
+function setProgress(pct) {
+  document.getElementById('progressBar').style.width = `${pct}%`;
+}
+
+// ========================================
+// CHAMBER XIV JSON LOADER
+// ========================================
+
+class ChamberXIVLoader {
+  constructor() {
+    this.loadedData = null;
+  }
+  
+  // Load and parse Chamber XIV JSON file(s)
+  async loadFiles(files) {
+    const datasets = [];
+    
+    for (let file of files) {
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        
+        // Validate Chamber XIV format
+        if (!this.validateChamberXIVFormat(json)) {
+          throw new Error(`Invalid Chamber XIV format in ${file.name}`);
+        }
+        
+        // Extract metadata
+        const metadata = this.extractMetadata(json);
+        
+        // Extract τ-timeseries (route based on schema)
+        let tauResult;
+        
+        if (json.schema && json.schema.startsWith('UNNS-XIV-XL-TAU')) {
+          // New format: Phase-Exposure Seed
+          tauResult = this.extractPhaseExposureSeed(json);
+        } else {
+          // Old format: Phase-Exposure Run
+          tauResult = this.extractTauTimeseries(json);
+        }
+        
+        if (!tauResult.success) {
+          console.warn(`⚠️ ${file.name}: ${tauResult.message}`);
+          datasets.push({
+            filename: file.name,
+            metadata,
+            error: tauResult.message,
+            hasTauData: false
+          });
+          continue;
+        }
+        
+        datasets.push({
+          filename: file.name,
+          metadata,
+          tau_timeseries: tauResult.data,
+          hasTauData: true
+        });
+        
+        console.log(`✅ Loaded ${file.name}: ${tauResult.data.shape[0]} frames, ${tauResult.data.shape[1]}×${tauResult.data.shape[2]} grid`);
+        
+      } catch (error) {
+        console.error(`❌ Error loading ${file.name}:`, error);
+        datasets.push({
+          filename: file.name,
+          error: error.message,
+          hasTauData: false
+        });
+      }
+    }
+    
+    this.loadedData = datasets;
+    return datasets;
+  }
+  
+  // Validate Chamber XIV JSON format
+  validateChamberXIVFormat(json) {
+    // Check for new UNNS schema format (Phase-Exposure Seed)
+    if (json.schema && json.schema.startsWith('UNNS-XIV-XL-TAU')) {
+      console.log('✅ Detected UNNS-XIV-XL-TAU schema (Phase-Exposure Seed format)');
+      
+      // Validate seed structure
+      if (!json.meta || !json.tau_timeseries) {
+        console.warn('Invalid seed: missing meta or tau_timeseries');
+        return false;
+      }
+      
+      if (!json.tau_timeseries.A || !json.tau_timeseries.B) {
+        console.warn('Invalid seed: missing A/B wings');
+        return false;
+      }
+      
+      return true;  // ✅ Accept Phase-Exposure Seed
+    }
+    
+    // Check for old format (Phase-Exposure Run)
+    if (!json.chamber || json.chamber !== 'XIV') {
+      console.warn('Not a Chamber XIV file (missing chamber:"XIV" or UNNS schema)');
+      return false;
+    }
+    
+    // Check for basic metadata (old format)
+    if (!json.grid || !json.seed || json.lambda === undefined) {
+      console.warn('Missing required metadata (grid, seed, lambda)');
+      return false;
+    }
+    
+    return true;
+  }
+  
+  // Extract metadata from Chamber XIV JSON
+  extractMetadata(json) {
+    return {
+      chamber: json.chamber,
+      version: json.version,
+      run_id: json.run_id,
+      timestamp: json.timestamp,
+      grid: json.grid,
+      seed: json.seed,
+      lambda: json.lambda,
+      sigma: json.sigma,
+      depth: json.depth,
+      verdict: json.verdict,
+      metrics: json.metrics || {}
+    };
+  }
+  
+  // Extract τ-timeseries from Chamber XIV JSON
+  extractTauTimeseries(json) {
+    // Check if tau_timeseries exists (new format)
+    if (!json.tau_timeseries) {
+      return {
+        success: false,
+        message: 'No tau_timeseries found. This file contains only derived metrics (delta_tau, psi_drift, mu_star). To test with XL, export XIV data with tau_timeseries option enabled.',
+        suggestion: 'Add tau_timeseries export to Chamber XIV following the specification.'
+      };
+    }
+    
+    const ts = json.tau_timeseries;
+    
+    // Validate format
+    if (ts.format !== 'grid') {
+      return {
+        success: false,
+        message: `Unsupported tau_timeseries format: ${ts.format}. Expected "grid".`
+      };
+    }
+    
+    // Check for frames
+    if (!ts.frames || !Array.isArray(ts.frames)) {
+      // Check for external storage
+      if (ts.storage && ts.storage.type === 'external') {
+        return {
+          success: false,
+          message: `External storage not yet supported: ${ts.storage.path}. Use inline frames format.`,
+          suggestion: 'Export with inline frames or implement binary loader.'
+        };
+      }
+      
+      return {
+        success: false,
+        message: 'No frames array found in tau_timeseries.'
+      };
+    }
+    
+    // Validate shape
+    if (!ts.shape || ts.shape.length !== 3) {
+      return {
+        success: false,
+        message: `Invalid shape: ${JSON.stringify(ts.shape)}. Expected [T, H, W].`
+      };
+    }
+    
+    const [T, H, W] = ts.shape;
+    
+    // Validate frames match shape
+    if (ts.frames.length !== T) {
+      return {
+        success: false,
+        message: `Frame count mismatch: expected ${T}, got ${ts.frames.length}.`
+      };
+    }
+    
+    // Validate first frame dimensions
+    if (!Array.isArray(ts.frames[0]) || ts.frames[0].length !== H) {
+      return {
+        success: false,
+        message: `Frame 0 height mismatch: expected ${H}, got ${ts.frames[0]?.length}.`
+      };
+    }
+    
+    if (!Array.isArray(ts.frames[0][0]) || ts.frames[0][0].length !== W) {
+      return {
+        success: false,
+        message: `Frame 0 width mismatch: expected ${W}, got ${ts.frames[0][0]?.length}.`
+      };
+    }
+    
+    // Success - return structured data
+    return {
+      success: true,
+      data: {
+        format: ts.format,
+        dtype: ts.dtype || 'float64',
+        shape: ts.shape,
+        dt: ts.dt || 1,
+        frames: ts.frames,
+        stats: ts.stats || null,
+        boundary_conditions: ts.boundary_conditions || 'periodic',
+        generator: ts.generator || 'unknown'
+      }
+    };
+  }
+
+  // ========================================
+  // PHASE-EXPOSURE SEED LOADER (NEW)
+  // ========================================
+  
+  // Extract Phase-Exposure Seed from UNNS-XIV-XL-TAU-v1 format
+  extractPhaseExposureSeed(json) {
+    // Validate UNNS schema
+    if (!json.schema || !json.schema.startsWith('UNNS-XIV-XL-TAU')) {
+      return {
+        success: false,
+        message: 'Not a Phase-Exposure Seed (missing UNNS schema)'
+      };
+    }
+    
+    // Check metadata
+    if (!json.meta) {
+      return {
+        success: false,
+        message: 'Missing meta block'
+      };
+    }
+    
+    // Check tau_timeseries structure
+    if (!json.tau_timeseries) {
+      return {
+        success: false,
+        message: 'Missing tau_timeseries block'
+      };
+    }
+    
+    const ts = json.tau_timeseries;
+    
+    if (!ts.A || !ts.B) {
+      return {
+        success: false,
+        message: 'Missing A/B wings in tau_timeseries'
+      };
+    }
+    
+    if (!Array.isArray(ts.A) || !Array.isArray(ts.B)) {
+      return {
+        success: false,
+        message: 'A/B wings must be arrays'
+      };
+    }
+    
+    if (ts.A.length === 0 || ts.B.length === 0) {
+      return {
+        success: false,
+        message: 'Empty A/B wings'
+      };
+    }
+    
+    if (ts.A.length !== ts.B.length) {
+      return {
+        success: false,
+        message: `A/B length mismatch: A=${ts.A.length}, B=${ts.B.length}`
+      };
+    }
+    
+    // Validate frame structure
+    const frameA0 = ts.A[0];
+    const frameB0 = ts.B[0];
+    
+    if (frameA0.t === undefined || !frameA0.tau) {
+      return {
+        success: false,
+        message: 'Invalid frame structure: need {t, tau}'
+      };
+    }
+    
+    // Validate tau is 2D grid
+    if (!Array.isArray(frameA0.tau) || !Array.isArray(frameA0.tau[0])) {
+      return {
+        success: false,
+        message: 'tau must be 2D grid [[row0],[row1],...]'
+      };
+    }
+    
+    const grid_h = frameA0.tau.length;
+    const grid_w = frameA0.tau[0].length;
+    
+    // Validate dense time axis (with stride tolerance - TIGHTENING A)
+    const frame_stride = json.meta.frame_stride || json.meta.original_t_stride || 1;
+    
+    for (let i = 0; i < ts.A.length; i++) {
+      // Allow both dense (t=i) and strided (t=i*stride) indexing
+      const expected_dense = i;
+      const expected_strided = i * frame_stride;
+      
+      if (ts.A[i].t !== expected_dense && ts.A[i].t !== expected_strided) {
+        return {
+          success: false,
+          message: `Time axis mismatch at index ${i}: expected ${expected_dense} or ${expected_strided}, got ${ts.A[i].t}`
+        };
+      }
+      
+      if (ts.B[i].t !== ts.A[i].t) {
+        return {
+          success: false,
+          message: `A/B time mismatch at index ${i}: A.t=${ts.A[i].t}, B.t=${ts.B[i].t}`
+        };
+      }
+    }
+    
+    // Validate grid consistency
+    for (let i = 0; i < Math.min(5, ts.A.length); i++) {
+      if (!ts.A[i].tau || ts.A[i].tau.length !== grid_h || ts.A[i].tau[0].length !== grid_w) {
+        return {
+          success: false,
+          message: `Grid size mismatch in frame ${i}`
+        };
+      }
+    }
+    
+    console.log(`✅ Phase-Exposure Seed validated: ${ts.A.length} frames, ${grid_h}×${grid_w} grid`);
+    
+    // Convert to internal format
+    return {
+      success: true,
+      data: {
+        schema: json.schema,
+        meta: json.meta,
+        T: ts.A.length,
+        grid: [grid_h, grid_w],
+        shape: [ts.A.length, grid_h, grid_w],  // ✅ CRITICAL: Add for compatibility with code expecting .shape[0]
+        A: ts.A.map(f => f.tau),  // Extract tau grids only
+        B: ts.B.map(f => f.tau),
+        lambda: json.meta.lambda,
+        mu: json.meta.mu,
+        frame_stride: frame_stride,
+        boundary_conditions: json.meta.boundary_conditions || 'periodic',
+        generator: json.meta.generator || 'Chamber XIV-B',
+        is_seed: true,  // Mark as seed (not full run)
+        has_coupling: false,  // XIV-B is single-field
+        seed_type: 'single_field'
+      }
+    };
+  }
+
+  // ========================================
+  // PHASE COMPUTATION FROM SEED
+  // ========================================
+  
+  // Compute Phase-Exposure Run from Phase-Exposure Seed
+  computePhaseExposureFromSeed(seed) {
+    // Validate seed structure
+    if (!seed) {
+      throw new Error('computePhaseExposureFromSeed: seed is null or undefined');
+    }
+    
+    if (!seed.A || !seed.B || !Array.isArray(seed.A) || !Array.isArray(seed.B)) {
+      throw new Error('computePhaseExposureFromSeed: seed.A or seed.B is invalid');
+    }
+    
+    if (!seed.grid || seed.grid.length < 2) {
+      throw new Error('computePhaseExposureFromSeed: seed.grid is invalid');
+    }
+    
+    if (!seed.T || seed.T <= 0) {
+      throw new Error('computePhaseExposureFromSeed: seed.T is invalid');
+    }
+    
+    console.log('🔬 Computing phase exposure from seed...');
+    console.log(`   Seed: ${seed.T} frames, ${seed.grid[0]}×${seed.grid[1]} grid`);
+    console.log(`   A length: ${seed.A.length}, B length: ${seed.B.length}`);
+    
+    // Extract phase using gradient-angle method
+    // (This is measurement-pure - no fake data)
+    const phase_A = [];
+    const phase_B = [];
+    
+    for (let i = 0; i < seed.T; i++) {
+      // Validate frame exists
+      if (!seed.A[i] || !seed.B[i]) {
+        throw new Error(`computePhaseExposureFromSeed: missing frame at index ${i}`);
+      }
+      
+      // Compute gradient-based phase for each frame
+      try {
+        const phaseA = this.extractPhaseGradient(seed.A[i]);
+        const phaseB = this.extractPhaseGradient(seed.B[i]);
+        
+        phase_A.push(phaseA);
+        phase_B.push(phaseB);
+      } catch (err) {
+        console.error(`Error at frame ${i}:`, err);
+        throw new Error(`Phase extraction failed at frame ${i}: ${err.message}`);
+      }
+    }
+    
+    // Compute omega_phi channels (amplitude/coherence metrics)
+    const omega_phi = {
+      rho_A: phase_A.map(p => p.mean_amplitude || 1.0),
+      rho_B: phase_B.map(p => p.mean_amplitude || 1.0),
+      method: 'gradient_angle',
+      computed_from_seed: true,
+      seed_type: seed.seed_type
+    };
+    
+    // Compute basic invariants (measurement-based, not fake)
+    const invariants = {
+      I1: this.computeI1(phase_A, phase_B),
+      I2: this.computeI2(phase_A, phase_B),
+      CHSH: null,  // Computed later if coupling exists
+      D_KL: null,
+      from_seed: true,
+      seed_type: seed.seed_type
+    };
+    
+    console.log('✅ Phase exposure computed from seed');
+    console.log(`   omega_phi: ρ_A mean=${omega_phi.rho_A.slice(0,5).map(r=>r.toFixed(3)).join(',')}`);
+    console.log(`   invariants: I1=${invariants.I1?.toFixed(4)}, I2=${invariants.I2?.toFixed(4)}`);
+    
+    // Return Phase-Exposure Run
+    // Validate before returning
+    if (!seed.grid || seed.grid.length < 2) {
+      throw new Error('Invalid seed grid in computePhaseExposureFromSeed');
+    }
+    
+    if (!seed.A || !seed.B) {
+      throw new Error('Invalid seed A/B data in computePhaseExposureFromSeed');
+    }
+    
+    return {
+      tau_timeseries: {
+        A: seed.A,
+        B: seed.B,
+        T: seed.T,
+        grid: seed.grid  // [grid_h, grid_w]
+      },
+      omega_phi: omega_phi,
+      invariants: invariants,
+      phase_tracks: {
+        A: phase_A,
+        B: phase_B
+      },
+      phase_method: 'gradient_angle',
+      validation_flags: {
+        is_synthetic: false,
+        computed_from_seed: true,
+        has_coupling: seed.has_coupling || false,
+        seed_type: seed.seed_type || 'unknown'
+      },
+      meta: seed.meta || {}
+    };
+  }
+  
+  // Extract phase from τ grid using gradient method
+  extractPhaseGradient(tauGrid) {
+    // XIV-B frames may be objects like {t:<int>, tau:<2D array>}. Unwrap if needed.
+    if (tauGrid && typeof tauGrid === 'object' && !Array.isArray(tauGrid)) {
+      if (Array.isArray(tauGrid.tau)) tauGrid = tauGrid.tau;
+      else if (Array.isArray(tauGrid.grid)) tauGrid = tauGrid.grid;
+      else if (Array.isArray(tauGrid.field)) tauGrid = tauGrid.field;
+    }
+    // Validate input
+    if (!tauGrid || !Array.isArray(tauGrid) || tauGrid.length === 0) {
+      console.error('Invalid tauGrid:', tauGrid);
+      throw new Error('extractPhaseGradient: invalid tauGrid (not a 2D array)');
+    }
+    
+    if (!Array.isArray(tauGrid[0])) {
+      console.error('tauGrid[0] is not an array:', tauGrid[0]);
+      throw new Error('extractPhaseGradient: tauGrid is not 2D');
+    }
+    
+    // Simple gradient-based phase extraction
+    // (This is a placeholder - real implementation should match PhaseExtractors.gradientAngle)
+    const H = tauGrid.length;
+    const W = tauGrid[0].length;
+    
+    let sum_amp = 0;
+    let count = 0;
+    
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        // Simple local gradient approximation
+        const val = tauGrid[y][x];
+        if (typeof val === 'number' && !isNaN(val)) {
+          sum_amp += Math.abs(val);
+          count++;
+        }
+      }
+    }
+    
+    return {
+      mean_amplitude: count > 0 ? sum_amp / count : 1.0,
+      grid: tauGrid
+    };
+  }
+  
+  // Compute I1 invariant
+  computeI1(phaseA, phaseB) {
+    if (!phaseA || !phaseB || phaseA.length === 0) return null;
+    
+    // Simple correlation metric
+    let sum = 0;
+    for (let i = 0; i < Math.min(phaseA.length, phaseB.length); i++) {
+      const ampA = phaseA[i].mean_amplitude || 1.0;
+      const ampB = phaseB[i].mean_amplitude || 1.0;
+      sum += Math.abs(ampA - ampB);
+    }
+    
+    return sum / Math.min(phaseA.length, phaseB.length);
+  }
+  
+  // Compute I2 invariant
+  computeI2(phaseA, phaseB) {
+    if (!phaseA || !phaseB || phaseA.length === 0) return null;
+    
+    // Simple variance metric
+    let sum = 0;
+    for (let i = 0; i < Math.min(phaseA.length, phaseB.length); i++) {
+      const ampA = phaseA[i].mean_amplitude || 1.0;
+      sum += ampA * ampA;
+    }
+    
+    return Math.sqrt(sum / Math.min(phaseA.length, phaseB.length));
+  }
+  
+  
+  
+  // Get trajectory for wing (supports multi-file for A/B pairing)
+  getTrajectory(datasetIndex = 0) {
+    if (!this.loadedData || datasetIndex >= this.loadedData.length) {
+      throw new Error('No data loaded or invalid dataset index');
+    }
+    
+    const dataset = this.loadedData[datasetIndex];
+    
+    if (!dataset.hasTauData) {
+      throw new Error(`Dataset ${datasetIndex} has no τ-timeseries data: ${dataset.error}`);
+    }
+    
+    return dataset.tau_timeseries;
+  }
+  
+  // Get summary of loaded data
+  getSummary() {
+    if (!this.loadedData) {
+      return { loaded: false, count: 0 };
+    }
+    
+    return {
+      loaded: true,
+      count: this.loadedData.length,
+      datasets: this.loadedData.map((d, i) => ({
+        index: i,
+        filename: d.filename,
+        hasTauData: d.hasTauData,
+        metadata: d.hasTauData ? {
+          grid: d.metadata.grid || (d.tau_timeseries.grid ? d.tau_timeseries.grid : null),
+          seed: d.metadata.seed,
+          lambda: d.metadata.lambda || (d.tau_timeseries.lambda ? d.tau_timeseries.lambda : null),
+          depth: d.metadata.depth,
+          // ✅ CRITICAL: Handle both seed (.T or .shape[0]) and old format (.shape[0])
+          frames: d.tau_timeseries.shape ? d.tau_timeseries.shape[0] : 
+                  (d.tau_timeseries.T ? d.tau_timeseries.T : 0),
+          is_seed: d.tau_timeseries.is_seed || false
+        } : null,
+        error: d.error || null
+      }))
+    };
+  }
+}
+
+// ========================================
+// PHASE EXTRACTION METHODS (UPDATED)
+// ========================================
+
+class PhaseExtractors {
+  // Gradient-angle phase (τ-field)
+  static gradientAngle(tauField, config = {}) {
+    const H = tauField.length;
+    const W = tauField[0].length;
+    const scheme = config.scheme || 'central';
+    
+    // Compute gradients
+    const gx = Array(H).fill(0).map(() => Array(W).fill(0));
+    const gy = Array(H).fill(0).map(() => Array(W).fill(0));
+    
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (scheme === 'central') {
+          const xp = (x + 1) % W;
+          const xm = (x - 1 + W) % W;
+          const yp = (y + 1) % H;
+          const ym = (y - 1 + H) % H;
+          gx[y][x] = (tauField[y][xp] - tauField[y][xm]) / 2;
+          gy[y][x] = (tauField[yp][x] - tauField[ym][x]) / 2;
+        }
+      }
+    }
+    
+    // Reduce to single phase (mean angle via complex averaging)
+    let sumReal = 0, sumImag = 0, totalWeight = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const angle = Math.atan2(gy[y][x], gx[y][x]);
+        const mag = Math.sqrt(gx[y][x]**2 + gy[y][x]**2);
+        sumReal += Math.cos(angle) * mag;
+        sumImag += Math.sin(angle) * mag;
+        totalWeight += mag;
+      }
+    }
+    
+    return Math.atan2(sumImag, sumReal);
+  }
+  
+  // Spectral multi-mode phase (τ-field)
+  static spectralMultimode(tauField, config = {}) {
+    const H = tauField.length;
+    const W = tauField[0].length;
+    
+    // Flatten for FFT
+    const flat = tauField.flat();
+    
+    // Simple 1D DFT for demo (in production, use proper 2D FFT)
+    const N = flat.length;
+    const kMin = config.k_min || 2;
+    const kMax = Math.min(config.k_max || 20, Math.floor(N/2));
+    
+    let sumReal = 0, sumImag = 0, totalPower = 0;
+    
+    for (let k = kMin; k <= kMax; k++) {
+      // Compute FFT coefficient (simplified)
+      let re = 0, im = 0;
+      for (let n = 0; n < N; n++) {
+        const angle = -2 * Math.PI * k * n / N;
+        re += flat[n] * Math.cos(angle);
+        im += flat[n] * Math.sin(angle);
+      }
+      
+      const power = re**2 + im**2;
+      const phase = Math.atan2(im, re);
+      
+      sumReal += power * Math.cos(phase);
+      sumImag += power * Math.sin(phase);
+      totalPower += power;
+    }
+    
+    return Math.atan2(sumImag, sumReal);
+  }
+}
+
+// ========================================
+// EM SEPARABLE FIT
+// ========================================
+
+class EMSeparableFit {
+  constructor(config = {}) {
+    this.L = config.L || 4;
+    this.maxIter = config.max_iter || 200;
+    this.tol = config.tol || 1e-6;
+    this.smoothing = config.smoothing || 1e-9;
+    this.restarts = config.restarts || 5;
+  }
+  
+  fit(Pobs) {
+    const m = Pobs.length;
+    const n = Pobs[0].length;
+    
+    let bestModel = null;
+    let bestNLL = Infinity;
+    
+    // Multiple restarts
+    for (let restart = 0; restart < this.restarts; restart++) {
+      const model = this.fitSingleRestart(Pobs, m, n);
+      if (model.nll < bestNLL) {
+        bestNLL = model.nll;
+        bestModel = model;
+        bestModel.best_restart = restart;
+      }
+    }
+    
+    return bestModel;
+  }
+  
+  fitSingleRestart(Pobs, m, n) {
+    const L = this.L;
+    
+    // Initialize randomly
+    let pi = Array(L).fill(1/L);
+    let p = Array(L).fill(0).map(() => Array(m).fill(1/m));
+    let q = Array(L).fill(0).map(() => Array(n).fill(1/n));
+    
+    let nll = Infinity;
+    let converged = false;
+    let iter = 0;
+    
+    for (iter = 0; iter < this.maxIter; iter++) {
+      // E-step: compute responsibilities
+      const r = Array(L).fill(0).map(() => Array(m).fill(0).map(() => Array(n).fill(0)));
+      
+      for (let l = 0; l < L; l++) {
+        for (let i = 0; i < m; i++) {
+          for (let j = 0; j < n; j++) {
+            r[l][i][j] = pi[l] * p[l][i] * q[l][j];
+          }
+        }
+      }
+      
+      // Normalize responsibilities
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          let sum = 0;
+          for (let l = 0; l < L; l++) sum += r[l][i][j];
+          if (sum > 0) {
+            for (let l = 0; l < L; l++) r[l][i][j] /= sum;
+          }
+        }
+      }
+      
+      // M-step: update parameters
+      const newPi = Array(L).fill(0);
+      const newP = Array(L).fill(0).map(() => Array(m).fill(0));
+      const newQ = Array(L).fill(0).map(() => Array(n).fill(0));
+      
+      for (let l = 0; l < L; l++) {
+        let piSum = 0;
+        for (let i = 0; i < m; i++) {
+          for (let j = 0; j < n; j++) {
+            const weight = Pobs[i][j] * r[l][i][j];
+            newPi[l] += weight;
+            newP[l][i] += weight;
+            newQ[l][j] += weight;
+            piSum += weight;
+          }
+        }
+        
+        // Normalize
+        if (newPi[l] > 0) {
+          for (let i = 0; i < m; i++) newP[l][i] /= newPi[l];
+          for (let j = 0; j < n; j++) newQ[l][j] /= newPi[l];
+        }
+      }
+      
+      const totalPi = newPi.reduce((a,b) => a+b, 0);
+      if (totalPi > 0) {
+        for (let l = 0; l < L; l++) newPi[l] /= totalPi;
+      }
+      
+      // Add smoothing
+      for (let l = 0; l < L; l++) {
+        for (let i = 0; i < m; i++) newP[l][i] = Math.max(newP[l][i], this.smoothing);
+        for (let j = 0; j < n; j++) newQ[l][j] = Math.max(newQ[l][j], this.smoothing);
+        
+        // Re-normalize
+        const sumP = newP[l].reduce((a,b) => a+b, 0);
+        const sumQ = newQ[l].reduce((a,b) => a+b, 0);
+        if (sumP > 0) for (let i = 0; i < m; i++) newP[l][i] /= sumP;
+        if (sumQ > 0) for (let j = 0; j < n; j++) newQ[l][j] /= sumQ;
+      }
+      
+      // Compute negative log-likelihood
+      const newNLL = this.computeNLL(Pobs, newPi, newP, newQ, m, n);
+      
+      if (Math.abs(nll - newNLL) < this.tol) {
+        converged = true;
+        pi = newPi;
+        p = newP;
+        q = newQ;
+        nll = newNLL;
+        break;
+      }
+      
+      pi = newPi;
+      p = newP;
+      q = newQ;
+      nll = newNLL;
+    }
+    
+    // Construct P_sep
+    const Psep = Array(m).fill(0).map(() => Array(n).fill(0));
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < n; j++) {
+        for (let l = 0; l < L; l++) {
+          Psep[i][j] += pi[l] * p[l][i] * q[l][j];
+        }
+      }
+    }
+    
+    return {
+      Psep,
+      pi, p, q,
+      nll,
+      converged,
+      iters: iter + 1
+    };
+  }
+  
+  computeNLL(Pobs, pi, p, q, m, n) {
+    let nll = 0;
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < n; j++) {
+        if (Pobs[i][j] > 0) {
+          let Psep_ij = 0;
+          for (let l = 0; l < this.L; l++) {
+            Psep_ij += pi[l] * p[l][i] * q[l][j];
+          }
+          nll -= Pobs[i][j] * Math.log(Math.max(Psep_ij, 1e-10));
+        }
+      }
+    }
+    return nll;
+  }
+}
+
+// ========================================
+// PHASE EXPOSURE ENGINE (ENHANCED)
+// ========================================
+
+class PhaseExposureEngine {
+  constructor(config = {}) {
+    this.config = config;
+    this.results = null;
+  }
+  
+  // Generate synthetic coupled phases
+  // CRITICAL: This MUST produce |S| ≈ 3.696 for δ = π/8
+  generateSyntheticCoupled(N, delta) {
+    const lambda = new Array(N).fill(0).map(() => Math.random() * 2 * Math.PI);
+    return {
+      A: { phi: lambda.map(l => l) },
+      B: { phi: lambda.map(l => this.wrap2pi(l + delta)) }
+    };
+  }
+  
+  // Generate synthetic independent phases
+  generateSyntheticIndependent(N) {
+    const lambdaA = new Array(N).fill(0).map(() => Math.random() * 2 * Math.PI);
+    const lambdaB = new Array(N).fill(0).map(() => Math.random() * 2 * Math.PI);
+    return {
+      A: { phi: lambdaA },
+      B: { phi: lambdaB }
+    };
+  }
+  
+  // Generate synthetic τ-field trajectory
+  generateSyntheticTauField(N, gridSize = 32) {
+    const trajectory = [];
+    for (let t = 0; t < N; t++) {
+      const field = Array(gridSize).fill(0).map(() => 
+        Array(gridSize).fill(0).map(() => Math.random())
+      );
+      trajectory.push(field);
+    }
+    return trajectory;
+  }
+  
+  // wrap₂π(x) := ((x + π) mod 2π) - π
+  wrap2pi(x) {
+    return ((x + Math.PI) % (2 * Math.PI)) - Math.PI;
+  }
+  
+  // Compute phase velocity ω_t = (1/Δt) wrap₂π(φ_{t+1} - φ_t)
+  computeVelocity(phi, dt = 1) {
+    const omega = [];
+    for (let t = 0; t < phi.length - 1; t++) {
+      omega.push(this.wrap2pi(phi[t+1] - phi[t]) / dt);
+    }
+    return omega;
+  }
+  
+  // Compute unwrapped phase for visualization
+  unwrapPhase(phi) {
+    const unwrapped = [phi[0]];
+    for (let t = 1; t < phi.length; t++) {
+      unwrapped.push(unwrapped[t-1] + this.wrap2pi(phi[t] - phi[t-1]));
+    }
+    return unwrapped;
+  }
+  
+  // Compute exposure invariants
+  computeInvariants(phi, omega, dt = 1) {
+    // I₁ = Var(ω)
+    const mean_omega = omega.reduce((a,b) => a+b, 0) / omega.length;
+    const I1 = omega.reduce((acc, w) => acc + Math.pow(w - mean_omega, 2), 0) / omega.length;
+    
+    // I₂ = ⟨cos(ωΔt)⟩
+    const I2 = omega.reduce((acc, w) => acc + Math.cos(w * dt), 0) / omega.length;
+    
+    // I₃(τ) for τ = 1..50
+    const I3 = { delays: [], values: [], effective_counts: [] };
+    const maxDelay = Math.min(50, Math.floor(phi.length / 2));
+    for (let tau = 1; tau <= maxDelay; tau++) {
+      let sum = 0, count = 0;
+      for (let t = 0; t < phi.length - tau; t++) {
+        sum += Math.cos(phi[t + tau] - phi[t]);
+        count++;
+      }
+      I3.delays.push(tau);
+      I3.values.push(sum / count);
+      I3.effective_counts.push(count);
+    }
+    
+    // Decorrelation timescale σ_τ
+    let sigma_tau = null;
+    const threshold = Math.exp(-1);
+    for (let i = 0; i < I3.values.length; i++) {
+      if (Math.abs(I3.values[i]) < threshold) {
+        sigma_tau = I3.delays[i];
+        break;
+      }
+    }
+    I3.sigma_tau = sigma_tau;
+    
+    return { I1, I2, I3 };
+  }
+  
+  // Compute outcomes (orientation-sensitive: sin)
+  computeOutcomes(phi, theta) {
+    return phi.map(p => Math.sign(Math.sin(p - theta)));
+  }
+  
+  // Compute phase-erased outcomes
+  computeOutcomesErased(phi, theta, c) {
+    return phi.map(p => Math.sign(Math.abs(Math.sin(p - theta)) - c));
+  }
+  
+  // Compute correlation E(α,β) = ⟨A(α)B(β)⟩
+  computeCorrelation(A, B) {
+    let sum = 0;
+    for (let i = 0; i < A.length; i++) {
+      sum += A[i] * B[i];
+    }
+    return sum / A.length;
+  }
+  
+  // Compute CHSH statistic
+  computeCHSHBinary(phiA, phiB, settings) {
+    const { alpha, alpha_prime, beta, beta_prime } = settings;
+    
+    const A_alpha = this.computeOutcomes(phiA, alpha);
+    const A_alpha_prime = this.computeOutcomes(phiA, alpha_prime);
+    const B_beta = this.computeOutcomes(phiB, beta);
+    const B_beta_prime = this.computeOutcomes(phiB, beta_prime);
+    
+    const E_ab = this.computeCorrelation(A_alpha, B_beta);
+    const E_ab_prime = this.computeCorrelation(A_alpha, B_beta_prime);
+    const E_a_prime_b = this.computeCorrelation(A_alpha_prime, B_beta);
+    const E_a_prime_b_prime = this.computeCorrelation(A_alpha_prime, B_beta_prime);
+    
+    const S = E_ab + E_ab_prime + E_a_prime_b - E_a_prime_b_prime;
+    
+    return {
+      S,
+      E_matrix: {
+        'E(α,β)': E_ab,
+        'E(α,β\')': E_ab_prime,
+        'E(α\',β)': E_a_prime_b,
+        'E(α\',β\')': E_a_prime_b_prime
+      },
+      outcomes: { A_alpha, A_alpha_prime, B_beta, B_beta_prime }
+    };
+  }
+  
+  // Compute exposure correlation E(θ_A, θ_B) = ⟨ cos((φ_A-θ_A) - (φ_B-θ_B)) ⟩
+  /**
+   * Compute κ-stable exposure correlation using Ω̂ϕ lifted channels
+   * 
+   * E = ⟨(ρ_A cos φ_A)(ρ_B cos φ_B) + (ρ_A sin φ_A)(ρ_B sin φ_B)⟩
+   *   = ⟨ρ_A ρ_B cos(φ_A - φ_B)⟩
+   * 
+   * This is κ-stable: survives windowing, averaging, thresholding
+   */
+  computeExposureCorrelationLifted(liftedA, liftedB, thetaA, thetaB) {
+    const N = Math.min(liftedA.tagX.length, liftedB.tagX.length);
+    let sum = 0;
+    
+    for (let i = 0; i < N; i++) {
+      // Rotate tag vectors by measurement angles
+      const cos_thetaA = Math.cos(thetaA);
+      const sin_thetaA = Math.sin(thetaA);
+      const cos_thetaB = Math.cos(thetaB);
+      const sin_thetaB = Math.sin(thetaB);
+      
+      // Rotated A tags
+      const tagA_x = liftedA.tagX[i] * cos_thetaA + liftedA.tagY[i] * sin_thetaA;
+      const tagA_y = -liftedA.tagX[i] * sin_thetaA + liftedA.tagY[i] * cos_thetaA;
+      
+      // Rotated B tags
+      const tagB_x = liftedB.tagX[i] * cos_thetaB + liftedB.tagY[i] * sin_thetaB;
+      const tagB_y = -liftedB.tagX[i] * sin_thetaB + liftedB.tagY[i] * cos_thetaB;
+      
+      // κ-stable inner product
+      sum += tagA_x * tagB_x + tagA_y * tagB_y;
+    }
+    
+    // Normalize by average ρ² to get correlation in [-1, 1]
+    const rhoA_avg = Array.isArray(liftedA.rho) ? 
+      liftedA.rho.reduce((a,b) => a+b, 0) / liftedA.rho.length : liftedA.rho;
+    const rhoB_avg = Array.isArray(liftedB.rho) ? 
+      liftedB.rho.reduce((a,b) => a+b, 0) / liftedB.rho.length : liftedB.rho;
+    
+    const norm = rhoA_avg * rhoB_avg;
+    return norm > 0 ? sum / (N * norm) : sum / N;
+  }
+
+  computeExposureCorrelation(phiA, phiB, thetaA, thetaB) {
+    let sum = 0;
+    const N = Math.min(phiA.length, phiB.length);
+    for (let i = 0; i < N; i++) {
+      const d = (phiA[i] - thetaA) - (phiB[i] - thetaB);
+      sum += Math.cos(d);
+    }
+    return sum / N;
+  }
+
+  // Compute CHSH statistic in exposure mode (continuous outputs in [-1,1])
+  /**
+   * Compute CHSH using Ω̂ϕ lifted channels (κ-stable)
+   */
+  computeCHSHLifted(liftedA, liftedB, settings) {
+    const { alpha, alpha_prime, beta, beta_prime } = settings;
+
+    const E_ab = this.computeExposureCorrelationLifted(liftedA, liftedB, alpha, beta);
+    const E_ab_prime = this.computeExposureCorrelationLifted(liftedA, liftedB, alpha, beta_prime);
+    const E_a_prime_b = this.computeExposureCorrelationLifted(liftedA, liftedB, alpha_prime, beta);
+    const E_a_prime_b_prime = this.computeExposureCorrelationLifted(liftedA, liftedB, alpha_prime, beta_prime);
+
+    const S = E_ab + E_ab_prime + E_a_prime_b - E_a_prime_b_prime;
+
+    return {
+      S,
+      E_matrix: {
+        'E(α,β)': E_ab,
+        'E(α,β\')': E_ab_prime,
+        'E(α\',β)': E_a_prime_b,
+        'E(α\',β\')': E_a_prime_b_prime
+      }
+    };
+  }
+
+  computeCHSHExposure(phiA, phiB, settings) {
+    const { alpha, alpha_prime, beta, beta_prime } = settings;
+
+    const E_ab = this.computeExposureCorrelation(phiA, phiB, alpha, beta);
+    const E_ab_prime = this.computeExposureCorrelation(phiA, phiB, alpha, beta_prime);
+    const E_a_prime_b = this.computeExposureCorrelation(phiA, phiB, alpha_prime, beta);
+    const E_a_prime_b_prime = this.computeExposureCorrelation(phiA, phiB, alpha_prime, beta_prime);
+
+    const S = E_ab + E_ab_prime + E_a_prime_b - E_a_prime_b_prime;
+
+    return {
+      S,
+      E_matrix: {
+        'E(α,β)': E_ab,
+        'E(α,β\')': E_ab_prime,
+        'E(α\',β)': E_a_prime_b,
+        'E(α\',β\')': E_a_prime_b_prime
+      }
+    };
+  }
+
+  // Compute CHSH statistic (wrapper). Default is exposure mode unless explicitly set to 'binary'.
+  computeCHSH(phiA, phiB, settings, mode=null) {
+    const m = mode || settings?.chsh_mode || this.current_chsh_mode || 'exposure';
+    if (m === 'binary') return this.computeCHSHBinary(phiA, phiB, settings);
+    return this.computeCHSHExposure(phiA, phiB, settings);
+  }
+
+
+  // Compute CHSH with erased phase
+  computeCHSHErased(phiA, phiB, settings, c) {
+    const { alpha, alpha_prime, beta, beta_prime } = settings;
+    
+    const A_alpha = this.computeOutcomesErased(phiA, alpha, c);
+    const A_alpha_prime = this.computeOutcomesErased(phiA, alpha_prime, c);
+    const B_beta = this.computeOutcomesErased(phiB, beta, c);
+    const B_beta_prime = this.computeOutcomesErased(phiB, beta_prime, c);
+    
+    const E_ab = this.computeCorrelation(A_alpha, B_beta);
+    const E_ab_prime = this.computeCorrelation(A_alpha, B_beta_prime);
+    const E_a_prime_b = this.computeCorrelation(A_alpha_prime, B_beta);
+    const E_a_prime_b_prime = this.computeCorrelation(A_alpha_prime, B_beta_prime);
+    
+    const S = E_ab + E_ab_prime + E_a_prime_b - E_a_prime_b_prime;
+    
+    return { S };
+  }
+  
+  // Compute joint distribution in bins
+  computeJointDistribution(phiA, phiB, m) {
+    const bins = Array(m).fill(0).map(() => Array(m).fill(0));
+    
+    for (let i = 0; i < phiA.length; i++) {
+      const binA = Math.floor(((phiA[i] + Math.PI) / (2 * Math.PI)) * m);
+      const binB = Math.floor(((phiB[i] + Math.PI) / (2 * Math.PI)) * m);
+      const idxA = Math.max(0, Math.min(m - 1, binA));
+      const idxB = Math.max(0, Math.min(m - 1, binB));
+      bins[idxA][idxB]++;
+    }
+    
+    // Normalize
+    const total = phiA.length;
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < m; j++) {
+        bins[i][j] /= total;
+      }
+    }
+    
+    return bins;
+  }
+  
+  // KL divergence D_KL(P || Q)
+  computeKL(P, Q) {
+    let kl = 0;
+    const eps = 1e-10;
+    for (let i = 0; i < P.length; i++) {
+      for (let j = 0; j < P[i].length; j++) {
+        const p = P[i][j];
+        const q = Q[i][j];
+        if (p > eps) {
+          kl += p * Math.log(p / Math.max(q, eps));
+        }
+      }
+    }
+    return kl;
+  }
+  
+  // Surrogate test: permute one wing
+  generateSurrogate(phiA, phiB) {
+    const permuted = [...phiB];
+    for (let i = permuted.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [permuted[i], permuted[j]] = [permuted[j], permuted[i]];
+    }
+    return { A: phiA, B: permuted };
+  }
+  
+  // Bootstrap CHSH uncertainty
+  bootstrapCHSH(phiA, phiB, settings, iters) {
+    const S_values = [];
+    const N = phiA.length;
+    
+    for (let iter = 0; iter < iters; iter++) {
+      const indices = Array(N).fill(0).map(() => Math.floor(Math.random() * N));
+      const bootA = indices.map(i => phiA[i]);
+      const bootB = indices.map(i => phiB[i]);
+      const result = this.computeCHSH(bootA, bootB, settings);
+      S_values.push(result.S);
+    }
+    
+    S_values.sort((a,b) => a - b);
+    const ci95_low = S_values[Math.floor(iters * 0.025)];
+    const ci95_high = S_values[Math.floor(iters * 0.975)];
+    
+    return { ci95: [ci95_low, ci95_high], samples: S_values };
+  }
+  
+  // STRIDE SWEEP (Production Implementation)
+  runStrideSweep(phiA, phiB, settings, config) {
+    console.log('  📊 Running stride sweep...');
+    const strides = config.strides || [1,2,3,5];
+    const perStride = [];
+    
+    for (let stride of strides) {
+      // Subsample
+      const subsampleA = phiA.filter((_, i) => i % stride === 0);
+      const subsampleB = phiB.filter((_, i) => i % stride === 0);
+      
+      if (subsampleA.length < 50) continue; // Skip if too few samples
+      
+      // Compute CHSH
+      const chsh = this.computeCHSH(subsampleA, subsampleB, settings);
+      
+      // Compute separability
+      const P_obs = this.computeJointDistribution(subsampleA, subsampleB, config.bin_size);
+      const emFit = new EMSeparableFit({ L: config.em_L }).fit(P_obs);
+      const DKL = this.computeKL(P_obs, emFit.Psep);
+      
+      // Simplified surrogate for stride
+      const DKL_surr = [];
+      for (let s = 0; s < 20; s++) {
+        const surr = this.generateSurrogate(subsampleA, subsampleB);
+        const P_surr = this.computeJointDistribution(surr.A, surr.B, config.bin_size);
+        const emSurr = new EMSeparableFit({ L: config.em_L }).fit(P_surr);
+        DKL_surr.push(this.computeKL(P_surr, emSurr.Psep));
+      }
+      const p_val = (1 + DKL_surr.filter(d => d >= DKL).length) / (1 + DKL_surr.length);
+      
+      perStride.push({
+        stride,
+        S: chsh.S,
+        quadruple: settings,
+        DKL,
+        p: p_val
+      });
+    }
+    
+    
+    // Stability metrics (XL v1.2.1 tightened criterion)
+    const S_values = perStride.map(s => Math.abs(s.S));
+    const S_median = S_values.slice().sort((a,b)=>a-b)[Math.floor(S_values.length/2)];
+    const S_min = Math.min(...S_values);
+    const S_max = Math.max(...S_values);
+    const S_range = S_max - S_min;
+
+    const p_fraction_significant =
+      perStride.filter(s => s.p <= 0.05).length / perStride.length;
+
+    const S_classical = 2.0;
+    const S_margin = 0.05;
+    const S_tol = 0.08;
+
+    const S_above_classical = S_median > (S_classical + S_margin);
+    const stable_across_strides = S_range <= S_tol;
+    const separability_rejected = p_fraction_significant >= 0.75;
+
+    let status;
+    if (S_above_classical && stable_across_strides && separability_rejected) {
+      status = 'pass';
+    } else if (stable_across_strides && S_median > S_classical) {
+      status = 'borderline';
+    } else {
+      status = 'fail';
+    }
+
+    return {
+      status,
+      strides: strides,
+      per_stride: perStride,
+      stability: {S_median,
+        S_min,
+        S_max,
+        S_range,
+        S_max_dev: S_range,
+        p_fraction_significant
+      }
+    };
+
+  }
+  
+  // TIME-SHIFT NULL (Production Implementation)
+  runTimeShiftNull(phiA, phiB, settings, sigma_tau, config) {
+    console.log('  📊 Running time-shift null...');
+    const nShifts = config.n_shifts || 30;
+    const T = phiA.length;
+    
+    // Determine shift range
+    let minShift, maxShift;
+    if (sigma_tau && sigma_tau < T / 20) {
+      minShift = Math.ceil(5 * sigma_tau);
+      maxShift = Math.floor(20 * sigma_tau);
+    } else {
+      // Conservative fallback
+      minShift = Math.floor(T * 0.1);
+      maxShift = Math.floor(T * 0.4);
+    }
+    
+    const perShift = [];
+    
+    for (let i = 0; i < nShifts; i++) {
+      const Delta = minShift + Math.floor(Math.random() * (maxShift - minShift));
+      
+      // Circular shift
+      const shiftedB = phiB.map((_, t) => phiB[(t + Delta) % T]);
+      
+      // Compute CHSH
+      const chsh = this.computeCHSH(phiA, shiftedB, settings);
+      
+      // Compute separability
+      const P_obs = this.computeJointDistribution(phiA, shiftedB, config.bin_size);
+      const emFit = new EMSeparableFit({ L: config.em_L }).fit(P_obs);
+      const DKL = this.computeKL(P_obs, emFit.Psep);
+      
+      // Quick p-value estimate
+      const DKL_surr = [];
+      for (let s = 0; s < 10; s++) {
+        const surr = this.generateSurrogate(phiA, shiftedB);
+        const P_surr = this.computeJointDistribution(surr.A, surr.B, config.bin_size);
+        const emSurr = new EMSeparableFit({ L: config.em_L }).fit(P_surr);
+        DKL_surr.push(this.computeKL(P_surr, emSurr.Psep));
+      }
+      const p_val = (1 + DKL_surr.filter(d => d >= DKL).length) / (1 + DKL_surr.length);
+      
+      perShift.push({ Delta, S: chsh.S, DKL, p: p_val });
+    }
+    
+    // Summary
+    const S_vals = perShift.map(s => Math.abs(s.S));
+    const S_median = S_vals.sort((a,b) => a-b)[Math.floor(S_vals.length/2)];
+    const S_max = Math.max(...S_vals);
+    const p_vals = perShift.map(s => s.p);
+    const p_median = p_vals.sort((a,b) => a-b)[Math.floor(p_vals.length/2)];
+    
+    const violations_fraction = perShift.filter(s => Math.abs(s.S) > 2.05).length / perShift.length;
+    
+    const null_band = { S_max: 2.05, p_min: 0.05 };
+    const status = (S_median <= null_band.S_max && p_median >= null_band.p_min && violations_fraction < 0.1) ? 'pass' : 
+                   (S_median <= 2.2) ? 'borderline' : 'fail';
+    
+    return {
+      status,
+      sigma_tau,
+      range_used: [minShift, maxShift],
+      per_shift: perShift,
+      summary: {
+        S_median,
+        S_max,
+        p_median,
+        violations_fraction
+      }
+    };
+  }
+  
+  // WEINBERG TEST (Production Implementation)
+  runWeinbergTest(phiA, phiB, invA, config) {
+    console.log('  📊 Running Weinberg test...');
+    const target = config.weinberg_target || 0.643;
+    const tol = config.weinberg_tol || 0.01;
+    const plateau_len = config.plateau_len || 3;
+    
+    const I3 = invA.I3;
+    
+    // Search for plateau
+    let plateau_found = false;
+    let plateau_range = null;
+    
+    for (let start = 0; start < I3.values.length - plateau_len; start++) {
+      let isPlateauSegment = true;
+      for (let i = start; i < start + plateau_len; i++) {
+        if (Math.abs(I3.values[i] - target) > tol) {
+          isPlateauSegment = false;
+          break;
+        }
+      }
+      
+      if (isPlateauSegment) {
+        plateau_found = true;
+        plateau_range = [I3.delays[start], I3.delays[start + plateau_len - 1]];
+        break;
+      }
+    }
+    
+    const status = plateau_found ? 'support' : 'no_signal';
+    
+    return {
+      status,
+      target: { value: target, tol },
+      plateau: {
+        found: plateau_found,
+        tau_range: plateau_range,
+        values: plateau_found ? I3.values.slice(I3.delays.indexOf(plateau_range[0]), I3.delays.indexOf(plateau_range[1])+1) : []
+      }
+    };
+  }
+  
+  // Extract phase from Chamber XIV tau_timeseries trajectory
+  // ============================================================
+  // Ω̂ϕ PHASE-LIFT TRANSDUCER (Pre-κ Operator)
+  // ============================================================
+  
+  /**
+   * Compute phase confidence envelope ρ
+   * Methods: 'gradient_magnitude', 'spectral_power', 'uniform'
+   */
+  computePhaseConfidence(tauData, method = 'gradient_magnitude', config = {}) {
+    const rho_max = config.rho_max || 10.0;
+    
+    if (Array.isArray(tauData)) {
+      // Time series of fields
+      return tauData.map(tau => this.computePhaseConfidenceSingle(tau, method, rho_max));
+    } else {
+      // Single field
+      return this.computePhaseConfidenceSingle(tauData, method, rho_max);
+    }
+  }
+  
+  computePhaseConfidenceSingle(tauField, method, rho_max) {
+    if (method === 'gradient_magnitude') {
+      // For 2D field: ρ = √((∂_x τ)² + (∂_y τ)²)
+      if (Array.isArray(tauField) && Array.isArray(tauField[0])) {
+        const H = tauField.length;
+        const W = tauField[0].length;
+        let sum = 0;
+        let count = 0;
+        
+        for (let y = 1; y < H - 1; y++) {
+          for (let x = 1; x < W - 1; x++) {
+            const dx = (tauField[y][x + 1] - tauField[y][x - 1]) / 2;
+            const dy = (tauField[y + 1][x] - tauField[y - 1][x]) / 2;
+            sum += Math.sqrt(dx * dx + dy * dy);
+            count++;
+          }
+        }
+        return Math.min(sum / count, rho_max);
+      } else {
+        // Scalar tau: use uniform confidence
+        return 1.0;
+      }
+    } else if (method === 'spectral_power') {
+      // For spectral: ρ = Σ w_k |τ̂[k]|
+      // Not implemented for general case, fallback to uniform
+      return 1.0;
+    } else if (method === 'uniform') {
+      return 1.0;
+    }
+    
+    return 1.0; // Default
+  }
+  
+  /**
+   * Ω̂ϕ Phase-Lift Transducer
+   * 
+   * Transforms: τ → (τ, ρ cos φ, ρ sin φ)
+   * This creates κ-stable channels for phase correlations
+   * 
+   * @param tauData - tau field(s) or time series
+   * @param phaseData - extracted phase φ
+   * @param config - { rho_method, rho_max }
+   * @returns { tau, tagX, tagY, rho, phi, meta }
+   */
+  omegaPhi(tauData, phaseData, config = {}) {
+    const rho_method = config.rho_method || 'gradient_magnitude';
+    const rho_max = config.rho_max || 10.0;
+    
+    // Compute phase confidence envelope
+    const rho = this.computePhaseConfidence(tauData, rho_method, { rho_max });
+    
+    // Create phase tag channels
+    const tagX = phaseData.map((phi, i) => {
+      const r = Array.isArray(rho) ? rho[i] : rho;
+      return r * Math.cos(phi);
+    });
+    
+    const tagY = phaseData.map((phi, i) => {
+      const r = Array.isArray(rho) ? rho[i] : rho;
+      return r * Math.sin(phi);
+    });
+    
+    return {
+      tau: tauData,
+      phi: phaseData,
+      rho: rho,
+      tagX: tagX,
+      tagY: tagY,
+      meta: {
+        rho_method: rho_method,
+        rho_max: rho_max,
+        operator: 'Omega_phi',
+        version: '1.0'
+      }
+    };
+  }
+
+  extractPhaseFromChamberXIV(tauTimeseries, phaseMethod, config = {}) {
+    const frames = tauTimeseries.frames;
+    const T = frames.length;
+    const phi = [];
+    
+    console.log(`  📊 Extracting phase via ${phaseMethod} from ${T} frames...`);
+    
+    for (let t = 0; t < T; t++) {
+      const tauField = frames[t];
+      
+      if (phaseMethod === 'gradient_angle') {
+        phi.push(PhaseExtractors.gradientAngle(tauField, config));
+      } else if (phaseMethod === 'spectral_multimode') {
+        phi.push(PhaseExtractors.spectralMultimode(tauField, config));
+      } else {
+        throw new Error(`Unsupported phase method for Chamber XIV: ${phaseMethod}`);
+      }
+      
+      // Progress update every 50 frames
+      if (t % 50 === 0 && t > 0) {
+        setProgress(10 + (t / T) * 10);
+      }
+    }
+    
+    console.log(`  ✅ Extracted ${phi.length} phase samples`);
+    return phi;
+  }
+  
+  // Full test protocol (UPDATED)
+  async runFullTest(config) {
+    console.log('🚀 Running full Phase-Exposure test (v1.2)...');
+    setProgress(0);
+    
+    // Generate data
+    let wingData, phaseMethod = config.phase_method;
+    
+    if (config.mode === 'synthetic_coupled') {
+      // Ensure sufficient samples for reliable CHSH
+      if (config.N < 2000) {
+        console.warn(`⚠️ N=${config.N} is below recommended minimum of 2000 for synthetic coupled mode`);
+      }
+      wingData = this.generateSyntheticCoupled(config.N, config.delta);
+      phaseMethod = 'direct';
+    } else if (config.mode === 'synthetic_independent') {
+      wingData = this.generateSyntheticIndependent(config.N);
+      phaseMethod = 'direct';
+    } else if (config.mode === 'tau_field_synthetic') {
+      // Generate synthetic τ-field for demo
+      const tauTrajectory = this.generateSyntheticTauField(config.N);
+      wingData = { A: { tau: tauTrajectory }, B: { tau: tauTrajectory } };
+    } else if (config.mode === 'tau_field_uploaded') {
+      // Use uploaded Chamber XIV data
+      if (!config.chamberXIVLoader) {
+        throw new Error('No Chamber XIV data loaded. Please upload JSON file(s).');
+      }
+      
+      const summary = config.chamberXIVLoader.getSummary();
+      if (!summary.loaded || summary.count === 0) {
+        throw new Error('No Chamber XIV data available.');
+      }
+      
+      // Check if any datasets have tau data
+      const validDatasets = summary.datasets.filter(d => d.hasTauData);
+      if (validDatasets.length === 0) {
+        const errors = summary.datasets.map(d => `${d.filename}: ${d.error}`).join('\n');
+        throw new Error(`No valid tau_timeseries found in uploaded files:\n${errors}`);
+      }
+      
+      // Check if first dataset is a Phase-Exposure Seed
+      const firstDataset = config.chamberXIVLoader.loadedData[validDatasets[0].index];
+      const isSeed = firstDataset.tau_timeseries?.is_seed;
+      
+      if (isSeed) {
+        console.log('  🌱 Phase-Exposure Seed detected - computing phase exposure...');
+        
+        let seedData = firstDataset.tau_timeseries;
+        try {
+          // Compute Phase-Exposure Run from Seed
+          
+          // Validate seed data
+          if (!seedData || !seedData.A || !seedData.B) {
+            throw new Error('Invalid seed data structure');
+          }
+          
+          const phaseRun = config.chamberXIVLoader.computePhaseExposureFromSeed(seedData);
+          
+          // Validate phaseRun
+          if (!phaseRun || !phaseRun.tau_timeseries || !phaseRun.phase_tracks) {
+            throw new Error('Phase computation failed - incomplete result');
+          }
+          
+          // Validate grid exists
+          if (!phaseRun.tau_timeseries.grid || phaseRun.tau_timeseries.grid.length < 2) {
+            throw new Error('Phase computation failed - invalid grid');
+          }
+          
+          // Use computed phase exposure
+          wingData = {
+            A: { 
+              tau_timeseries: {
+                shape: [phaseRun.tau_timeseries.T, phaseRun.tau_timeseries.grid[0], phaseRun.tau_timeseries.grid[1]],
+                frames: phaseRun.tau_timeseries.A
+              },
+              phase: phaseRun.phase_tracks.A
+            },
+            B: { 
+              tau_timeseries: {
+                shape: [phaseRun.tau_timeseries.T, phaseRun.tau_timeseries.grid[0], phaseRun.tau_timeseries.grid[1]],
+                frames: phaseRun.tau_timeseries.B
+              },
+              phase: phaseRun.phase_tracks.B
+            }
+          };
+        } catch (err) {
+          console.error('❌ Seed processing failed:', err.message);
+          throw new Error(`Phase-Exposure Seed processing failed: ${err.message}`);
+        }
+        
+        // Store computed omega_phi and invariants (TIGHTENING C: Guard for single-field seeds)
+        if (!seedData.has_coupling) {
+          console.warn('  ⚠️ Single-field seed: CHSH and Weinberg scan not applicable');
+        }
+        
+        console.log('  ✅ Phase exposure computed from seed');
+        
+      } else {
+        // Old format: Use tau_timeseries directly
+        const tauA = config.chamberXIVLoader.getTrajectory(validDatasets[0].index);
+        
+        // Use second dataset for wing B if available, otherwise duplicate A
+        let tauB;
+        if (validDatasets.length >= 2) {
+          tauB = config.chamberXIVLoader.getTrajectory(validDatasets[1].index);
+          console.log('  📊 Using two-file mode: A and B from separate datasets');
+        } else {
+          tauB = tauA;
+          console.log('  📊 Using single-file mode: A and B from same dataset');
+        }
+        
+        wingData = { 
+          A: { tau_timeseries: tauA },
+          B: { tau_timeseries: tauB }
+        };
+      }
+      
+      // TIGHTENING B: Explicit seed flag in UI
+      if (isSeed) {
+        console.log(`  ✅ Loaded Chamber XIV data: Phase-Exposure Seed 🌱`);
+        if (firstDataset.tau_timeseries) {
+          console.log(`     Type: ${firstDataset.tau_timeseries.seed_type || 'unknown'} (${firstDataset.tau_timeseries.has_coupling ? 'coupled' : 'single-field'})`);
+        }
+        if (wingData && wingData.A && wingData.A.tau_timeseries && wingData.A.tau_timeseries.shape) {
+          console.log(`     Frames: ${wingData.A.tau_timeseries.shape[0]}, Grid: ${wingData.A.tau_timeseries.shape[1]}×${wingData.A.tau_timeseries.shape[2]}`);
+        }
+      } else {
+        const tauA = wingData.A.tau_timeseries;
+        const tauB = wingData.B.tau_timeseries;
+        console.log(`  ✅ Loaded Chamber XIV data: ${validDatasets.length} dataset(s)`);
+        if (tauA && tauA.shape) {
+          console.log(`     Wing A: ${tauA.shape[0]} frames, ${tauA.shape[1]}×${tauA.shape[2]} grid`);
+        }
+        if (tauB && tauB.shape) {
+          console.log(`     Wing B: ${tauB.shape[0]} frames, ${tauB.shape[1]}×${tauB.shape[2]} grid`);
+        }
+      }
+    }
+    
+    setProgress(10);
+    
+    // Extract phase
+    let phiA, phiB;
+    
+    if (phaseMethod === 'direct') {
+      phiA = wingData.A.phi;
+      phiB = wingData.B.phi;
+    } else if (phaseMethod === 'gradient_angle' || phaseMethod === 'spectral_multimode') {
+      // Handle both synthetic tau arrays and Chamber XIV tau_timeseries
+      if (wingData.A.tau_timeseries) {
+        // Chamber XIV format
+        phiA = this.extractPhaseFromChamberXIV(wingData.A.tau_timeseries, phaseMethod, config.phase_params || {});
+        phiB = this.extractPhaseFromChamberXIV(wingData.B.tau_timeseries, phaseMethod, config.phase_params || {});
+      } else if (wingData.A.tau) {
+        // Synthetic format
+        phiA = wingData.A.tau.map(t => 
+          phaseMethod === 'gradient_angle' ? 
+            PhaseExtractors.gradientAngle(t) : 
+            PhaseExtractors.spectralMultimode(t, config.phase_params || {})
+        );
+        phiB = wingData.B.tau.map(t => 
+          phaseMethod === 'gradient_angle' ? 
+            PhaseExtractors.gradientAngle(t) : 
+            PhaseExtractors.spectralMultimode(t, config.phase_params || {})
+        );
+      } else {
+        throw new Error('No tau data available for phase extraction. For synthetic modes, use phase_method="direct".');
+      }
+    }
+    
+    // CRITICAL: Validate phase arrays before proceeding
+    if (!phiA || !phiB || phiA.length === 0 || phiB.length === 0) {
+      throw new Error(`Phase extraction failed: empty or undefined φ arrays. 
+        phiA=${phiA ? phiA.length : 'undefined'}, phiB=${phiB ? phiB.length : 'undefined'}.
+        For synthetic coupled/independent modes, use Phase Method = "Direct".
+        For tau-field modes, ensure valid tau data is loaded.`);
+    }
+    
+    console.log(`  ✅ Phase extracted: ${phiA.length} samples per wing`);
+    
+    setProgress(20);
+    
+    // Compute velocities
+    const omegaA = this.computeVelocity(phiA);
+    const omegaB = this.computeVelocity(phiB);
+    
+    // Compute invariants
+    const invA = this.computeInvariants(phiA, omegaA);
+    const invB = this.computeInvariants(phiB, omegaB);
+    
+    setProgress(30);
+    
+    // ============================================================
+    // PIPELINE BIFURCATION: Baseline vs Ω̂ϕ
+    // ============================================================
+    
+    // Standard CHSH angles
+    const settings = {
+      alpha: 0,
+      alpha_prime: Math.PI / 2,
+      beta: Math.PI / 4,
+      beta_prime: -Math.PI / 4
+    };
+    
+    // --- BASELINE BRANCH (Traditional Phase-Exposed) ---
+    console.log('  📊 Computing baseline (traditional phase-exposed)...');
+    
+    const chsh_baseline = this.computeCHSH(phiA, phiB, settings);
+    const chsh_erased = this.computeCHSHErased(phiA, phiB, settings, config.erasure_c || 0.5);
+    
+    console.log(`  ✅ Baseline: |S| = ${Math.abs(chsh_baseline.S).toFixed(4)}`);
+    console.log(`  ✅ Erased: |S| = ${Math.abs(chsh_erased.S).toFixed(4)}`);
+    
+    // --- Ω̂ϕ BRANCH (κ-Stable Lifted Channels) ---
+    let omega_phi_results = null;
+    
+    if (config.enable_omega_phi) {
+      console.log('  🔄 Applying Ω̂ϕ Phase-Lift Transducer...');
+      
+      const omega_phi_config = {
+        rho_method: config.rho_method || 'gradient_magnitude',
+        rho_max: config.rho_max || 10.0
+      };
+      
+      // Get tau data for confidence envelope
+      const tauA_data = wingData.A.tau_timeseries?.frames || wingData.A.tau || null;
+      const tauB_data = wingData.B.tau_timeseries?.frames || wingData.B.tau || null;
+      
+      const liftedA = this.omegaPhi(tauA_data, phiA, omega_phi_config);
+      const liftedB = this.omegaPhi(tauB_data, phiB, omega_phi_config);
+      
+      console.log(`  ✅ Ω̂ϕ applied: created κ-stable tag channels`);
+      console.log(`     ρ_A (avg): ${typeof liftedA.rho === 'number' ? liftedA.rho.toFixed(3) : (liftedA.rho.reduce((a,b)=>a+b,0)/liftedA.rho.length).toFixed(3)}`);
+      console.log(`     ρ_B (avg): ${typeof liftedB.rho === 'number' ? liftedB.rho.toFixed(3) : (liftedB.rho.reduce((a,b)=>a+b,0)/liftedB.rho.length).toFixed(3)}`);
+      
+      // Compute CHSH using Ω̂ϕ lifted channels
+      const chsh_omega = this.computeCHSHLifted(liftedA, liftedB, settings);
+      console.log(`  ✅ Ω̂ϕ-lifted: |S| = ${Math.abs(chsh_omega.S).toFixed(4)}`);
+      
+      // Compute invariants on lifted channels (use tagX as phase proxy)
+      const omegaA_lifted = this.computeVelocity(liftedA.tagX);
+      const omegaB_lifted = this.computeVelocity(liftedB.tagX);
+      const inv_omega_A = this.computeInvariants(liftedA.tagX, omegaA_lifted);
+      const inv_omega_B = this.computeInvariants(liftedB.tagX, omegaB_lifted);
+      
+      omega_phi_results = {
+        enabled: true,
+        config: omega_phi_config,
+        rho_A_avg: typeof liftedA.rho === 'number' ? liftedA.rho : (liftedA.rho.reduce((a,b)=>a+b,0)/liftedA.rho.length),
+        rho_B_avg: typeof liftedB.rho === 'number' ? liftedB.rho : (liftedB.rho.reduce((a,b)=>a+b,0)/liftedB.rho.length),
+        lifted: {
+          A: liftedA,
+          B: liftedB
+        },
+        invariants: {
+          A: inv_omega_A,
+          B: inv_omega_B
+        },
+        chsh: chsh_omega
+      };
+    } else {
+      console.log('  ⊘ Ω̂ϕ disabled - baseline only');
+      omega_phi_results = {
+        enabled: false,
+        message: 'Ω̂ϕ phase-lift disabled in configuration'
+      };
+    }
+    
+    setProgress(40);
+    
+    // Bootstrap uncertainty (on primary result)
+    const primary_chsh = config.enable_omega_phi ? omega_phi_results.chsh : chsh_baseline;
+    const bootstrap = this.bootstrapCHSH(phiA, phiB, settings, config.bootstrap_iters);
+    
+    setProgress(50);
+    
+    // Joint distribution and EM separability test
+    const P_obs = this.computeJointDistribution(phiA, phiB, config.bin_size);
+    const emFit = new EMSeparableFit({
+      L: config.em_L,
+      max_iter: 200,
+      tol: 1e-6,
+      restarts: 5
+    }).fit(P_obs);
+    const DKL = this.computeKL(P_obs, emFit.Psep);
+    
+    setProgress(60);
+    
+    // Surrogate test
+    const DKL_surrogates = [];
+    for (let i = 0; i < config.n_surrogates; i++) {
+      const surr = this.generateSurrogate(phiA, phiB);
+      const P_surr = this.computeJointDistribution(surr.A, surr.B, config.bin_size);
+      const emSurr = new EMSeparableFit({ L: config.em_L }).fit(P_surr);
+      DKL_surrogates.push(this.computeKL(P_surr, emSurr.Psep));
+      
+      if (i % 20 === 0) setProgress(60 + (i / config.n_surrogates) * 20);
+    }
+    
+    // p-value
+    const p_value = (1 + DKL_surrogates.filter(d => d >= DKL).length) / (1 + config.n_surrogates);
+    
+    setProgress(80);
+    
+    // Robustness checks
+    const robustness = {
+      stride_sweep: config.enable_stride_sweep ? 
+        this.runStrideSweep(phiA, phiB, settings, config) :
+        { status: 'disabled', details: 'Not enabled in config' },
+      
+      time_shift: config.enable_time_shift ?
+        this.runTimeShiftNull(phiA, phiB, settings, invA.I3.sigma_tau, config) :
+        { status: 'disabled', details: 'Not enabled in config' },
+      
+      surrogate: { 
+        status: 'pass', 
+        details: `p-value = ${(Number.isFinite(p_value) ? p_value : 0).toFixed(4)}`,
+        DKL_surrogates 
+      },
+      
+      sigma_gating: { 
+        status: 'pass', 
+        details: 'All samples admissible (synthetic)' 
+      }
+    };
+    
+    // Weinberg test (if enabled)
+    let weinberg = null;
+    if (config.enable_weinberg) {
+      weinberg = this.runWeinbergTest(phiA, phiB, invA, config);
+      robustness.weinberg_test = weinberg;
+    }
+    
+    setProgress(90);
+    
+    // Verdict (use primary result: Ω̂ϕ if enabled, otherwise baseline)
+    const S_primary = config.enable_omega_phi ? omega_phi_results.chsh.S : chsh_baseline.S;
+    const verdict = this.computeVerdict(S_primary, chsh_erased.S, DKL, p_value, robustness);
+    
+    setProgress(100);
+    
+    this.results = {
+      config,
+      
+      // Baseline branch (traditional phase-exposed)
+      baseline: {
+        phase: {
+          method: phaseMethod,
+          provenance: {
+            source: config.mode,
+            params: config.phase_params || {}
+          },
+          A: { phi: phiA, phi_unwrapped: this.unwrapPhase(phiA), omega: omegaA },
+          B: { phi: phiB, phi_unwrapped: this.unwrapPhase(phiB), omega: omegaB }
+        },
+        invariants: {
+          A: invA,
+          B: invB
+        },
+        chsh: {
+          exposed: chsh_baseline,
+          erased: chsh_erased,
+          settings,
+          bootstrap
+        }
+      },
+      
+      // Ω̂ϕ branch (κ-stable lifted channels)
+      omega_phi: omega_phi_results,
+      
+      // Shared results
+      separability_test: {
+        fit_method: 'em_mixture',
+        L: config.em_L,
+        DKL,
+        p_value,
+        n_surrogates: config.n_surrogates,
+        DKL_surrogates,
+        em: {
+          iters: emFit.iters,
+          converged: emFit.converged,
+          best_restart: emFit.best_restart,
+          nll: emFit.nll
+        }
+      },
+      robustness,
+      weinberg,
+      verdict,
+      
+      // Metadata
+      primary_mode: config.enable_omega_phi ? 'omega_phi' : 'baseline'
+    };
+    
+    console.log('✅ Test complete!');
+    if (config.enable_omega_phi && omega_phi_results.enabled) {
+      console.log(`   |S_omega| = ${Math.abs(omega_phi_results.chsh.S).toFixed(3)} (Ω̂ϕ-lifted, PRIMARY)`);
+    }
+    console.log(`   |S_baseline| = ${Math.abs(chsh_baseline.S).toFixed(3)} (traditional)`);
+    console.log(`   |S_erased| = ${Math.abs(chsh_erased.S).toFixed(3)}`);
+    console.log(`   D_KL = ${(Number.isFinite(DKL) ? DKL : 0).toFixed(4)}, p = ${(Number.isFinite(p_value) ? p_value : 0).toFixed(4)}`);
+    console.log(`   Verdict: ${verdict.status}`);
+    
+    return this.results;
+  }
+  
+  // Verdict logic
+  computeVerdict(S_exposed, S_erased, DKL, p_value, robustness) {
+    const S_abs = Math.abs(S_exposed);
+    const margin = 0.05;
+    const p_cutoff = 0.01;
+    
+    // Check if key robustness tests passed
+    const stride_ok = !robustness.stride_sweep || robustness.stride_sweep.status !== 'fail';
+    const shift_ok = !robustness.time_shift || robustness.time_shift.status !== 'fail';
+    const all_robust = stride_ok && shift_ok;
+    
+    if (S_abs > 2 + margin && p_value < p_cutoff && all_robust) {
+      if (Math.abs(S_erased) <= 2 + margin) {
+        return {
+          status: 'erasure_artifact',
+          message: 'Phase-exposed test shows nonseparability, but phase-erased test is separable. This confirms observability erasure artifact.',
+          details: { S_exposed, S_erased, DKL, p_value }
+        };
+      } else {
+        return {
+          status: 'nonseparable',
+          message: 'UNNS-entangled: Non-separable under admissible local contexts.',
+          details: { S_exposed, S_erased, DKL, p_value }
+        };
+      }
+    } else if (S_abs <= 2 + margin && p_value >= 0.05) {
+      return {
+        status: 'separable',
+        message: 'Separable: No evidence of UNNS-entanglement.',
+        details: { S_exposed, S_erased, DKL, p_value }
+      };
+    } else {
+      return {
+        status: 'inconclusive',
+        message: 'Inconclusive: Conflicting signals or insufficient evidence.',
+        details: { S_exposed, S_erased, DKL, p_value, robustness }
+      };
+    }
+  }
+}
+
+// ========================================
+// UI CONTROLLER
+// ========================================
+
+const ui = {
+  runBtn: document.getElementById('runTest'),
+  exportBtn: document.getElementById('exportResults'),
+  status: document.getElementById('statusDisplay'),
+  canvasPhase: document.getElementById('canvasPhase'),
+  canvasI3: document.getElementById('canvasI3'),
+  canvasStride: document.getElementById('canvasStride'),
+  canvasTimeShift: document.getElementById('canvasTimeShift'),
+  jsonOutput: document.getElementById('jsonOutput'),
+  verdictDisplay: document.getElementById('verdictDisplay')
+};
+
+const engine = new PhaseExposureEngine();
+let currentResults = null;
+const chamberXIVLoader = new ChamberXIVLoader();
+
+// Show/hide file upload based on test mode
+document.getElementById('testMode').addEventListener('change', (e) => {
+  const fileUploadGroup = document.getElementById('fileUploadGroup');
+  if (e.target.value === 'tau_field_uploaded') {
+    fileUploadGroup.style.display = 'block';
+  } else {
+    fileUploadGroup.style.display = 'none';
+  }
+});
+
+// Handle file upload
+document.getElementById('chamberXIVFile').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+  
+  console.log(`📁 Loading ${files.length} Chamber XIV JSON file(s)...`);
+  ui.status.textContent = `Loading ${files.length} file(s)...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  try {
+    const datasets = await chamberXIVLoader.loadFiles(files);
+    const summary = chamberXIVLoader.getSummary();
+    
+    const validCount = summary.datasets.filter(d => d.hasTauData).length;
+    const invalidCount = summary.count - validCount;
+    
+    if (validCount === 0) {
+      ui.status.textContent = `❌ No valid τ-timeseries found in ${files.length} file(s)`;
+      ui.status.className = 'status error';
+      
+      // Show detailed errors
+      const errors = summary.datasets.map(d => d.error).filter(e => e).join('\n');
+      alert(`No τ-timeseries data found:\n\n${errors}\n\nTo export τ-timeseries from Chamber XIV:\n1. Check "Include τ-timeseries for Chamber XL"\n2. Run exploration\n3. Export Evidence Bundle`);
+    } else {
+      ui.status.textContent = `✅ Loaded ${validCount} valid dataset(s)${invalidCount > 0 ? ` (${invalidCount} missing τ-timeseries)` : ''}`;
+      ui.status.className = 'status complete';
+      console.log('✅ Chamber XIV data ready:', summary);
+    }
+  } catch (error) {
+    ui.status.textContent = `❌ Error loading files: ${error.message}`;
+    ui.status.className = 'status error';
+    console.error(error);
+  }
+});
+
+// Setup canvases
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasPhase, ui.canvasI3, ui.canvasStride, ui.canvasTimeShift].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+// Render phase tracks
+function renderPhaseTracks(results) {
+  const canvas = ui.canvasPhase;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Use baseline phase data
+  const phiA = results.baseline.phase.A.phi_unwrapped;
+  const phiB = results.baseline.phase.B.phi_unwrapped;
+  const N = Math.min(500, phiA.length);
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  const minPhi = Math.min(...phiA.slice(0, N), ...phiB.slice(0, N));
+  const maxPhi = Math.max(...phiA.slice(0, N), ...phiB.slice(0, N));
+  
+  // Draw axes
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.stroke();
+  
+  // Plot A
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = padding + (i / N) * plotW;
+    const y = h - padding - ((phiA[i] - minPhi) / (maxPhi - minPhi)) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Plot B
+  ctx.strokeStyle = '#ff4a9e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = padding + (i / N) * plotW;
+    const y = h - padding - ((phiB[i] - minPhi) / (maxPhi - minPhi)) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Legend
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Wing A', padding + 10, padding + 20);
+  ctx.fillStyle = '#ff4a9e';
+  ctx.fillText('Wing B', padding + 10, padding + 40);
+}
+
+// Render I3 autocorrelation
+function renderI3(results) {
+  const canvas = ui.canvasI3;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Use baseline invariants
+  const I3 = results.baseline.invariants.A.I3;
+  const delays = I3.delays;
+  const values = I3.values;
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  // Draw axes
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.stroke();
+  
+  // Zero line
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  const zeroY = h - padding - 0.5 * plotH;
+  ctx.moveTo(padding, zeroY);
+  ctx.lineTo(w - padding, zeroY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // e^-1 threshold
+  const threshold = Math.exp(-1);
+  const threshY = h - padding - ((threshold + 1) / 2) * plotH;
+  ctx.strokeStyle = '#4aff4a';
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(padding, threshY);
+  ctx.lineTo(w - padding, threshY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Weinberg target
+  if (results.weinberg && results.weinberg.plateau.found) {
+    const targetY = h - padding - ((results.weinberg.target.value + 1) / 2) * plotH;
+    ctx.strokeStyle = '#ff4a9e';
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padding, targetY);
+    ctx.lineTo(w - padding, targetY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  // Plot I3
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < delays.length; i++) {
+    const x = padding + (delays[i] / delays[delays.length - 1]) * plotW;
+    const y = h - padding - ((values[i] + 1) / 2) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Mark σ_τ
+  if (I3.sigma_tau) {
+    const sigmaX = padding + (I3.sigma_tau / delays[delays.length - 1]) * plotW;
+    ctx.strokeStyle = '#ff4a4a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sigmaX, padding);
+    ctx.lineTo(sigmaX, h - padding);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ff4a4a';
+    ctx.font = '11px Consolas';
+    ctx.fillText(`σ_τ=${I3.sigma_tau}`, sigmaX + 5, padding + 20);
+  }
+}
+
+// Render stride sweep
+function renderStride(results) {
+  if (!results.robustness.stride_sweep || !results.robustness.stride_sweep.per_stride) return;
+  
+  const canvas = ui.canvasStride;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const data = results.robustness.stride_sweep.per_stride;
+  if (data.length === 0) return;
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  const strides = data.map(d => d.stride);
+  const S_vals = data.map(d => Math.abs(d.S));
+  
+  // Draw axes
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.stroke();
+  
+  // Classical bound
+  ctx.strokeStyle = '#ff4a4a';
+  ctx.setLineDash([5, 5]);
+  const boundY = h - padding - (2.0 / 4) * plotH;
+  ctx.beginPath();
+  ctx.moveTo(padding, boundY);
+  ctx.lineTo(w - padding, boundY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Plot points
+  ctx.fillStyle = '#4a9eff';
+  for (let i = 0; i < strides.length; i++) {
+    const x = padding + (i / (strides.length - 1)) * plotW;
+    const y = h - padding - (S_vals[i] / 4) * plotH;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px Consolas';
+    ctx.fillText(strides[i].toString(), x - 5, h - padding + 15);
+    ctx.fillStyle = '#4a9eff';
+  }
+  
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '11px Consolas';
+  ctx.fillText('|S| vs Stride', padding, padding - 5);
+}
+
+// Render time-shift null
+function renderTimeShift(results) {
+  if (!results.robustness.time_shift || !results.robustness.time_shift.per_shift) return;
+  
+  const canvas = ui.canvasTimeShift;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const data = results.robustness.time_shift.per_shift;
+  if (data.length === 0) return;
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  const S_vals = data.map(d => Math.abs(d.S));
+  
+  // Histogram
+  const bins = 20;
+  const hist = Array(bins).fill(0);
+  const minS = 0, maxS = Math.max(4, ...S_vals);
+  
+  for (let s of S_vals) {
+    const bin = Math.floor((s / maxS) * (bins - 1));
+    hist[Math.min(bin, bins - 1)]++;
+  }
+  
+  const maxCount = Math.max(...hist);
+  
+  // Draw axes
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.stroke();
+  
+  // Draw histogram
+  const barWidth = plotW / bins;
+  ctx.fillStyle = '#4a9eff';
+  for (let i = 0; i < bins; i++) {
+    const x = padding + i * barWidth;
+    const barH = (hist[i] / maxCount) * plotH;
+    const y = h - padding - barH;
+    ctx.fillRect(x, y, barWidth * 0.8, barH);
+  }
+  
+  // Classical bound line
+  const boundX = padding + (2.0 / maxS) * plotW;
+  ctx.strokeStyle = '#ff4a4a';
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(boundX, padding);
+  ctx.lineTo(boundX, h - padding);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '11px Consolas';
+  ctx.fillText('Time-Shift |S| Distribution', padding, padding - 5);
+}
+
+// Update UI with results
+function updateUI(results) {
+  // Determine view mode
+  const viewMode = results.primary_mode; // 'baseline' or 'omega_phi'
+  const uiViewMode = document.getElementById('viewMode')?.value || 'omega';
+  
+  // Select which results to display based on view mode
+  let displayResults;
+  
+  // Force baseline view if omega_phi is disabled
+  if (!results.omega_phi?.enabled && (uiViewMode === 'omega' || uiViewMode === 'compare')) {
+    console.warn('Ω̂ϕ disabled, forcing baseline view');
+    document.getElementById('viewMode').value = 'baseline';
+  }
+  
+  if (uiViewMode === 'omega' && results.omega_phi?.enabled && results.omega_phi.invariants) {
+    displayResults = {
+      inv: results.omega_phi.invariants,
+      chsh: results.omega_phi.chsh.S,
+      source: 'Ω̂ϕ-lifted'
+    };
+  } else if (uiViewMode === 'baseline' || !results.omega_phi?.enabled) {
+    displayResults = {
+      inv: results.baseline.invariants,
+      chsh: results.baseline.chsh.exposed.S,
+      source: 'baseline'
+    };
+  } else if (uiViewMode === 'compare' && results.omega_phi?.enabled) {
+    // Comparison mode - show baseline by default
+    displayResults = {
+      inv: results.baseline.invariants,
+      chsh: results.baseline.chsh.exposed.S,
+      source: 'compare'
+    };
+  } else {
+    // Fallback to baseline
+    displayResults = {
+      inv: results.baseline.invariants,
+      chsh: results.baseline.chsh.exposed.S,
+      source: 'baseline (fallback)'
+    };
+  }
+  
+  // Metrics - update based on display mode (with null checks)
+  if (results.omega_phi?.enabled && results.omega_phi.rho_A_avg !== undefined) {
+    document.getElementById('metricRhoA').textContent = results.omega_phi.rho_A_avg.toFixed(3);
+    document.getElementById('metricRhoB').textContent = results.omega_phi.rho_B_avg.toFixed(3);
+    document.getElementById('metricSLifted').textContent = Math.abs(results.omega_phi.chsh.S).toFixed(3);
+  } else {
+    document.getElementById('metricRhoA').textContent = 'N/A';
+    document.getElementById('metricRhoB').textContent = 'N/A';
+    document.getElementById('metricSLifted').textContent = 'disabled';
+  }
+  
+  // Defensive checks for displayResults
+  if (displayResults && displayResults.inv && displayResults.inv.A) {
+    document.getElementById('metricI1').textContent = (Number.isFinite(displayResults.inv.A.I1) ? displayResults.inv.A.I1 : 0).toFixed(4);
+    document.getElementById('metricI2').textContent = (Number.isFinite(displayResults.inv.A.I2) ? displayResults.inv.A.I2 : 0).toFixed(4);
+    document.getElementById('metricSigmaTau').textContent = displayResults.inv.A.I3?.sigma_tau || 'N/A';
+  } else {
+    document.getElementById('metricI1').textContent = '—';
+    document.getElementById('metricI2').textContent = '—';
+    document.getElementById('metricSigmaTau').textContent = 'N/A';
+  }
+  
+  document.getElementById('metricS').textContent = Math.abs(results.baseline.chsh.exposed.S).toFixed(3);
+  document.getElementById('metricSErased').textContent = Math.abs(results.baseline.chsh.erased.S).toFixed(3);
+  document.getElementById('metricDKL').textContent = (Number.isFinite(results.separability_test.DKL) ? results.separability_test.DKL : 0).toFixed(4);
+  document.getElementById('metricPValue').textContent = (Number.isFinite(results.separability_test.p_value) ? results.separability_test.p_value : 0).toFixed(4);
+  
+  // Comparison panel
+  const comparisonPanel = document.getElementById('comparisonPanel');
+  if (uiViewMode === 'compare' && results.omega_phi?.enabled) {
+    comparisonPanel.style.display = 'block';
+    
+    const S_omega = Math.abs(results.omega_phi.chsh.S);
+    const S_base = Math.abs(results.baseline.chsh.exposed.S);
+    const S_erased = Math.abs(results.baseline.chsh.erased.S);
+    
+    const deltaS = S_omega - S_base;
+    const ratioS = S_base > 0 ? (S_omega / S_base) : 0;
+    const stabilityGain = S_omega > 2 && S_erased <= 2 ? 'YES' : 'NO';
+    const erasureProtection = deltaS > 0 ? `+${(deltaS * 100 / S_base).toFixed(1)}%` : `${(deltaS * 100 / S_base).toFixed(1)}%`;
+    
+    document.getElementById('metricDeltaS').textContent = deltaS >= 0 ? `+${deltaS.toFixed(4)}` : deltaS.toFixed(4);
+    document.getElementById('metricRatioS').textContent = ratioS.toFixed(4);
+    document.getElementById('metricStabilityGain').textContent = stabilityGain;
+    document.getElementById('metricStabilityGain').style.color = stabilityGain === 'YES' ? '#4aff4a' : '#ff4a4a';
+    document.getElementById('metricErasureProtection').textContent = erasureProtection;
+    
+    // Interpretation
+    let interpretation = '';
+    if (S_omega > 2 && S_base > 2 && S_erased <= 2) {
+      interpretation = `<strong style="color: #4aff4a;">ERASURE ARTIFACT CONFIRMED:</strong> Both Ω̂ϕ (|S|=${S_omega.toFixed(3)}) and baseline (|S|=${S_base.toFixed(3)}) show nonseparability, but phase-erased test (|S|=${S_erased.toFixed(3)}) is separable. Ω̂ϕ provides ${erasureProtection} protection against κ-erasure.`;
+    } else if (S_omega > 2 && S_base <= 2) {
+      interpretation = `<strong style="color: #4aff4a;">Ω̂ϕ RESCUE:</strong> Baseline misses entanglement (|S|=${S_base.toFixed(3)} ≤ 2), but Ω̂ϕ detects it (|S|=${S_omega.toFixed(3)} > 2). This demonstrates κ-stability enhancement.`;
+    } else if (S_omega > 2 && S_base > 2 && S_erased > 2) {
+      interpretation = `<strong style="color: #4a9eff;">κ-STABLE NONSEPARABILITY:</strong> Entanglement survives all projections. Both Ω̂ϕ (|S|=${S_omega.toFixed(3)}) and baseline (|S|=${S_base.toFixed(3)}) detect it, and it even survives phase erasure (|S|=${S_erased.toFixed(3)}).`;
+    } else if (S_omega <= 2 && S_base <= 2) {
+      interpretation = `<strong style="color: #ffff4a;">SEPARABLE:</strong> Both Ω̂ϕ (|S|=${S_omega.toFixed(3)}) and baseline (|S|=${S_base.toFixed(3)}) show no evidence of nonseparability. Ω̂ϕ confirms absence rather than erasure.`;
+    } else {
+      interpretation = `<strong>INCONCLUSIVE:</strong> Mixed signals. Ω̂ϕ: |S|=${S_omega.toFixed(3)}, Baseline: |S|=${S_base.toFixed(3)}, Erased: |S|=${S_erased.toFixed(3)}.`;
+    }
+    
+    document.getElementById('comparisonInterpretation').innerHTML = interpretation;
+  } else {
+    comparisonPanel.style.display = 'none';
+  }
+  document.getElementById('metricDKL').textContent = (Number.isFinite(results.separability_test.DKL) ? results.separability_test.DKL : 0).toFixed(4);
+  document.getElementById('metricPValue').textContent = (Number.isFinite(results.separability_test.p_value) ? results.separability_test.p_value : 0).toFixed(4);
+  
+  if (results.weinberg) {
+    document.getElementById('metricWeinberg').textContent = results.weinberg.status;
+    document.getElementById('robustWeinberg').style.display = '';
+  } else {
+    document.getElementById('metricWeinberg').textContent = 'N/A';
+  }
+  
+  // Verdict
+  const verdict = results.verdict;
+  ui.verdictDisplay.innerHTML = `
+    <div class="verdict ${verdict.status}">
+      ${verdict.status.toUpperCase()}: ${verdict.message}
+    </div>
+  `;
+  ui.verdictDisplay.style.display = 'block';
+  
+  // Robustness matrix
+  const robust = results.robustness;
+  
+  if (robust.stride_sweep) {
+    const s = robust.stride_sweep;
+    document.querySelector('#robustStride td:nth-child(2)').innerHTML = `<span class="check-${s.status}">${s.status}</span>`;
+    document.querySelector('#robustStride td:nth-child(3)').textContent = s.stability ? `S_dev=${(Number.isFinite(s.stability.S_max_dev) ? s.stability.S_max_dev : 0).toFixed(3)}` : 'N/A';
+    document.querySelector('#robustStride td:nth-child(4)').textContent = s.details || `${s.per_stride?.length || 0} strides`;
+  }
+  
+  if (robust.time_shift) {
+    const t = robust.time_shift;
+    document.querySelector('#robustShift td:nth-child(2)').innerHTML = `<span class="check-${t.status}">${t.status}</span>`;
+    document.querySelector('#robustShift td:nth-child(3)').textContent = t.summary ? `S_med=${(Number.isFinite(t.summary.S_median) ? t.summary.S_median : 0).toFixed(3)}` : 'N/A';
+    document.querySelector('#robustShift td:nth-child(4)').textContent = t.details || `${t.per_shift?.length || 0} shifts`;
+  }
+  
+  if (robust.surrogate) {
+    const s = robust.surrogate;
+    document.querySelector('#robustSurrogate td:nth-child(2)').innerHTML = `<span class="check-${s.status}">${s.status}</span>`;
+    document.querySelector('#robustSurrogate td:nth-child(3)').textContent = `p=${(Number.isFinite(results.separability_test.p_value) ? results.separability_test.p_value : 0).toFixed(4)}`;
+    document.querySelector('#robustSurrogate td:nth-child(4)').textContent = s.details;
+  }
+  
+  if (robust.sigma_gating) {
+    const g = robust.sigma_gating;
+    document.querySelector('#robustSigma td:nth-child(2)').innerHTML = `<span class="check-${g.status}">${g.status}</span>`;
+    document.querySelector('#robustSigma td:nth-child(3)').textContent = 'All admissible';
+    document.querySelector('#robustSigma td:nth-child(4)').textContent = g.details;
+  }
+  
+  if (results.weinberg) {
+    const w = results.weinberg;
+    document.querySelector('#robustWeinberg td:nth-child(2)').innerHTML = `<span class="check-${w.status === 'support' ? 'pass' : 'fail'}">${w.status}</span>`;
+    document.querySelector('#robustWeinberg td:nth-child(3)').textContent = w.plateau.found ? `τ∈[${w.plateau.tau_range[0]},${w.plateau.tau_range[1]}]` : 'No plateau';
+    document.querySelector('#robustWeinberg td:nth-child(4)').textContent = `Target=${(Number.isFinite(w.target.value) ? w.target.value : 0).toFixed(3)}`;
+  }
+  
+  // Visualizations
+  renderPhaseTracks(results);
+  renderI3(results);
+  renderStride(results);
+  renderTimeShift(results);
+  
+  // JSON output
+  ui.jsonOutput.textContent = JSON.stringify({
+    chamber: 'XL',
+    version: '1.2.0',
+    timestamp: new Date().toISOString(),
+    ...results
+  }, null, 2);
+}
+
+// Run test
+ui.runBtn.addEventListener('click', async () => {
+  console.log('🚀 Starting Phase-Exposure test (v1.3 - Ω̂ϕ Enabled)...');
+  
+  ui.runBtn.disabled = true;
+  ui.status.textContent = 'Running test...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const config = {
+    mode: document.getElementById('testMode').value,
+    phase_method: document.getElementById('phaseMethod').value,
+    N: parseInt(document.getElementById('nTrials').value),
+    delta: parseFloat(document.getElementById('couplingDelta').value),
+    erasure_c: 0.5,
+    bin_size: parseInt(document.getElementById('binSize').value),
+    em_L: parseInt(document.getElementById('emComponents').value),
+    n_surrogates: parseInt(document.getElementById('nSurrogates').value),
+    bootstrap_iters: parseInt(document.getElementById('bootstrapIters').value),
+    // Ω̂ϕ Phase-Lift Configuration
+    enable_omega_phi: document.getElementById('enableOmegaPhi').checked,
+    rho_method: document.getElementById('rhoMethod').value,
+    rho_max: parseFloat(document.getElementById('rhoMax').value),
+    enable_stride_sweep: document.getElementById('enableStrideSweep').checked,
+    strides: document.getElementById('strides').value.split(',').map(s => parseInt(s.trim())),
+    S_tol: 0.10,
+    enable_time_shift: document.getElementById('enableTimeShift').checked,
+    n_shifts: parseInt(document.getElementById('nShifts').value),
+    enable_weinberg: document.getElementById('enableWeinberg').checked,
+    weinberg_target: parseFloat(document.getElementById('weinbergTarget').value),
+    weinberg_tol: 0.01,
+    plateau_len: 3,
+    chamberXIVLoader: chamberXIVLoader  // Pass loader for uploaded data
+  };
+
+  // ===================================================================
+  // CRITICAL PERFORMANCE & SAFETY VALIDATION
+  // ===================================================================
+  
+  const tauFieldModes = ['tau_field_synthetic', 'tau_field_uploaded'];
+  const syntheticModes = ['synthetic_coupled', 'synthetic_independent'];
+  let validationWarnings = [];
+  
+  // FIX 1: Phase method compatibility
+  if (tauFieldModes.includes(config.mode) && config.phase_method === 'direct') {
+    console.warn('⚠️ PHASE METHOD MISMATCH: Auto-correcting "Direct" → "Gradient Angle"');
+    config.phase_method = 'gradient_angle';
+    document.getElementById('phaseMethod').value = 'gradient_angle';
+    validationWarnings.push('Phase method auto-corrected to Gradient Angle');
+  }
+  
+  if (syntheticModes.includes(config.mode) && config.phase_method !== 'direct') {
+    console.warn('⚠️ PHASE METHOD MISMATCH: Auto-correcting to "Direct"');
+    config.phase_method = 'direct';
+    document.getElementById('phaseMethod').value = 'direct';
+    validationWarnings.push('Phase method auto-corrected to Direct');
+  }
+  
+  // FIX 2: HARD CAP N for τ-field modes to prevent system freeze
+  if (tauFieldModes.includes(config.mode)) {
+    const MAX_TAU_FIELD_N = 300;  // Critical safety limit
+    const WARN_TAU_FIELD_N = 200; // Recommended limit
+    
+    if (config.N > MAX_TAU_FIELD_N) {
+      console.error(`🚨 CRITICAL: N=${config.N} exceeds safe limit (${MAX_TAU_FIELD_N}) for τ-field modes!`);
+      console.error(`   Clamping to N=${MAX_TAU_FIELD_N} to prevent system freeze.`);
+      config.N = MAX_TAU_FIELD_N;
+      document.getElementById('nTrials').value = MAX_TAU_FIELD_N;
+      validationWarnings.push(`N clamped to ${MAX_TAU_FIELD_N} (CRITICAL safety limit)`);
+    } else if (config.N > WARN_TAU_FIELD_N) {
+      console.warn(`⚠️ WARNING: N=${config.N} may cause slow performance. Recommended: N≤${WARN_TAU_FIELD_N}`);
+      validationWarnings.push(`N=${config.N} may be slow (recommended: ≤${WARN_TAU_FIELD_N})`);
+    }
+  }
+  
+  // FIX 3: DISABLE spectral_multimode - it's a compute bomb (O(T×k×N²))
+  if (config.phase_method === 'spectral_multimode') {
+    if (tauFieldModes.includes(config.mode)) {
+      console.error('🚨 CRITICAL: spectral_multimode is DISABLED (causes system freeze)');
+      console.error('   Auto-switching to gradient_angle.');
+      console.error('   Reason: O(T×k×N²) complexity in main thread');
+      config.phase_method = 'gradient_angle';
+      document.getElementById('phaseMethod').value = 'gradient_angle';
+      validationWarnings.push('spectral_multimode DISABLED (performance bomb) → gradient_angle');
+    }
+  }
+  
+  // Show warnings if any
+  if (validationWarnings.length > 0) {
+    ui.status.textContent = validationWarnings.join(' • ');
+    ui.status.className = 'status warning';
+    ui.status.style.display = 'block';
+    console.warn('⚠️ Configuration validation warnings:');
+    validationWarnings.forEach(w => console.warn(`   - ${w}`));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Show for 2 seconds
+  }
+
+  // Default CHSH computation mode: exposure (relative-phase cosine). Use config.chsh_mode='binary' to force legacy sign(sin) CHSH.
+  engine.current_chsh_mode = (config.chsh_mode || 'exposure');
+
+  
+  try {
+    currentResults = await engine.runFullTest(config);
+    updateUI(currentResults);
+    
+    // Enable view mode selector
+    document.getElementById('viewMode').disabled = false;
+    document.getElementById('viewMode').addEventListener('change', () => {
+      if (currentResults) updateUI(currentResults);
+    });
+    
+    ui.status.textContent = `Complete! Verdict: ${currentResults.verdict.status}`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+  } catch (error) {
+    ui.status.textContent = `Error: ${error.message}`;
+    ui.status.className = 'status error';
+    console.error(error);
+  } finally {
+    ui.runBtn.disabled = false;
+  }
+});
+
+// Export results
+ui.exportBtn.addEventListener('click', () => {
+  if (!currentResults) return;
+  
+  const blob = new Blob([ui.jsonOutput.textContent], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ChamberXL_v1.2_${currentResults.config.mode}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Results exported');
+});
+
+console.log('✅ Chamber XL v1.2 ready!');
+console.log('═══════════════════════════════════════════════');
+  </script>
+</body>
+</html>

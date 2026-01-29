@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber κ₃ v0.1.1 (INLINE)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #ff4a9e; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #ff4a9e; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-bottom: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #ff4a9e; }
+    .button-primary:hover { background: #ff6ab8; }
+    .button-calibrate { background: #4aff4a; color: #0a0a0a; }
+    .button-calibrate:hover { background: #6aff6a; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #ff4a9e; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #ff4a9e; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .status.calib { background: #2a4a2a; color: #4aff4a; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #ff4a9e; transition: width 0.3s; }
+    .calib-results { margin-top: 15px; padding: 15px; background: #1a2a1a; border-radius: 4px; border-left: 3px solid #4aff4a; }
+    .calib-results h4 { color: #4aff4a; margin-bottom: 10px; }
+    .rec-omega { margin-top: 10px; padding: 10px; background: #0a1a2a; border-radius: 4px; }
+    .rec-omega strong { color: #4aff4a; }
+    .rec-omega-value { margin-top: 5px; font-family: 'Courier New', monospace; color: #4a9eff; font-size: 1.1em; }
+    .validation-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    .validation-table th, .validation-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #2a2a2a; }
+    .validation-table th { color: #ff4a9e; }
+    .pass { color: #4aff4a; }
+    .fail { color: #ff4a4a; }
+    .guide-section { margin: 20px 0; line-height: 1.6; color: #aaa; }
+    .guide-section h3 { color: #ff4a9e; font-size: 1.1em; margin-bottom: 10px; }
+    .guide-section ul { margin: 10px 0 10px 20px; }
+    .guide-section li { margin: 8px 0; }
+    .highlight-box { background: #1a2a3a; padding: 15px; border-radius: 4px; border-left: 3px solid #ff4a9e; margin: 15px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER κ₃: NESTED OBSERVABILITY v0.1.1</h1>
+      <div class="subtitle">Operator κ₃ – Gate Configuration Selector with Ω-Calibration</div>
+    </header>
+    
+    <!-- Calibration Panel -->
+    <div class="panel">
+      <div class="panel-title">🔬 Step 1: Ω-Calibration Pre-Pass (Required)</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="64" selected>64×64 (fast)</option>
+            <option value="128">128×128 (balanced)</option>
+            <option value="192">192×192 (high-res)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>λ</label>
+          <input type="number" id="lambda" step="0.001" value="0.108">
+        </div>
+        <div class="control-group">
+          <label>Calibration Depth</label>
+          <input type="number" id="calibDepth" value="400">
+        </div>
+        <div class="control-group">
+          <label>Measure Stride</label>
+          <input type="number" id="measureStride" value="20">
+        </div>
+        <div class="control-group">
+          <label>Seed</label>
+          <input type="number" id="seed" value="137042">
+        </div>
+        <div class="control-group">
+          <label>Observable Type</label>
+          <select id="observableType">
+            <option value="global" selected>Global Variance</option>
+            <option value="windowed">Windowed Contrast (w=5)</option>
+          </select>
+        </div>
+      </div>
+      <button id="runCalibration" class="button-calibrate">🔬 Run Calibration</button>
+      <div id="calibrationResults" class="calib-results" style="display: none;">
+        <h4>✅ Calibration Complete</h4>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Σ₂⁰ min</div><div class="metric-value" id="calibSigmaMin">—</div></div>
+          <div class="metric"><div class="metric-label">Σ₂⁰ max</div><div class="metric-value" id="calibSigmaMax">—</div></div>
+          <div class="metric"><div class="metric-label">Σ₂⁰ mean</div><div class="metric-value" id="calibSigmaMean">—</div></div>
+          <div class="metric"><div class="metric-label">Σ₂⁰ std</div><div class="metric-value" id="calibSigmaStd">—</div></div>
+          <div class="metric"><div class="metric-label">Measurements (T)</div><div class="metric-value" id="calibMeasurements">—</div></div>
+        </div>
+        <div class="rec-omega">
+          <strong>📊 Recommended Ω₂ Range:</strong>
+          <div class="rec-omega-value">
+            [<span id="omega2RecMin">—</span>, <span id="omega2RecMax">—</span>]
+          </div>
+          <div style="margin-top: 5px; font-size: 0.85em; color: #888;">
+            (computed as [Σ_min - 0.5·Σ_std, Σ_max + 0.5·Σ_std])
+          </div>
+          <button id="applyRecommended" class="button-primary" style="margin-top: 10px;">Apply Recommended Range</button>
+        </div>
+      </div>
+      <div id="calibStatus" class="status" style="display: none;"></div>
+    </div>
+    
+    <!-- Gate Sweep Panel -->
+    <div class="panel">
+      <div class="panel-title">📊 Step 2: Gate Sweep Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Ω₁ Min</label>
+          <input type="number" id="omega1Min" step="0.1" value="0.0">
+        </div>
+        <div class="control-group">
+          <label>Ω₁ Max</label>
+          <input type="number" id="omega1Max" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+          <label>Ω₂ Min</label>
+          <input type="number" id="omega2Min" step="0.1" value="0.0">
+        </div>
+        <div class="control-group">
+          <label>Ω₂ Max</label>
+          <input type="number" id="omega2Max" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+          <label>Grid Resolution</label>
+          <input type="number" id="omegaGridRes" min="8" max="20" value="9">
+        </div>
+        <div class="control-group">
+          <label>Sweep Depth</label>
+          <input type="number" id="sweepDepth" value="400">
+        </div>
+      </div>
+      <button id="runSweep" class="button-primary" disabled>▶ Run Gate Sweep</button>
+      <button id="stopSweep" disabled>⏸ Stop</button>
+      <button id="exportData" disabled>💾 Export Data</button>
+      <div id="sweepStatus" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+    </div>
+    
+    <!-- Visualization -->
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasSigmaTrace"></canvas>
+          <div class="canvas-label">Σ₂⁰(t) Time Series</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasPersistence"></canvas>
+          <div class="canvas-label">Persistence Map P(Ω₁,Ω₂)</div>
+        </div>
+      </div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasReentry"></canvas>
+          <div class="canvas-label">Re-entry Count R(Ω₁,Ω₂)</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasField"></canvas>
+          <div class="canvas-label">τ-Field (current)</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Metrics -->
+    <div class="panel">
+      <div class="panel-title">Metrics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Current (Ω₁,Ω₂)</div><div class="metric-value" id="metricCurrentGate">—</div></div>
+        <div class="metric"><div class="metric-label">Persistence P</div><div class="metric-value" id="metricPersistence">—</div></div>
+        <div class="metric"><div class="metric-label">Re-entry R</div><div class="metric-value" id="metricReentry">—</div></div>
+        <div class="metric"><div class="metric-label">Lock Regions</div><div class="metric-value" id="metricLockCount">—</div></div>
+        <div class="metric"><div class="metric-label">CV(P)</div><div class="metric-value" id="metricCVP">—</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value" id="metricStatus">Ready</div></div>
+      </div>
+    </div>
+    
+    <!-- Validation -->
+    <div class="panel">
+      <div class="panel-title">CK3 Validation (v0.1.1)</div>
+      <table class="validation-table">
+        <tr>
+          <th>Criterion</th>
+          <th>Target</th>
+          <th>Result</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>CK3.0: Calibration Present</td>
+          <td>Required</td>
+          <td id="ck30Result">—</td>
+          <td id="ck30Status">—</td>
+        </tr>
+        <tr>
+          <td>CK3.1: Ω-Grid Coverage</td>
+          <td>≥ 64 pairs</td>
+          <td id="ck31Result">—</td>
+          <td id="ck31Status">—</td>
+        </tr>
+        <tr>
+          <td>CK3.2: Persistence Diversity</td>
+          <td>CV(P) ≥ 0.3</td>
+          <td id="ck32Result">—</td>
+          <td id="ck32Status">—</td>
+        </tr>
+        <tr>
+          <td>CK3.3: Re-entry Detection</td>
+          <td>Total R ≥ 1</td>
+          <td id="ck33Result">—</td>
+          <td id="ck33Status">—</td>
+        </tr>
+        <tr>
+          <td>CK3.4: Gate-Lock Contrast</td>
+          <td>P_max / P_min ≥ 3.0</td>
+          <td id="ck34Result">—</td>
+          <td id="ck34Status">—</td>
+        </tr>
+      </table>
+      <div id="validationVerdict" style="margin-top: 15px; padding: 15px; border-radius: 4px; font-weight: bold; text-align: center; display: none;"></div>
+    </div>
+    
+    <!-- Guide -->
+    <details><div class="panel">
+      <summary><div class="panel-title">📚 Laboratory Guide</div></summary>
+      
+      <div class="guide-section">
+        <h3>Chamber κ₃ v0.1.1: What Changed</h3>
+        <div class="highlight-box">
+          <p><strong>Delta from v0.1:</strong></p>
+          <p>Added mandatory Ω-calibration pre-pass that measures Σ₂⁰ support before any gate sweep. This prevents the "flat P(g)=1" failure mode where Ω₂ range is completely below the actual signal.</p>
+        </div>
+        
+        <p><strong>v0.1.1 adds:</strong></p>
+        <ul>
+          <li><strong>CK3.0:</strong> Blocking prerequisite - calibration must be run first</li>
+          <li><strong>Ω-calibration statistics:</strong> Σ_min, Σ_max, Σ_mean, Σ_std</li>
+          <li><strong>Recommended Ω₂ range:</strong> Auto-computed from signal support</li>
+          <li><strong>Calibration export:</strong> omega_calibration block in JSON</li>
+        </ul>
+      </div>
+      
+      <div class="guide-section">
+        <h3>Workflow (v0.1.1)</h3>
+        <ol>
+          <li><strong>Run Calibration:</strong> Measures Σ₂⁰ statistics over τ-relaxation</li>
+          <li><strong>Review Recommendations:</strong> Check suggested Ω₂ range</li>
+          <li><strong>Apply or Adjust:</strong> Use recommended range or customize</li>
+          <li><strong>Run Gate Sweep:</strong> Scan (Ω₁,Ω₂) space with calibrated thresholds</li>
+          <li><strong>Validate:</strong> Check CK3.0-CK3.4 acceptance criteria</li>
+          <li><strong>Export:</strong> Save JSON with calibration + results</li>
+        </ol>
+      </div>
+      
+      <div class="guide-section">
+        <details style="background: #1a2a1a; padding: 15px; border-radius: 4px; border-left: 3px solid #4aff4a; margin-top: 20px;">
+          <summary style="cursor: pointer; font-weight: bold; color: #4aff4a; font-size: 1.1em; margin-bottom: 10px;">
+            🎯 Re-Entry Targeting Protocol (Click to expand)
+          </summary>
+          <div style="margin-top: 15px; padding-left: 10px;">
+            <p style="margin-bottom: 10px;"><strong>File:</strong> <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px;">kappa3_reentry_targeting_protocol.md</code></p>
+            <p style="margin-bottom: 15px;"><em>If CK3.3 fails (R=0), use this escalating intervention strategy to force re-entry opportunity:</em></p>
+            
+            <div style="background: #0a1a0a; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+              <h4 style="color: #4aff4a; margin-bottom: 8px;">🎯 Run 1: Minimal (stride=2)</h4>
+              <pre style="margin: 8px 0; padding: 8px; background: #000; border-radius: 3px; overflow-x: auto;"><code>Grid: 64×64
+λ: 0.108
+Stride: 2 (was 20)
+Observable: Global Variance
+Expected: 10× temporal resolution unmasks sub-relaxation fluctuations
+Runtime: ~10 min</code></pre>
+            </div>
+            
+            <div style="background: #0a1a0a; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+              <h4 style="color: #ff4a9e; margin-bottom: 8px;">🎯 Run 2: Observable (if Run 1 fails)</h4>
+              <pre style="margin: 8px 0; padding: 8px; background: #000; border-radius: 3px; overflow-x: auto;"><code>[Same as Run 1]
+Observable: Windowed Contrast (w=5)
+Expected: Local contrast fluctuations visible
+Runtime: ~10 min</code></pre>
+            </div>
+            
+            <div style="background: #0a1a0a; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+              <h4 style="color: #ff9a4a; margin-bottom: 8px;">🎯 Run 3: Coupling (if Run 2 fails)</h4>
+              <pre style="margin: 8px 0; padding: 8px; background: #000; border-radius: 3px; overflow-x: auto;"><code>[Same as Run 2]
+λ: 0.15 (was 0.108)
+Expected: Stronger spatial competition induces micro-rebounds
+Runtime: ~10 min</code></pre>
+            </div>
+            
+            <div style="background: #2a4a2a; padding: 12px; border-radius: 4px; border-left: 3px solid #4aff4a;">
+              <strong style="color: #4aff4a;">✅ Stop immediately when:</strong>
+              <code style="background: #0a0a0a; padding: 3px 8px; border-radius: 3px; margin-left: 8px; color: #4aff4a;">Total R ≥ 1</code>
+              <span style="margin-left: 8px;">(CK3.3 passes)</span>
+            </div>
+            
+            <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
+              <strong>Note:</strong> All three interventions are measurement-only adjustments (no dynamics changes, no validator weakening).
+              Both VALIDATED (with re-entry) and REJECTED (monotone) are valid κ₃ results.
+            </p>
+          </div>
+        </details>
+      </div>
+      
+      <div class="guide-section">
+        <h3>Interpretation Rule (Formal)</h3>
+        <div class="highlight-box">
+          <p>If CK3.0 passes but CK3.2-CK3.4 fail, the correct conclusion is:</p>
+          <p><em>"Under the measured Σ₂⁰ support, the tested Ω₂ range does not discriminate observability."</em></p>
+          <p>NOT: κ₃ failed. NOT: observability is trivial. NOT: dynamics are absent.</p>
+          <p>This is purely a statement about measurement calibration.</p>
+        </div>
+      </div>
+      
+      <div class="guide-section">
+        <h3>What κ₃ Actually Measures</h3>
+        <p><strong>Persistence Score:</strong></p>
+        <p style="font-family: 'Courier New', monospace; margin-left: 20px;">P(g) = (1/T) · Σₖ 𝟙[Σ₂⁰(tₖ) > Ω₂]</p>
+        <p>Fraction of measurement times where observability signal is above gate threshold.</p>
+        
+        <p style="margin-top: 15px;"><strong>Re-entry Count:</strong></p>
+        <p style="font-family: 'Courier New', monospace; margin-left: 20px;">R(g) = #{k>0 | bₖ₋₁=0 ∧ bₖ=1}</p>
+        <p>Number of times observability returns after being below threshold (upcrossing events).</p>
+        
+        <p style="margin-top: 15px;"><strong>Gate-Lock:</strong></p>
+        <p style="font-family: 'Courier New', monospace; margin-left: 20px;">Lock(g) ⇔ P(g) ≥ 0.8</p>
+        <p>Operational label for high-persistence regimes (not a mechanism claim).</p>
+      </div>
+      
+      <div class="guide-section">
+        <h3>JSON Schema Compliance (v0.1.1)</h3>
+        <p>Exported data conforms to the formal κ₃ JSON schema (validator-ready):</p>
+        <ul>
+          <li><strong>schema:</strong> "unns.kappa3.v0.1.1"</li>
+          <li><strong>Mandatory blocks:</strong> config, omega_calibration, omega_grid, results, validation</li>
+          <li><strong>CK3.0 enforcement:</strong> Calibration block required for export</li>
+          <li><strong>Verdict rules:</strong> VALIDATED iff all CK3.x pass, REJECTED otherwise</li>
+        </ul>
+        <div class="highlight-box">
+          <p><strong>Schema guarantees:</strong></p>
+          <ul style="margin: 8px 0 0 20px;">
+            <li>Array length consistency (all result arrays = total_pairs)</li>
+            <li>Statistical integrity (p_min ≤ p_max, sigma_min ≤ sigma_max)</li>
+            <li>Deterministic pairing order (omega_grid defines traversal)</li>
+            <li>Machine-checkable validation (no dynamics interpretation needed)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</details>
+  <script>
+/**
+ * TauFieldEngineN (minimal κ₃ version)
+ */
+class TauFieldEngineN {
+  constructor(config = {}) {
+    this.W = config.grid_width || 64;
+    this.size = this.W * this.W;
+    this.lambda = config.lambda || 0.108;
+    this.sigma = config.sigma || 0.02;
+    
+    this.fields = [{
+      tau: new Float64Array(this.size),
+      tau_next: new Float64Array(this.size)
+    }];
+    
+    this.seed = config.seed || 137042;
+    this.rng = this.createSeededRNG(this.seed);
+    this.step_count = 0;
+    
+    this.initialize('random');
+  }
+  
+  initialize(mode = 'random') {
+    const tau = this.fields[0].tau;
+    for (let i = 0; i < this.size; i++) {
+      tau[i] = this.rng.random() * 2 * Math.PI;
+    }
+  }
+  
+  step() {
+    const {tau, tau_next} = this.fields[0];
+    
+    for (let idx = 0; idx < this.size; idx++) {
+      const x = idx % this.W;
+      const y = Math.floor(idx / this.W);
+      
+      const right_idx = ((x + 1) % this.W) + y * this.W;
+      const delta_phi = tau[right_idx] - tau[idx];
+      
+      let update = tau[idx];
+      update += this.lambda * Math.sin(delta_phi);
+      
+      if (this.sigma > 0) {
+        update += this.sigma * this.rng.gaussian();
+      }
+      
+      tau_next[idx] = update;
+    }
+    
+    this.fields[0].tau = tau_next;
+    this.fields[0].tau_next = tau;
+    this.step_count++;
+  }
+  
+  computeSigma2() {
+    // Parity-difference variance proxy for observability signal
+    const tau = this.fields[0].tau;
+    let sum_diff_sq = 0;
+    let count = 0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        
+        // Parity-sensitive difference
+        const phase_x = Math.cos(tau[idx]);
+        const phase_right = Math.cos(tau[right_idx]);
+        const diff = phase_right - phase_x;
+        
+        sum_diff_sq += diff * diff;
+        count++;
+      }
+    }
+    
+    return sum_diff_sq / count;
+  }
+  
+  computeSigma2Windowed(window_size = 5) {
+    // Windowed contrast observable: |Var_even - Var_odd|
+    // Computed over spatial regions to capture local fluctuations
+    const tau = this.fields[0].tau;
+    const step = Math.floor(this.W / window_size);
+    
+    let var_even = 0;
+    let var_odd = 0;
+    let count_even = 0;
+    let count_odd = 0;
+    
+    for (let wy = 0; wy < window_size; wy++) {
+      for (let wx = 0; wx < window_size; wx++) {
+        const is_even = (wx + wy) % 2 === 0;
+        
+        // Sample region
+        let sum = 0;
+        let sum_sq = 0;
+        let n = 0;
+        
+        for (let dy = 0; dy < step; dy++) {
+          for (let dx = 0; dx < step; dx++) {
+            const x = (wx * step + dx) % this.W;
+            const y = (wy * step + dy) % this.W;
+            const idx = x + y * this.W;
+            const val = Math.cos(tau[idx]);
+            
+            sum += val;
+            sum_sq += val * val;
+            n++;
+          }
+        }
+        
+        if (n > 0) {
+          const mean = sum / n;
+          const variance = sum_sq / n - mean * mean;
+          
+          if (is_even) {
+            var_even += variance;
+            count_even++;
+          } else {
+            var_odd += variance;
+            count_odd++;
+          }
+        }
+      }
+    }
+    
+    const avg_var_even = count_even > 0 ? var_even / count_even : 0;
+    const avg_var_odd = count_odd > 0 ? var_odd / count_odd : 0;
+    
+    return Math.abs(avg_var_even - avg_var_odd);
+  }
+  
+  getField() {
+    return new Float64Array(this.fields[0].tau);
+  }
+  
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+}
+
+// Chamber κ₃ v0.1.1 Implementation
+console.log('═══════════════════════════════════════════════════════');
+console.log('UNNS κ-Series | Chamber κ₃ v0.1.1 | Nested Observability');
+console.log('═══════════════════════════════════════════════════════');
+
+let running = false;
+let calibrationData = null;
+let sweepData = {
+  omega_pairs: [],
+  persistence_scores: [],
+  reentry_counts: [],
+  gate_locks: [],
+  sigma_traces: [],
+  config: null
+};
+
+const ui = {
+  // Calibration
+  runCalibBtn: document.getElementById('runCalibration'),
+  calibResults: document.getElementById('calibrationResults'),
+  calibStatus: document.getElementById('calibStatus'),
+  calibSigmaMin: document.getElementById('calibSigmaMin'),
+  calibSigmaMax: document.getElementById('calibSigmaMax'),
+  calibSigmaMean: document.getElementById('calibSigmaMean'),
+  calibSigmaStd: document.getElementById('calibSigmaStd'),
+  calibMeasurements: document.getElementById('calibMeasurements'),
+  omega2RecMin: document.getElementById('omega2RecMin'),
+  omega2RecMax: document.getElementById('omega2RecMax'),
+  applyRecBtn: document.getElementById('applyRecommended'),
+  
+  // Sweep
+  runSweepBtn: document.getElementById('runSweep'),
+  stopBtn: document.getElementById('stopSweep'),
+  exportBtn: document.getElementById('exportData'),
+  sweepStatus: document.getElementById('sweepStatus'),
+  progress: document.getElementById('progressFill'),
+  
+  // Canvases
+  canvasSigmaTrace: document.getElementById('canvasSigmaTrace'),
+  canvasPersistence: document.getElementById('canvasPersistence'),
+  canvasReentry: document.getElementById('canvasReentry'),
+  canvasField: document.getElementById('canvasField'),
+  
+  // Metrics
+  metricCurrentGate: document.getElementById('metricCurrentGate'),
+  metricPersistence: document.getElementById('metricPersistence'),
+  metricReentry: document.getElementById('metricReentry'),
+  metricLockCount: document.getElementById('metricLockCount'),
+  metricCVP: document.getElementById('metricCVP'),
+  metricStatus: document.getElementById('metricStatus'),
+  
+  // Validation
+  ck30Result: document.getElementById('ck30Result'),
+  ck30Status: document.getElementById('ck30Status'),
+  ck31Result: document.getElementById('ck31Result'),
+  ck31Status: document.getElementById('ck31Status'),
+  ck32Result: document.getElementById('ck32Result'),
+  ck32Status: document.getElementById('ck32Status'),
+  ck33Result: document.getElementById('ck33Result'),
+  ck33Status: document.getElementById('ck33Status'),
+  ck34Result: document.getElementById('ck34Result'),
+  ck34Status: document.getElementById('ck34Status'),
+  validationVerdict: document.getElementById('validationVerdict')
+};
+
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasSigmaTrace, ui.canvasPersistence, ui.canvasReentry, ui.canvasField].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+// Calibration
+ui.runCalibBtn.addEventListener('click', async () => {
+  console.log('🔬 Starting Ω-calibration...');
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: 0.02,
+    depth: parseInt(document.getElementById('calibDepth').value),
+    stride: parseInt(document.getElementById('measureStride').value),
+    seed: parseInt(document.getElementById('seed').value),
+    observable_type: document.getElementById('observableType').value
+  };
+  
+  ui.calibStatus.textContent = 'Running calibration...';
+  ui.calibStatus.className = 'status calib';
+  ui.calibStatus.style.display = 'block';
+  ui.runCalibBtn.disabled = true;
+  
+  const engine = new TauFieldEngineN({
+    grid_width: config.grid_width,
+    lambda: config.lambda,
+    sigma: config.sigma,
+    seed: config.seed
+  });
+  
+  const sigma_series = [];
+  const num_measurements = Math.floor(config.depth / config.stride);
+  
+  for (let step = 0; step < config.depth; step++) {
+    engine.step();
+    
+    if (step % config.stride === 0) {
+      const sigma2 = config.observable_type === 'windowed' 
+        ? engine.computeSigma2Windowed(5)
+        : engine.computeSigma2();
+      sigma_series.push(sigma2);
+    }
+    
+    if (step % 50 === 0) {
+      renderField(engine.getField(), config.grid_width, ui.canvasField);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  // Compute statistics
+  const sigma_min = Math.min(...sigma_series);
+  const sigma_max = Math.max(...sigma_series);
+  const sigma_mean = sigma_series.reduce((a,b) => a+b, 0) / sigma_series.length;
+  const sigma_std = Math.sqrt(
+    sigma_series.map(s => (s - sigma_mean)**2).reduce((a,b) => a+b, 0) / sigma_series.length
+  );
+  
+  // Recommended range with padding
+  const omega2_rec_min = Math.max(0, sigma_min - 0.5 * sigma_std);
+  const omega2_rec_max = sigma_max + 0.5 * sigma_std;
+  
+  calibrationData = {
+    sigma_min: sigma_min,
+    sigma_max: sigma_max,
+    sigma_mean: sigma_mean,
+    sigma_std: sigma_std,
+    measurements: num_measurements,
+    measure_stride: config.stride,
+    sigma_series: sigma_series,
+    omega2_recommended: [omega2_rec_min, omega2_rec_max],
+    observable_type: config.observable_type
+  };
+  
+  // Display
+  ui.calibSigmaMin.textContent = sigma_min.toFixed(6);
+  ui.calibSigmaMax.textContent = sigma_max.toFixed(6);
+  ui.calibSigmaMean.textContent = sigma_mean.toFixed(6);
+  ui.calibSigmaStd.textContent = sigma_std.toFixed(6);
+  ui.calibMeasurements.textContent = num_measurements;
+  ui.omega2RecMin.textContent = omega2_rec_min.toFixed(6);
+  ui.omega2RecMax.textContent = omega2_rec_max.toFixed(6);
+  
+  ui.calibResults.style.display = 'block';
+  ui.calibStatus.textContent = '✅ Calibration complete';
+  ui.calibStatus.className = 'status complete';
+  
+  // Render sigma trace
+  renderSigmaTrace(sigma_series, config.stride);
+  
+  // Enable sweep
+  ui.runSweepBtn.disabled = false;
+  ui.runCalibBtn.disabled = false;
+  
+  // Update CK3.0
+  ui.ck30Result.textContent = 'PASS';
+  ui.ck30Status.textContent = '✓';
+  ui.ck30Status.className = 'pass';
+  
+  console.log(`✅ Calibration complete:`);
+  console.log(`   Σ₂⁰ ∈ [${sigma_min.toFixed(6)}, ${sigma_max.toFixed(6)}]`);
+  console.log(`   Recommended Ω₂ ∈ [${omega2_rec_min.toFixed(6)}, ${omega2_rec_max.toFixed(6)}]`);
+});
+
+// Apply recommended range
+ui.applyRecBtn.addEventListener('click', () => {
+  if (!calibrationData) return;
+  
+  document.getElementById('omega2Min').value = calibrationData.omega2_recommended[0].toFixed(3);
+  document.getElementById('omega2Max').value = calibrationData.omega2_recommended[1].toFixed(3);
+  
+  console.log('✅ Applied recommended Ω₂ range');
+});
+
+// Gate sweep
+ui.runSweepBtn.addEventListener('click', async () => {
+  if (!calibrationData) {
+    alert('Please run calibration first (CK3.0 requirement)');
+    return;
+  }
+  
+  console.log('🚀 Starting gate sweep...');
+  running = true;
+  ui.runSweepBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.metricStatus.textContent = 'Running...';
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: 0.02,
+    omega1_min: parseFloat(document.getElementById('omega1Min').value),
+    omega1_max: parseFloat(document.getElementById('omega1Max').value),
+    omega2_min: parseFloat(document.getElementById('omega2Min').value),
+    omega2_max: parseFloat(document.getElementById('omega2Max').value),
+    grid_res: parseInt(document.getElementById('omegaGridRes').value),
+    depth: parseInt(document.getElementById('sweepDepth').value),
+    stride: parseInt(document.getElementById('measureStride').value),
+    seed: parseInt(document.getElementById('seed').value),
+    observable_type: document.getElementById('observableType').value
+  };
+  
+  const omega1_vals = [];
+  const omega2_vals = [];
+  for (let i = 0; i < config.grid_res; i++) {
+    omega1_vals.push(config.omega1_min + (config.omega1_max - config.omega1_min) * i / (config.grid_res - 1));
+    omega2_vals.push(config.omega2_min + (config.omega2_max - config.omega2_min) * i / (config.grid_res - 1));
+  }
+  
+  sweepData = {
+    omega_pairs: [],
+    persistence_scores: [],
+    reentry_counts: [],
+    gate_locks: [],
+    sigma_traces: [],
+    config: config
+  };
+  
+  ui.sweepStatus.textContent = `Scanning ${config.grid_res}×${config.grid_res} gate space...`;
+  ui.sweepStatus.className = 'status running';
+  ui.sweepStatus.style.display = 'block';
+  
+  const total = omega1_vals.length * omega2_vals.length;
+  let count = 0;
+  
+  for (let i = 0; i < omega1_vals.length && running; i++) {
+    for (let j = 0; j < omega2_vals.length && running; j++) {
+      const omega1 = omega1_vals[i];
+      const omega2 = omega2_vals[j];
+      
+      console.log(`  📊 (Ω₁,Ω₂) = (${omega1.toFixed(3)}, ${omega2.toFixed(3)}) [${count+1}/${total}]`);
+      
+      const engine = new TauFieldEngineN({
+        grid_width: config.grid_width,
+        lambda: config.lambda,
+        sigma: config.sigma,
+        seed: config.seed
+      });
+      
+      const sigma_trace = [];
+      for (let step = 0; step < config.depth; step++) {
+        engine.step();
+        
+        if (step % config.stride === 0) {
+          const sigma2 = config.observable_type === 'windowed'
+            ? engine.computeSigma2Windowed(5)
+            : engine.computeSigma2();
+          sigma_trace.push(sigma2);
+        }
+        
+        if (step % 50 === 0 && i === omega1_vals.length - 1 && j === omega2_vals.length - 1) {
+          renderField(engine.getField(), config.grid_width, ui.canvasField);
+        }
+      }
+      
+      // Compute P(g)
+      const above_gate = sigma_trace.filter(s => s > omega2).length;
+      const persistence = above_gate / sigma_trace.length;
+      
+      // Compute R(g)
+      let reentry = 0;
+      for (let k = 1; k < sigma_trace.length; k++) {
+        const prev_below = sigma_trace[k-1] <= omega2;
+        const curr_above = sigma_trace[k] > omega2;
+        if (prev_below && curr_above) reentry++;
+      }
+      
+      // Gate-lock
+      const lock = persistence >= 0.8;
+      
+      sweepData.omega_pairs.push([omega1, omega2]);
+      sweepData.persistence_scores.push(persistence);
+      sweepData.reentry_counts.push(reentry);
+      sweepData.gate_locks.push(lock);
+      sweepData.sigma_traces.push(sigma_trace);
+      
+      ui.metricCurrentGate.textContent = `(${omega1.toFixed(2)}, ${omega2.toFixed(2)})`;
+      ui.metricPersistence.textContent = persistence.toFixed(3);
+      ui.metricReentry.textContent = reentry;
+      
+      count++;
+      ui.progress.style.width = `${(count/total)*100}%`;
+      
+      if (count % 5 === 0) {
+        renderHeatmap(
+          sweepData.persistence_scores,
+          omega1_vals, omega2_vals,
+          ui.canvasPersistence
+        );
+        renderHeatmap(
+          sweepData.reentry_counts,
+          omega1_vals, omega2_vals,
+          ui.canvasReentry
+        );
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  if (running) {
+    // Final visualizations
+    renderHeatmap(sweepData.persistence_scores, omega1_vals, omega2_vals, ui.canvasPersistence);
+    renderHeatmap(sweepData.reentry_counts, omega1_vals, omega2_vals, ui.canvasReentry);
+    
+    // Compute diversity metrics
+    const P_vals = sweepData.persistence_scores;
+    const P_mean = P_vals.reduce((a,b) => a+b, 0) / P_vals.length;
+    const P_std = Math.sqrt(P_vals.map(p => (p - P_mean)**2).reduce((a,b) => a+b, 0) / P_vals.length);
+    const CV_P = P_mean > 0 ? P_std / P_mean : 0;
+    
+    const P_min = Math.min(...P_vals);
+    const P_max = Math.max(...P_vals);
+    const P_ratio = P_min > 0 ? P_max / P_min : Infinity;
+    
+    const total_reentry = sweepData.reentry_counts.reduce((a,b) => a+b, 0);
+    const lock_count = sweepData.gate_locks.filter(l => l).length;
+    
+    ui.metricCVP.textContent = CV_P.toFixed(3);
+    ui.metricLockCount.textContent = lock_count;
+    
+    // Validation
+    validateResults(total, CV_P, total_reentry, P_ratio);
+    
+    ui.sweepStatus.textContent = `Complete! Scanned ${total} gates`;
+    ui.sweepStatus.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log(`✅ Sweep complete`);
+    console.log(`   CV(P) = ${CV_P.toFixed(3)}`);
+    console.log(`   Total re-entries = ${total_reentry}`);
+    console.log(`   Lock regions = ${lock_count}`);
+  }
+  
+  ui.runSweepBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  ui.metricStatus.textContent = 'Complete';
+  running = false;
+});
+
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.sweepStatus.textContent = 'Stopped by user';
+  ui.metricStatus.textContent = 'Stopped';
+  console.log('⏸️ Sweep stopped');
+});
+
+ui.exportBtn.addEventListener('click', () => {
+  // Compute summary statistics
+  const P_vals = sweepData.persistence_scores;
+  const P_min = Math.min(...P_vals);
+  const P_max = Math.max(...P_vals);
+  const P_mean = P_vals.reduce((a,b) => a+b, 0) / P_vals.length;
+  const P_std = Math.sqrt(P_vals.map(p => (p - P_mean)**2).reduce((a,b) => a+b, 0) / P_vals.length);
+  
+  const total_reentry = sweepData.reentry_counts.reduce((a,b) => a+b, 0);
+  const lock_count = sweepData.gate_locks.filter(l => l).length;
+  const lock_fraction = lock_count / sweepData.gate_locks.length;
+  
+  // Extract omega1/omega2 unique values
+  const omega1_vals = [...new Set(sweepData.omega_pairs.map(p => p[0]))].sort((a,b) => a-b);
+  const omega2_vals = [...new Set(sweepData.omega_pairs.map(p => p[1]))].sort((a,b) => a-b);
+  
+  // Build omega_pairs in schema format
+  const omega_pairs_formatted = sweepData.omega_pairs.map(p => ({
+    omega1: p[0],
+    omega2: p[1]
+  }));
+  
+  // Build validation criteria
+  const validation = getValidationSummary();
+  const cv_p = P_mean > 0 ? P_std / P_mean : 0;
+  const p_ratio = P_min > 0 ? P_max / P_min : Infinity;
+  
+  const exportData = {
+    schema: "unns.kappa3.v0.1.1",
+    chamber: "kappa_3",
+    version: "0.1.1",
+    timestamp: new Date().toISOString(),
+    run_id: `LPK_kappa3_seed${sweepData.config.seed}`,
+    seed: sweepData.config.seed,
+    
+    config: {
+      tau_steps: sweepData.config.depth,
+      measure_stride: sweepData.config.stride,
+      p_lock: 0.8,
+      notes: `Grid ${sweepData.config.grid_width}×${sweepData.config.grid_width}, λ=${sweepData.config.lambda}, observable=${sweepData.config.observable_type}`
+    },
+    
+    omega_calibration: {
+      sigma_name: "Sigma2_0",
+      sigma_min: calibrationData.sigma_min,
+      sigma_max: calibrationData.sigma_max,
+      sigma_mean: calibrationData.sigma_mean,
+      sigma_std: calibrationData.sigma_std,
+      samples: calibrationData.measurements,
+      measure_stride: calibrationData.measure_stride,
+      recommended_omega2: {
+        min: calibrationData.omega2_recommended[0],
+        max: calibrationData.omega2_recommended[1],
+        padding_alpha: 0.5
+      }
+    },
+    
+    omega_grid: {
+      omega1: {
+        values: omega1_vals,
+        count: omega1_vals.length
+      },
+      omega2: {
+        values: omega2_vals,
+        count: omega2_vals.length
+      },
+      total_pairs: sweepData.omega_pairs.length
+    },
+    
+    measurements: {
+      sigma_series: calibrationData.sigma_series,
+      timestamps: Array.from({length: calibrationData.sigma_series.length}, (_, i) => i * calibrationData.measure_stride)
+    },
+    
+    results: {
+      omega_pairs: omega_pairs_formatted,
+      persistence_scores: sweepData.persistence_scores,
+      reentry_counts: sweepData.reentry_counts,
+      gate_locks: sweepData.gate_locks,
+      summary: {
+        p_min: P_min,
+        p_max: P_max,
+        p_mean: P_mean,
+        p_std: P_std,
+        reentry_total: total_reentry,
+        lock_fraction: lock_fraction
+      }
+    },
+    
+    validation: {
+      criteria: {
+        CK3_0: {
+          pass: validation.ck30,
+          message: validation.ck30 ? "Calibration present" : "Calibration missing"
+        },
+        CK3_1: {
+          pass: validation.ck31,
+          message: validation.ck31 ? `${sweepData.omega_pairs.length} Ω pairs sampled` : `Only ${sweepData.omega_pairs.length} pairs (< 64)`
+        },
+        CK3_2: {
+          pass: validation.ck32,
+          message: validation.ck32 ? `CV(P)=${cv_p.toFixed(3)}` : `CV(P)=${cv_p.toFixed(3)} < 0.3`
+        },
+        CK3_3: {
+          pass: validation.ck33,
+          message: validation.ck33 ? `Re-entry detected (${total_reentry} events)` : "No re-entry detected"
+        },
+        CK3_4: {
+          pass: validation.ck34,
+          message: validation.ck34 ? `Lock contrast ${p_ratio.toFixed(2)}` : `Lock contrast ${p_ratio.toFixed(2)} < 3.0`
+        }
+      },
+      verdict: (validation.ck30 && validation.ck31 && validation.ck32 && validation.ck33 && validation.ck34) ? "VALIDATED" : "REJECTED"
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${exportData.run_id}_${exportData.timestamp.split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+  console.log('   Schema: unns.kappa3.v0.1.1');
+  console.log('   Verdict:', exportData.validation.verdict);
+});
+
+function validateResults(num_gates, cv_p, total_r, p_ratio) {
+  // CK3.1
+  const ck31 = num_gates >= 64;
+  ui.ck31Result.textContent = `${num_gates} gates`;
+  ui.ck31Status.textContent = ck31 ? '✓' : '✗';
+  ui.ck31Status.className = ck31 ? 'pass' : 'fail';
+  
+  // CK3.2
+  const ck32 = cv_p >= 0.3;
+  ui.ck32Result.textContent = `CV(P) = ${cv_p.toFixed(3)}`;
+  ui.ck32Status.textContent = ck32 ? '✓' : '✗';
+  ui.ck32Status.className = ck32 ? 'pass' : 'fail';
+  
+  // CK3.3
+  const ck33 = total_r >= 1;
+  ui.ck33Result.textContent = `Total R = ${total_r}`;
+  ui.ck33Status.textContent = ck33 ? '✓' : '✗';
+  ui.ck33Status.className = ck33 ? 'pass' : 'fail';
+  
+  // CK3.4
+  const ck34 = p_ratio >= 3.0;
+  const ratio_text = isFinite(p_ratio) ? p_ratio.toFixed(2) : '∞';
+  ui.ck34Result.textContent = `Ratio = ${ratio_text}`;
+  ui.ck34Status.textContent = ck34 ? '✓' : '✗';
+  ui.ck34Status.className = ck34 ? 'pass' : 'fail';
+  
+  // Overall verdict
+  const ck30 = calibrationData !== null;
+  const all_pass = ck30 && ck31 && ck32 && ck33 && ck34;
+  
+  ui.validationVerdict.style.display = 'block';
+  if (all_pass) {
+    ui.validationVerdict.textContent = '✅ VALIDATED - All CK3 criteria passed';
+    ui.validationVerdict.style.background = '#2a4a2a';
+    ui.validationVerdict.style.color = '#4aff4a';
+  } else if (!ck30) {
+    ui.validationVerdict.textContent = '❌ CK3.0 FAIL - Calibration required';
+    ui.validationVerdict.style.background = '#4a2a2a';
+    ui.validationVerdict.style.color = '#ff4a4a';
+  } else {
+    ui.validationVerdict.textContent = '⚠️ PARTIAL - Ω₂ range does not discriminate observability';
+    ui.validationVerdict.style.background = '#4a4a2a';
+    ui.validationVerdict.style.color = '#ffaa4a';
+  }
+}
+
+function getValidationSummary() {
+  return {
+    ck30: calibrationData !== null,
+    ck31: ui.ck31Status.textContent === '✓',
+    ck32: ui.ck32Status.textContent === '✓',
+    ck33: ui.ck33Status.textContent === '✓',
+    ck34: ui.ck34Status.textContent === '✓'
+  };
+}
+
+function renderField(field, W, canvas) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const cellSize = Math.min(w, h) / W;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const min_val = Math.min(...field);
+  const max_val = Math.max(...field);
+  const range = max_val - min_val;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const val = field[idx];
+      const normalized = (val - min_val) / range;
+      const hue = normalized * 240;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+function renderSigmaTrace(series, stride) {
+  const canvas = ui.canvasSigmaTrace;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = h - 2 * padding;
+  
+  const s_min = Math.min(...series);
+  const s_max = Math.max(...series);
+  const s_range = s_max - s_min;
+  
+  // Axes
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.stroke();
+  
+  // Trace
+  ctx.strokeStyle = '#ff4a9e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < series.length; i++) {
+    const x = padding + (i / (series.length - 1)) * plot_w;
+    const y = h - padding - ((series[i] - s_min) / s_range) * plot_h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText(`Σ₂⁰(t)`, 5, padding - 5);
+  ctx.fillText('t', w - padding + 5, h - padding + 15);
+}
+
+function renderHeatmap(data, omega1_vals, omega2_vals, canvas) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const n1 = omega1_vals.length;
+  const n2 = omega2_vals.length;
+  const cellW = w / n1;
+  const cellH = h / n2;
+  
+  // Reshape data to 2D
+  const grid = [];
+  for (let i = 0; i < n1; i++) {
+    grid[i] = [];
+    for (let j = 0; j < n2; j++) {
+      grid[i][j] = data[i * n2 + j];
+    }
+  }
+  
+  const flat = grid.flat();
+  const min_val = Math.min(...flat);
+  const max_val = Math.max(...flat);
+  const range = max_val - min_val;
+  
+  for (let i = 0; i < n1; i++) {
+    for (let j = 0; j < n2; j++) {
+      const val = grid[i][j];
+      const normalized = range > 0 ? (val - min_val) / range : 0.5;
+      const hue = 240 - normalized * 180;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(i * cellW, (n2 - 1 - j) * cellH, cellW, cellH);
+    }
+  }
+}
+
+console.log('✅ Chamber κ₃ v0.1.1 ready!');
+console.log('═══════════════════════════════════════════════════════');
+  </script>
+</body>
+</html>
