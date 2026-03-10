@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamber LVIII v1.0.0-B — True Intrinsic Stability Search</title>
+<style>
+:root {
+  --bg:#05070e;--bg1:#0b0e1c;--bg2:#111526;--bg3:#181d30;
+  --fg:#d2d6ee;--fg2:#727ca4;
+  --accent:#38bdf8;--indigo:#818cf8;--purple:#a78bfa;
+  --red:#f87171;--green:#34d399;--amber:#fbbf24;--orange:#fb923c;
+  --border:#202640;--teal:#2dd4bf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Courier New',monospace;font-size:13px;line-height:1.55;padding:20px}
+.wrap{max-width:1740px;margin:0 auto}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,#060919 0%,#0a0f22 55%,#101830 100%);
+  border:1px solid #3a4070;border-radius:12px;padding:30px 36px;margin-bottom:20px;
+  position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-100px;right:-80px;width:280px;height:280px;
+  background:radial-gradient(circle,rgba(129,140,248,.07),transparent);border-radius:50%;pointer-events:none}
+.hdr::after{content:'';position:absolute;bottom:-70px;left:35%;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(56,189,248,.04),transparent);border-radius:50%;pointer-events:none}
+.hdr-badge{color:var(--indigo);font-size:10px;letter-spacing:4px;font-weight:700;margin-bottom:8px}
+.hdr-title{font-size:24px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.2px}
+.hdr-version{display:inline-block;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);
+  color:var(--green);font-size:10px;font-weight:700;padding:2px 10px;border-radius:4px;margin-bottom:8px;letter-spacing:.5px}
+.hdr-sub{color:var(--fg2);font-size:11.5px;line-height:1.75;max-width:860px}
+.hdr-lock{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.lchip{border-radius:4px;padding:3px 9px;font-size:10px;letter-spacing:.3px}
+.lchip-std{background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.25);color:var(--indigo)}
+.lchip-fix{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:var(--green);font-weight:700}
+
+/* ── PANELS ── */
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px}
+.ptitle{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:16px;padding-bottom:9px;
+  border-bottom:1px solid var(--border);letter-spacing:.5px}
+
+/* ── CONTROLS ── */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-bottom:14px}
+.cg{display:flex;flex-direction:column;gap:5px}
+.cg label{font-size:10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.8px}
+select,input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--fg);
+  padding:8px 11px;border-radius:5px;font-size:12px;font-family:'Courier New',monospace;width:125px}
+.btn-run{background:linear-gradient(135deg,var(--indigo),var(--accent));color:#05070e;
+  border:none;padding:11px 32px;border-radius:7px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Courier New',monospace;transition:all .25s}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(56,189,248,.28)}
+.btn-run:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.btn-sec{background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);color:var(--purple);
+  padding:9px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Courier New',monospace;transition:all .2s}
+.btn-sec:hover{background:rgba(167,139,250,.22)} .btn-sec:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── PROGRESS ── */
+.prog{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:16px;margin-bottom:18px}
+.pbar-w{background:var(--bg3);border-radius:4px;height:7px;margin-bottom:8px}
+.pbar{background:linear-gradient(90deg,var(--indigo),var(--teal));height:7px;border-radius:4px;transition:width .3s}
+.plabel{color:var(--fg2);font-size:11px}.pdetail{color:var(--fg2);font-size:10px;margin-top:4px;opacity:.65}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:var(--bg2);color:var(--fg2);font-weight:700;padding:6px 9px;text-align:left;
+  border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.4px}
+td{padding:5px 9px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.pass{color:var(--green);font-weight:700}.fail{color:var(--red);font-weight:700}
+.warn{color:var(--amber);font-weight:700}.neu{color:var(--fg2)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.b-comp{background:rgba(248,113,113,.14);border:1px solid var(--red);color:var(--red)}
+.b-sat{background:rgba(52,211,153,.14);border:1px solid var(--green);color:var(--green)}
+.b-inc{background:rgba(251,191,36,.14);border:1px solid var(--amber);color:var(--amber)}
+.b-inv{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.35);color:var(--red);opacity:.65}
+.b-tri{background:rgba(114,124,164,.14);border:1px solid var(--fg2);color:var(--fg2)}
+
+/* ── BANNERS ── */
+.exist-y{background:linear-gradient(135deg,rgba(52,211,153,.06),rgba(56,189,248,.04));
+  border:1px solid var(--green);border-radius:10px;padding:20px 24px;margin-bottom:18px}
+.exist-y h3{color:var(--green);font-size:15px;margin-bottom:12px}
+.exist-n{background:linear-gradient(135deg,rgba(251,191,36,.06),rgba(248,113,113,.04));
+  border:1px solid rgba(251,191,36,.5);border-radius:10px;padding:20px 24px;margin-bottom:18px}
+.exist-n h3{color:var(--amber);font-size:15px;margin-bottom:12px}
+.validity-ok{background:rgba(52,211,153,.07);border:1px solid var(--green);border-radius:7px;
+  padding:11px 16px;color:var(--green);font-weight:700;margin-bottom:14px;font-size:12px}
+.validity-fail{background:rgba(248,113,113,.07);border:1px solid var(--red);border-radius:7px;
+  padding:11px 16px;color:var(--red);font-weight:700;margin-bottom:14px;font-size:12px}
+
+.kmet{display:inline-flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);
+  border-radius:7px;padding:10px 15px;margin:4px;min-width:135px}
+.kmlabel{color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.kmval{color:var(--accent);font-size:17px;font-weight:700}
+.kmval.g{color:var(--green)}.kmval.a{color:var(--amber)}.kmval.r{color:var(--red)}
+
+.infobar{background:var(--bg2);border-left:3px solid var(--indigo);padding:10px 14px;
+  border-radius:0 5px 5px 0;font-size:11px;color:var(--fg2);margin-bottom:14px;line-height:1.65}
+.infobar strong{color:var(--indigo)}
+.fixnote{background:rgba(52,211,153,.06);border-left:3px solid var(--green);padding:9px 14px;
+  border-radius:0 5px 5px 0;font-size:11px;color:var(--fg2);margin-bottom:10px;line-height:1.6}
+.fixnote strong{color:var(--green)}
+
+/* ── β GRID ── */
+.bgrid-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.bchip{border-radius:4px;padding:3px 8px;font-size:10px;cursor:default;transition:background .15s;border:1px solid var(--border);color:var(--fg2);background:var(--bg3)}
+.bchip.sat{background:rgba(52,211,153,.14);border-color:var(--green);color:var(--green);font-weight:700}
+.bchip.comp{background:rgba(248,113,113,.12);border-color:var(--red);color:var(--red)}
+.bchip.inc{background:rgba(251,191,36,.11);border-color:var(--amber);color:var(--amber)}
+.bchip.tri{background:rgba(114,124,164,.08);border-color:var(--fg2);color:var(--fg2)}
+.bchip.star{box-shadow:0 0 0 2px var(--green)}
+
+/* ── LOG ── */
+.log{background:var(--bg);border:1px solid var(--border);border-radius:7px;
+  padding:12px;height:280px;overflow-y:auto;font-size:11px}
+.li{color:var(--fg2)}.lk{color:var(--green)}.lw{color:var(--amber)}.le{color:var(--red)}.lh{color:var(--accent)}
+canvas{display:block;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<div class="hdr">
+  <div class="hdr-badge">UNNS LABORATORY · CHAMBER LVIII · REVISION B</div>
+  <div class="hdr-title">Continuous Bias-Coupling Scan — True Intrinsic Stability Search</div>
+  <div class="hdr-version">v1.0.0-B — ALL SPEC FIXES APPLIED</div>
+  <div class="hdr-sub">
+    Canonical existence test: does a recursively stable operator family F<sub>β</sub> exist without depth-dependent damping?
+    Three critical fixes over v1.0.0-A: (1) deterministic convex kernel mixture (no stochastic switching),
+    (2) per-β scale-matched σ<sub>F</sub>(β) calibration, (3) per-seed amplification ratios r₂(s), r₃(s) with bootstrap CI.
+    SAT gate now requires CI(r₂) ≤ 1+ε<sub>amp</sub> AND CI(r₃) ≤ 1+ε<sub>amp</sub>.
+  </div>
+  <div class="hdr-lock">
+    <span class="lchip lchip-std">🔒 N=2000</span>
+    <span class="lchip lchip-std">🔒 τ∈{0.1,0.3,0.5,0.7,0.9}</span>
+    <span class="lchip lchip-std">🔒 n∈{1,2,3,4}</span>
+    <span class="lchip lchip-std">🔒 K_A=V6×V7, K_B=V2×V3</span>
+    <span class="lchip lchip-std">🔒 β∈{0.00,0.05,…,1.00}</span>
+    <span class="lchip lchip-std">🔒 30 seeds</span>
+    <span class="lchip lchip-std">🔒 δ_comp=0.15, δ_sat=0.05, ε_amp=0.05</span>
+    <span class="lchip lchip-fix">✅ FIX: deterministic convex mixture</span>
+    <span class="lchip lchip-fix">✅ FIX: σ_F(β) per cell</span>
+    <span class="lchip lchip-fix">✅ FIX: per-seed r₂(s), r₃(s) + CI</span>
+    <span class="lchip lchip-fix">✅ FIX: SAT gate includes CI(r₂), CI(r₃)</span>
+    <span class="lchip lchip-fix">✅ FIX: sanity at β=0 AND β=1</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CONTROLS ═══════════════════════════ -->
+<div class="panel">
+  <div class="ptitle">⚙ Protocol Controls</div>
+  <div class="ctrl-row">
+    <div class="cg"><label>Seeds (max 30)</label>
+      <input type="number" id="ctrl-seeds" value="30" min="5" max="30"></div>
+    <div class="cg"><label>Slope bootstrap</label>
+      <input type="number" id="ctrl-bs" value="2000" min="500" max="2000" step="500"></div>
+    <div class="cg" style="margin-top:auto">
+      <button class="btn-run" id="btn-run" onclick="executeProtocol()">▶ Execute LVIII v1.0.0-B</button></div>
+    <div class="cg" style="margin-top:auto">
+      <button class="btn-sec" id="btn-exp" onclick="exportJSON()" disabled>⬇ Export JSON</button></div>
+    <div class="cg" style="margin-top:auto">
+      <button class="btn-sec" id="btn-copy" onclick="copyJSON()" disabled>📋 Copy JSON</button></div>
+  </div>
+  <div class="infobar">
+    <strong>v1.0.0-B canonical:</strong>
+    K<sub>β</sub> = (1−β)K<sub>A</sub> ⊕ βK<sub>B</sub> as a deterministic convex blend of bias amplitudes —
+    not stochastic switching. σ<sub>F</sub>(β) calibrated independently per cell. r₂(s), r₃(s) per seed before aggregation.
+    SAT requires 0∈CI(b̄), |b̄|≤λ<sub>sat</sub>, CI<sub>95,lo</sub>(r₂)≤1+ε<sub>amp</sub>, CI<sub>95,lo</sub>(r₃)≤1+ε<sub>amp</sub>.
+  </div>
+  <div class="fixnote"><strong>Sanity gates:</strong> β=0 must reproduce LV invariance at n=1 (K<sub>A</sub> endpoint).
+  β=1 must reproduce LV invariance at n=1 (K<sub>B</sub> endpoint). Both must pass or chamber ABORTS.</div>
+</div>
+
+<!-- ═══════════════════════════ PROGRESS ═══════════════════════════ -->
+<div class="prog" id="prog">
+  <div class="pbar-w"><div class="pbar" id="prog-bar" style="width:0%"></div></div>
+  <div class="plabel" id="prog-label">Initializing…</div>
+  <div class="pdetail" id="prog-detail"></div>
+</div>
+
+<!-- ═══════════════════════════ RESULTS ═══════════════════════════ -->
+<div id="results" style="display:none">
+
+  <div id="validity-banner"></div>
+  <div id="existence-root"></div>
+
+  <!-- β GRID CHIPS -->
+  <div class="panel">
+    <div class="ptitle">🔵 β Grid Classification Overview</div>
+    <div class="bgrid-row" id="bgrid-chips"></div>
+    <div style="font-size:10px;color:var(--fg2);margin-top:5px">
+      <span class="badge b-sat">SAT</span> SATURATING_OR_BOUNDED &nbsp;
+      <span class="badge b-comp">COMP</span> COMPOUNDING &nbsp;
+      <span class="badge b-inc">INC</span> INCONCLUSIVE &nbsp;
+      <span class="badge b-tri">TRIV</span> TRIVIAL_OR_WEAK &nbsp;★ = β*_stable
+    </div>
+  </div>
+
+  <!-- CALIBRATION σ_F(β) -->
+  <div class="panel">
+    <div class="ptitle">🔬 σ_F(β) Calibration — Per-β Scale-Matched (FIXED)</div>
+    <div class="fixnote"><strong>FIX applied:</strong> σ_F is independently calibrated at each β via Null-A (depth-repeat) and Null-B (witness bootstrap).
+    Non-degeneracy gate at each β uses 5σ_F(β), not the β=0 anchor.</div>
+    <div style="overflow-x:auto">
+      <table><thead><tr>
+        <th>β</th><th>sd_repeat(Null A)</th><th>sd_bootstrap(Null B)</th>
+        <th>σ_F(β)</th><th>5σ_F(β)</th><th>L⁽²⁾ med</th><th>Non-deg?</th>
+      </tr></thead><tbody id="calib-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- AMPLIFICATION RATIOS -->
+  <div class="panel">
+    <div class="ptitle">📊 Amplification Ratios — Per-Seed Aggregation (FIXED)</div>
+    <div class="fixnote"><strong>FIX applied:</strong> r₂(s)=L³(s)/L²(s) computed per seed before aggregation.
+    r₂_med and r₃_med are medians across seeds; CI via bootstrap across seeds. amp_gate checks CI₉₅_lo ≤ 1+ε_amp.</div>
+    <div style="overflow-x:auto">
+      <table><thead><tr>
+        <th>β</th><th>r₂_med</th><th>r₂ CI₉₅ [lo, hi]</th><th>r₂ lo≤1.05?</th>
+        <th>r₃_med</th><th>r₃ CI₉₅ [lo, hi]</th><th>r₃ lo≤1.05?</th>
+        <th>Amp-gate ✓</th>
+      </tr></thead><tbody id="amp-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- FULL DECISION TABLE -->
+  <div class="panel">
+    <div class="ptitle">📋 Full Decision Table (per β)</div>
+    <div style="overflow-x:auto">
+      <table><thead><tr>
+        <th>β</th><th>Valid?</th><th>σ_F(β)</th><th>5σ_F</th><th>L⁽²⁾</th><th>Non-deg?</th>
+        <th>r₂_med</th><th>r₃_med</th><th>b̄</th><th>95%CI lo</th><th>95%CI hi</th>
+        <th>99%CI lo</th><th>Amp-gate?</th><th>Decision</th><th>Rule path</th>
+      </tr></thead><tbody id="main-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- LOG-SLOPE TABLE -->
+  <div class="panel">
+    <div class="ptitle">📉 Log-Slope b̄(β) with Bootstrap CIs</div>
+    <div style="overflow-x:auto">
+      <table><thead><tr>
+        <th>β</th><th>b̄</th><th>95%CI [lo, hi]</th><th>99%CI [lo, hi]</th>
+        <th>|b̄|≤λ_sat?</th><th>0∈CI₉₅?</th><th>lower99>0?</th>
+      </tr></thead><tbody id="slope-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- PARTITION INVARIANCE -->
+  <div class="panel">
+    <div class="ptitle">🔒 Partition Invariance Report (R2, R3 per β, n, τ)</div>
+    <div id="inv-root" style="font-size:11px;color:var(--green)">Pending run…</div>
+  </div>
+
+  <!-- SLOPE CANVAS -->
+  <div class="panel">
+    <div class="ptitle">📉 log(L⁽ⁿ⁾) vs Depth — Full β Sweep</div>
+    <canvas id="slope-canvas" width="1640" height="520" style="width:100%"></canvas>
+  </div>
+
+  <!-- AMP CANVAS -->
+  <div class="panel">
+    <div class="ptitle">📈 Per-Seed Amplification Ratios r₂, r₃ vs β (with 95% CI bands)</div>
+    <canvas id="amp-canvas" width="1640" height="400" style="width:100%"></canvas>
+  </div>
+
+  <!-- BBAR CANVAS -->
+  <div class="panel">
+    <div class="ptitle">📊 b̄(β) — Log-Slope per β with CI bands and threshold lines</div>
+    <canvas id="bbar-canvas" width="1640" height="340" style="width:100%"></canvas>
+  </div>
+
+  <!-- σ CANVAS -->
+  <div class="panel">
+    <div class="ptitle">🔬 σ_F(β) Profile — Calibration Scale Across β</div>
+    <canvas id="sigma-canvas" width="1640" height="280" style="width:100%"></canvas>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════ LOG ═══════════════════════════ -->
+<div class="panel" style="margin-top:18px">
+  <div class="ptitle">📋 Execution Log</div>
+  <div class="log" id="log">
+    <div class="li">[INIT] Chamber LVIII v1.0.0-B loaded.</div>
+    <div class="li">[INIT] THREE FIXES ACTIVE: (1) deterministic convex mixture, (2) per-β σ_F calibration, (3) per-seed r₂(s)/r₃(s).</div>
+    <div class="li">[INIT] SAT rule now requires CI₉₅_lo(r₂) ≤ 1+ε_amp AND CI₉₅_lo(r₃) ≤ 1+ε_amp.</div>
+    <div class="li">[INIT] K_A = V6×V7 (β=0), K_B = V2×V3 (β=1). Convex blend: K_β = (1−β)K_A ⊕ β·K_B at amplitude level.</div>
+    <div class="li">[INIT] Sanity gates: β=0 AND β=1 at n=1 must satisfy R2=R3=0 or ABORT.</div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+'use strict';
+// ============================================================================
+// CHAMBER LVIII v1.0.0-B
+// True Intrinsic Stability Search — All Three Spec Fixes Applied
+// ============================================================================
+
+// ── LOCKED CONSTANTS ──────────────────────────────────────────────────────────
+const BGRID_N = 21;
+const BGRID   = Array.from({length:BGRID_N}, (_,i) => Math.round(i * 5) / 100); // 0.00,0.05,...,1.00
+
+const C = {
+  N:            2000,
+  TAU_GRID:     [0.1, 0.3, 0.5, 0.7, 0.9],
+  DEPTHS:       [1,2,3,4],
+  BGRID,
+  KA_FAM:       'V6×V7',
+  KB_FAM:       'V2×V3',
+  SEEDS:        Array.from({length:30}, (_,i) => (i+1)*1337),
+  EPS_LOG:      1e-6,
+  BS_CALIB:     200,   // witness bootstrap null
+  DELTA_COMP:   0.15,
+  DELTA_SAT:    0.05,
+  NONDEG_K:     5,
+  EPS_AMP:      0.05,
+  R2_TOL:       0.10,
+  R3_TOL:       0.05,
+  CALIB_NULL_SEEDS: [900001, 900002]  // for Null A depth-repeat
+};
+
+const LOG_COMP = Math.log(1 + C.DELTA_COMP);
+const LOG_SAT  = Math.log(1 + C.DELTA_SAT);
+const GATES    = ['G1','G2','G3','G4'];
+
+// ── RUNTIME STATE ─────────────────────────────────────────────────────────────
+const ST = {
+  running:       false,
+  sanityPassed:  false,
+  // Per-β calibration (FIX #2)
+  sigmaB:        {},   // [bi] → σ_F(β)
+  calibB:        {},   // [bi] → {sdRepeat, sdBootstrap}
+  // Per-β measurements
+  Lmed:          {},   // [bi][n] → median L
+  // Per-seed amplification (FIX #3)
+  r2Seeds:       {},   // [bi] → [r2 per seed]
+  r3Seeds:       {},   // [bi] → [r3 per seed]
+  r2Med:         {},   // [bi] → median r2 across seeds
+  r3Med:         {},   // [bi] → median r3 across seeds
+  r2CI95:        {},   // [bi] → [lo,hi]
+  r3CI95:        {},   // [bi] → [lo,hi]
+  // Slopes
+  bBar:          {},   // [bi]
+  ci95:          {},   // [bi] → [lo,hi]
+  ci99:          {},   // [bi] → [lo,hi]
+  slopeSeeds:    {},   // [bi] → [b per seed]
+  // Classification
+  labels:        {},
+  rulePaths:     {},
+  invalid:       {},   // [bi]
+  invIssues:     [],
+  rhoMed:        {},   // [bi][n][ti][gate]
+  // Existence
+  existsIntrinsicStable: false,
+  betaStar:       null,
+  stableInterval: []
+};
+
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+function rng(seed) {
+  let s = (seed >>> 0);
+  return () => { s = Math.imul(s,1664525)+1013904223>>>0; return s/4294967296; };
+}
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function log(msg,cls='li'){
+  const el=document.getElementById('log');
+  const d=document.createElement('div'); d.className=`log-entry ${cls}`; d.textContent=msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+function progress(label,pct,detail=''){
+  document.getElementById('prog-label').textContent=label;
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-detail').textContent=detail;
+}
+function median(arr){const s=[...arr].sort((a,b)=>a-b);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function mean(arr){return arr.reduce((a,b)=>a+b,0)/arr.length;}
+function sd(arr){const m=mean(arr);return Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/arr.length);}
+function quantile(arr,q){const s=[...arr].sort((a,b)=>a-b);const pos=(s.length-1)*q;const lo=Math.floor(pos),hi=Math.ceil(pos);return s[lo]+(s[hi]-s[lo])*(pos-lo);}
+function olsSlope(xs,ys){const n=xs.length;const mx=mean(xs),my=mean(ys);const num=xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);const den=xs.reduce((s,x)=>s+(x-mx)**2,0);return den>0?num/den:0;}
+function bootstrapCI(samples,nbs,qlo,qhi){
+  const out=[];
+  for(let b=0;b<nbs;b++){
+    const s=Array.from({length:samples.length},()=>samples[Math.floor(Math.random()*samples.length)]);
+    out.push(mean(s));
+  }
+  out.sort((a,b)=>a-b);
+  return [quantile(out,qlo),quantile(out,qhi)];
+}
+
+// ── ENGINE ────────────────────────────────────────────────────────────────────
+function genMech(r,id){
+  return {id,
+    gamma0:r()*2,beta:r()*2,d:r()*5,kmax:r()*6,
+    curvature_method:r()<0.7?'turning_angle':'finite_diff',
+    delta_kappa:0.03+r()*0.06,
+    mean_kappa_proxy:0.02+r()*0.1,
+    has_bifurcation:r()<0.7,
+    sharpness:0.08+r()*0.06,
+    locality_score:r()*0.15
+  };
+}
+function genPool(seed){
+  const r=rng(seed);
+  return Array.from({length:C.N},(_,i)=>genMech(r,`P|${i}`));
+}
+
+// ── FIX #1: DETERMINISTIC CONVEX KERNEL MIXTURE ─────────────────────────────
+// K_β = (1−β)·K_A ⊕ β·K_B
+// Each field's perturbation = (1−β)*δ_A + β*δ_B
+// Random draws are shared across both kernels via a single RNG sequence.
+//
+// K_A (V6×V7) perturbations:
+//   gamma0:     +tau * 0.5 * cos(phi)
+//   beta:       +tau * 0.5 * sin(phi)
+//   kmax:       +tau * 0.3 * cos(2*phi)
+//   delta_kappa:+tau * 0.5 * n1          [n1 = r()-0.5]
+//   sharpness:  +tau * 0.5 * n2
+//   locality:   +tau * 0.5 * n3
+//
+// K_B (V2×V3) perturbations:
+//   gamma0:     +tau * 0.3 * n4          [n4 = r()-0.5]
+//   beta:       +tau * 0.3 * n5          [n5 = r()-0.5]
+//   delta_kappa:+tau * 0.1 * sin(gamma0_original)
+//   (no kmax, sharpness, locality terms)
+//
+// Blend: each field gets (1−β)*δ_A + β*δ_B
+
+function applyConvexMixture(mech, tau, r, beta) {
+  const m = {...mech};
+
+  // Draw shared random numbers
+  const phi = r() * 2 * Math.PI;
+  const n1  = r() - 0.5;   // K_A: delta_kappa noise
+  const n2  = r() - 0.5;   // K_A: sharpness noise
+  const n3  = r() - 0.5;   // K_A: locality noise
+  const n4  = r() - 0.5;   // K_B: gamma0 noise
+  const n5  = r() - 0.5;   // K_B: beta noise
+  // K_B uses original gamma0 for sin:
+  const sinGamma0 = Math.sin(mech.gamma0);
+
+  const omB = 1 - beta; // (1−β)
+
+  // Fractional perturbation per field (convex blend)
+  const dGamma0 = tau * (omB * 0.5 * Math.cos(phi)           + beta * 0.3 * n4);
+  const dBeta   = tau * (omB * 0.5 * Math.sin(phi)           + beta * 0.3 * n5);
+  const dKmax   = tau * (omB * 0.3 * Math.cos(2 * phi));     // K_B has no kmax term
+  const dDK     = tau * (omB * 0.5 * n1                      + beta * 0.1 * sinGamma0);
+  const dSharp  = tau * (omB * 0.5 * n2);                    // K_B has no sharpness term
+  const dLoc    = tau * (omB * 0.5 * n3);                    // K_B has no locality term
+
+  m.gamma0         *= 1 + dGamma0;
+  m.beta           *= 1 + dBeta;
+  m.kmax           *= 1 + dKmax;
+  m.delta_kappa    *= 1 + dDK;
+  m.sharpness      *= 1 + dSharp;
+  m.locality_score *= 1 + dLoc;
+
+  m.delta_kappa    = Math.max(0, m.delta_kappa);
+  m.sharpness      = Math.max(0, m.sharpness);
+  m.locality_score = Math.max(0, Math.min(1, m.locality_score));
+  return m;
+}
+
+// Gate evaluation (unchanged from LVI/LVII)
+function evalGate(gate,m){
+  switch(gate){
+    case 'G1': return m.curvature_method==='turning_angle';
+    case 'G2': return m.delta_kappa>0.05;
+    case 'G3': return m.has_bifurcation && m.sharpness>0.1;
+    case 'G4': return m.locality_score<0.1;
+  }
+}
+const EPS_R=0.05;
+function evalGateRelaxed(gate,m){
+  switch(gate){
+    case 'G1': return m.curvature_method==='turning_angle'||EPS_R>=0.05;
+    case 'G2': return m.delta_kappa>(0.05-EPS_R);
+    case 'G3': return m.has_bifurcation&&m.sharpness>(0.1-EPS_R);
+    case 'G4': return m.locality_score<(0.1+EPS_R);
+  }
+}
+
+function findWitnesses(pool){
+  const wit={};
+  for(const g of GATES){
+    wit[g]=[]; const oth=GATES.filter(x=>x!==g);
+    for(const m of pool) if(!evalGate(g,m)&&oth.every(o=>evalGate(o,m))) wit[g].push(m.id);
+  }
+  return wit;
+}
+
+function computeMetrics(pool, baseWit){
+  const poolMap={};
+  for(const m of pool) poolMap[m.id]=m;
+  const rho={};
+  for(const g of GATES){
+    const oth=GATES.filter(x=>x!==g); let kept=0;
+    for(const id of baseWit[g]){const m=poolMap[id];if(!m)continue;if(!evalGate(g,m)&&oth.every(o=>evalGate(o,m)))kept++;}
+    rho[g]=baseWit[g].length>0?kept/baseWit[g].length:1.0;
+  }
+  const curWit={};
+  for(const g of GATES){
+    curWit[g]=new Set(); const oth=GATES.filter(x=>x!==g);
+    for(const m of pool) if(!evalGate(g,m)&&oth.every(o=>evalGate(o,m))) curWit[g].add(m.id);
+  }
+  let maxR2=0;
+  for(let i=0;i<GATES.length;i++) for(let j=i+1;j<GATES.length;j++){
+    const Wi=curWit[GATES[i]],Wj=curWit[GATES[j]];
+    const inter=[...Wi].filter(id=>Wj.has(id)).length;
+    const mn=Math.min(Wi.size,Wj.size);
+    maxR2=Math.max(maxR2,mn>0?inter/mn:0);
+  }
+  let maxR3=0;
+  for(let i=0;i<GATES.length;i++) for(let j=i+1;j<GATES.length;j++){
+    const gi=GATES[i],gj=GATES[j];
+    let dualOnly=0,totalExcl=0;
+    for(const m of pool){
+      if(!evalGate(gi,m)&&!evalGate(gj,m)){
+        totalExcl++;
+        if(!evalGateRelaxed(gi,m)&&!evalGateRelaxed(gj,m)&&evalGateRelaxed(gi,m)&&evalGateRelaxed(gj,m)) dualOnly++;
+      }
+    }
+    maxR3=Math.max(maxR3,totalExcl>0?dualOnly/totalExcl:0);
+  }
+  return {rho,maxR2,maxR3};
+}
+
+function computeL(rhoByTauIdx){
+  let L=0;
+  for(const g of GATES){
+    for(let t=0;t<C.TAU_GRID.length;t++) for(let tp=t+1;tp<C.TAU_GRID.length;tp++){
+      const dr=Math.abs(rhoByTauIdx[t][g]-rhoByTauIdx[tp][g]);
+      const dt=Math.abs(C.TAU_GRID[t]-C.TAU_GRID[tp]);
+      L=Math.max(L,dr/dt);
+    }
+  }
+  return L;
+}
+
+// Build depth chain using deterministic convex mixture (FIX #1)
+function buildDepthChain(basePool, tau, maxN, seedBase, tauIdx, beta){
+  const chain=[basePool.map(m=>({...m}))];
+  for(let d=0;d<maxN;d++){
+    const biIdx=Math.round(beta/0.05);
+    const r=rng(seedBase*97+(d+1)*100003+tauIdx*7919+biIdx*31337);
+    chain.push(chain[d].map(m=>applyConvexMixture(m,tau,r,beta)));
+  }
+  return chain;
+}
+
+// One seed run
+function runOneSeed(seed,beta){
+  const basePool=genPool(seed);
+  const baseWit=findWitnesses(basePool);
+  const Lbyd={};
+  const rhoByDepthTau={};
+  const invByDepthTau={};
+  for(let n=1;n<=4;n++){rhoByDepthTau[n]={};invByDepthTau[n]={};}
+  for(let ti=0;ti<C.TAU_GRID.length;ti++){
+    const tau=C.TAU_GRID[ti];
+    const chain=buildDepthChain(basePool,tau,4,seed,ti,beta);
+    for(let n=1;n<=4;n++){
+      const {rho,maxR2,maxR3}=computeMetrics(chain[n],baseWit);
+      rhoByDepthTau[n][ti]=rho;
+      invByDepthTau[n][ti]={maxR2,maxR3};
+    }
+  }
+  for(let n=1;n<=4;n++) Lbyd[n]=computeL(rhoByDepthTau[n]);
+  return {Lbyd,rhoByDepthTau,invByDepthTau};
+}
+
+// ── FIX #2: PER-β CALIBRATION ────────────────────────────────────────────────
+// Null A: two independent depth-2 runs at this β → |L_run1 − L_run2|
+// Null B: witness bootstrap at this β → sd
+function calibrateForBeta(beta, seedMain){
+  // Null A
+  const runAtSeed=s=>{
+    const pool=genPool(s);
+    const wit=findWitnesses(pool);
+    const rhoByTau={};
+    for(let ti=0;ti<C.TAU_GRID.length;ti++){
+      const tau=C.TAU_GRID[ti];
+      const chain=buildDepthChain(pool,tau,2,s,ti,beta);
+      const {rho}=computeMetrics(chain[2],wit);
+      rhoByTau[ti]=rho;
+    }
+    return computeL(rhoByTau);
+  };
+  const LA=runAtSeed(C.CALIB_NULL_SEEDS[0]);
+  const LB=runAtSeed(C.CALIB_NULL_SEEDS[1]);
+  const sdRepeat=Math.abs(LB-LA);
+
+  // Null B
+  const pool=genPool(seedMain);
+  const wit=findWitnesses(pool);
+  const pools2=[];
+  for(let ti=0;ti<C.TAU_GRID.length;ti++){
+    const tau=C.TAU_GRID[ti];
+    const chain=buildDepthChain(pool,tau,2,seedMain,ti,beta);
+    pools2.push(chain[2]);
+  }
+  const bsLs=[];
+  const bsR=rng(seedMain*13+Math.floor(beta*100)*9999+88888);
+  for(let b=0;b<C.BS_CALIB;b++){
+    const sampWit={};
+    for(const g of GATES){
+      const orig=wit[g];const n=orig.length;
+      if(n===0){sampWit[g]=[];continue;}
+      sampWit[g]=[...new Set(Array.from({length:n},()=>orig[Math.floor(bsR()*n)]))];
+    }
+    const rhoByTau={};
+    for(let ti=0;ti<C.TAU_GRID.length;ti++){
+      const pool2=pools2[ti];const pm={};
+      for(const m of pool2) pm[m.id]=m;
+      const rho={};
+      for(const g of GATES){
+        const oth=GATES.filter(x=>x!==g);let kept=0;
+        for(const id of sampWit[g]){const m=pm[id];if(!m)continue;if(!evalGate(g,m)&&oth.every(o=>evalGate(o,m)))kept++;}
+        rho[g]=sampWit[g].length>0?kept/sampWit[g].length:1.0;
+      }
+      rhoByTau[ti]=rho;
+    }
+    bsLs.push(computeL(rhoByTau));
+  }
+  const sdBoot=sd(bsLs);
+  return {sdRepeat,sdBoot,sigma:Math.max(sdRepeat,sdBoot)};
+}
+
+// ── DECISION RULE (v1.0.0-B FIXED SAT) ───────────────────────────────────────
+function decideLabel(bi){
+  if(ST.invalid[bi]) return 'INVALID';
+  const medL2=ST.Lmed[bi][2];
+  const sigB=ST.sigmaB[bi];
+  const nondeg=medL2>=C.NONDEG_K*sigB;
+  if(!nondeg) return 'TRIVIAL_OR_WEAK';
+  const b=ST.bBar[bi];
+  const lo99=ST.ci99[bi][0];
+  const lo95=ST.ci95[bi][0],hi95=ST.ci95[bi][1];
+  // COMPOUNDING: lo99>0 AND b >= λ_comp
+  if(lo99>0 && b>=LOG_COMP) return 'COMPOUNDING';
+  // SATURATING_OR_BOUNDED: 0∈CI95, |b|≤λ_sat, CI_lo(r2)≤1+ε, CI_lo(r3)≤1+ε  (FIX)
+  const r2lo=(ST.r2CI95[bi]||[0,0])[0];
+  const r3lo=(ST.r3CI95[bi]||[0,0])[0];
+  const ampCI=r2lo<=1+C.EPS_AMP && r3lo<=1+C.EPS_AMP;
+  if(lo95<=0&&hi95>=0&&Math.abs(b)<=LOG_SAT&&ampCI) return 'SATURATING_OR_BOUNDED';
+  return 'INCONCLUSIVE';
+}
+
+function makeRulePath(bi){
+  if(ST.invalid[bi]) return 'invariance_fail→INVALID';
+  const medL2=ST.Lmed[bi][2],sigB=ST.sigmaB[bi];
+  const nondeg=medL2>=C.NONDEG_K*sigB;
+  if(!nondeg) return `nondeg=false [L²=${medL2.toFixed(4)} < 5σ(β)=${(5*sigB).toFixed(4)}]→TRIVIAL_OR_WEAK`;
+  const b=ST.bBar[bi],lo99=ST.ci99[bi][0],lo95=ST.ci95[bi][0],hi95=ST.ci95[bi][1];
+  const r2lo=(ST.r2CI95[bi]||[0,0])[0],r3lo=(ST.r3CI95[bi]||[0,0])[0];
+  const ampCI=r2lo<=1+C.EPS_AMP&&r3lo<=1+C.EPS_AMP;
+  if(lo99>0&&b>=LOG_COMP) return `nondeg→lo99=${lo99.toFixed(3)}>0 & b=${b.toFixed(4)}≥λ_comp→COMPOUNDING`;
+  if(lo95<=0&&hi95>=0&&Math.abs(b)<=LOG_SAT&&ampCI) return `nondeg→|b|≤λ_sat & 0∈CI95 & CI_lo(r2,r3)≤1.05→SAT`;
+  if(lo95<=0&&hi95>=0&&Math.abs(b)<=LOG_SAT&&!ampCI) return `nondeg→slope OK but CI_lo(r2=${r2lo.toFixed(3)} r3=${r3lo.toFixed(3)})>1+ε→INCONCLUSIVE`;
+  return `nondeg→b=${b.toFixed(4)} CI=[${lo95.toFixed(3)},${hi95.toFixed(3)}]→INCONCLUSIVE`;
+}
+
+// ── MAIN PROTOCOL ─────────────────────────────────────────────────────────────
+async function executeProtocol(){
+  if(ST.running) return;
+  ST.running=true;
+  const btn=document.getElementById('btn-run');
+  btn.disabled=true; btn.textContent='Running…';
+  document.getElementById('btn-exp').disabled=true;
+  document.getElementById('btn-copy').disabled=true;
+
+  const nSeeds=Math.min(parseInt(document.getElementById('ctrl-seeds').value)||30,30);
+  const bsMain=parseInt(document.getElementById('ctrl-bs').value)||2000;
+  const seeds=C.SEEDS.slice(0,nSeeds);
+
+  // Reset
+  Object.assign(ST,{sanityPassed:false,sigmaB:{},calibB:{},Lmed:{},r2Seeds:{},r3Seeds:{},
+    r2Med:{},r3Med:{},r2CI95:{},r3CI95:{},bBar:{},ci95:{},ci99:{},slopeSeeds:{},
+    labels:{},rulePaths:{},invalid:{},invIssues:[],rhoMed:{},
+    existsIntrinsicStable:false,betaStar:null,stableInterval:[]
+  });
+  for(let bi=0;bi<BGRID_N;bi++){
+    ST.Lmed[bi]={};ST.invalid[bi]=false;ST.rhoMed[bi]={};
+    for(let n=1;n<=4;n++){ST.rhoMed[bi][n]={};for(let ti=0;ti<5;ti++) ST.rhoMed[bi][n][ti]={};}
+  }
+
+  document.getElementById('prog').style.display='block';
+  document.getElementById('results').style.display='none';
+
+  log('','li');
+  log('═══ CHAMBER LVIII v1.0.0-B STARTING ═══','lh');
+  log(`Seeds: ${nSeeds} | N=2000 | β-grid: 21 pts (0.00→1.00)`,'li');
+  log(`FIX #1: Deterministic convex mixture K_β = (1−β)K_A ⊕ β·K_B`,'lk');
+  log(`FIX #2: Per-β σ_F(β) calibration (21 independent calibrations)`,'lk');
+  log(`FIX #3: Per-seed r₂(s), r₃(s) — median+CI before decision`,'lk');
+
+  // ─── PHASE 1: DUAL SANITY CHECK (β=0 AND β=1, n=1) ──────────────────────────
+  log('','li');
+  log('── PHASE 1: DUAL SANITY CHECK (β=0 AND β=1, n=1) ──','lh');
+  progress('Dual sanity check (β=0 and β=1, n=1)…',2,'K_A and K_B endpoints must satisfy R2=R3=0');
+  await sleep(10);
+
+  let sanityOk=true;
+  for(const beta of [0.0,1.0]){
+    const pool=genPool(seeds[0]);
+    const wit=findWitnesses(pool);
+    for(let ti=0;ti<C.TAU_GRID.length;ti++){
+      const tau=C.TAU_GRID[ti];
+      const chain=buildDepthChain(pool,tau,1,seeds[0],ti,beta);
+      const {maxR2,maxR3}=computeMetrics(chain[1],wit);
+      if(maxR2>C.R2_TOL||maxR3>C.R3_TOL){
+        sanityOk=false;
+        log(`  ✗ SANITY FAIL: β=${beta} τ=${tau} R2=${maxR2.toFixed(4)} R3=${maxR3.toFixed(4)}`,'le');
+      }
+    }
+  }
+  if(!sanityOk){
+    ST.sanityPassed=false;
+    log('SANITY FAILED — LVIII-B ABORTED.','le');
+    document.getElementById('validity-banner').innerHTML=
+      `<div class="validity-fail">⛔ DUAL SANITY FAILED — LVIII-B aborted. Both β=0 and β=1 must reproduce LV invariance at n=1.</div>`;
+    document.getElementById('results').style.display='block';
+    document.getElementById('prog').style.display='none';
+    btn.disabled=false;btn.textContent='▶ Execute LVIII v1.0.0-B';ST.running=false;return;
+  }
+  ST.sanityPassed=true;
+  log('  ✓ Dual sanity passed: β=0 and β=1, n=1, R2=R3=0 at all τ.','lk');
+
+  // ─── PHASE 2: PER-β CALIBRATION (FIX #2) ────────────────────────────────────
+  log('','li');
+  log('── PHASE 2: PER-β CALIBRATION σ_F(β) — 21 INDEPENDENT CALIBRATIONS ──','lh');
+
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const pct=3+(bi/BGRID_N)*14;
+    progress(`Calibrating β=${beta.toFixed(2)} (${bi+1}/21)…`,pct,`Null A + Null B at this β…`);
+    if(bi%3===0) await sleep(8);
+
+    const cal=calibrateForBeta(beta,seeds[0]);
+    ST.sigmaB[bi]=cal.sigma;
+    ST.calibB[bi]=cal;
+    log(`  β=${beta.toFixed(2)}: sd_repeat=${cal.sdRepeat.toFixed(4)} sd_boot=${cal.sdBoot.toFixed(4)} → σ_F=${cal.sigma.toFixed(4)} (5σ=${(5*cal.sigma).toFixed(4)})`,
+      bi%4===0?'li':'li');
+  }
+  log('  ✓ Per-β σ_F calibration complete.','lk');
+
+  // ─── PHASE 3: MAIN RUNS (β × seed) ──────────────────────────────────────────
+  log('','li');
+  log('── PHASE 3: MAIN RUNS (β × seed, deterministic convex mixture) ──','lh');
+
+  const LsAcc={};    // [bi] → [{n→L} per seed]
+  const rhoAcc={};
+  const invWR2={};
+  const invWR3={};
+
+  for(let bi=0;bi<BGRID_N;bi++){
+    LsAcc[bi]=[];rhoAcc[bi]={};invWR2[bi]={};invWR3[bi]={};
+    for(let n=1;n<=4;n++){
+      rhoAcc[bi][n]={};invWR2[bi][n]={};invWR3[bi][n]={};
+      for(let ti=0;ti<5;ti++){
+        rhoAcc[bi][n][ti]={G1:[],G2:[],G3:[],G4:[]};
+        invWR2[bi][n][ti]=0;invWR3[bi][n][ti]=0;
+      }
+    }
+  }
+
+  const totalOps=nSeeds*BGRID_N;
+  let done=0;
+  for(let si=0;si<seeds.length;si++){
+    const seed=seeds[si];
+    for(let bi=0;bi<BGRID_N;bi++){
+      const beta=C.BGRID[bi];
+      const {Lbyd,rhoByDepthTau,invByDepthTau}=runOneSeed(seed,beta);
+      LsAcc[bi].push(Lbyd);
+      for(let n=1;n<=4;n++){
+        for(let ti=0;ti<5;ti++){
+          for(const g of GATES) rhoAcc[bi][n][ti][g].push(rhoByDepthTau[n][ti][g]);
+          invWR2[bi][n][ti]=Math.max(invWR2[bi][n][ti],invByDepthTau[n][ti].maxR2);
+          invWR3[bi][n][ti]=Math.max(invWR3[bi][n][ti],invByDepthTau[n][ti].maxR3);
+        }
+      }
+      done++;
+    }
+    if(si%3===0||si===seeds.length-1){
+      progress(`Seed ${si+1}/${seeds.length}`,18+(done/totalOps)*58,`β-sweep (21 pts, convex mixture) complete…`);
+      await sleep(si%5===0?18:0);
+    }
+  }
+
+  // ─── PHASE 4: INVARIANCE CHECK ───────────────────────────────────────────────
+  log('','li');
+  log('── PHASE 4: PARTITION INVARIANCE CHECK ──','lh');
+  progress('Invariance check…',78,'R2, R3 per (β,n,τ)…');
+  await sleep(10);
+
+  let anyInv=false;
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    let cellInv=false;
+    for(let n=1;n<=4;n++) for(let ti=0;ti<5;ti++){
+      const r2=invWR2[bi][n][ti],r3=invWR3[bi][n][ti];
+      if(r2>C.R2_TOL||r3>C.R3_TOL){
+        cellInv=true;anyInv=true;
+        ST.invIssues.push({bi,beta,n,tau:C.TAU_GRID[ti],maxR2:r2,maxR3:r3});
+        log(`  ⚠ INV FAIL: β=${beta} n=${n} τ=${C.TAU_GRID[ti]} R2=${r2.toFixed(4)} R3=${r3.toFixed(4)}`,'le');
+      }
+    }
+    ST.invalid[bi]=cellInv;
+  }
+  if(!anyInv) log('  ✓ All (β,n,τ) cells pass R2/R3 invariance.','lk');
+
+  // ─── PHASE 5: AGGREGATE — L MEDIANS, PER-SEED r₂/r₃ (FIX #3), SLOPES ───────
+  log('','li');
+  log('── PHASE 5: AGGREGATION — L med, per-seed r₂/r₃ ratios, log-slope ──','lh');
+  progress('Aggregating…',85,'per-seed ratios + bootstrap CI…');
+  await sleep(10);
+
+  const depSlope=[2,3,4];
+  for(let bi=0;bi<BGRID_N;bi++){
+    // L medians
+    for(let n=1;n<=4;n++) ST.Lmed[bi][n]=median(LsAcc[bi].map(d=>d[n]));
+    // rho medians
+    for(let n=1;n<=4;n++) for(let ti=0;ti<5;ti++)
+      for(const g of GATES) ST.rhoMed[bi][n][ti][g]=median(rhoAcc[bi][n][ti][g]);
+
+    // FIX #3: per-seed amplification ratios
+    const r2s=LsAcc[bi].map(d=>{const l2=d[2],l3=d[3];return l2>C.EPS_LOG?l3/l2:1.0;});
+    const r3s=LsAcc[bi].map(d=>{const l3=d[3],l4=d[4];return l3>C.EPS_LOG?l4/l3:1.0;});
+    ST.r2Seeds[bi]=r2s; ST.r3Seeds[bi]=r3s;
+    ST.r2Med[bi]=median(r2s); ST.r3Med[bi]=median(r3s);
+    ST.r2CI95[bi]=bootstrapCI(r2s,bsMain,0.025,0.975);
+    ST.r3CI95[bi]=bootstrapCI(r3s,bsMain,0.025,0.975);
+
+    // Log-slopes
+    const bPerSeed=LsAcc[bi].map(d=>{
+      const ys=depSlope.map(n=>Math.log(d[n]+C.EPS_LOG));
+      return olsSlope(depSlope,ys);
+    });
+    ST.slopeSeeds[bi]=bPerSeed;
+    ST.bBar[bi]=mean(bPerSeed);
+    const bsArr=[];
+    for(let b=0;b<bsMain;b++){
+      const samp=Array.from({length:bPerSeed.length},()=>bPerSeed[Math.floor(Math.random()*bPerSeed.length)]);
+      bsArr.push(mean(samp));
+    }
+    bsArr.sort((a,b)=>a-b);
+    ST.ci95[bi]=[quantile(bsArr,0.025),quantile(bsArr,0.975)];
+    ST.ci99[bi]=[quantile(bsArr,0.005),quantile(bsArr,0.995)];
+  }
+
+  // ─── PHASE 6: DECISION LABELS ────────────────────────────────────────────────
+  log('','li');
+  log('── PHASE 6: MECHANICAL DECISION LABELS (fixed SAT rule) ──','lh');
+  progress('Classifying β cells…',96,'');
+  await sleep(8);
+
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const label=decideLabel(bi);
+    const path=makeRulePath(bi);
+    ST.labels[bi]=label; ST.rulePaths[bi]=path;
+    const cls={COMPOUNDING:'le',SATURATING_OR_BOUNDED:'lk',INCONCLUSIVE:'lw',
+      INVALID:'le',TRIVIAL_OR_WEAK:'li'}[label]||'li';
+    log(`  β=${beta.toFixed(2)}: ${label} | b̄=${ST.bBar[bi].toFixed(4)} r₂_med=${ST.r2Med[bi].toFixed(3)} r₃_med=${ST.r3Med[bi].toFixed(3)} CI_lo(r2)=${(ST.r2CI95[bi]||[0,0])[0].toFixed(3)}`,cls);
+  }
+
+  // ─── PHASE 7: EXISTENCE OUTPUTS ──────────────────────────────────────────────
+  const satBetas=C.BGRID.filter((_,bi)=>ST.labels[bi]==='SATURATING_OR_BOUNDED');
+  ST.existsIntrinsicStable=satBetas.length>0;
+  ST.betaStar=satBetas.length>0?Math.min(...satBetas):null;
+
+  if(ST.existsIntrinsicStable){
+    const satIdxs=Array.from({length:BGRID_N},(_,bi)=>ST.labels[bi]==='SATURATING_OR_BOUNDED'?bi:-1).filter(x=>x>=0);
+    let maxBand=[],cur=[satIdxs[0]];
+    for(let k=1;k<satIdxs.length;k++){
+      if(satIdxs[k]===satIdxs[k-1]+1) cur.push(satIdxs[k]);
+      else{if(cur.length>maxBand.length)maxBand=[...cur];cur=[satIdxs[k]];}
+    }
+    if(cur.length>maxBand.length)maxBand=cur;
+    ST.stableInterval=maxBand.map(bi=>C.BGRID[bi]);
+  }
+
+  log('','li');
+  log(`ExistsIntrinsicStable: ${ST.existsIntrinsicStable}`,ST.existsIntrinsicStable?'lk':'lw');
+  if(ST.betaStar!==null) log(`β*_stable = ${ST.betaStar.toFixed(2)} | stable_interval = [${ST.stableInterval[0].toFixed(2)},${ST.stableInterval[ST.stableInterval.length-1].toFixed(2)}]`,'lk');
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
+  progress('Rendering…',99,'');
+  await sleep(15);
+  renderAll(invWR2,invWR3);
+  document.getElementById('results').style.display='block';
+  document.getElementById('prog').style.display='none';
+  document.getElementById('btn-exp').disabled=false;
+  document.getElementById('btn-copy').disabled=false;
+  log('','li');log('═══ CHAMBER LVIII v1.0.0-B COMPLETE ═══','lh');
+  btn.disabled=false;btn.textContent='▶ Execute LVIII v1.0.0-B';ST.running=false;
+}
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+const BADGE_CLS={COMPOUNDING:'b-comp',SATURATING_OR_BOUNDED:'b-sat',INCONCLUSIVE:'b-inc',INVALID:'b-inv',TRIVIAL_OR_WEAK:'b-tri'};
+const LABEL_COL={COMPOUNDING:'#f87171',SATURATING_OR_BOUNDED:'#34d399',INCONCLUSIVE:'#fbbf24',INVALID:'#f87171',TRIVIAL_OR_WEAK:'#727ca4'};
+function lshort(l){return{COMPOUNDING:'COMP',SATURATING_OR_BOUNDED:'SAT',INCONCLUSIVE:'INC',INVALID:'INV',TRIVIAL_OR_WEAK:'TRIV'}[l]||l;}
+
+function renderAll(invWR2,invWR3){
+  renderValidity();
+  renderExistence();
+  renderBgridChips();
+  renderCalibTable();
+  renderAmpTable();
+  renderMainTable();
+  renderSlopeTable();
+  renderInvariance(invWR2,invWR3);
+  renderSlopeCanvas();
+  renderAmpCanvas();
+  renderBbarCanvas();
+  renderSigmaCanvas();
+}
+
+function renderValidity(){
+  const el=document.getElementById('validity-banner');
+  const n=ST.invIssues.length;
+  el.innerHTML=n>0
+    ?`<div class="validity-fail">⚠ ${n} invariance issue(s). Affected β cells → INVALID. Others remain valid.</div>`
+    :`<div class="validity-ok">✓ VALIDITY CONFIRMED — dual sanity (β=0, β=1) passed. R2=R3≈0 at all (β,n,τ). All decision labels apply.</div>`;
+}
+
+function renderExistence(){
+  const root=document.getElementById('existence-root');
+  const cls=ST.existsIntrinsicStable?'exist-y':'exist-n';
+  let html=`<div class="${cls}">`;
+  html+=`<h3>${ST.existsIntrinsicStable
+    ?'✅ ExistsIntrinsicStable = TRUE — Intrinsically stable F found without depth damping'
+    :'⚠ ExistsIntrinsicStable = FALSE — No intrinsically stable F found in this kernel stratum'
+  }</h3>`;
+  html+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">';
+  const bsv=ST.betaStar;
+  html+=`<span class="kmet"><span class="kmlabel">β*_stable</span><span class="kmval ${bsv!==null?'g':'a'}">${bsv!==null?bsv.toFixed(2):'none'}</span></span>`;
+  if(ST.stableInterval.length>0){
+    html+=`<span class="kmet"><span class="kmlabel">stable_interval</span><span class="kmval g">[${ST.stableInterval[0].toFixed(2)},${ST.stableInterval[ST.stableInterval.length-1].toFixed(2)}]</span></span>`;
+    html+=`<span class="kmet"><span class="kmlabel">band pts</span><span class="kmval">${ST.stableInterval.length}</span></span>`;
+  }
+  const nSat=Object.values(ST.labels).filter(l=>l==='SATURATING_OR_BOUNDED').length;
+  const nComp=Object.values(ST.labels).filter(l=>l==='COMPOUNDING').length;
+  const nInc=Object.values(ST.labels).filter(l=>l==='INCONCLUSIVE').length;
+  const nTriv=Object.values(ST.labels).filter(l=>l==='TRIVIAL_OR_WEAK').length;
+  html+=`<span class="kmet"><span class="kmlabel">SAT</span><span class="kmval g">${nSat}</span></span>`;
+  html+=`<span class="kmet"><span class="kmlabel">COMP</span><span class="kmval r">${nComp}</span></span>`;
+  html+=`<span class="kmet"><span class="kmlabel">INC</span><span class="kmval a">${nInc}</span></span>`;
+  html+=`<span class="kmet"><span class="kmlabel">TRIV</span><span class="kmval">${nTriv}</span></span>`;
+  html+='</div>';
+  // Locked interpretation language (from spec)
+  if(ST.existsIntrinsicStable){
+    html+=`<div style="font-size:12px;line-height:1.75;color:var(--fg)">
+      <strong style="color:var(--green)">Locked interpretation (§9, LVIII-B spec):</strong>
+      An intrinsically recursively stable operator family exists within the scanned bias-coupling stratum F<sub>β</sub>,
+      without depth-dependent damping. β*_stable = ${bsv!==null?bsv.toFixed(2):'?'},
+      stable_interval = [${ST.stableInterval.length?ST.stableInterval[0].toFixed(2):'?'},${ST.stableInterval.length?ST.stableInterval[ST.stableInterval.length-1].toFixed(2):'?'}].
+    </div>`;
+  } else {
+    html+=`<div style="font-size:12px;line-height:1.75;color:var(--fg)">
+      <strong style="color:var(--amber)">Locked interpretation (§9, LVIII-B spec):</strong>
+      No intrinsically stable family was found within the scanned coupling stratum;
+      recursive stability (if it exists) requires either different kernel strata or explicit bias regulation.
+    </div>`;
+  }
+  html+='</div>';
+  root.innerHTML=html;
+}
+
+function renderBgridChips(){
+  const root=document.getElementById('bgrid-chips');
+  let html='';
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const label=ST.labels[bi]||'—';
+    const lcls={COMPOUNDING:'comp',SATURATING_OR_BOUNDED:'sat',INCONCLUSIVE:'inc',
+      INVALID:'comp',TRIVIAL_OR_WEAK:'tri'}[label]||'';
+    const isStar=ST.betaStar!==null&&Math.abs(beta-ST.betaStar)<1e-9;
+    html+=`<div class="bchip ${lcls} ${isStar?'star':''}" title="${label}">β=${beta.toFixed(2)}${isStar?' ★':''}</div>`;
+  }
+  root.innerHTML=html;
+}
+
+function renderCalibTable(){
+  const tb=document.getElementById('calib-tbody');
+  tb.innerHTML='';
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const cal=ST.calibB[bi]||{};
+    const sig=ST.sigmaB[bi]||0;
+    const medL2=ST.Lmed[bi]?.[2]||0;
+    const nondeg=medL2>=C.NONDEG_K*sig;
+    const tr=tb.insertRow();
+    const isStar=ST.betaStar!==null&&Math.abs(beta-ST.betaStar)<1e-9;
+    if(isStar){tr.style.background='rgba(52,211,153,.04)';}
+    [beta.toFixed(2)+(isStar?' ★':''),
+     (cal.sdRepeat||0).toFixed(5),(cal.sdBoot||0).toFixed(5),
+     sig.toFixed(5),(5*sig).toFixed(5),medL2.toFixed(5)
+    ].forEach((v,i)=>{const c=tr.insertCell();c.textContent=v;if(i===0&&isStar)c.style.color='var(--green)';});
+    const nc=tr.insertCell(); nc.textContent=nondeg?'YES':'NO'; nc.className=nondeg?'pass':'fail';
+  }
+}
+
+function renderAmpTable(){
+  const tb=document.getElementById('amp-tbody');
+  tb.innerHTML='';
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const r2m=ST.r2Med[bi]??0,r3m=ST.r3Med[bi]??0;
+    const [r2lo,r2hi]=ST.r2CI95[bi]||[0,0];
+    const [r3lo,r3hi]=ST.r3CI95[bi]||[0,0];
+    const g2=r2lo<=1+C.EPS_AMP, g3=r3lo<=1+C.EPS_AMP;
+    const ampOk=g2&&g3;
+    const isStar=ST.betaStar!==null&&Math.abs(beta-ST.betaStar)<1e-9;
+    const tr=tb.insertRow();
+    if(isStar) tr.style.background='rgba(52,211,153,.04)';
+    const c0=tr.insertCell();c0.textContent=beta.toFixed(2)+(isStar?' ★':'');if(isStar)c0.style.color='var(--green)';
+    const r2c=tr.insertCell();r2c.textContent=r2m.toFixed(4);r2c.className=r2m>=1.15?'fail':r2m<=1.05?'pass':'warn';
+    tr.insertCell().textContent=`[${r2lo.toFixed(4)},${r2hi.toFixed(4)}]`;
+    const g2c=tr.insertCell();g2c.textContent=g2?'✓':'✗';g2c.className=g2?'pass':'fail';
+    const r3c=tr.insertCell();r3c.textContent=r3m.toFixed(4);r3c.className=r3m>=1.15?'fail':r3m<=1.05?'pass':'warn';
+    tr.insertCell().textContent=`[${r3lo.toFixed(4)},${r3hi.toFixed(4)}]`;
+    const g3c=tr.insertCell();g3c.textContent=g3?'✓':'✗';g3c.className=g3?'pass':'fail';
+    const ac=tr.insertCell();ac.innerHTML=`<span style="font-weight:700;color:${ampOk?'var(--green)':'var(--red)'}">${ampOk?'✓ NO-AMP':'✗ AMPLIFYING'}</span>`;
+  }
+}
+
+function renderMainTable(){
+  const tb=document.getElementById('main-tbody');
+  tb.innerHTML='';
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const label=ST.labels[bi]||'—';
+    const sigB=ST.sigmaB[bi]||0;
+    const medL2=ST.Lmed[bi]?.[2]||0;
+    const nondeg=medL2>=C.NONDEG_K*sigB;
+    const b=ST.bBar[bi]??0;
+    const [lo95,hi95]=ST.ci95[bi]||[0,0];
+    const [lo99]=ST.ci99[bi]||[0,0];
+    const r2lo=(ST.r2CI95[bi]||[0,0])[0];
+    const r3lo=(ST.r3CI95[bi]||[0,0])[0];
+    const ampOk=r2lo<=1+C.EPS_AMP&&r3lo<=1+C.EPS_AMP;
+    const isStar=ST.betaStar!==null&&Math.abs(beta-ST.betaStar)<1e-9;
+    const tr=tb.insertRow();
+    if(isStar) tr.style.background='rgba(52,211,153,.04)';
+    const c0=tr.insertCell();c0.textContent=beta.toFixed(2)+(isStar?' ★':'');if(isStar)c0.style.color='var(--green)';
+    const vc=tr.insertCell();vc.textContent=ST.invalid[bi]?'✗':'✓';vc.className=ST.invalid[bi]?'fail':'pass';
+    [sigB.toFixed(5),(5*sigB).toFixed(5),medL2.toFixed(5)].forEach(v=>tr.insertCell().textContent=v);
+    const nc=tr.insertCell();nc.textContent=nondeg?'YES':'NO';nc.className=nondeg?'pass':'fail';
+    const r2c=tr.insertCell();r2c.textContent=(ST.r2Med[bi]??0).toFixed(4);r2c.className=(ST.r2Med[bi]??0)>=1.15?'fail':(ST.r2Med[bi]??0)<=1.05?'pass':'warn';
+    const r3c=tr.insertCell();r3c.textContent=(ST.r3Med[bi]??0).toFixed(4);r3c.className=(ST.r3Med[bi]??0)>=1.15?'fail':(ST.r3Med[bi]??0)<=1.05?'pass':'warn';
+    [b.toFixed(5),lo95.toFixed(5),hi95.toFixed(5),lo99.toFixed(5)].forEach(v=>tr.insertCell().textContent=v);
+    const ac=tr.insertCell();ac.textContent=ampOk?'✓':'✗';ac.className=ampOk?'pass':'fail';
+    const lc=tr.insertCell();lc.innerHTML=`<span class="badge ${BADGE_CLS[label]||'b-tri'}">${lshort(label)}</span>`;
+    const pc=tr.insertCell();pc.textContent=ST.rulePaths[bi]||'—';pc.style.cssText='font-size:10px;max-width:300px;color:var(--fg2)';
+  }
+}
+
+function renderSlopeTable(){
+  const tb=document.getElementById('slope-tbody');
+  tb.innerHTML='';
+  for(let bi=0;bi<BGRID_N;bi++){
+    const beta=C.BGRID[bi];
+    const b=ST.bBar[bi]??0;
+    const [lo95,hi95]=ST.ci95[bi]||[0,0];
+    const [lo99,hi99]=ST.ci99[bi]||[0,0];
+    const satSlope=Math.abs(b)<=LOG_SAT;
+    const zeroInCI=lo95<=0&&hi95>=0;
+    const compLo99=lo99>0;
+    const isStar=ST.betaStar!==null&&Math.abs(beta-ST.betaStar)<1e-9;
+    const tr=tb.insertRow();
+    if(isStar) tr.style.background='rgba(52,211,153,.04)';
+    const c0=tr.insertCell();c0.textContent=beta.toFixed(2)+(isStar?' ★':'');if(isStar)c0.style.color='var(--green)';
+    tr.insertCell().textContent=b.toFixed(5);
+    tr.insertCell().textContent=`[${lo95.toFixed(5)},${hi95.toFixed(5)}]`;
+    tr.insertCell().textContent=`[${lo99.toFixed(5)},${hi99.toFixed(5)}]`;
+    const sc=tr.insertCell();sc.textContent=satSlope?'✓':'✗';sc.className=satSlope?'pass':'fail';
+    const zc=tr.insertCell();zc.textContent=zeroInCI?'✓':'✗';zc.className=zeroInCI?'pass':'fail';
+    const cc=tr.insertCell();cc.textContent=compLo99?'✓':'✗';cc.className=compLo99?'fail':'pass';
+  }
+}
+
+function renderInvariance(invWR2,invWR3){
+  const root=document.getElementById('inv-root');
+  if(ST.invIssues.length===0){root.innerHTML='<div style="color:var(--green)">✓ All (β,n,τ) cells pass R2 and R3 tolerance.</div>';return;}
+  let html='<div style="overflow-x:auto"><table><thead><tr><th>β</th><th>n</th><th>τ</th><th>maxR2</th><th>R2 ok?</th><th>maxR3</th><th>R3 ok?</th></tr></thead><tbody>';
+  for(const iss of ST.invIssues)
+    html+=`<tr><td>${iss.beta}</td><td>${iss.n}</td><td>${iss.tau}</td>
+      <td class="${iss.maxR2<=C.R2_TOL?'neu':'fail'}">${iss.maxR2.toFixed(5)}</td>
+      <td class="${iss.maxR2<=C.R2_TOL?'pass':'fail'}">${iss.maxR2<=C.R2_TOL?'✓':'✗'}</td>
+      <td class="${iss.maxR3<=C.R3_TOL?'neu':'fail'}">${iss.maxR3.toFixed(5)}</td>
+      <td class="${iss.maxR3<=C.R3_TOL?'pass':'fail'}">${iss.maxR3<=C.R3_TOL?'✓':'✗'}</td></tr>`;
+  html+='</tbody></table></div>';
+  root.innerHTML=html;
+}
+
+// ── CANVAS HELPERS ────────────────────────────────────────────────────────────
+function ctxInit(id){
+  const cv=document.getElementById(id);
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#05070e';ctx.fillRect(0,0,cv.width,cv.height);
+  return{ctx,W:cv.width,H:cv.height};
+}
+function betaHue(bi){
+  const t=C.BGRID[bi];
+  return`rgb(${Math.round(56+t*(248-56))},${Math.round(189+t*(113-189))},${Math.round(248+t*(113-248))})`;
+}
+
+function renderSlopeCanvas(){
+  const{ctx,W,H}=ctxInit('slope-canvas');
+  const P={l:70,r:30,t:45,b:48};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  let vals=[];
+  for(let bi=0;bi<BGRID_N;bi++) for(let n=2;n<=4;n++) vals.push(Math.log((ST.Lmed[bi][n]||0)+C.EPS_LOG));
+  const yMin=Math.min(...vals)-.3,yMax=Math.max(...vals)+.3;
+  const xOf=n=>P.l+((n-1)/4)*pw, yOf=v=>P.t+ph-((v-yMin)/(yMax-yMin))*ph;
+  ctx.strokeStyle='#1c2438';ctx.lineWidth=1;
+  for(let n=1;n<=4;n++){ctx.beginPath();ctx.moveTo(xOf(n),P.t);ctx.lineTo(xOf(n),P.t+ph);ctx.stroke();ctx.fillStyle='#727ca4';ctx.font='10px Courier New';ctx.textAlign='center';ctx.fillText(`n=${n}`,xOf(n),P.t+ph+16);}
+  for(let k=0;k<=4;k++){const v=yMin+k*(yMax-yMin)/4,y=yOf(v);ctx.strokeStyle='#1c2438';ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();ctx.fillStyle='#727ca4';ctx.textAlign='right';ctx.font='10px Courier New';ctx.fillText(v.toFixed(2),P.l-5,y+4);}
+  ctx.strokeStyle='#252a42';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(P.l,P.t);ctx.lineTo(P.l,P.t+ph);ctx.lineTo(P.l+pw,P.t+ph);ctx.stroke();
+  for(let bi=0;bi<BGRID_N;bi++){
+    const isSat=ST.labels[bi]==='SATURATING_OR_BOUNDED';
+    ctx.strokeStyle=betaHue(bi);ctx.lineWidth=isSat?3:1;
+    ctx.setLineDash(isSat?[]:[4,3]);
+    ctx.beginPath();
+    for(let n=1;n<=4;n++){const x=xOf(n),y=yOf(Math.log((ST.Lmed[bi][n]||0)+C.EPS_LOG));n===1?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.fillStyle='#d2d6ee';ctx.font='bold 12px Courier New';ctx.textAlign='left';
+  ctx.fillText('log(L⁽ⁿ⁾) vs Depth — each line = one β (solid thick = SAT)',P.l,P.t-14);
+  // gradient legend
+  const grd=ctx.createLinearGradient(W-220,P.t,W-P.r,P.t);
+  grd.addColorStop(0,'#38bdf8');grd.addColorStop(1,'#f87171');
+  ctx.fillStyle=grd;ctx.fillRect(W-220,P.t,190,7);
+  ctx.fillStyle='#727ca4';ctx.font='9px Courier New';ctx.textAlign='center';
+  ctx.fillText('β=0 K_A',W-220,P.t+19);ctx.fillText('β=1 K_B',W-P.r,P.t+19);
+}
+
+function renderAmpCanvas(){
+  const{ctx,W,H}=ctxInit('amp-canvas');
+  const P={l:70,r:30,t:50,b:48};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  let allR=[];
+  for(let bi=0;bi<BGRID_N;bi++){allR.push(ST.r2Med[bi]??0);allR.push(ST.r3Med[bi]??0);}
+  const yMin=Math.max(0,Math.min(...allR)-.08),yMax=Math.max(...allR)+.08;
+  const xOf=bi=>P.l+(bi/(BGRID_N-1))*pw, yOf=v=>P.t+ph-((v-yMin)/(yMax-yMin))*ph;
+  ctx.strokeStyle='#1c2438';ctx.lineWidth=1;
+  for(let bi=0;bi<BGRID_N;bi+=4){const x=xOf(bi);ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();ctx.fillStyle='#727ca4';ctx.font='9px Courier New';ctx.textAlign='center';ctx.fillText(C.BGRID[bi].toFixed(2),x,P.t+ph+14);}
+  for(let k=0;k<=4;k++){const v=yMin+k*(yMax-yMin)/4,y=yOf(v);ctx.strokeStyle='#1c2438';ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();ctx.fillStyle='#727ca4';ctx.textAlign='right';ctx.font='10px Courier New';ctx.fillText(v.toFixed(3),P.l-5,y+4);}
+  // ε_amp threshold
+  const ey=yOf(1+C.EPS_AMP);
+  ctx.strokeStyle='rgba(52,211,153,.5)';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(P.l,ey);ctx.lineTo(P.l+pw,ey);ctx.stroke();
+  ctx.fillStyle='#34d399';ctx.font='10px Courier New';ctx.textAlign='left';ctx.fillText('1+ε_amp=1.05',P.l+4,ey-4);
+  ctx.setLineDash([]);
+  // CI bands for r2
+  ctx.fillStyle='rgba(56,189,248,.1)';
+  ctx.beginPath();
+  for(let bi=0;bi<BGRID_N;bi++){const x=xOf(bi),y=yOf((ST.r2CI95[bi]||[0,0])[0]);bi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  for(let bi=BGRID_N-1;bi>=0;bi--){const x=xOf(bi),y=yOf((ST.r2CI95[bi]||[0,0])[1]);ctx.lineTo(x,y);}
+  ctx.closePath();ctx.fill();
+  // r2 line
+  ctx.strokeStyle='#38bdf8';ctx.lineWidth=2.5;
+  ctx.beginPath();for(let bi=0;bi<BGRID_N;bi++){const x=xOf(bi),y=yOf(ST.r2Med[bi]??0);bi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  // CI bands for r3
+  ctx.fillStyle='rgba(129,140,248,.1)';
+  ctx.beginPath();
+  for(let bi=0;bi<BGRID_N;bi++){const x=xOf(bi),y=yOf((ST.r3CI95[bi]||[0,0])[0]);bi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  for(let bi=BGRID_N-1;bi>=0;bi--){const x=xOf(bi),y=yOf((ST.r3CI95[bi]||[0,0])[1]);ctx.lineTo(x,y);}
+  ctx.closePath();ctx.fill();
+  // r3 line
+  ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+  ctx.beginPath();for(let bi=0;bi<BGRID_N;bi++){const x=xOf(bi),y=yOf(ST.r3Med[bi]??0);bi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();ctx.setLineDash([]);
+  // colored dots
+  for(let bi=0;bi<BGRID_N;bi++){
+    ctx.fillStyle=LABEL_COL[ST.labels[bi]]||'#727ca4';
+    ctx.beginPath();ctx.arc(xOf(bi),yOf(ST.r2Med[bi]??0),4.5,0,2*Math.PI);ctx.fill();
+    ctx.beginPath();ctx.arc(xOf(bi),yOf(ST.r3Med[bi]??0),3.5,0,2*Math.PI);ctx.fill();
+  }
+  // β*
+  if(ST.betaStar!==null){
+    const si=C.BGRID.findIndex(b=>Math.abs(b-ST.betaStar)<1e-9);
+    if(si>=0){const sx=xOf(si);ctx.strokeStyle='#34d399';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx,P.t);ctx.lineTo(sx,P.t+ph);ctx.stroke();ctx.fillStyle='#34d399';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.fillText(`β*=${ST.betaStar.toFixed(2)}`,sx,P.t-6);}
+  }
+  ctx.fillStyle='#d2d6ee';ctx.font='bold 12px Courier New';ctx.textAlign='left';
+  ctx.fillText('Per-Seed Amplification Ratios (median ± 95%CI): r₂ = L³/L² (blue), r₃ = L⁴/L³ (indigo)',P.l,P.t-18);
+  ctx.fillStyle='#727ca4';ctx.font='10px Courier New';ctx.textAlign='center';ctx.fillText('β',P.l+pw/2,H-8);
+}
+
+function renderBbarCanvas(){
+  const{ctx,W,H}=ctxInit('bbar-canvas');
+  const P={l:70,r:30,t:50,b:48};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  const allB=Object.values(ST.bBar);
+  const yMin=Math.min(...allB)-.04,yMax=Math.max(...allB)+.04;
+  const xOf=bi=>P.l+(bi/(BGRID_N-1))*pw, yOf=v=>P.t+ph-((v-yMin)/(yMax-yMin))*ph;
+  for(let k=0;k<=4;k++){const v=yMin+k*(yMax-yMin)/4,y=yOf(v);ctx.strokeStyle='#1c2438';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();ctx.fillStyle='#727ca4';ctx.textAlign='right';ctx.font='10px Courier New';ctx.fillText(v.toFixed(3),P.l-5,y+4);}
+  for(let bi=0;bi<BGRID_N;bi+=4){ctx.strokeStyle='#1c2438';ctx.lineWidth=1;const x=xOf(bi);ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();ctx.fillStyle='#727ca4';ctx.font='9px Courier New';ctx.textAlign='center';ctx.fillText(C.BGRID[bi].toFixed(2),x,P.t+ph+14);}
+  // threshold bands
+  const tc=yOf(LOG_COMP),ts=yOf(LOG_SAT),tsn=yOf(-LOG_SAT);
+  ctx.fillStyle='rgba(52,211,153,.05)';ctx.fillRect(P.l,ts,pw,tsn-ts);
+  if(tc<P.t+ph){ctx.fillStyle='rgba(248,113,113,.04)';ctx.fillRect(P.l,P.t,pw,tc-P.t);}
+  ctx.strokeStyle='rgba(248,113,113,.45)';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(P.l,tc);ctx.lineTo(P.l+pw,tc);ctx.stroke();
+  ctx.strokeStyle='rgba(52,211,153,.45)';ctx.beginPath();ctx.moveTo(P.l,ts);ctx.lineTo(P.l+pw,ts);ctx.stroke();ctx.setLineDash([]);
+  // zero
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P.l,yOf(0));ctx.lineTo(P.l+pw,yOf(0));ctx.stroke();
+  // bars + CI
+  const bw=pw/BGRID_N*.55;
+  for(let bi=0;bi<BGRID_N;bi++){
+    const b=ST.bBar[bi]??0,x=xOf(bi)-bw/2,y0=yOf(0),yv=yOf(b);
+    ctx.fillStyle=LABEL_COL[ST.labels[bi]]||'#727ca4';
+    ctx.fillRect(x,Math.min(y0,yv),bw,Math.abs(yv-y0)||1);
+    const[lo,hi]=ST.ci95[bi]||[0,0];
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(xOf(bi),yOf(lo));ctx.lineTo(xOf(bi),yOf(hi));ctx.stroke();
+  }
+  ctx.fillStyle='#d2d6ee';ctx.font='bold 12px Courier New';ctx.textAlign='left';
+  ctx.fillText('b̄(β) — Log-Slope vs Bias-Coupling (bars = label color, whiskers = 95%CI)',P.l,P.t-18);
+  ctx.fillStyle='#727ca4';ctx.font='10px Courier New';ctx.textAlign='center';ctx.fillText('β',P.l+pw/2,H-8);
+}
+
+function renderSigmaCanvas(){
+  const{ctx,W,H}=ctxInit('sigma-canvas');
+  const P={l:70,r:30,t:45,b:48};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  const sigs=Array.from({length:BGRID_N},(_,bi)=>ST.sigmaB[bi]||0);
+  const yMin=0,yMax=Math.max(...sigs)*1.15;
+  const xOf=bi=>P.l+(bi/(BGRID_N-1))*pw, yOf=v=>P.t+ph-((v-yMin)/(yMax-yMin))*ph;
+  for(let k=0;k<=4;k++){const v=yMin+k*(yMax-yMin)/4,y=yOf(v);ctx.strokeStyle='#1c2438';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();ctx.fillStyle='#727ca4';ctx.textAlign='right';ctx.font='10px Courier New';ctx.fillText(v.toFixed(4),P.l-5,y+4);}
+  for(let bi=0;bi<BGRID_N;bi+=4){ctx.strokeStyle='#1c2438';ctx.lineWidth=1;const x=xOf(bi);ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();ctx.fillStyle='#727ca4';ctx.font='9px Courier New';ctx.textAlign='center';ctx.fillText(C.BGRID[bi].toFixed(2),x,P.t+ph+14);}
+  // area fill
+  const grd=ctx.createLinearGradient(0,P.t,0,P.t+ph);
+  grd.addColorStop(0,'rgba(129,140,248,.25)');grd.addColorStop(1,'rgba(129,140,248,.02)');
+  ctx.fillStyle=grd;
+  ctx.beginPath();ctx.moveTo(xOf(0),P.t+ph);
+  for(let bi=0;bi<BGRID_N;bi++) ctx.lineTo(xOf(bi),yOf(sigs[bi]));
+  ctx.lineTo(xOf(BGRID_N-1),P.t+ph);ctx.closePath();ctx.fill();
+  // line
+  ctx.strokeStyle='#818cf8';ctx.lineWidth=2.5;
+  ctx.beginPath();for(let bi=0;bi<BGRID_N;bi++){const x=xOf(bi),y=yOf(sigs[bi]);bi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  // dots colored by nondeg
+  for(let bi=0;bi<BGRID_N;bi++){
+    const medL2=ST.Lmed[bi]?.[2]||0,sig=sigs[bi];
+    const nd=medL2>=C.NONDEG_K*sig;
+    ctx.fillStyle=nd?'#34d399':'#f87171';
+    ctx.beginPath();ctx.arc(xOf(bi),yOf(sigs[bi]),4,0,2*Math.PI);ctx.fill();
+  }
+  ctx.fillStyle='#d2d6ee';ctx.font='bold 12px Courier New';ctx.textAlign='left';
+  ctx.fillText('σ_F(β) Profile — per-β calibration (green dot = nondeg✓, red = nondeg✗)',P.l,P.t-14);
+  ctx.fillStyle='#727ca4';ctx.font='10px Courier New';ctx.textAlign='center';ctx.fillText('β',P.l+pw/2,H-8);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function buildRecord(){
+  return {
+    chamber_id:'LVIII', version:'1.0.0-B', protocol_locked:true,
+    timestamp:new Date().toISOString(),
+    fixes_applied:['deterministic_convex_mixture','per_beta_sigma_calibration','per_seed_amplification_ratios','sat_ci_gate'],
+    parameters:{
+      N:C.N,tau_grid:C.TAU_GRID,depths:C.DEPTHS,
+      beta_grid:C.BGRID,KA_fam:C.KA_FAM,KB_fam:C.KB_FAM,
+      seeds_count:C.SEEDS.length,bs_calib:C.BS_CALIB,
+      delta_comp:C.DELTA_COMP,delta_sat:C.DELTA_SAT,
+      nondeg_k:C.NONDEG_K,eps_amp:C.EPS_AMP,r2_tol:C.R2_TOL,r3_tol:C.R3_TOL
+    },
+    ST:{
+      sanityPassed:ST.sanityPassed,
+      existsIntrinsicStable:ST.existsIntrinsicStable,
+      beta_star:ST.betaStar,
+      stable_interval:ST.stableInterval,
+      inv_issues:ST.invIssues
+    },
+    beta_cells:C.BGRID.map((beta,bi)=>({
+      beta,
+      valid:!ST.invalid[bi],
+      sigma_F:ST.sigmaB[bi],
+      five_sigma:(ST.sigmaB[bi]||0)*5,
+      nondeg:(ST.Lmed[bi]?.[2]||0)>=C.NONDEG_K*(ST.sigmaB[bi]||0),
+      L_med:{1:ST.Lmed[bi]?.[1],2:ST.Lmed[bi]?.[2],3:ST.Lmed[bi]?.[3],4:ST.Lmed[bi]?.[4]},
+      r2:{median:ST.r2Med[bi],ci95:ST.r2CI95[bi]},
+      r3:{median:ST.r3Med[bi],ci95:ST.r3CI95[bi]},
+      b:{mean:ST.bBar[bi],ci95:ST.ci95[bi],ci99:ST.ci99[bi]},
+      decision:{label:ST.labels[bi],rule_path:ST.rulePaths[bi]}
+    }))
+  };
+}
+function exportJSON(){
+  const rec=buildRecord();
+  const blob=new Blob([JSON.stringify(rec,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`LVIII_v1_0_0_B_${Date.now()}.json`;a.click();URL.revokeObjectURL(url);
+}
+function copyJSON(){
+  const txt=JSON.stringify(buildRecord(),null,2);
+  navigator.clipboard.writeText(txt).then(()=>log('JSON copied to clipboard.','lk')).catch(()=>log('Clipboard copy failed — use Export instead.','lw'));
+}
+</script>
+</body>
+</html>

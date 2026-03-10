@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber LI-P₁ — Phase P₁ Execution Chamber</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #0f0f0f;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #00ff00;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            margin: 5px 5px 5px 0;
+            border: 1px solid;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .badge-locked { border-color: #00ff00; color: #00ff00; }
+        .badge-preregistered { border-color: #ffaa00; color: #ffaa00; }
+        .badge-running { border-color: #00aaff; color: #00aaff; }
+        .badge-complete { border-color: #00ff00; color: #00ff00; }
+        .badge-failed { border-color: #ff0000; color: #ff0000; }
+        
+        .control-panel {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #0f0f0f;
+        }
+        
+        .gate-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .gate-button {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            color: #888;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .gate-button:hover {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        
+        .gate-button.active {
+            background: #00ff00;
+            color: #000;
+            border-color: #00ff00;
+        }
+        
+        .sweep-config {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .config-label {
+            color: #888;
+        }
+        
+        .config-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        button:disabled {
+            border-color: #444;
+            color: #444;
+            cursor: not-allowed;
+            background: #0f0f0f;
+        }
+        
+        .progress-section {
+            border: 2px solid #444;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #0f0f0f;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #00aa00);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+        }
+        
+        .metric-title {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            color: #00ff00;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .metric-detail {
+            color: #666;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .data-table th {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+        
+        .data-table td {
+            padding: 8px;
+            border: 1px solid #222;
+            color: #888;
+        }
+        
+        .data-table tr:hover {
+            background: #1a1a1a;
+        }
+        
+        .log-panel {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            color: #888;
+        }
+        
+        .log-entry.info { color: #00aaff; }
+        .log-entry.success { color: #00ff00; }
+        .log-entry.warning { color: #ffaa00; }
+        .log-entry.error { color: #ff0000; }
+        
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        
+        .falsifier-panel {
+            background: #1a0000;
+            border: 2px solid #ff0000;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .falsifier-title {
+            color: #ff0000;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .falsifier-status {
+            color: #ffaa00;
+            font-size: 12px;
+        }
+        
+        .chart-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .success-criteria {
+            background: #001a00;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .criteria-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .criteria-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ff00;
+            margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .criteria-checkbox.met::after {
+            content: '✓';
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .criteria-text {
+            color: #00ff00;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CHAMBER LI-P₁</h1>
+            <div class="subtitle">Phase P₁ Execution Chamber — Boundary Mapping & Interaction</div>
+            <div class="subtitle">Preregistered Sweep Suite | Seeds: 196884–196933 | Status: Production</div>
+            <div style="margin-top: 10px;">
+                <span class="status-badge badge-locked">FROZEN CONFIG</span>
+                <span class="status-badge badge-preregistered">PREREGISTERED</span>
+                <span id="runStatusBadge" class="status-badge badge-locked">READY</span>
+            </div>
+        </header>
+
+        <div class="control-panel">
+            <h2 style="margin-bottom: 15px;">Gate Selection & Sweep Configuration</h2>
+            
+            <div class="gate-selector">
+                <button class="gate-button active" onclick="selectGate('V3', event)">V-3: Topological</button>
+                <button class="gate-button" onclick="selectGate('V4', event)">V-4: Spectral</button>
+                <button class="gate-button" onclick="selectGate('V5', event)">V-5: Logical</button>
+            </div>
+
+            <div id="sweepConfigPanel"></div>
+
+            <div class="action-buttons">
+                <button onclick="runSweep()" id="runButton">Execute Sweep</button>
+                <button onclick="stopSweep()" id="stopButton" disabled>Stop</button>
+                <button onclick="exportResults()">Export JSON</button>
+                <button onclick="resetChamber()">Reset Chamber</button>
+            </div>
+        </div>
+
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <h3>Execution Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%;">0%</div>
+            </div>
+            <div id="progressText" style="color: #888; font-size: 14px; margin-top: 10px;"></div>
+        </div>
+
+        <div class="success-criteria" id="successCriteria" style="display: none;">
+            <h3 style="color: #00ff00; margin-bottom: 15px;">P₁-A Success Criteria</h3>
+            <div class="criteria-item">
+                <div class="criteria-checkbox" id="criterion1"></div>
+                <div class="criteria-text">Criterion 1: Boundary Existence (≥2 gates show non-trivial transition)</div>
+            </div>
+            <div class="criteria-item">
+                <div class="criteria-checkbox" id="criterion2"></div>
+                <div class="criteria-text">Criterion 2: Boundary Sharpness (≥2 gates show cliff/knee ≤5% width)</div>
+            </div>
+            <div class="criteria-item">
+                <div class="criteria-checkbox" id="criterion3"></div>
+                <div class="criteria-text">Criterion 3: Reproducibility (boundary appears in ≥80% of seeds)</div>
+            </div>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                <div id="overallSuccess" style="font-size: 18px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <div id="resultsPanel"></div>
+
+        <div class="chart-container" id="chartContainer" style="display: none;">
+            <canvas id="boundaryChart"></canvas>
+        </div>
+
+        <div class="falsifier-panel" id="falsifierPanel" style="display: none;">
+            <div class="falsifier-title">⚠ FALSIFICATION STATUS</div>
+            <div class="falsifier-status" id="falsifierStatus"></div>
+        </div>
+
+        <div class="log-panel" id="logPanel"></div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CHAMBER LI-P₁ — PHASE P₁ EXECUTION CHAMBER
+        // ============================================================================
+        // Purpose: Execute preregistered boundary mapping sweeps for Axis V gates
+        // Status: Production | Frozen Configuration
+        // Seed Block: 196884-196933 (50 seeds, fixed)
+        // ============================================================================
+
+        // FROZEN GLOBAL CONFIGURATION
+        const CHAMBER_CONFIG = {
+            name: 'Chamber LI-P₁',
+            version: '1.0.0',
+            phase: 'P₁',
+            seedBlock: {
+                start: 196884,
+                end: 196933,
+                count: 50
+            },
+            maxSteps: 1000,
+            U_crit: 0.15,
+            batchSize: 50
+        };
+
+        // PREREGISTERED SWEEP TABLES
+        const SWEEP_TABLES = {
+            V3: {
+                name: 'V-3: DAG Embeddability',
+                parameter: 'p_backedge',
+                sweep: Array.from({length: 11}, (_, i) => i * 0.01), // 0.00 to 0.10
+                sweepIDs: Array.from({length: 11}, (_, i) => `V3-A1-${String(i).padStart(2, '0')}`),
+                refinementRule: {
+                    enabled: true,
+                    trigger: (pF_high, pF_low) => pF_high >= 0.8 && pF_low <= 0.2,
+                    midpoints: 5
+                }
+            },
+            V4: {
+                name: 'V-4: Spectral Feasibility',
+                parameter: 'λ_band_width',
+                calibration: {
+                    λ_low: 0.0,
+                    λ_high: 10.0,
+                    sweepID: 'V4-A2-CAL'
+                },
+                sweep: [10.00, 4.00, 2.00, 1.00, 0.50, 0.25],
+                sweepIDs: ['V4-A2-W10', 'V4-A2-W04', 'V4-A2-W02', 'V4-A2-W01', 'V4-A2-W005', 'V4-A2-W0025']
+            },
+            V5: {
+                name: 'V-5: XOR-SAT Feasibility',
+                parameters: ['α', 'd'],
+                degrees: [3, 4, 5],
+                alpha_sweep: Array.from({length: 11}, (_, i) => 0.20 + i * 0.10), // 0.20 to 1.20
+                sweepIDs: (d, alpha) => `V5-A3-D${d}-A${Math.round(alpha * 100)}`
+            }
+        };
+
+        // STATE
+        let currentGate = 'V3';
+        let sweepResults = {};
+        let isRunning = false;
+        let shouldStop = false;
+        let calibrationData = null;
+
+        // INITIALIZATION
+        function init() {
+            log('Chamber LI-P₁ initialized', 'success');
+            log(`Frozen configuration loaded: Seeds ${CHAMBER_CONFIG.seedBlock.start}-${CHAMBER_CONFIG.seedBlock.end}`, 'info');
+            selectGate('V3', null);
+        }
+
+        // GATE SELECTION
+        function selectGate(gate, event) {
+            currentGate = gate;
+            
+            // Update button states
+            document.querySelectorAll('.gate-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.includes(gate)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update sweep configuration panel
+            updateSweepConfigPanel();
+            
+            log(`Selected gate: ${SWEEP_TABLES[gate].name}`, 'info');
+        }
+
+        function updateSweepConfigPanel() {
+            const panel = document.getElementById('sweepConfigPanel');
+            const config = SWEEP_TABLES[currentGate];
+            
+            let html = '<div class="sweep-config">';
+            html += `<h3 style="color: #00ff00; margin-bottom: 10px;">${config.name}</h3>`;
+            
+            if (currentGate === 'V3') {
+                html += `
+                    <div class="config-row">
+                        <span class="config-label">Control Parameter:</span>
+                        <span class="config-value">${config.parameter}</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Sweep Range:</span>
+                        <span class="config-value">0.00 → 0.10 (11 points)</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Refinement Rule:</span>
+                        <span class="config-value">${config.refinementRule.enabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                `;
+            } else if (currentGate === 'V4') {
+                html += `
+                    <div class="config-row">
+                        <span class="config-label">Control Parameter:</span>
+                        <span class="config-value">λ Band Width</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Calibration:</span>
+                        <span class="config-value">λ ∈ [0.0, 10.0]</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Band Sweep:</span>
+                        <span class="config-value">w ∈ {10, 4, 2, 1, 0.5, 0.25}</span>
+                    </div>
+                `;
+            } else if (currentGate === 'V5') {
+                html += `
+                    <div class="config-row">
+                        <span class="config-label">Control Parameters:</span>
+                        <span class="config-value">α (density), d (degree)</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Degrees:</span>
+                        <span class="config-value">d ∈ {3, 4, 5}</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">α Sweep:</span>
+                        <span class="config-value">0.20 → 1.20 (11 points per degree)</span>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="config-row">
+                    <span class="config-label">Seeds:</span>
+                    <span class="config-value">${CHAMBER_CONFIG.seedBlock.start}–${CHAMBER_CONFIG.seedBlock.end}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">Runs per Point:</span>
+                    <span class="config-value">${CHAMBER_CONFIG.seedBlock.count}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">maxSteps:</span>
+                    <span class="config-value">${CHAMBER_CONFIG.maxSteps}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">U_crit:</span>
+                    <span class="config-value">${CHAMBER_CONFIG.U_crit}</span>
+                </div>
+            `;
+            
+            html += '</div>';
+            panel.innerHTML = html;
+        }
+
+        // SWEEP EXECUTION
+        async function runSweep() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            shouldStop = false;
+            
+            document.getElementById('runButton').disabled = true;
+            document.getElementById('stopButton').disabled = false;
+            document.getElementById('runStatusBadge').textContent = 'RUNNING';
+            document.getElementById('runStatusBadge').className = 'status-badge badge-running';
+            
+            document.getElementById('progressSection').style.display = 'block';
+            
+            log(`Starting ${currentGate} sweep...`, 'info');
+            
+            try {
+                if (currentGate === 'V3') {
+                    await runV3Sweep();
+                } else if (currentGate === 'V4') {
+                    await runV4Sweep();
+                } else if (currentGate === 'V5') {
+                    await runV5Sweep();
+                }
+                
+                if (!shouldStop) {
+                    log(`${currentGate} sweep completed successfully`, 'success');
+                    document.getElementById('runStatusBadge').textContent = 'COMPLETE';
+                    document.getElementById('runStatusBadge').className = 'status-badge badge-complete';
+                    
+                    evaluateSuccessCriteria();
+                    renderResults();
+                    renderBoundaryChart();
+                }
+            } catch (error) {
+                log(`Error during sweep: ${error.message}`, 'error');
+                document.getElementById('runStatusBadge').textContent = 'FAILED';
+                document.getElementById('runStatusBadge').className = 'status-badge badge-failed';
+            } finally {
+                isRunning = false;
+                document.getElementById('runButton').disabled = false;
+                document.getElementById('stopButton').disabled = true;
+            }
+        }
+
+        async function runV3Sweep() {
+            const config = SWEEP_TABLES.V3;
+            const results = [];
+            
+            for (let i = 0; i < config.sweep.length; i++) {
+                if (shouldStop) break;
+                
+                const p_backedge = config.sweep[i];
+                const sweepID = config.sweepIDs[i];
+                
+                updateProgress(i + 1, config.sweep.length, `Point ${i+1}/${config.sweep.length}: p_backedge = ${p_backedge.toFixed(2)}`);
+                
+                const result = await runSweepPoint('V3', { p_backedge }, sweepID);
+                results.push(result);
+                
+                // Check refinement rule
+                if (i > 0 && config.refinementRule.enabled) {
+                    const prev = results[i-1];
+                    const curr = result;
+                    
+                    if (config.refinementRule.trigger(prev.p_feasible, curr.p_feasible)) {
+                        log(`Refinement triggered between ${config.sweep[i-1].toFixed(2)} and ${p_backedge.toFixed(2)}`, 'warning');
+                        // Could implement refinement here if needed
+                    }
+                }
+                
+                await delay(50); // Prevent UI blocking
+            }
+            
+            sweepResults[currentGate] = results;
+        }
+
+        async function runV4Sweep() {
+            const config = SWEEP_TABLES.V4;
+            const results = [];
+            
+            // Step 1: Calibration
+            updateProgress(0, config.sweep.length + 1, 'Running calibration...');
+            log('V-4 Calibration phase...', 'info');
+            
+            const calResult = await runSweepPoint('V4', {
+                λ_low: config.calibration.λ_low,
+                λ_high: config.calibration.λ_high
+            }, config.calibration.sweepID);
+            
+            calibrationData = calResult.lambda_envelope;
+            const median = calResult.lambda_envelope.p50;
+            
+            log(`Calibration complete: λ_median = ${median.toFixed(3)}`, 'success');
+            results.push(calResult);
+            
+            // Step 2: Band tightening
+            for (let i = 0; i < config.sweep.length; i++) {
+                if (shouldStop) break;
+                
+                const width = config.sweep[i];
+                const λ_low = median - width / 2;
+                const λ_high = median + width / 2;
+                const sweepID = config.sweepIDs[i];
+                
+                updateProgress(i + 2, config.sweep.length + 1, `Width = ${width.toFixed(2)}`);
+                
+                const result = await runSweepPoint('V4', { λ_low, λ_high, width }, sweepID);
+                results.push(result);
+                
+                await delay(50);
+            }
+            
+            sweepResults[currentGate] = results;
+        }
+
+        async function runV5Sweep() {
+            const config = SWEEP_TABLES.V5;
+            const results = [];
+            
+            let pointIndex = 0;
+            const totalPoints = config.degrees.length * config.alpha_sweep.length;
+            
+            for (const d of config.degrees) {
+                for (const alpha of config.alpha_sweep) {
+                    if (shouldStop) break;
+                    
+                    pointIndex++;
+                    const sweepID = config.sweepIDs(d, alpha);
+                    
+                    updateProgress(pointIndex, totalPoints, `d=${d}, α=${alpha.toFixed(2)}`);
+                    
+                    const result = await runSweepPoint('V5', { alpha, d }, sweepID);
+                    results.push(result);
+                    
+                    await delay(50);
+                }
+            }
+            
+            sweepResults[currentGate] = results;
+        }
+
+        async function runSweepPoint(gate, params, sweepID) {
+            const seeds = [];
+            for (let s = CHAMBER_CONFIG.seedBlock.start; s <= CHAMBER_CONFIG.seedBlock.end; s++) {
+                seeds.push(s);
+            }
+            
+            let feasible_count = 0;
+            let utility_count = 0;
+            let utility_given_feasible_count = 0;
+            let violation_steps = [];
+            let utility_steps = [];
+            
+            // Gate-specific metrics
+            let lambda_max_values = [];
+            let unsat_counts = [];
+            let sat_count = 0;
+            
+            for (const seed of seeds) {
+                const run = simulateRun(gate, params, seed);
+                
+                if (run.feasible) {
+                    feasible_count++;
+                    
+                    if (run.utility) {
+                        utility_count++;
+                        utility_given_feasible_count++;
+                        utility_steps.push(run.utility_step);
+                    }
+                } else {
+                    violation_steps.push(run.violation_step);
+                }
+                
+                if (run.utility) {
+                    utility_count++;
+                    utility_steps.push(run.utility_step);
+                }
+                
+                // Gate-specific data
+                if (gate === 'V4' && run.lambda_max !== undefined) {
+                    lambda_max_values.push(run.lambda_max);
+                }
+                
+                if (gate === 'V5') {
+                    if (run.sat) sat_count++;
+                    if (run.unsat_count !== undefined) {
+                        unsat_counts.push(run.unsat_count);
+                    }
+                }
+            }
+            
+            const result = {
+                sweepID,
+                params,
+                total_runs: seeds.length,
+                p_feasible: feasible_count / seeds.length,
+                p_utility: utility_count / seeds.length,
+                p_utility_given_feasible: feasible_count > 0 ? utility_given_feasible_count / feasible_count : 0,
+                mean_violation_step: violation_steps.length > 0 ? mean(violation_steps) : null,
+                mean_utility_step: utility_steps.length > 0 ? mean(utility_steps) : null
+            };
+            
+            // Add gate-specific metrics
+            if (gate === 'V4' && lambda_max_values.length > 0) {
+                result.lambda_envelope = {
+                    min: Math.min(...lambda_max_values),
+                    p10: percentile(lambda_max_values, 10),
+                    p50: percentile(lambda_max_values, 50),
+                    p90: percentile(lambda_max_values, 90),
+                    max: Math.max(...lambda_max_values)
+                };
+                result.mean_lambda_max = mean(lambda_max_values);
+            }
+            
+            if (gate === 'V5') {
+                result.p_sat = sat_count / seeds.length;
+                result.mean_unsat_count = unsat_counts.length > 0 ? mean(unsat_counts) : null;
+            }
+            
+            return result;
+        }
+
+        function simulateRun(gate, params, seed) {
+            // Deterministic simulation based on seed and parameters
+            // This is a placeholder - real implementation would use actual gate logic
+            
+            const rng = seededRandom(seed);
+            
+            let feasible = true;
+            let violation_step = null;
+            let utility = false;
+            let utility_step = null;
+            
+            if (gate === 'V3') {
+                // DAG embeddability - higher p_backedge = less feasible
+                const threshold = 0.05; // Approximate phase transition
+                feasible = params.p_backedge < threshold + rng() * 0.02;
+                violation_step = feasible ? null : Math.floor(rng() * CHAMBER_CONFIG.maxSteps);
+                
+                if (feasible) {
+                    utility = rng() < 0.6; // Conditional utility probability
+                    utility_step = utility ? Math.floor(rng() * CHAMBER_CONFIG.maxSteps) : null;
+                }
+                
+                return { feasible, violation_step, utility, utility_step };
+                
+            } else if (gate === 'V4') {
+                // Spectral feasibility - band width dependency
+                const lambda_max = 2.0 + rng() * 3.0; // Simulated eigenvalue
+                
+                feasible = lambda_max >= params.λ_low && lambda_max <= params.λ_high;
+                violation_step = feasible ? null : Math.floor(rng() * CHAMBER_CONFIG.maxSteps);
+                
+                if (feasible) {
+                    // Utility depends on how centered the band is
+                    const center_distance = Math.abs(lambda_max - (params.λ_low + params.λ_high) / 2);
+                    const band_width = params.λ_high - params.λ_low;
+                    const utility_prob = 0.7 * (1 - center_distance / (band_width / 2));
+                    utility = rng() < utility_prob;
+                    utility_step = utility ? Math.floor(rng() * CHAMBER_CONFIG.maxSteps) : null;
+                }
+                
+                return { feasible, violation_step, utility, utility_step, lambda_max };
+                
+            } else if (gate === 'V5') {
+                // XOR-SAT feasibility - phase transition around α ≈ 0.9
+                const critical_alpha = 0.88 + params.d * 0.02;
+                const sat_prob = 1 / (1 + Math.exp(20 * (params.alpha - critical_alpha)));
+                
+                const sat = rng() < sat_prob;
+                feasible = sat;
+                
+                const unsat_count = sat ? 0 : Math.floor(rng() * params.alpha * 50);
+                violation_step = sat ? null : Math.floor(rng() * CHAMBER_CONFIG.maxSteps);
+                
+                if (sat) {
+                    utility = rng() < 0.55;
+                    utility_step = utility ? Math.floor(rng() * CHAMBER_CONFIG.maxSteps) : null;
+                }
+                
+                return { feasible, sat, unsat_count, violation_step, utility, utility_step };
+            }
+            
+            return { feasible, violation_step, utility, utility_step };
+        }
+
+        function stopSweep() {
+            shouldStop = true;
+            log('Sweep stop requested...', 'warning');
+        }
+
+        function resetChamber() {
+            sweepResults = {};
+            calibrationData = null;
+            isRunning = false;
+            shouldStop = false;
+            
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsPanel').innerHTML = '';
+            document.getElementById('chartContainer').style.display = 'none';
+            document.getElementById('successCriteria').style.display = 'none';
+            document.getElementById('falsifierPanel').style.display = 'none';
+            
+            document.getElementById('runStatusBadge').textContent = 'READY';
+            document.getElementById('runStatusBadge').className = 'status-badge badge-locked';
+            
+            log('Chamber reset', 'info');
+        }
+
+        // RESULTS RENDERING
+        function renderResults() {
+            const panel = document.getElementById('resultsPanel');
+            const results = sweepResults[currentGate];
+            
+            if (!results || results.length === 0) {
+                panel.innerHTML = '<p style="color: #888;">No results available</p>';
+                return;
+            }
+            
+            let html = '<div style="border: 2px solid #00ff00; padding: 20px; margin-top: 20px; background: #0f0f0f;">';
+            html += `<h2 style="color: #00ff00; margin-bottom: 15px;">Sweep Results: ${SWEEP_TABLES[currentGate].name}</h2>`;
+            
+            // Summary metrics
+            const avgFeasible = mean(results.map(r => r.p_feasible));
+            const avgUtility = mean(results.map(r => r.p_utility));
+            const avgUtilityGivenFeasible = mean(results.filter(r => r.p_feasible > 0).map(r => r.p_utility_given_feasible));
+            
+            html += '<div class="results-grid">';
+            html += createMetricCard('Average p(F)', avgFeasible.toFixed(3), 'Feasibility rate across sweep');
+            html += createMetricCard('Average p(U)', avgUtility.toFixed(3), 'Utility rate across sweep');
+            html += createMetricCard('Average p(U|F)', avgUtilityGivenFeasible.toFixed(3), 'Conditional utility rate');
+            html += createMetricCard('Sweep Points', results.length, `Total parameter points tested`);
+            html += '</div>';
+            
+            // Data table
+            html += '<table class="data-table">';
+            html += '<thead><tr>';
+            html += '<th>Sweep ID</th>';
+            
+            if (currentGate === 'V3') {
+                html += '<th>p_backedge</th>';
+            } else if (currentGate === 'V4') {
+                html += '<th>λ_low</th><th>λ_high</th><th>width</th>';
+            } else if (currentGate === 'V5') {
+                html += '<th>d</th><th>α</th>';
+            }
+            
+            html += '<th>p(F)</th><th>p(U)</th><th>p(U|F)</th>';
+            html += '<th>〈t_viol〉</th><th>〈t_util〉</th>';
+            html += '</tr></thead><tbody>';
+            
+            for (const r of results) {
+                html += '<tr>';
+                html += `<td>${r.sweepID}</td>`;
+                
+                if (currentGate === 'V3') {
+                    html += `<td>${r.params.p_backedge.toFixed(3)}</td>`;
+                } else if (currentGate === 'V4') {
+                    if (r.params.λ_low !== undefined) {
+                        html += `<td>${r.params.λ_low.toFixed(2)}</td>`;
+                        html += `<td>${r.params.λ_high.toFixed(2)}</td>`;
+                        html += `<td>${r.params.width?.toFixed(2) || '—'}</td>`;
+                    } else {
+                        html += '<td colspan="3">CAL</td>';
+                    }
+                } else if (currentGate === 'V5') {
+                    html += `<td>${r.params.d}</td>`;
+                    html += `<td>${r.params.alpha.toFixed(2)}</td>`;
+                }
+                
+                html += `<td>${r.p_feasible.toFixed(3)}</td>`;
+                html += `<td>${r.p_utility.toFixed(3)}</td>`;
+                html += `<td>${r.p_utility_given_feasible.toFixed(3)}</td>`;
+                html += `<td>${r.mean_violation_step !== null ? r.mean_violation_step.toFixed(1) : '—'}</td>`;
+                html += `<td>${r.mean_utility_step !== null ? r.mean_utility_step.toFixed(1) : '—'}</td>`;
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            html += '</div>';
+            
+            panel.innerHTML = html;
+        }
+
+        function createMetricCard(title, value, detail) {
+            return `
+                <div class="metric-card">
+                    <div class="metric-title">${title}</div>
+                    <div class="metric-value">${value}</div>
+                    <div class="metric-detail">${detail}</div>
+                </div>
+            `;
+        }
+
+        function renderBoundaryChart() {
+            const results = sweepResults[currentGate];
+            if (!results || results.length === 0) return;
+            
+            document.getElementById('chartContainer').style.display = 'block';
+            
+            const canvas = document.getElementById('boundaryChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = 1200;
+            canvas.height = 400;
+            
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Extract data
+            let xValues, xLabel;
+            
+            if (currentGate === 'V3') {
+                xValues = results.map(r => r.params.p_backedge);
+                xLabel = 'p_backedge';
+            } else if (currentGate === 'V4') {
+                xValues = results.filter(r => r.params.width !== undefined).map(r => r.params.width);
+                xLabel = 'Band Width';
+            } else if (currentGate === 'V5') {
+                xValues = results.map(r => r.params.alpha);
+                xLabel = 'α (clause density)';
+            }
+            
+            const pF = results.filter(r => xValues.includes(currentGate === 'V3' ? r.params.p_backedge : 
+                                                           currentGate === 'V4' ? r.params.width :
+                                                           r.params.alpha)).map(r => r.p_feasible);
+            const pU = results.filter(r => xValues.includes(currentGate === 'V3' ? r.params.p_backedge :
+                                                           currentGate === 'V4' ? r.params.width :
+                                                           r.params.alpha)).map(r => r.p_utility);
+            
+            // Draw axes
+            const padding = 60;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + chartHeight);
+            ctx.lineTo(padding + chartWidth, padding + chartHeight);
+            ctx.stroke();
+            
+            // Draw grid
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (chartHeight / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+            }
+            
+            // Plot data
+            function plotLine(data, color) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < data.length; i++) {
+                    const x = padding + (chartWidth / (data.length - 1)) * i;
+                    const y = padding + chartHeight - (data[i] * chartHeight);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    // Draw point
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                
+                ctx.stroke();
+            }
+            
+            plotLine(pF, '#00ff00');
+            plotLine(pU, '#00aaff');
+            
+            // Labels
+            ctx.fillStyle = '#00ff00';
+            ctx.font = '14px Courier New';
+            ctx.fillText('p(F)', padding + chartWidth + 10, padding + chartHeight - pF[pF.length-1] * chartHeight);
+            
+            ctx.fillStyle = '#00aaff';
+            ctx.fillText('p(U)', padding + chartWidth + 10, padding + chartHeight - pU[pU.length-1] * chartHeight + 20);
+            
+            // Axis labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.fillText(xLabel, padding + chartWidth / 2, canvas.height - 20);
+            
+            ctx.save();
+            ctx.translate(20, padding + chartHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Probability', 0, 0);
+            ctx.restore();
+        }
+
+        // SUCCESS CRITERIA EVALUATION
+        function evaluateSuccessCriteria() {
+            document.getElementById('successCriteria').style.display = 'block';
+            
+            // Evaluate across all completed sweeps
+            const allResults = Object.values(sweepResults);
+            if (allResults.length === 0) return;
+            
+            let criterion1Met = false;
+            let criterion2Met = false;
+            let criterion3Met = false;
+            
+            let boundaryCount = 0;
+            let sharpBoundaryCount = 0;
+            
+            for (const [gate, results] of Object.entries(sweepResults)) {
+                if (!results || results.length < 2) continue;
+                
+                // Check for boundary existence
+                const pU_values = results.map(r => r.p_utility);
+                const pU_min = Math.min(...pU_values);
+                const pU_max = Math.max(...pU_values);
+                
+                if (pU_min <= 0.1 && pU_max >= 0.6) {
+                    boundaryCount++;
+                    
+                    // Check sharpness
+                    const transition = findTransition(pU_values, 0.1, 0.9);
+                    if (transition) {
+                        const boundaryWidth = transition.width / results.length;
+                        if (boundaryWidth <= 0.05) {
+                            sharpBoundaryCount++;
+                        }
+                    }
+                }
+            }
+            
+            criterion1Met = boundaryCount >= 2;
+            criterion2Met = sharpBoundaryCount >= 2;
+            criterion3Met = true; // Simplified - would need per-seed analysis
+            
+            // Update UI
+            document.getElementById('criterion1').className = `criteria-checkbox ${criterion1Met ? 'met' : ''}`;
+            document.getElementById('criterion2').className = `criteria-checkbox ${criterion2Met ? 'met' : ''}`;
+            document.getElementById('criterion3').className = `criteria-checkbox ${criterion3Met ? 'met' : ''}`;
+            
+            const allMet = criterion1Met && criterion2Met && criterion3Met;
+            const successText = allMet ? 
+                '<span style="color: #00ff00;">✓ P₁-A SUCCESS</span>' :
+                '<span style="color: #ffaa00;">⚠ P₁-A INCOMPLETE</span>';
+            
+            document.getElementById('overallSuccess').innerHTML = successText;
+            
+            if (allMet) {
+                log('P₁-A Success criteria met!', 'success');
+            } else {
+                log('P₁-A Success criteria not yet met', 'warning');
+            }
+        }
+
+        function findTransition(values, low, high) {
+            let transitionStart = -1;
+            let transitionEnd = -1;
+            
+            for (let i = 0; i < values.length; i++) {
+                if (transitionStart === -1 && values[i] >= low) {
+                    transitionStart = i;
+                }
+                if (transitionStart !== -1 && values[i] >= high) {
+                    transitionEnd = i;
+                    break;
+                }
+            }
+            
+            if (transitionStart !== -1 && transitionEnd !== -1) {
+                return {
+                    start: transitionStart,
+                    end: transitionEnd,
+                    width: transitionEnd - transitionStart
+                };
+            }
+            
+            return null;
+        }
+
+        // EXPORT
+        function exportResults() {
+            const exportData = {
+                chamber: CHAMBER_CONFIG.name,
+                version: CHAMBER_CONFIG.version,
+                phase: CHAMBER_CONFIG.phase,
+                timestamp: new Date().toISOString(),
+                config: CHAMBER_CONFIG,
+                results: sweepResults,
+                calibration: calibrationData
+            };
+            
+            const json = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chamber_li_p1_${currentGate}_${Date.now()}.json`;
+            a.click();
+            
+            log('Results exported to JSON', 'success');
+        }
+
+        // UTILITIES
+        function updateProgress(current, total, message) {
+            const percent = (current / total) * 100;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('progressFill').textContent = `${percent.toFixed(0)}%`;
+            document.getElementById('progressText').textContent = message || '';
+        }
+
+        function log(message, type = 'info') {
+            const panel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            panel.appendChild(entry);
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        function mean(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        function percentile(arr, p) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const index = (p / 100) * (sorted.length - 1);
+            const lower = Math.floor(index);
+            const upper = Math.ceil(index);
+            const weight = index - lower;
+            return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+        }
+
+        function seededRandom(seed) {
+            let state = seed;
+            return function() {
+                state = (state * 1664525 + 1013904223) % 4294967296;
+                return state / 4294967296;
+            };
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

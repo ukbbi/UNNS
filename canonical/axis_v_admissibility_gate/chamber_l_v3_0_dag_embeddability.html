@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber L (V-3.0) · DAG Embeddability | UNNS Laboratory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4a9eff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .header .axis-label {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(74, 158, 255, 0.2);
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #4a9eff;
+            margin-top: 10px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.85em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 0.95em;
+            width: 120px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4a9eff, #7b68ee);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 158, 255, 0.4);
+        }
+
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #4a9eff;
+        }
+
+        .metric-value.success {
+            color: #4ade80;
+        }
+
+        .metric-value.warning {
+            color: #fbbf24;
+        }
+
+        .metric-value.danger {
+            color: #ef4444;
+        }
+
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+            border-radius: 5px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.collapsed {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            flex: 1;
+            font-size: 0.95em;
+        }
+
+        .validation-panel {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .validation-panel h3 {
+            margin-bottom: 15px;
+            color: #4a9eff;
+        }
+
+        .validation-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.pass {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .badge.fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .badge.pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .spec-panel {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .spec-panel h3 {
+            color: #7b68ee;
+            margin-bottom: 15px;
+        }
+
+        .spec-item {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid #7b68ee;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+
+        .spec-item strong {
+            color: #4a9eff;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chamber L (V-3.0)</h1>
+            <div class="subtitle">DAG Embeddability · Instantaneous Feasibility</div>
+            <div class="axis-label">AXIS V · LOGIC CONTAINER L-B · MECHANISM V-3</div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Seed</label>
+                    <input type="number" id="seedInput" value="12345">
+                </div>
+                <div class="control-group">
+                    <label>Max Steps</label>
+                    <input type="number" id="maxStepsInput" value="1000" min="100" max="5000">
+                </div>
+                <div class="control-group">
+                    <label>p_backedge</label>
+                    <input type="number" id="pBackedgeInput" value="0.02" step="0.01" min="0" max="0.1">
+                </div>
+                <div class="control-group">
+                    <label>U_crit</label>
+                    <input type="number" id="uCritInput" value="0.15" step="0.01">
+                </div>
+                <button id="runButton">Run Single</button>
+                <button id="runBatchButton">Run Batch (50)</button>
+                <button id="exportButton">Export JSON</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <div class="status-text" id="statusText">Ready to run</div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Current Step</div>
+                <div class="metric-value" id="currentStep">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Feasible</div>
+                <div class="metric-value" id="feasibleStatus">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Utility Realized</div>
+                <div class="metric-value" id="utilityStatus">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Current U_t</div>
+                <div class="metric-value" id="currentUtility">0.000</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Violation Step</div>
+                <div class="metric-value" id="violationStep">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Utility Step</div>
+                <div class="metric-value" id="utilityStep">—</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <h3 style="margin-bottom: 10px; color: #4a9eff;">Timeline Visualization</h3>
+            <canvas id="timelineCanvas"></canvas>
+        </div>
+
+        <div class="validation-panel">
+            <h3>Validation Statistics (Batch Mode)</h3>
+            <div class="validation-stats">
+                <div class="metric-card">
+                    <div class="metric-label">Total Runs</div>
+                    <div class="metric-value" id="totalRuns">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">P(utility | F=true)</div>
+                    <div class="metric-value" id="pUtilityGivenFeasible">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">P(utility | F=false)</div>
+                    <div class="metric-value" id="pUtilityGivenCollapsed">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Mean Cliffness</div>
+                    <div class="metric-value" id="meanCliffness">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Falsifier Triggers</div>
+                    <div class="metric-value" id="falsifierCount">0</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <strong>Upgrade Decision:</strong>
+                <span id="upgradeDecision" class="badge pending">PENDING</span>
+            </div>
+        </div>
+
+        <div class="spec-panel">
+            <h3>Chamber Specification</h3>
+            <div class="spec-item">
+                <strong>Invariant:</strong> F(H) = acyclic history graph (boolean)
+            </div>
+            <div class="spec-item">
+                <strong>Falsifier:</strong> Utility persists after cycle introduction
+            </div>
+            <div class="spec-item">
+                <strong>Expected Signature:</strong> Sharp snap (B_u) — cliff at feasibility boundary
+            </div>
+            <div class="spec-item">
+                <strong>Coupling Rule:</strong> τ admissible iff F.feasible == true (irreversible)
+            </div>
+            <div class="spec-item">
+                <strong>Utility:</strong> Shared EMA threshold (k=8 consecutive steps above U_crit)
+            </div>
+        </div>
+
+        <div class="log-panel" id="logPanel"></div>
+
+        <div class="footer">
+            Chamber L (V-3.0) · UNNS Laboratory · Axis V Implementation<br>
+            Frozen Architecture · Implementation-Complete Specification
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CHAMBER L (V-3.0) - DAG EMBEDDABILITY
+        // Axis V · Logic Container L-B · Mechanism V-3
+        // ============================================================
+
+        class AcyclicFeasibilityPredicate {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.visited = new Set();
+                this.recStack = new Set();
+            }
+
+            evaluate(H) {
+                this.reset();
+                const graph = this.buildHistoryGraph(H.events);
+                
+                for (let nodeId of graph.nodes) {
+                    if (!this.visited.has(nodeId)) {
+                        const cycleInfo = this.hasCycleDFS(nodeId, graph);
+                        if (cycleInfo.hasCycle) {
+                            return {
+                                feasible: false,
+                                violation_step: this.findViolationStep(H, graph)
+                            };
+                        }
+                    }
+                }
+                
+                return { feasible: true, violation_step: null };
+            }
+
+            buildHistoryGraph(events) {
+                const nodes = new Set();
+                const edges = {};
+                
+                for (let event of events) {
+                    nodes.add(event.id);
+                    edges[event.id] = event.parents || [];
+                }
+                
+                return { nodes, edges };
+            }
+
+            hasCycleDFS(node, graph) {
+                this.visited.add(node);
+                this.recStack.add(node);
+                
+                const neighbors = graph.edges[node] || [];
+                for (let neighbor of neighbors) {
+                    if (!this.visited.has(neighbor)) {
+                        const result = this.hasCycleDFS(neighbor, graph);
+                        if (result.hasCycle) return result;
+                    } else if (this.recStack.has(neighbor)) {
+                        return { hasCycle: true, node: neighbor };
+                    }
+                }
+                
+                this.recStack.delete(node);
+                return { hasCycle: false };
+            }
+
+            findViolationStep(H, graph) {
+                // Find first step where adding the event creates a cycle
+                for (let i = 0; i < H.events.length; i++) {
+                    const partialH = { events: H.events.slice(0, i + 1) };
+                    const result = this.evaluate(partialH);
+                    if (!result.feasible) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+        }
+
+        class SharedUtilityEvaluator {
+            constructor(config) {
+                this.U_crit = config.U_crit;
+                this.k = config.k;
+                this.ema_alpha = config.ema_alpha;
+                this.reset();
+            }
+
+            reset() {
+                this.U_t = 0;
+                this.above_threshold_count = 0;
+                this.realized = false;
+                this.t_realized = null;
+                this.timeline = [];
+            }
+
+            update(event, t) {
+                // Compute instantaneous utility
+                const u_t = event.metrics.local_gain - event.metrics.local_cost;
+                
+                // Update EMA
+                this.U_t = this.ema_alpha * u_t + (1 - this.ema_alpha) * this.U_t;
+                
+                // Check stability condition
+                if (this.U_t >= this.U_crit) {
+                    this.above_threshold_count++;
+                    
+                    if (this.above_threshold_count >= this.k && !this.realized) {
+                        this.realized = true;
+                        this.t_realized = t;
+                    }
+                } else {
+                    this.above_threshold_count = 0;
+                }
+
+                this.timeline.push({
+                    t: t,
+                    U_t: this.U_t,
+                    realized: this.realized
+                });
+                
+                return {
+                    realized: this.realized,
+                    t_realized: this.t_realized,
+                    current_score: this.U_t
+                };
+            }
+        }
+
+        class HistoryGenerator {
+            constructor(config) {
+                this.config = config;
+                this.rng = null;
+            }
+
+            setSeed(seed) {
+                this.rng = this.seededRandom(seed);
+            }
+
+            seededRandom(seed) {
+                let state = seed;
+                return function() {
+                    state = (state * 1664525 + 1013904223) % 4294967296;
+                    return state / 4294967296;
+                };
+            }
+
+            generate(maxSteps) {
+                const H = {
+                    meta: {
+                        seed: this.config.seed,
+                        run_id: `run_${Date.now()}`,
+                        max_steps: maxSteps
+                    },
+                    events: [],
+                    utility: {
+                        realized: false,
+                        t_realized: null
+                    }
+                };
+
+                for (let t = 0; t < maxSteps; t++) {
+                    const event = this.generateEvent(t, H.events);
+                    H.events.push(event);
+                }
+
+                return H;
+            }
+
+            generateEvent(t, existingEvents) {
+                const parents = this.selectParents(t, existingEvents);
+                
+                return {
+                    t: t,
+                    id: `e_${t}`,
+                    local_state: {
+                        symbol: String.fromCharCode(65 + (t % 26)),
+                        payload: this.rng()
+                    },
+                    parents: parents,
+                    metrics: {
+                        local_cost: this.rng() * 0.3,
+                        local_gain: this.rng() * 0.5
+                    }
+                };
+            }
+
+            selectParents(t, existingEvents) {
+                if (t === 0 || existingEvents.length === 0) {
+                    return [];
+                }
+
+                const parents = [];
+                const maxParents = this.config.max_parents || 2;
+
+                // Standard parent selection
+                let candidates = existingEvents.filter(e => e.t < t);
+
+                // With probability p_backedge, allow potential cycle-inducing edge
+                if (this.rng() < this.config.p_backedge) {
+                    // Include all events, potentially creating cycles
+                    candidates = [...existingEvents];
+                }
+
+                // Select parents
+                const numParents = Math.min(
+                    Math.floor(this.rng() * maxParents) + 1,
+                    candidates.length
+                );
+
+                for (let i = 0; i < numParents; i++) {
+                    if (candidates.length === 0) break;
+                    const idx = Math.floor(this.rng() * candidates.length);
+                    parents.push(candidates[idx].id);
+                    candidates.splice(idx, 1);
+                }
+
+                return parents;
+            }
+        }
+
+        class ChamberL {
+            constructor() {
+                this.F_predicate = new AcyclicFeasibilityPredicate();
+                this.utility_evaluator = null;
+                this.generator = null;
+                this.H = null;
+                this.feasibility_timeline = [];
+                this.collapsed = false;
+                this.collapse_step = null;
+                this.batchResults = [];
+            }
+
+            initialize(config) {
+                this.config = config;
+                this.utility_evaluator = new SharedUtilityEvaluator({
+                    U_crit: config.U_crit,
+                    k: config.k || 8,
+                    ema_alpha: config.ema_alpha || 0.2
+                });
+                this.generator = new HistoryGenerator({
+                    seed: config.seed,
+                    p_backedge: config.p_backedge,
+                    max_parents: config.max_parents || 2
+                });
+                this.generator.setSeed(config.seed);
+            }
+
+            run(maxSteps) {
+                this.H = this.generator.generate(maxSteps);
+                this.feasibility_timeline = [];
+                this.collapsed = false;
+                this.collapse_step = null;
+                this.utility_evaluator.reset();
+
+                // Evaluate step by step
+                for (let t = 0; t < this.H.events.length; t++) {
+                    const event = this.H.events[t];
+                    const result = this.evaluateStep_LB(t, event);
+                    
+                    if (result.collapsed) {
+                        this.collapsed = true;
+                        this.collapse_step = result.collapse_step;
+                        // Continue evaluating but utility is now impossible
+                    }
+                }
+
+                // Final utility state
+                this.H.utility.realized = this.utility_evaluator.realized;
+                this.H.utility.t_realized = this.utility_evaluator.t_realized;
+
+                return this.H;
+            }
+
+            evaluateStep_LB(t, event) {
+                // Build partial history up to current step
+                const partialH = {
+                    events: this.H.events.slice(0, t + 1)
+                };
+
+                // Evaluate feasibility
+                const F_result = this.F_predicate.evaluate(partialH);
+
+                // Record timeline
+                this.feasibility_timeline.push({
+                    t: t,
+                    feasible: F_result.feasible,
+                    violation_step: F_result.violation_step
+                });
+
+                // Apply L-B coupling rule
+                if (!F_result.feasible) {
+                    return {
+                        tau_admissible: false,
+                        collapsed: true,
+                        collapse_step: F_result.violation_step,
+                        utility_possible: false
+                    };
+                }
+
+                // If feasible and not already collapsed, update utility
+                if (!this.collapsed) {
+                    const U_result = this.utility_evaluator.update(event, t);
+                    return {
+                        tau_admissible: true,
+                        collapsed: false,
+                        utility: U_result
+                    };
+                }
+
+                // If already collapsed from earlier, utility remains impossible
+                return {
+                    tau_admissible: false,
+                    collapsed: true,
+                    collapse_step: this.collapse_step,
+                    utility_possible: false
+                };
+            }
+
+            testFalsifier() {
+                // Falsifier: utility realized AFTER collapse
+                if (this.H.utility.realized && this.collapsed) {
+                    if (this.H.utility.t_realized > this.collapse_step) {
+                        return "FALSIFIER_TRIGGERED";
+                    }
+                }
+                return "FALSIFIER_SURVIVED";
+            }
+
+            exportJSON() {
+                return {
+                    chamber_id: "CHAMBER_L",
+                    version: "3.0",
+                    axis: "V",
+                    mechanism: "V-3",
+                    logic_container: "L-B",
+                    instantiation: {
+                        v_chamber: "V-3",
+                        invariant: {
+                            type: "F",
+                            predicate: "acyclic_history_graph",
+                            threshold: null
+                        },
+                        falsifier: "utility_after_collapse",
+                        expected_signature: "sharp_snap"
+                    },
+                    config: this.config,
+                    H: this.H,
+                    F_timeline: this.feasibility_timeline,
+                    U_timeline: this.utility_evaluator.timeline,
+                    outcome: {
+                        feasible: !this.collapsed,
+                        t_violation: this.collapse_step,
+                        utility_realized: this.H.utility.realized,
+                        t_utility: this.H.utility.t_realized,
+                        falsifier_status: this.testFalsifier()
+                    }
+                };
+            }
+        }
+
+        // ============================================================
+        // UI AND VISUALIZATION
+        // ============================================================
+
+        const chamber = new ChamberL();
+        let canvas, ctx;
+
+        function initializeUI() {
+            canvas = document.getElementById('timelineCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 400;
+
+            document.getElementById('runButton').addEventListener('click', runSingle);
+            document.getElementById('runBatchButton').addEventListener('click', runBatch);
+            document.getElementById('exportButton').addEventListener('click', exportJSON);
+        }
+
+        function runSingle() {
+            const seed = parseInt(document.getElementById('seedInput').value);
+            const maxSteps = parseInt(document.getElementById('maxStepsInput').value);
+            const pBackedge = parseFloat(document.getElementById('pBackedgeInput').value);
+            const uCrit = parseFloat(document.getElementById('uCritInput').value);
+
+            const config = {
+                seed: seed,
+                p_backedge: pBackedge,
+                max_parents: 2,
+                U_crit: uCrit,
+                k: 8,
+                ema_alpha: 0.2
+            };
+
+            chamber.initialize(config);
+            log(`Starting run with seed ${seed}...`);
+            
+            const startTime = performance.now();
+            chamber.run(maxSteps);
+            const elapsed = (performance.now() - startTime).toFixed(2);
+
+            log(`Run complete in ${elapsed}ms`);
+            log(`Feasible: ${!chamber.collapsed}, Utility: ${chamber.H.utility.realized}`);
+            log(`Falsifier: ${chamber.testFalsifier()}`);
+
+            updateMetrics();
+            visualizeTimeline();
+        }
+
+        async function runBatch() {
+            const count = 50;
+            const baseSeed = parseInt(document.getElementById('seedInput').value);
+            const maxSteps = parseInt(document.getElementById('maxStepsInput').value);
+            const pBackedge = parseFloat(document.getElementById('pBackedgeInput').value);
+            const uCrit = parseFloat(document.getElementById('uCritInput').value);
+
+            chamber.batchResults = [];
+            
+            document.getElementById('runBatchButton').disabled = true;
+            log(`Starting batch run (${count} seeds)...`);
+
+            for (let i = 0; i < count; i++) {
+                const seed = baseSeed + i;
+                const config = {
+                    seed: seed,
+                    p_backedge: pBackedge,
+                    max_parents: 2,
+                    U_crit: uCrit,
+                    k: 8,
+                    ema_alpha: 0.2
+                };
+
+                chamber.initialize(config);
+                chamber.run(maxSteps);
+                
+                chamber.batchResults.push({
+                    seed: seed,
+                    feasible: !chamber.collapsed,
+                    utility_realized: chamber.H.utility.realized,
+                    t_violation: chamber.collapse_step,
+                    t_utility: chamber.H.utility.t_realized,
+                    falsifier: chamber.testFalsifier()
+                });
+
+                // Update progress
+                if ((i + 1) % 10 === 0) {
+                    document.getElementById('statusText').textContent = 
+                        `Batch progress: ${i + 1}/${count} runs complete`;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
+
+            log(`Batch complete: ${count} runs finished`);
+            updateBatchStatistics();
+            evaluateUpgrade();
+            
+            document.getElementById('runBatchButton').disabled = false;
+            document.getElementById('statusText').textContent = 'Batch validation complete';
+        }
+
+        function updateMetrics() {
+            document.getElementById('currentStep').textContent = chamber.H.events.length;
+            
+            const feasible = !chamber.collapsed;
+            const feasibleEl = document.getElementById('feasibleStatus');
+            feasibleEl.textContent = feasible ? 'TRUE' : 'FALSE';
+            feasibleEl.className = 'metric-value ' + (feasible ? 'success' : 'danger');
+
+            const utilityEl = document.getElementById('utilityStatus');
+            utilityEl.textContent = chamber.H.utility.realized ? 'TRUE' : 'FALSE';
+            utilityEl.className = 'metric-value ' + (chamber.H.utility.realized ? 'success' : '');
+
+            document.getElementById('currentUtility').textContent = 
+                chamber.utility_evaluator.U_t.toFixed(3);
+
+            document.getElementById('violationStep').textContent = 
+                chamber.collapse_step !== null ? chamber.collapse_step : '—';
+
+            document.getElementById('utilityStep').textContent = 
+                chamber.H.utility.t_realized !== null ? chamber.H.utility.t_realized : '—';
+
+            const statusIndicator = document.getElementById('statusIndicator');
+            if (chamber.collapsed) {
+                statusIndicator.classList.add('collapsed');
+                document.getElementById('statusText').textContent = 
+                    `Run collapsed at step ${chamber.collapse_step}`;
+            } else {
+                statusIndicator.classList.remove('collapsed');
+                document.getElementById('statusText').textContent = 
+                    chamber.H.utility.realized ? 
+                    `Utility realized at step ${chamber.H.utility.t_realized}` :
+                    'Run complete, feasible, utility not realized';
+            }
+        }
+
+        function visualizeTimeline() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw background
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (!chamber.H) return;
+
+            const maxT = chamber.H.events.length;
+            const xScale = (width - 80) / maxT;
+            const yScale = height - 80;
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = 40 + (yScale / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(40, y);
+                ctx.lineTo(width - 40, y);
+                ctx.stroke();
+            }
+
+            // Draw U_t timeline
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < chamber.utility_evaluator.timeline.length; i++) {
+                const point = chamber.utility_evaluator.timeline[i];
+                const x = 40 + point.t * xScale;
+                const y = 40 + yScale - (point.U_t * yScale);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Draw U_crit threshold
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            const thresholdY = 40 + yScale - (chamber.config.U_crit * yScale);
+            ctx.beginPath();
+            ctx.moveTo(40, thresholdY);
+            ctx.lineTo(width - 40, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw collapse marker
+            if (chamber.collapsed) {
+                const collapseX = 40 + chamber.collapse_step * xScale;
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(collapseX, 40);
+                ctx.lineTo(collapseX, 40 + yScale);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('COLLAPSE', collapseX + 5, 55);
+            }
+
+            // Draw utility realization marker
+            if (chamber.H.utility.realized) {
+                const utilityX = 40 + chamber.H.utility.t_realized * xScale;
+                ctx.strokeStyle = '#4ade80';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(utilityX, 40);
+                ctx.lineTo(utilityX, 40 + yScale);
+                ctx.stroke();
+
+                ctx.fillStyle = '#4ade80';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('UTILITY', utilityX + 5, 70);
+            }
+
+            // Draw axes labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('0', 10, 40 + yScale);
+            ctx.fillText(chamber.config.U_crit.toFixed(2), 10, thresholdY);
+            ctx.fillText('t=0', 40, height - 20);
+            ctx.fillText(`t=${maxT}`, width - 60, height - 20);
+            ctx.fillText('U_t', 10, 30);
+        }
+
+        function updateBatchStatistics() {
+            const results = chamber.batchResults;
+            document.getElementById('totalRuns').textContent = results.length;
+
+            // Calculate P(utility | feasible)
+            const feasibleRuns = results.filter(r => r.feasible);
+            const feasibleWithUtility = feasibleRuns.filter(r => r.utility_realized);
+            const pUtilityGivenFeasible = feasibleRuns.length > 0 ? 
+                (feasibleWithUtility.length / feasibleRuns.length) : 0;
+
+            // Calculate P(utility | collapsed)
+            const collapsedRuns = results.filter(r => !r.feasible);
+            const collapsedWithUtility = collapsedRuns.filter(r => r.utility_realized);
+            const pUtilityGivenCollapsed = collapsedRuns.length > 0 ? 
+                (collapsedWithUtility.length / collapsedRuns.length) : 0;
+
+            // Calculate cliffness (simplified metric)
+            const cliffness = Math.abs(pUtilityGivenFeasible - pUtilityGivenCollapsed);
+
+            // Count falsifier triggers
+            const falsifierTriggers = results.filter(r => r.falsifier === 'FALSIFIER_TRIGGERED').length;
+
+            document.getElementById('pUtilityGivenFeasible').textContent = 
+                pUtilityGivenFeasible.toFixed(3);
+            document.getElementById('pUtilityGivenCollapsed').textContent = 
+                pUtilityGivenCollapsed.toFixed(3);
+            document.getElementById('meanCliffness').textContent = 
+                cliffness.toFixed(3);
+            document.getElementById('falsifierCount').textContent = falsifierTriggers;
+        }
+
+        function evaluateUpgrade() {
+            const results = chamber.batchResults;
+            if (results.length === 0) return;
+
+            const feasibleRuns = results.filter(r => r.feasible);
+            const collapsedRuns = results.filter(r => !r.feasible);
+            
+            const pUtilityGivenFeasible = feasibleRuns.length > 0 ? 
+                (feasibleRuns.filter(r => r.utility_realized).length / feasibleRuns.length) : 0;
+            const pUtilityGivenCollapsed = collapsedRuns.length > 0 ? 
+                (collapsedRuns.filter(r => r.utility_realized).length / collapsedRuns.length) : 0;
+            
+            const cliffness = Math.abs(pUtilityGivenFeasible - pUtilityGivenCollapsed);
+            const falsifierCount = results.filter(r => r.falsifier === 'FALSIFIER_TRIGGERED').length;
+
+            // Apply upgrade criteria
+            const criterion1 = (pUtilityGivenCollapsed < 0.05) && 
+                              (pUtilityGivenFeasible / Math.max(pUtilityGivenCollapsed, 0.001) > 5.0);
+            const criterion2 = cliffness > 0.7;
+            const criterion3 = falsifierCount === 0;
+
+            const upgradeEl = document.getElementById('upgradeDecision');
+            
+            if (criterion1 && criterion2 && criterion3) {
+                upgradeEl.textContent = 'UPGRADED ✓';
+                upgradeEl.className = 'badge pass';
+                log('UPGRADE: All three criteria satisfied');
+            } else {
+                upgradeEl.textContent = 'NOT UPGRADED';
+                upgradeEl.className = 'badge fail';
+                log(`UPGRADE FAILED: C1=${criterion1}, C2=${criterion2}, C3=${criterion3}`);
+            }
+        }
+
+        function exportJSON() {
+            if (!chamber.H) {
+                alert('No run data to export. Run a simulation first.');
+                return;
+            }
+
+            const data = chamber.exportJSON();
+            const blob = new Blob([JSON.stringify(data, null, 2)], 
+                { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chamber_l_v3_0_seed_${chamber.config.seed}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('JSON exported successfully');
+        }
+
+        function log(message) {
+            const logPanel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">[${time}]</span>${message}`;
+            
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', initializeUI);
+    </script>
+</body>
+</html>

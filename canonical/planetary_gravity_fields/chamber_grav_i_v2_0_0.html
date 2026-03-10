@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER GRAV-I v2.0 — Structural Phase Diagnostics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #040810;
+  --bg2:     #06090f;
+  --panel:   #080e18;
+  --panel2:  #0a1220;
+  --border:  #111e30;
+  --border2: #0c1828;
+  --accent:  #00c8f0;
+  --accent2: #f0a030;
+  --accent3: #e04040;
+  --green:   #00dd88;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --text:    #a8bfd0;
+  --text2:   #5a7a96;
+  --dim:     #2d4560;
+  --pass:    #00dd88;
+  --fail:    #e04040;
+  --warn:    #f0a030;
+  --mono:    'IBM Plex Mono','Courier New',monospace;
+  --sans:    'IBM Plex Sans',sans-serif;
+  --display: 'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1360px;margin:0 auto;padding:20px 20px 50px}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--display);font-size:11px;color:var(--accent);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;color:var(--green);border:1px solid var(--green);padding:2px 8px;letter-spacing:0.14em;font-weight:600}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.running{color:var(--warn);border-color:var(--warn);animation:blink 1s infinite}
+.htag.done{color:var(--pass);border-color:var(--pass)}
+.htag.err{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.45}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:0.1em}
+
+/* LAYER DIVIDERS */
+.layer-label{font-size:8px;color:var(--dim);letter-spacing:0.3em;font-weight:600;padding:4px 0 9px;border-top:1px solid var(--border2);margin-top:4px;margin-bottom:11px;display:flex;align-items:center;gap:12px}
+.layer-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:15px 18px}
+.ptitle{font-size:8.5px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* LAYER 1 — STRUCTURAL STATE */
+.state-grid{display:grid;grid-template-columns:minmax(200px,2fr) 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+.axis-card{background:var(--panel);border:1px solid var(--border2);padding:20px 22px;display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden}
+.axis-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--dim);transition:background .5s}
+.axis-card.ax-ci::before  {background:var(--pass)}
+.axis-card.ax-cii::before {background:var(--accent)}
+.axis-card.ax-ciii::before{background:var(--warn)}
+.axis-card.ax-c0::before  {background:var(--dim)}
+.ac-label{font-size:8px;color:var(--text2);letter-spacing:0.25em;font-weight:600}
+.ac-val{font-family:var(--display);font-size:26px;font-weight:700;line-height:1;color:var(--dim);transition:color .5s}
+.ac-val.ax-ci  {color:var(--pass)}
+.ac-val.ax-cii {color:var(--accent)}
+.ac-val.ax-ciii{color:var(--warn)}
+.ac-val.ax-c0  {color:var(--text2)}
+.ac-sub{font-size:9px;color:var(--text2)}
+.ac-gap-row{display:flex;gap:14px;margin-top:4px}
+.ac-gap-item{display:flex;flex-direction:column;gap:1px}
+.ac-gap-key{font-size:8px;color:var(--text2);letter-spacing:0.12em}
+.ac-gap-val{font-family:var(--display);font-size:11px;color:var(--accent)}
+
+.metric-card{background:var(--panel);border:1px solid var(--border2);padding:16px;display:flex;flex-direction:column;gap:5px}
+.mc-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600}
+.mc-val{font-family:var(--display);font-size:20px;font-weight:700;color:var(--accent);line-height:1.1}
+.mc-sub{font-size:9px;color:var(--text2)}
+
+.class-banner{background:var(--panel);border:1px solid var(--border2);margin-bottom:14px;display:grid;grid-template-columns:auto 1fr auto;overflow:hidden}
+.cb-class{padding:12px 22px;border-right:1px solid var(--border2);display:flex;flex-direction:column;justify-content:center;gap:3px}
+.cb-class-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600}
+.cb-class-val{font-family:var(--display);font-size:17px;color:var(--accent2);font-weight:700}
+.cb-desc{padding:12px 22px;display:flex;align-items:center;font-size:11px;color:var(--text2);font-style:italic}
+.cb-axis{padding:12px 22px;border-left:1px solid var(--border2);display:flex;flex-direction:column;justify-content:center;gap:3px;text-align:right}
+.cb-axis-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600}
+.cb-axis-val{font-family:var(--display);font-size:14px;color:var(--accent)}
+
+/* LAYER 2 — VISUALIZATION */
+.viz-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-bottom:14px}
+.viz-right{display:grid;grid-template-rows:1fr 1fr;gap:14px}
+
+canvas.sphere-canvas{display:block;background:#030710;border:1px solid var(--border2);cursor:grab}
+canvas.sphere-canvas:active{cursor:grabbing}
+canvas.plot-canvas{display:block;width:100%;background:#030710;border:1px solid var(--border2)}
+
+.scrubber-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:7px 10px;background:var(--panel2);border:1px solid var(--border2)}
+.scrubber-label{font-size:9px;color:var(--text2);letter-spacing:0.12em;white-space:nowrap}
+input[type=range].scrubber{flex:1;height:3px;accent-color:var(--accent);cursor:pointer}
+.scrubber-val{font-family:var(--display);font-size:11px;color:var(--accent);width:58px;text-align:right}
+
+.vec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.vec-group{background:var(--panel2);border:1px solid var(--border2);padding:9px 12px}
+.vec-group-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600;margin-bottom:6px}
+.vec-item{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0}
+.vec-key{font-size:11px;color:var(--text2)}
+.vec-val{font-size:12px;color:var(--accent);font-family:var(--display)}
+
+.raw-cells{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--border2);border:1px solid var(--border2);margin-top:8px}
+.rc{background:var(--panel2);padding:6px 8px}
+.rc-key{font-size:8.5px;color:var(--text2);letter-spacing:0.1em}
+.rc-val{font-size:11px;color:var(--accent);font-family:var(--display);margin-top:1px}
+
+/* LAYER 3 — ENGINE */
+.engine-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.kv{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+.kv .k{color:var(--text2)}
+.kv .v{color:var(--text);font-weight:500}
+.kv .v.hl{color:var(--accent)}
+.kv .v.ok{color:var(--pass)}
+.kv .v.warn{color:var(--warn)}
+.kv .v.err{color:var(--fail)}
+
+input[type=file]{font-family:var(--mono);font-size:10.5px;color:var(--text);background:var(--panel2);border:1px solid var(--border);padding:6px 10px;width:100%;cursor:pointer}
+input[type=file]::file-selector-button{font-family:var(--mono);font-size:9px;background:var(--border);color:var(--accent);border:none;padding:4px 10px;cursor:pointer;margin-right:10px}
+input[type=number]{font-family:var(--mono);font-size:11px;color:var(--text);background:var(--panel2);border:1px solid var(--border);padding:4px 8px;width:80px}
+label{font-size:10px;color:var(--text2)}
+.cfgrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:5px 0}
+.cfgrow label{display:flex;flex-direction:column;gap:3px}
+
+button{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:0.08em;cursor:pointer;padding:6px 16px;border:1px solid;transition:background .15s,color .15s}
+.btn-run{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-run:hover{background:#00a8cc}
+.btn-run:disabled{background:var(--dim);border-color:var(--dim);cursor:not-allowed;color:var(--bg)}
+.btn-exp{background:transparent;color:var(--green);border-color:var(--green)}
+.btn-exp:hover{background:var(--green);color:var(--bg)}
+.btn-exp:disabled{color:var(--dim);border-color:var(--dim);cursor:not-allowed}
+.progress-bar{background:var(--panel2);border:1px solid var(--border2);height:3px;overflow:hidden;margin:8px 0 4px}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .1s}
+.log{font-size:10px;color:var(--text2);min-height:16px;padding:3px 0;font-style:italic}
+.log.ok{color:var(--pass);font-style:normal}
+.log.err{color:var(--fail);font-style:normal}
+.note{font-size:9.5px;color:var(--text2);padding:5px 0;font-style:italic}
+
+.perf-bar{display:flex;gap:0;margin-top:8px;border:1px solid var(--border2);display:none}
+.perf-item{flex:1;padding:7px 12px;border-right:1px solid var(--border2)}
+.perf-item:last-child{border-right:none}
+.perf-item-label{font-size:8px;color:var(--text2);letter-spacing:0.14em}
+.perf-item-val{font-family:var(--display);font-size:13px;color:var(--text);margin-top:2px}
+
+.protocol{background:var(--panel);border:1px solid var(--border2);padding:14px 18px;margin-bottom:14px}
+.protocol-text{font-size:10px;color:var(--text2);line-height:1.9}
+.protocol-text b{color:var(--text)}
+
+/* GUIDE */
+.guide-toggle{display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 0;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);margin-bottom:0;user-select:none;width:100%}
+.guide-toggle:hover .guide-toggle-label{color:var(--accent)}
+.guide-toggle-label{font-size:9px;color:var(--text2);letter-spacing:0.28em;font-weight:600;transition:color .2s;flex:1}
+.guide-toggle-arrow{font-size:10px;color:var(--dim);transition:transform .25s;line-height:1}
+.guide-toggle-arrow.open{transform:rotate(90deg)}
+.guide-body{display:none;padding:22px 0 10px;margin-bottom:14px}
+.guide-body.open{display:block}
+
+.guide-section-title{font-size:8px;color:var(--accent);letter-spacing:0.25em;font-weight:600;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border2)}
+
+/* Dataset cards */
+.dataset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.ds-card{background:var(--panel);border:1px solid var(--border2);padding:14px 16px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;transition:border-color .2s}
+.ds-card:hover{border-color:var(--accent)}
+.ds-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.ds-earth::before  {background:#00c8f0}
+.ds-mars::before   {background:#e06030}
+.ds-moon::before   {background:#9880ff}
+.ds-synth::before  {background:#5a7a96}
+.ds-planet{font-size:8px;letter-spacing:0.22em;font-weight:700}
+.ds-earth  .ds-planet{color:#00c8f0}
+.ds-mars   .ds-planet{color:#e06030}
+.ds-moon   .ds-planet{color:#9880ff}
+.ds-synth  .ds-planet{color:#5a7a96}
+.ds-name{font-family:var(--display);font-size:12px;color:var(--text);line-height:1.2}
+.ds-meta{font-size:9px;color:var(--text2);line-height:1.5}
+.ds-expectation{font-size:9px;color:var(--text2);font-style:italic;border-top:1px solid var(--border2);padding-top:6px;margin-top:2px}
+.ds-link{display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--accent);text-decoration:none;letter-spacing:0.08em;padding:5px 10px;border:1px solid var(--accent);transition:background .15s,color .15s;margin-top:2px}
+.ds-link:hover{background:var(--accent);color:var(--bg)}
+
+/* Manuscript card */
+.manuscript-card{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:18px;margin-bottom:20px}
+.ms-icon{font-size:22px;color:var(--text2);line-height:1}
+.ms-title{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--text);letter-spacing:0.02em;line-height:1.4}
+.ms-sub{font-size:10px;color:var(--text2);margin-top:3px}
+.ms-link{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;color:var(--pass);text-decoration:none;letter-spacing:0.1em;padding:6px 14px;border:1px solid var(--pass);white-space:nowrap;transition:background .15s,color .15s}
+.ms-link:hover{background:var(--pass);color:var(--bg)}
+
+/* Guide prose */
+.guide-prose{font-size:10.5px;color:var(--text2);line-height:1.8;max-width:900px}
+.guide-prose b{color:var(--text)}
+.guide-prose .guide-kv{display:grid;grid-template-columns:140px 1fr;gap:4px 16px;margin:8px 0}
+.guide-prose .guide-kv .gk{color:var(--text2);font-size:10px;letter-spacing:0.08em}
+.guide-prose .guide-kv .gv{color:var(--text);font-size:10px}
+
+/* Guide — conceptual content */
+.guide-concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media(max-width:760px){.guide-concept-grid{grid-template-columns:1fr}}
+
+.guide-question{background:var(--panel);border:1px solid var(--border2);padding:14px 18px;position:relative;overflow:hidden}
+.guide-question::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px}
+.guide-question.gq-wrong::before{background:var(--dim)}
+.guide-question.gq-right::before{background:var(--accent)}
+.gq-label{font-size:8px;letter-spacing:0.22em;font-weight:600;margin-bottom:6px}
+.guide-question.gq-wrong .gq-label{color:var(--dim)}
+.guide-question.gq-right  .gq-label{color:var(--accent)}
+.gq-text{font-size:11px;color:var(--text);line-height:1.6}
+
+.guide-keypoint{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:14px 18px;margin:14px 0}
+.guide-keypoint-label{font-size:8px;color:var(--accent);letter-spacing:0.22em;font-weight:600;margin-bottom:6px}
+.guide-keypoint-text{font-size:12px;color:var(--text);line-height:1.7}
+
+.guide-diag-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+@media(max-width:760px){.guide-diag-grid{grid-template-columns:1fr}}
+.guide-diag-card{background:var(--panel);border:1px solid var(--border2);padding:13px 15px}
+.gdc-num{font-family:var(--display);font-size:22px;color:var(--border);font-weight:700;line-height:1;margin-bottom:6px}
+.gdc-title{font-size:9px;color:var(--accent);letter-spacing:0.18em;font-weight:600;margin-bottom:6px}
+.gdc-text{font-size:10px;color:var(--text2);line-height:1.6}
+
+.guide-planet-row{display:grid;grid-template-columns:80px 1fr 1fr;gap:0;background:var(--border2);border:1px solid var(--border2);margin:10px 0}
+.guide-planet-row > div{background:var(--panel2);padding:8px 12px}
+.guide-planet-row > div:nth-child(3n+1){background:var(--panel)}
+.gpr-head{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.gpr-planet{font-size:10px;font-weight:600;letter-spacing:0.08em}
+.gpr-structures{font-size:10px;color:var(--text2);line-height:1.5}
+.gpr-expected{font-size:10px;line-height:1.5}
+
+.guide-compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.guide-compare-card{background:var(--panel);border:1px solid var(--border2);padding:14px 18px}
+.gcc-label{font-size:8px;letter-spacing:0.2em;font-weight:600;margin-bottom:8px}
+.gcc-term{font-family:var(--display);font-size:15px;margin-bottom:6px;line-height:1}
+.gcc-desc{font-size:10px;color:var(--text2);line-height:1.6}
+.gcc-example{font-size:10px;color:var(--text2);font-style:italic;margin-top:6px;padding-top:6px;border-top:1px solid var(--border2)}
+
+.guide-unns{background:var(--panel);border:1px solid var(--border2);border-left:3px solid var(--purple);padding:16px 20px;margin:14px 0}
+.guide-unns-label{font-size:8px;color:var(--purple);letter-spacing:0.22em;font-weight:600;margin-bottom:8px}
+.guide-unns-text{font-size:11px;color:var(--text2);line-height:1.8}
+.guide-unns-text b{color:var(--text)}
+
+/* Interpretation block — "lit up" conceptual section */
+.interp-block{background:#060d18;border:1px solid #162a44;border-left:3px solid var(--accent);margin-top:22px;margin-bottom:6px;padding:20px 24px 22px;position:relative}
+.interp-block::before{content:'WHAT THIS CHAMBER ACTUALLY MEASURES';position:absolute;top:-1px;left:20px;background:#060d18;padding:0 8px;font-size:8px;color:var(--accent);letter-spacing:0.28em;font-weight:600;transform:translateY(-50%)}
+
+.interp-lead{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--text);line-height:1.55;margin-bottom:18px}
+.interp-lead b{color:var(--accent);font-weight:600}
+
+.interp-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
+.interp-col{background:var(--panel);border:1px solid var(--border2);padding:14px 16px}
+.ic-label{font-size:8px;letter-spacing:0.22em;font-weight:600;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+.ic-label.cl-earth{color:#00c8f0}
+.ic-label.cl-mars {color:#e06030}
+.ic-label.cl-moon {color:#9880ff}
+.ic-item{font-size:9.5px;color:var(--text2);padding:2px 0;display:flex;align-items:baseline;gap:6px}
+.ic-item::before{content:'·';color:var(--dim);flex-shrink:0}
+
+.interp-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+
+.interp-box{background:var(--panel);border:1px solid var(--border2);padding:14px 16px}
+.ib-title{font-size:8px;color:var(--accent);letter-spacing:0.2em;font-weight:600;margin-bottom:8px}
+.ib-item{display:flex;gap:10px;align-items:baseline;padding:3px 0;font-size:10px;border-bottom:1px solid var(--border2)}
+.ib-item:last-child{border-bottom:none}
+.ib-key{color:var(--text);font-weight:600;min-width:80px;font-size:9.5px;letter-spacing:0.06em}
+.ib-val{color:var(--text2);line-height:1.5}
+
+.interp-distinction{background:var(--panel);border:1px solid var(--border2);padding:14px 18px;margin-bottom:14px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0}
+.id-col{padding:4px 18px}
+.id-col:first-child{border-right:1px solid var(--border2)}
+.id-col:last-child {border-left:1px solid var(--border2)}
+.id-term{font-family:var(--display);font-size:13px;color:var(--accent);margin-bottom:4px}
+.id-def{font-size:9.5px;color:var(--text2);line-height:1.5}
+.id-vs{font-family:var(--display);font-size:11px;color:var(--dim);text-align:center;padding:0 10px}
+
+.interp-punchline{border:1px solid #162a44;border-left:3px solid var(--purple);background:#07101a;padding:14px 18px;font-size:11px;color:var(--text2);line-height:1.7}
+.interp-punchline b{color:var(--text)}
+.interp-punchline em{color:var(--purple);font-style:normal}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <span class="hid">CHAMBER GRAV-I</span>
+  <span class="htitle">Structural Phase Diagnostics — Axis Emergence Under Truncation</span>
+  <span class="htag idle" id="statusTag">IDLE</span>
+  <span class="htag">PHASE DETECTOR</span>
+  <span class="htag">2D SWEEP</span>
+  <span class="hver">v2.0.0</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     GUIDE (collapsible)
+══════════════════════════════════════════════════════════ -->
+<div class="guide-toggle" id="guideToggle" onclick="toggleGuide()">
+  <span class="guide-toggle-label">GUIDE &mdash; WHAT THE CHAMBER MEASURES &middot; DATASETS &middot; CLASSIFICATION</span>
+  <span class="guide-toggle-arrow" id="guideArrow">&#x25B6;</span>
+</div>
+
+<div class="guide-body" id="guideBody" style="display:none">
+
+  <!-- ── WHAT THE CHAMBER MEASURES ────────────────────────────── -->
+  <div class="guide-section-title">WHAT THE CHAMBER MEASURES</div>
+
+  <div class="guide-concept-grid">
+    <div class="guide-question gq-wrong">
+      <div class="gq-label">NOT ASKING</div>
+      <div class="gq-text">&ldquo;Does the gravity field have structure?&rdquo;</div>
+    </div>
+    <div class="guide-question gq-right">
+      <div class="gq-label">ACTUALLY ASKING</div>
+      <div class="gq-text">&ldquo;Does the field have a <b>dominant global axis direction</b>?&rdquo;</div>
+    </div>
+  </div>
+
+  <div class="guide-prose" style="margin-bottom:12px">
+    <p>The chamber computes <b>J(θ,φ;L)</b> — the fraction of total power concentrated in the zonal mode under rotation to axis (θ,φ) at truncation depth L. At each L it finds the best axis (J&#x2081;) and the second-best distinct axis (J&#x2082;). Classification uses the <b>spectral dominance gap</b>:</p>
+  </div>
+
+  <div class="guide-keypoint">
+    <div class="guide-keypoint-label">SPECTRAL DOMINANCE GAP</div>
+    <div class="guide-keypoint-text">
+      gap &nbsp;=&nbsp; J&#x2081; &minus; J&#x2082;<br>
+      <span style="font-size:10px;color:var(--text2);display:block;margin-top:6px">
+        J&#x2081; = best-axis score &nbsp;&nbsp; J&#x2082; = runner-up score (distinct axis)<br>
+        Large gap &rarr; one axis strongly dominates &nbsp;&nbsp; Small gap &rarr; axes compete; no structural preference
+      </span>
+    </div>
+  </div>
+
+  <div class="guide-prose" style="margin-bottom:16px">
+    <p><b>Why not J&#x2081; alone?</b> Every scalar field on S&sup2; has a maximum — so a high J&#x2081; is <i>always</i> achievable. The runner-up J&#x2082; provides the baseline. Only the gap between them reveals whether one axis genuinely dominates or whether multiple competing directions share the power equally.</p>
+  </div>
+
+  <!-- ── WHY PLANETARY FIELDS GIVE WEAK AXIS DOMINANCE ─────────── -->
+  <div class="guide-section-title" style="margin-top:20px">WHY PLANETARY GRAVITY FIELDS GIVE WEAK AXIS DOMINANCE</div>
+
+  <div class="guide-prose" style="margin-bottom:10px">
+    <p>Planetary gravity fields are <b>not axisymmetric objects</b>. They are composed of many competing large-scale structures that produce comparable contributions at different orientations. The spectral landscape looks like J&#x2081; &asymp; J&#x2082; &asymp; J&#x2083;, which keeps the gap small.</p>
+  </div>
+
+  <div class="guide-planet-row">
+    <div class="gpr-head">BODY</div><div class="gpr-head">COMPETING STRUCTURES</div><div class="gpr-head">EXPECTED CLASS</div>
+    <div class="gpr-planet" style="color:#00c8f0">EARTH</div>
+    <div class="gpr-structures">Equatorial bulge (rotation) &middot; continental mass asymmetry &middot; ocean basins &middot; mantle convection patterns &middot; large-scale density anomalies</div>
+    <div class="gpr-expected" style="color:var(--warn)">CLASS II / III &mdash; gap &asymp; 0.001&ndash;0.05<br><span style="color:var(--text2);font-size:9px">Competing mechanisms distribute power across many directions</span></div>
+
+    <div class="gpr-planet" style="color:#e06030">MARS</div>
+    <div class="gpr-structures">Tharsis volcanic plateau &middot; Hellas impact basin &middot; crustal dichotomy (north/south) &middot; Valles Marineris &middot; polar ice mass</div>
+    <div class="gpr-expected" style="color:var(--accent)">CLASS II / III &mdash; gap &asymp; 0.001&ndash;0.05<br><span style="color:var(--text2);font-size:9px">Tharsis is large but competing structures reduce net dominance</span></div>
+
+    <div class="gpr-planet" style="color:#9880ff">MOON</div>
+    <div class="gpr-structures">Near-side mascon basins (Mare Imbrium, Serenitatis) &middot; far-side crustal thickness &middot; tidal-locking asymmetry &middot; polar gravity anomalies</div>
+    <div class="gpr-expected" style="color:var(--accent)">CLASS II &mdash; gap &asymp; 0.005–0.02<br><span style="color:var(--text2);font-size:9px">Near-side mascons create preference without full dominance</span></div>
+
+    <div class="gpr-planet" style="color:#5a7a96">SYNTHETIC</div>
+    <div class="gpr-structures">Random spherical harmonic coefficients &mdash; no physical mechanism; no structural coherence by construction</div>
+    <div class="gpr-expected" style="color:var(--text2)">CLASS 0 &mdash; gap &asymp; 10&#x207B;&sup4;<br><span style="font-size:9px">Noise floor baseline</span></div>
+  </div>
+
+  <!-- ── KEY DISTINCTION ────────────────────────────────────────── -->
+  <div class="guide-section-title" style="margin-top:20px">STRUCTURED vs. AXISYMMETRIC</div>
+
+  <div class="guide-compare-grid">
+    <div class="guide-compare-card">
+      <div class="gcc-label" style="color:var(--accent)">STRUCTURED</div>
+      <div class="gcc-term" style="color:var(--accent)">mass distribution not random</div>
+      <div class="gcc-desc">The field shows coherent spatial organisation at large scales — gravity is not white noise.</div>
+      <div class="gcc-example">All four planetary datasets are structured. Even the synthetic field could be structured if given correlated coefficients.</div>
+    </div>
+    <div class="guide-compare-card">
+      <div class="gcc-label" style="color:var(--pass)">AXISYMMETRIC</div>
+      <div class="gcc-term" style="color:var(--pass)">dominated by one direction</div>
+      <div class="gcc-desc">The field has a single preferred axis around which it is approximately symmetric — power concentrates in one zonal orientation.</div>
+      <div class="gcc-example">No planetary dataset in this chamber is expected to be axisymmetric. Earth comes closest due to rotational flattening, but continental mass distribution, ocean basins, and mantle structure all compete with the rotational term.</div>
+    </div>
+  </div>
+
+  <div class="guide-keypoint">
+    <div class="guide-keypoint-label">KEY POINT</div>
+    <div class="guide-keypoint-text">GRAV-I tests <b>axisymmetry</b>, not structure.<br>
+    <span style="font-size:10.5px;color:var(--text2)">Planetary gravity fields are structured but not strongly axisymmetric. CLASS III does not mean "no structure" — it means "no single dominant axis." Distributed mechanisms compete.</span></div>
+  </div>
+
+  <!-- ── WHAT GRAV-I DOES DETECT ─────────────────────────────── -->
+  <div class="guide-section-title" style="margin-top:20px">WHAT GRAV-I DETECTS BEYOND THE GAP</div>
+
+  <div class="guide-diag-grid">
+    <div class="guide-diag-card">
+      <div class="gdc-num">01</div>
+      <div class="gdc-title">AXIS TRAJECTORY STABILITY</div>
+      <div class="gdc-text">The axis path θ(L), φ(L) stabilizes as L increases. Deeper harmonics reinforce the same directional tendency. <b>Random fields do not do this</b> — their axis wanders chaotically with no convergence.</div>
+    </div>
+    <div class="guide-diag-card">
+      <div class="gdc-num">02</div>
+      <div class="gdc-title">STABILITY DEPTH</div>
+      <div class="gdc-text">Early stabilization (low L) means the directional preference is encoded in low-degree harmonics — large-scale structural features. Late stabilization indicates the preference only emerges from fine-scale detail.</div>
+    </div>
+    <div class="guide-diag-card">
+      <div class="gdc-num">03</div>
+      <div class="gdc-title">TRANSITION STRUCTURE</div>
+      <div class="gdc-text">Real planetary fields show <b>limited axis jumps</b> and <b>structured degeneracy windows</b> — regime transitions occur at specific L values, not randomly. Synthetic fields show chaotic, unpatterned axis motion.</div>
+    </div>
+  </div>
+
+  <!-- ── NOISE FLOOR CONTEXT ────────────────────────────────────── -->
+  <div class="guide-section-title" style="margin-top:20px">NOISE FLOOR &amp; FALSIFICATION CONTEXT</div>
+
+  <div class="guide-prose" style="margin-bottom:14px">
+    <p>The synthetic random dataset is the null-hypothesis control. It establishes the noise floor:</p>
+    <div class="guide-kv" style="margin-top:8px;margin-bottom:8px">
+      <div class="gk">Synthetic (random)</div>   <div class="gv" style="color:var(--text2)">gap &asymp; 10&#x207B;&sup4; &nbsp;&rarr;&nbsp; CLASS 0 &nbsp; (noise)</div>
+      <div class="gk">Real planetary data</div>  <div class="gv" style="color:var(--text)">gap &asymp; 10&#x207B;&sup3; &ndash; 10&#x207B;&sup2; &nbsp;&rarr;&nbsp; CLASS II / III &nbsp; (above noise floor)</div>
+    </div>
+    <p>The chamber confirms that real fields sit measurably above the noise baseline — not because they are axisymmetric, but because <b>physical mechanisms impose persistent directional coherence</b>. That coherence is what the UNNS substrate framework predicts.</p>
+  </div>
+
+  <!-- ── UNNS IMPLICATION ───────────────────────────────────────── -->
+  <div class="guide-unns">
+    <div class="guide-unns-label">UNNS SUBSTRATE IMPLICATION</div>
+    <div class="guide-unns-text">
+      Real physical mechanisms are <b>multi-constraint structures</b>, not single-axis attractors. Planetary gravity is a competition of structural operators — rotational, tectonic, convective — each imposing partial directional preference without any single one dominating.<br><br>
+      So <b>weak axis dominance is physically correct</b>. The important result is not "Earth has a strong axis." It is:<br><br>
+      <b>Planetary gravity fields show persistent directional coherence without strong axis dominance.</b><br><br>
+      That is a structural signature of distributed physical mechanisms — exactly what the UNNS substrate framework predicts for fields generated by multi-operator competition rather than single-mode attractors.
+    </div>
+  </div>
+
+  <!-- ── CONNECTED MANUSCRIPT ──────────────────────────────────── -->
+  <div class="guide-section-title" style="margin-top:20px">CONNECTED MANUSCRIPT</div>
+  <div class="manuscript-card">
+    <div class="ms-icon">&#x1F4C4;</div>
+    <div>
+      <div class="ms-title">Directional Rigidity of Planetary Gravity Fields Under Harmonic Extension</div>
+      <div class="ms-sub">UNNS Research Programme &mdash; Empirical certification of axis emergence under truncation operators across planetary bodies</div>
+    </div>
+    <a class="ms-link" href="https://unns.tech/media/unns/geoid/Directional Rigidity of Planetary Gravity Fields Under Harmonic Extension.pdf" target="_blank">&#x2B07; PDF</a>
+  </div>
+
+  <!-- Dataset injection section -->
+  <div class="guide-section-title">INJECTION DATASETS</div>
+  <div class="dataset-grid">
+
+    <!-- Earth -->
+    <div class="ds-card ds-earth">
+      <div class="ds-planet">EARTH</div>
+      <div class="ds-name">EIGEN-6C4<br>L720 Subset</div>
+      <div class="ds-meta">
+        Lmax: 720 &nbsp;|&nbsp; model: EIGEN-6C4<br>
+        norm: fully_normalized<br>
+        tide: tide-free
+      </div>
+      <div class="ds-expectation">Expected: CLASS II / III &mdash; distributed structure; axis stabilises at low-to-mid L but gap remains modest due to competing mechanisms</div>
+      <a class="ds-link" href="https://unns.tech/media/unns/geoid/Earth dataset/grav_i_eigen6c4_L720_subset.json" target="_blank">&#x2B07; JSON</a>
+    </div>
+
+    <!-- Mars -->
+    <div class="ds-card ds-mars">
+      <div class="ds-planet">MARS</div>
+      <div class="ds-name">JGM85F01<br>L85 Subset</div>
+      <div class="ds-meta">
+        Lmax: 85 &nbsp;|&nbsp; model: JGM85F01<br>
+        norm: fully_normalized<br>
+        asymmetric crustal field
+      </div>
+      <div class="ds-expectation">Expected: CLASS II / III &mdash; later stabilisation; more transitions than Earth; Tharsis visible but not singularly dominant</div>
+      <a class="ds-link" href="https://unns.tech/media/unns/geoid/Mars dataset/grav_i_mars_L85_subset_chamber_schema.json" target="_blank">&#x2B07; JSON</a>
+    </div>
+
+    <!-- Moon -->
+    <div class="ds-card ds-moon">
+      <div class="ds-planet">MOON</div>
+      <div class="ds-name">GRGM1200<br>L300 Subset</div>
+      <div class="ds-meta">
+        Lmax: 300 &nbsp;|&nbsp; model: GRGM1200<br>
+        norm: fully_normalized<br>
+        tidally locked satellite
+      </div>
+      <div class="ds-expectation">Expected: CLASS II &mdash; early stable axis; low transition count; gap ≈ 0.005–0.02</div>
+      <a class="ds-link" href="https://unns.tech/media/unns/geoid/Moon dataset/grav_i_moon_L300_subset.json" target="_blank">&#x2B07; JSON</a>
+    </div>
+
+    <!-- Synthetic random -->
+    <div class="ds-card ds-synth">
+      <div class="ds-planet">SYNTHETIC</div>
+      <div class="ds-name">Random SH<br>L300 seed 1337</div>
+      <div class="ds-meta">
+        Lmax: 300 &nbsp;|&nbsp; random coefficients<br>
+        seed: 1337<br>
+        null-hypothesis control
+      </div>
+      <div class="ds-expectation">Expected: CLASS 0 &mdash; no structural axis; gap ≈ 10⁻⁴; spectral noise floor</div>
+      <a class="ds-link" href="https://unns.tech/media/unns/geoid/synth_random_L300_seed1337/grav_i_synth_random_L300_seed1337.json" target="_blank">&#x2B07; JSON</a>
+    </div>
+
+  </div>
+
+  <!-- Classification reference -->
+  <div class="guide-section-title">AXIS DOMINANCE CLASSIFICATION</div>
+  <div class="guide-prose">
+    <p>Classification is based on the spectral dominance gap <b>gap = J&#x2081; &minus; J&#x2082;</b> at L_max. Every scalar field on S&sup2; has a maximum, so axis <i>existence</i> is trivially true for all inputs. What matters is whether the best axis dominates spectrally over the runner-up.</p>
+    <div class="guide-kv">
+      <div class="gk" style="color:var(--pass)">CLASS I &nbsp; gap &ge; 0.05</div>   <div class="gv">Strong global axis dominance &mdash; the field contains a clearly preferred orientation. One direction spectrally outcompetes all others.</div>
+      <div class="gk" style="color:var(--accent)">CLASS II &nbsp; gap &ge; 0.01</div>  <div class="gv">Moderate axis anisotropy &mdash; a directional bias exists but competes with other orientations. The field is structured and non-random.</div>
+      <div class="gk" style="color:var(--warn)">CLASS III &nbsp; gap &ge; 0.001</div> <div class="gv">Weak axis anisotropy &mdash; the field is structured but dominated by multiple competing directions. <b>Does not mean weak structure.</b> Typical for distributed physical mechanisms.</div>
+      <div class="gk" style="color:var(--text2)">CLASS 0 &nbsp; gap &lt; 0.001</div>   <div class="gv">No detectable directional anisotropy &mdash; consistent with a random field. Degenerate windows (gap &le; &epsilon;_gap) also force CLASS 0.</div>
+    </div>
+    <p style="margin-top:10px"><b>How to use:</b> Download a dataset above, load it via <b>DATA INPUT</b> in Layer III, configure L_max and grid resolution, then click <b>RUN SWEEP</b>. The Layer I structural state panel will classify the result immediately on completion.</p>
+  </div>
+
+
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     LAYER I — STRUCTURAL STATE
+══════════════════════════════════════════════════════════ -->
+<div class="layer-label">LAYER I &mdash; STRUCTURAL STATE</div>
+
+<div class="state-grid">
+  <div class="axis-card" id="axisCard" title="Axis classification is based on spectral dominance gap: gap = J₁ − J₂. Large gap → one axis strongly dominates. Small gap → multiple directions compete; distributed structure, not noise.">
+    <div class="ac-label">AXIS DOMINANCE</div>
+    <div class="ac-val" id="acVal">—</div>
+    <div class="ac-sub" id="acSub">Load data and run sweep to diagnose</div>
+    <div class="ac-gap-row" id="acGapRow" style="display:none">
+      <div class="ac-gap-item"><div class="ac-gap-key">J&#x2081;</div><div class="ac-gap-val" id="acJ1">—</div></div>
+      <div class="ac-gap-item"><div class="ac-gap-key">J&#x2082;</div><div class="ac-gap-val" id="acJ2">—</div></div>
+      <div class="ac-gap-item"><div class="ac-gap-key">gap</div><div class="ac-gap-val" id="acGap">—</div></div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-label">STABILITY DEPTH</div>
+    <div class="mc-val" id="mcStab">—</div>
+    <div class="mc-sub" id="mcStabSub">first L, 10-step window</div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-label">TRANSITIONS</div>
+    <div class="mc-val" id="mcTrans">—</div>
+    <div class="mc-sub">axis jump events</div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-label">DEGEN WINDOWS</div>
+    <div class="mc-val" id="mcDegen">—</div>
+    <div class="mc-sub">gap &le; &epsilon; contiguous</div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-label">J&#x2081; FINAL</div>
+    <div class="mc-val" id="mcJ1">—</div>
+    <div class="mc-sub" id="mcJ1sub">score at L_max</div>
+  </div>
+</div>
+
+<div class="class-banner">
+  <div class="cb-class">
+    <div class="cb-class-label">AXIS DOMINANCE</div>
+    <div class="cb-class-val" id="cbClass">—</div>
+  </div>
+  <div class="cb-desc" id="cbDesc">Run sweep to classify axis emergence regime</div>
+  <div class="cb-axis">
+    <div class="cb-axis-label">FINAL AXIS</div>
+    <div class="cb-axis-val" id="cbAxis">&theta; = &mdash; &nbsp; &phi; = &mdash;</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     LAYER II — PHASE EVOLUTION
+══════════════════════════════════════════════════════════ -->
+<div class="layer-label">LAYER II &mdash; PHASE EVOLUTION</div>
+
+<div class="viz-grid">
+
+  <!-- LEFT column: sphere + scrubber + vector -->
+  <div>
+    <div class="panel" style="padding:14px 16px;margin-bottom:14px">
+      <div class="ptitle">AXIS TRAJECTORY &mdash; S² <span class="psub">n&#x0302;(L) path · drag to rotate</span></div>
+      <canvas class="sphere-canvas" id="cvSphere" width="288" height="290"></canvas>
+      <div class="scrubber-row">
+        <span class="scrubber-label">L SCRUBBER</span>
+        <input type="range" class="scrubber" id="lScrubber" min="1" max="300" value="1" disabled>
+        <span class="scrubber-val" id="lScrubVal">L=&mdash;</span>
+      </div>
+    </div>
+    <div class="panel" style="padding:14px 16px">
+      <div class="ptitle">AXIS VECTOR <span class="psub" id="vecSubLabel">at L=&mdash;</span></div>
+      <div class="vec-grid">
+        <div class="vec-group">
+          <div class="vec-group-label">CARTESIAN</div>
+          <div class="vec-item"><span class="vec-key">n&#x0302;&#x2093;</span><span class="vec-val" id="vNx">—</span></div>
+          <div class="vec-item"><span class="vec-key">n&#x0302;&#x1D67;</span><span class="vec-val" id="vNy">—</span></div>
+          <div class="vec-item"><span class="vec-key">n&#x0302;&#x2082;</span><span class="vec-val" id="vNz">—</span></div>
+        </div>
+        <div class="vec-group">
+          <div class="vec-group-label">SPHERICAL</div>
+          <div class="vec-item"><span class="vec-key">&theta;</span><span class="vec-val" id="vTheta">—</span></div>
+          <div class="vec-item"><span class="vec-key">&phi;</span><span class="vec-val" id="vPhi">—</span></div>
+          <div class="vec-item"><span class="vec-key">J&#x2081;</span><span class="vec-val" id="vJ1">—</span></div>
+        </div>
+      </div>
+      <div class="raw-cells">
+        <div class="rc"><div class="rc-key">GAP</div><div class="rc-val" id="vGap">—</div></div>
+        <div class="rc"><div class="rc-key">DEGEN</div><div class="rc-val" id="vDegen">—</div></div>
+        <div class="rc"><div class="rc-key">JUMP</div><div class="rc-val" id="vJump">—</div></div>
+        <div class="rc"><div class="rc-key">&Delta;axis°</div><div class="rc-val" id="vDelta">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT column: axis path + phase map -->
+  <div class="viz-right">
+    <div class="panel">
+      <div class="ptitle">AXIS PATH &theta;(L), &phi;(L) <span class="psub">cyan=&theta; · purple=&phi; · red=jump events</span></div>
+      <canvas class="plot-canvas" id="cvAxisPath" height="175"></canvas>
+      <div class="note">Colatitude &theta; and azimuth &phi; of best axis vs truncation depth L. Shaded columns = jump events.</div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">DEGENERACY PHASE MAP <span class="psub">green=stable · amber=degenerate · red=jump</span></div>
+      <canvas class="plot-canvas" id="cvPhaseMap" height="115"></canvas>
+      <div class="note">Structural regime across L. Boundary events mark phase transitions in axis geometry.</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     LAYER III — ENGINE DIAGNOSTICS
+══════════════════════════════════════════════════════════ -->
+<div class="layer-label">LAYER III &mdash; ENGINE DIAGNOSTICS</div>
+
+<div class="engine-grid">
+
+  <!-- Data input -->
+  <div class="panel">
+    <div class="ptitle">DATA INPUT <span class="psub">EIGEN-6C4 JSON SUBSET</span></div>
+    <input type="file" id="fileInput" accept=".json">
+    <div class="log" id="loadLog" style="margin-top:8px">Awaiting grav_i_eigen6c4_L720_subset.json &hellip;</div>
+    <div style="margin-top:10px">
+      <div class="kv"><span class="k">model</span><span class="v hl" id="metaModel">—</span></div>
+      <div class="kv"><span class="k">GM</span><span class="v" id="metaGM">—</span></div>
+      <div class="kv"><span class="k">R</span><span class="v" id="metaR">—</span></div>
+      <div class="kv"><span class="k">norm</span><span class="v" id="metaNorm">—</span></div>
+      <div class="kv"><span class="k">tide_system</span><span class="v" id="metaTide">—</span></div>
+      <div class="kv"><span class="k">Lmax_included</span><span class="v" id="metaLmax">—</span></div>
+      <div class="kv"><span class="k">n_coeff loaded</span><span class="v" id="metaN">—</span></div>
+    </div>
+  </div>
+
+  <!-- Config + run -->
+  <div class="panel">
+    <div class="ptitle">CONFIGURATION</div>
+    <div class="cfgrow">
+      <label>L_min<input type="number" id="cfgLmin" value="1" min="1" max="50"></label>
+      <label>L_max<input type="number" id="cfgLmax" value="300" min="2" max="720"></label>
+      <label>grid_deg<input type="number" id="cfgGrid" value="2.0" min="0.5" max="10" step="0.5"></label>
+    </div>
+    <div class="cfgrow">
+      <label>eps_gap<input type="number" id="cfgEps" value="1e-6" step="1e-7"></label>
+      <label>jump_thresh °<input type="number" id="cfgJump" value="5.0" min="0.1" max="45" step="0.1"></label>
+    </div>
+    <div class="cfgrow" style="margin-top:10px">
+      <button class="btn-run" id="btnRun" disabled>&#x25B6; RUN SWEEP</button>
+      <button class="btn-exp" id="btnJSON" disabled>&#x2B07; JSON</button>
+      <button class="btn-exp" id="btnCSV"  disabled>&#x2B07; CSV</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+    <div class="log" id="runLog">Load data to enable sweep.</div>
+    <div class="perf-bar" id="perfBar">
+      <div class="perf-item"><div class="perf-item-label">GRID</div><div class="perf-item-val" id="perfGrid">—</div></div>
+      <div class="perf-item"><div class="perf-item-label">OPS EST.</div><div class="perf-item-val" id="perfOps">—</div></div>
+      <div class="perf-item"><div class="perf-item-label">ETA</div><div class="perf-item-val" id="perfEta">—</div></div>
+    </div>
+  </div>
+
+  <!-- Raw metrics -->
+  <div class="panel">
+    <div class="ptitle">RAW METRICS <span class="psub">at scrubber L position</span></div>
+    <div class="kv"><span class="k">J&#x2081;</span><span class="v hl" id="rmJ1">—</span></div>
+    <div class="kv"><span class="k">J&#x2082;</span><span class="v" id="rmJ2">—</span></div>
+    <div class="kv"><span class="k">gap = J&#x2081;&#x2212;J&#x2082;</span><span class="v" id="rmGap">—</span></div>
+    <div class="kv"><span class="k">degenerate</span><span class="v" id="rmDegen">—</span></div>
+    <div class="kv"><span class="k">&delta;_axis (rad)</span><span class="v" id="rmDelta">—</span></div>
+    <div class="kv"><span class="k">transition_jump</span><span class="v" id="rmJump">—</span></div>
+    <div class="kv"><span class="k">degen_enter</span><span class="v" id="rmDE">—</span></div>
+    <div class="kv"><span class="k">degen_resolve</span><span class="v" id="rmDR">—</span></div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn-exp" id="btnJSON2" disabled>&#x2B07; JSON</button>
+      <button class="btn-exp" id="btnCSV2"  disabled>&#x2B07; CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Protocol -->
+<div class="protocol">
+  <div class="ptitle">MATHEMATICAL PROTOCOL</div>
+  <div class="protocol-text">
+    <b>Rotation:</b> Passive ZYZ convention R = R_z(&phi;) R_y(&theta;) R_z(0); axis (&theta;,&phi;) parameterizes n&#x0302; &isin; S&#x00B2;.&nbsp;
+    <b>Score:</b> J(&theta;,&phi;;L) = &Sigma;_{&ell;=1}^{L} |a&prime;_{&ell;,0}(&theta;,&phi;)|&sup2; / E_total(L).&nbsp;
+    <b>Rotated zonal coefficient (real field):</b>
+    a&prime;_{&ell;,0}(&theta;,&phi;) = d^&ell;_{0,0}(&theta;)&middot;C_{&ell;,0} + &Sigma;_{m=1}^&ell; &radic;2&middot;d^&ell;_{0,m}(&theta;)&middot;[C_{&ell;,m}&middot;cos(m&phi;) &minus; S_{&ell;,m}&middot;sin(m&phi;)].&nbsp;
+    <b>d^&ell;_{0,m}:</b> (&minus;1)^m P&#x0305;^m_&ell;(cos&theta;) / &radic;(2&ell;+1). Requires both C and S coefficients and &phi; mixing.&nbsp;
+    <b>Grid:</b> &theta; &isin; [0,&pi;], &phi; &isin; [0,2&pi;), same step = grid_deg. Axis undirected: &delta; = min(angle, &pi;&minus;angle).&nbsp;
+    <b>ALF recurrence:</b> 4&pi;-normalized P&#x0305;^m_&ell;(cos&theta;) via Colombo recurrence; precomputed for all &theta; grid values.
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+'use strict';
+
+// ── GLOBALS ──────────────────────────────────────────────────────────────────
+let gMeta   = null;
+let gCoeff  = null;
+let gSeries = null;
+let gExport = null;
+let gDiag   = null;
+
+const EL = id => document.getElementById(id);
+
+// ── FILE LOAD ─────────────────────────────────────────────────────────────────
+EL('fileInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  EL('loadLog').textContent = 'Reading …';
+  EL('loadLog').className = 'log';
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    loadData(data);
+  } catch(err) {
+    EL('loadLog').textContent = 'Error: ' + err.message;
+    EL('loadLog').className = 'log err';
+  }
+});
+
+function loadData(data) {
+  if (!data.meta || !data.coeff) throw new Error('Missing meta or coeff');
+  const meta = data.meta;
+  if (meta.norm && meta.norm !== 'fully_normalized')
+    throw new Error('norm must be fully_normalized, got: ' + meta.norm);
+  if (!meta.earth_gravity_constant || !meta.radius)
+    throw new Error('Missing GM or R in meta');
+
+  const modelName =
+    (typeof data.model === 'string' && data.model.trim()) ? data.model.trim()
+    : (data.model && typeof data.model === 'object' && typeof data.model.name === 'string' && data.model.name.trim()) ? data.model.name.trim()
+    : 'EIGEN-6C4';
+
+  gMeta = {
+    name: modelName,
+    GM: meta.earth_gravity_constant,
+    R: meta.radius,
+    max_degree: meta.max_degree,
+    norm: meta.norm,
+    tide_system: meta.tide_system,
+    errors: meta.errors,
+    Lmax_included: data.subset ? data.subset.Lmax_included : meta.max_degree
+  };
+
+  const cols = data.cols || ['l','m','C','S','sigC','sigS'];
+  const iL = cols.indexOf('l'), iM = cols.indexOf('m'),
+        iC = cols.indexOf('C'), iS = cols.indexOf('S');
+  const Lparse = gMeta.Lmax_included;
+  const C = {}, S = {};
+  let n = 0;
+  for (const row of data.coeff) {
+    const l = row[iL], m = row[iM];
+    if (l > Lparse) continue;
+    if (!C[l]) { C[l] = new Float64Array(l+1); S[l] = new Float64Array(l+1); }
+    C[l][m] = row[iC];
+    S[l][m] = row[iS];
+    n++;
+  }
+  gCoeff = { C, S };
+
+  EL('metaModel').textContent = gMeta.name;
+  EL('metaGM').textContent    = gMeta.GM.toExponential(6);
+  EL('metaR').textContent     = gMeta.R.toFixed(2) + ' m';
+  EL('metaNorm').textContent  = gMeta.norm;
+  EL('metaTide').textContent  = gMeta.tide_system;
+  EL('metaLmax').textContent  = gMeta.Lmax_included;
+  EL('metaN').textContent     = n;
+  EL('loadLog').textContent   = 'Loaded ' + n + ' coefficients.';
+  EL('loadLog').className     = 'log ok';
+  EL('btnRun').disabled       = false;
+  EL('cfgLmax').max           = gMeta.Lmax_included;
+  setStatus('READY', 'idle');
+}
+
+// ── ALF RECURRENCE (unchanged) ────────────────────────────────────────────────
+function computeNormalizedPlm(cosT, sinT, Lmax) {
+  const size = (Lmax+1)*(Lmax+2)/2;
+  const P = new Float64Array(size);
+  const idx = (l,m) => (l*(l+1)>>1) + m;
+  P[idx(0,0)] = 1.0;
+  for (let m = 0; m <= Lmax; m++) {
+    if (m > 0) {
+      const fac = Math.sqrt((2*m+1)/(2*m));
+      P[idx(m,m)] = fac * sinT * P[idx(m-1,m-1)];
+    }
+    if (m+1 <= Lmax) {
+      P[idx(m+1,m)] = Math.sqrt(2*m+3) * cosT * P[idx(m,m)];
+    }
+    for (let l = m+2; l <= Lmax; l++) {
+      const l2=l*l, m2=m*m;
+      const alpha = Math.sqrt((4*l2-1)/(l2-m2));
+      const beta  = Math.sqrt((2*l+1)*(l-m-1)*(l+m-1)/((2*l-3)*(l2-m2)));
+      P[idx(l,m)] = alpha * cosT * P[idx(l-1,m)] - beta * P[idx(l-2,m)];
+    }
+  }
+  return P;
+}
+
+function precomputePlmMatrix(NTheta, gridDeg, Lmax) {
+  const step = gridDeg * Math.PI / 180;
+  const plm = [];
+  for (let ti = 0; ti < NTheta; ti++) {
+    const theta = ti * step;
+    plm.push(computeNormalizedPlm(Math.cos(theta), Math.abs(Math.sin(theta)), Lmax));
+  }
+  return plm;
+}
+
+function computeEnergyPerDegree(C, S, Lmin, Lmax) {
+  const E = new Float64Array(Lmax+1);
+  for (let l = Lmin; l <= Lmax; l++) {
+    if (!C[l]) continue;
+    let e = C[l][0]*C[l][0];
+    for (let m = 1; m <= l; m++) e += C[l][m]*C[l][m] + S[l][m]*S[l][m];
+    E[l] = e;
+  }
+  return E;
+}
+
+function axisAngle(theta1, phi1, theta2, phi2) {
+  const sinT1=Math.sin(theta1), cosT1=Math.cos(theta1);
+  const sinT2=Math.sin(theta2), cosT2=Math.cos(theta2);
+  const dot = sinT1*Math.cos(phi1)*sinT2*Math.cos(phi2)
+            + sinT1*Math.sin(phi1)*sinT2*Math.sin(phi2)
+            + cosT1*cosT2;
+  const angle = Math.acos(Math.max(-1.0, Math.min(1.0, dot)));
+  return Math.min(angle, Math.PI - angle);
+}
+
+// ── MAIN SWEEP (engine unchanged) ─────────────────────────────────────────────
+async function runSweep() {
+  const Lmin = parseInt(EL('cfgLmin').value);
+  const Lmax = Math.min(parseInt(EL('cfgLmax').value), gMeta.Lmax_included);
+  const gridDeg = parseFloat(EL('cfgGrid').value);
+  const epsGap  = parseFloat(EL('cfgEps').value);
+  const jumpThreshDeg = parseFloat(EL('cfgJump').value);
+  const jumpThreshRad = jumpThreshDeg * Math.PI / 180;
+  const { C, S } = gCoeff;
+
+  EL('btnRun').disabled  = true;
+  EL('btnJSON').disabled = true;
+  EL('btnCSV').disabled  = true;
+  EL('btnJSON2').disabled= true;
+  EL('btnCSV2').disabled = true;
+  setStatus('RUNNING', 'running');
+  EL('runLog').textContent = 'Precomputing PLM matrix …';
+  EL('runLog').className   = 'log warn';
+  EL('progFill').style.width = '0%';
+
+  const step   = gridDeg * Math.PI / 180;
+  const NTheta = Math.floor(Math.PI / step) + 1;
+  const NPhi   = Math.floor(2 * Math.PI / step);
+
+  // Performance display
+  const pb = EL('perfBar'); pb.style.display = 'flex';
+  EL('perfGrid').textContent = NTheta + ' × ' + NPhi;
+  const ops = NTheta * NPhi * Lmax;
+  EL('perfOps').textContent  = ops < 1e9 ? (ops/1e6).toFixed(0)+'M' : (ops/1e9).toFixed(2)+'G';
+  EL('perfEta').textContent  = '…';
+
+  await tick();
+
+  const plmMatrix = precomputePlmMatrix(NTheta, gridDeg, Lmax);
+
+  EL('runLog').textContent = 'PLM precomputed. Building energy …';
+  EL('progFill').style.width = '10%';
+  await tick();
+
+  const Edeg = computeEnergyPerDegree(C, S, Lmin, Lmax);
+
+  const cos_phi_base = new Float64Array(NPhi);
+  const sin_phi_base = new Float64Array(NPhi);
+  for (let pj = 0; pj < NPhi; pj++) {
+    cos_phi_base[pj] = Math.cos(pj * step);
+    sin_phi_base[pj] = Math.sin(pj * step);
+  }
+
+  EL('runLog').textContent = 'Sweeping (' + NTheta + '×' + NPhi + ' grid, L to ' + Lmax + ') …';
+  EL('progFill').style.width = '15%';
+  await tick();
+
+  const cumEz = new Float64Array(NTheta * NPhi);
+  const series = [];
+  let cumE = 0, prevTheta = null, prevPhi = null;
+  let t0 = performance.now();
+  const CHUNK = 10;
+
+  for (let L = Lmin; L <= Lmax; L++) {
+    cumE += Edeg[L];
+    if (cumE === 0) continue;
+
+    if (C[L]) {
+      const Cl = C[L], Sl = S[L];
+      const triBase = (L*(L+1)) >> 1;
+      const inv = 1.0 / Math.sqrt(2 * L + 1);
+
+      for (let ti = 0; ti < NTheta; ti++) {
+        const plm_ti = plmMatrix[ti];
+        const A0 = plm_ti[triBase] * inv * Cl[0];
+        const Am = new Float64Array(L + 1);
+        const Bm = new Float64Array(L + 1);
+        Am[0] = A0;
+        for (let m = 1; m <= L; m++) {
+          const sign = (m & 1) ? -1 : 1;
+          const dm   = sign * plm_ti[triBase + m] * inv;
+          Am[m] = Math.SQRT2 * dm * Cl[m];
+          Bm[m] = -Math.SQRT2 * dm * (Sl ? Sl[m] : 0.0);
+        }
+        const base = ti * NPhi;
+        for (let pj = 0; pj < NPhi; pj++) {
+          const cphi = cos_phi_base[pj];
+          const sphi = sin_phi_base[pj];
+          let a0 = Am[0];
+          let cosm = cphi, sinm = sphi;
+          for (let m = 1; m <= L; m++) {
+            a0 += Am[m] * cosm + Bm[m] * sinm;
+            const cosm_next = cosm * cphi - sinm * sphi;
+            sinm = sinm * cphi + cosm * sphi;
+            cosm = cosm_next;
+          }
+          cumEz[base + pj] += a0 * a0;
+        }
+      }
+    }
+
+    let J1 = -Infinity, idx1 = 0;
+    const invCumE = 1.0 / cumE;
+    const N = NTheta * NPhi;
+    for (let i = 0; i < N; i++) {
+      const J = cumEz[i] * invCumE;
+      if (J > J1) { J1 = J; idx1 = i; }
+    }
+    const ti1 = (idx1 / NPhi) | 0, pj1 = idx1 % NPhi;
+    const theta1 = ti1 * step, phi1 = pj1 * step;
+    const sinT1 = Math.sin(theta1), cosT1 = Math.cos(theta1);
+
+    const epsRunnerAxisRad = 1e-6;
+    const cosEps = Math.cos(epsRunnerAxisRad);
+    let J2 = -Infinity, idx2 = idx1;
+    for (let i = 0; i < N; i++) {
+      if (i === idx1) continue;
+      const ti = (i / NPhi) | 0, pj = i % NPhi;
+      const theta = ti * step, phi = pj * step;
+      const sinT = Math.sin(theta), cosT = Math.cos(theta);
+      const cosDP = Math.cos(phi - phi1);
+      const dot = sinT1 * sinT * cosDP + cosT1 * cosT;
+      if (Math.abs(dot) > cosEps) continue;
+      const J = cumEz[i] * invCumE;
+      if (J > J2) { J2 = J; idx2 = i; }
+    }
+
+    const ti2 = (idx2 / NPhi) | 0, pj2 = idx2 % NPhi;
+    const theta2 = ti2 * step, phi2 = pj2 * step;
+    const sinT2 = Math.sin(theta2), cosT2 = Math.cos(theta2);
+    const gap = J1 - J2;
+    const degenerate = gap <= epsGap;
+
+    let deltaAxis = null, transitionJump = false;
+    let transitionDegenEnter = false, transitionDegenResolve = false;
+
+    if (prevTheta !== null) {
+      deltaAxis = axisAngle(theta1, phi1, prevTheta, prevPhi);
+      transitionJump = deltaAxis >= jumpThreshRad;
+    }
+    const prevEntry = series.length > 0 ? series[series.length - 1] : null;
+    if (prevEntry) {
+      transitionDegenEnter   = !prevEntry.degenerate && degenerate;
+      transitionDegenResolve =  prevEntry.degenerate && !degenerate;
+    }
+
+    series.push({
+      L,
+      theta: theta1, phi: phi1,
+      n_hat: [sinT1*Math.cos(phi1), sinT1*Math.sin(phi1), cosT1],
+      J1, J2, gap, degenerate,
+      J2_theta: theta2, J2_phi: phi2,
+      J2_n_hat: [sinT2*Math.cos(phi2), sinT2*Math.sin(phi2), cosT2],
+      delta_axis_rad: deltaAxis,
+      transition_jump: transitionJump,
+      transition_degen_enter: transitionDegenEnter,
+      transition_degen_resolve: transitionDegenResolve
+    });
+    prevTheta = theta1; prevPhi = phi1;
+
+    if (L % CHUNK === 0) {
+      EL('progFill').style.width = (15 + 80*(L-Lmin)/(Lmax-Lmin)).toFixed(1) + '%';
+      EL('runLog').textContent = 'L='+L+'/'+Lmax+'  J₁='+J1.toFixed(5)+'  θ*='+(theta1*180/Math.PI).toFixed(2)+'°  φ*='+(phi1*180/Math.PI).toFixed(2)+'°';
+      if (L > Lmin + 20) {
+        const elapsed = (performance.now() - t0) / 1000;
+        const frac    = (L - Lmin) / (Lmax - Lmin);
+        const eta     = (elapsed / frac) * (1 - frac);
+        EL('perfEta').textContent = eta < 60 ? eta.toFixed(0)+'s' : (eta/60).toFixed(1)+'m';
+      }
+      await tick();
+    }
+  }
+
+  const summary = buildSummary(series, jumpThreshRad);
+  gSeries = series;
+  gDiag   = computeDiagnostics(series, jumpThreshRad, Lmax);
+
+  gExport = {
+    chamber_id: 'GRAV-I',
+    chamber_version: 'v2.0.0',
+    model: { name: gMeta.name, source_file: 'grav_i_eigen6c4_L720_subset.json', GM: gMeta.GM, R: gMeta.R, max_degree: gMeta.max_degree, norm: gMeta.norm, tide_system: gMeta.tide_system },
+    config: { L_min: Lmin, L_max: Lmax, grid_deg: gridDeg, N_theta: NTheta, N_phi: NPhi, eps_gap: epsGap, jump_thresh_deg: jumpThreshDeg, sweep_note: 'Full 2D search over (theta,phi). Both C and S used. Real-field formula.' },
+    diagnostics: {
+      axis_present:      gDiag.axis_present,
+      axis_class:        gDiag.axis_class,
+      stability_depth:   gDiag.stability_depth,
+      transition_count:  gDiag.transition_count,
+      degeneracy_count:  gDiag.degeneracy_windows,
+      final_axis:        gDiag.final_axis
+    },
+    series: series.map(s => ({
+      L: s.L, theta: s.theta, phi: s.phi, n_hat: s.n_hat,
+      J1: s.J1, J2: s.J2, J2_theta: s.J2_theta, J2_phi: s.J2_phi, J2_n_hat: s.J2_n_hat,
+      gap: s.gap, degenerate: s.degenerate, delta_axis_rad: s.delta_axis_rad,
+      transition_jump: s.transition_jump, transition_degen_enter: s.transition_degen_enter, transition_degen_resolve: s.transition_degen_resolve
+    })),
+    summary
+  };
+
+  EL('progFill').style.width = '100%';
+  EL('perfEta').textContent  = 'done';
+  EL('runLog').textContent   = 'Sweep complete — ' + series.length + ' L steps.';
+  EL('runLog').className     = 'log ok';
+  setStatus('DONE', 'done');
+  EL('btnRun').disabled = false;
+  EL('btnJSON').disabled = EL('btnCSV').disabled = EL('btnJSON2').disabled = EL('btnCSV2').disabled = false;
+
+  // Setup scrubber
+  const ls = EL('lScrubber');
+  ls.min = series[0].L; ls.max = series[series.length-1].L; ls.value = series[series.length-1].L;
+  ls.disabled = false;
+
+  updateStructuralState(gDiag);
+  updateVectorAt(series[series.length-1]);
+  drawSphere(series);
+  drawAxisPath(series, Lmin, Lmax);
+  drawPhaseMap(series, Lmin, Lmax);
+}
+
+function tick() { return new Promise(r => setTimeout(r, 0)); }
+function setStatus(t, c) { const el = EL('statusTag'); el.textContent = t; el.className = 'htag ' + c; }
+
+// ── DIAGNOSTICS ───────────────────────────────────────────────────────────────
+function computeDiagnostics(series, jumpThreshRad, Lmax) {
+  const maxJ1 = Math.max(...series.map(s => s.J1));
+  const axis_present = maxJ1 > 0.1;
+
+  const STABLE_WINDOW = 10;
+  let stability_depth = null;
+  for (let i = 0; i < series.length - STABLE_WINDOW; i++) {
+    let ok = true;
+    for (let j = i+1; j <= i+STABLE_WINDOW; j++) {
+      if (series[j] && series[j].transition_jump) { ok = false; break; }
+    }
+    if (ok) { stability_depth = series[i].L; break; }
+  }
+
+  const transition_count = series.filter(s => s.transition_jump).length;
+
+  let degeneracy_windows = 0, inDegen = false;
+  for (const s of series) {
+    if (s.degenerate && !inDegen) { degeneracy_windows++; inDegen = true; }
+    else if (!s.degenerate)       { inDegen = false; }
+  }
+
+  const last = series[series.length-1];
+  const final_axis = { theta_deg: last.theta*180/Math.PI, phi_deg: last.phi*180/Math.PI };
+  const J1_final = last.J1;
+  const J2_final = last.J2;
+  const gap_final = last.gap;
+
+  // Gap-based dominance classification — replaces J1 threshold
+  // Every field has a max; classification must use spectral gap, not mere existence.
+  const dom = classifyAxisDominance(gap_final, last.degenerate);
+
+  return { axis_present, stability_depth, transition_count, degeneracy_windows, final_axis, J1_final, J2_final, gap_final,
+           axis_class: dom.axis_class, class_desc: dom.class_desc, dom_tier: dom.tier };
+}
+
+// ── AXIS DOMINANCE CLASSIFICATION (gap-based) ─────────────────────────────────
+// Every scalar field on S² has a maximum, so axis existence is trivially true.
+// Classification must use spectral dominance: gap = J₁ − J₂.
+function classifyAxisDominance(gap, degenerate) {
+  if (degenerate) {
+    return { tier: 'ax-c0', axis_class: 'CLASS 0', class_desc: 'Degenerate — gap ≤ ε_gap; axes spectrally indistinguishable' };
+  }
+  if (gap >= 5e-2) {
+    return { tier: 'ax-ci',   axis_class: 'CLASS I',   class_desc: 'Strong global axis anisotropy — one direction spectrally dominates all others' };
+  }
+  if (gap >= 1e-2) {
+    return { tier: 'ax-cii',  axis_class: 'CLASS II',  class_desc: 'Moderate axis anisotropy — directional bias present, competing with other orientations' };
+  }
+  if (gap >= 1e-3) {
+    return { tier: 'ax-ciii', axis_class: 'CLASS III', class_desc: 'Weak axis anisotropy — structured field with multiple competing directions; not weak structure' };
+  }
+  return   { tier: 'ax-c0',   axis_class: 'CLASS 0',   class_desc: 'No detectable directional anisotropy — consistent with a random field (gap < 0.001)' };
+}
+
+// ── SUMMARY (unchanged from v1.1.1) ──────────────────────────────────────────
+function buildSummary(series, jumpThreshRad) {
+  let firstStableL = null, largestJumpL = null, largestJumpRad = 0;
+  const degenWindows = []; let degenStart = null;
+  const STABLE_WINDOW = 10;
+  for (let i = 0; i < series.length - STABLE_WINDOW; i++) {
+    let stable = true;
+    for (let j = i+1; j <= i+STABLE_WINDOW; j++) {
+      if (series[j].transition_jump) { stable = false; break; }
+    }
+    if (stable && firstStableL === null) firstStableL = series[i].L;
+  }
+  for (const s of series) {
+    if (s.delta_axis_rad !== null && s.delta_axis_rad > largestJumpRad) { largestJumpRad = s.delta_axis_rad; largestJumpL = s.L; }
+    if (s.transition_degen_enter) degenStart = s.L;
+    if (s.transition_degen_resolve && degenStart !== null) { degenWindows.push([degenStart, s.L-1]); degenStart = null; }
+  }
+  if (degenStart !== null) degenWindows.push([degenStart, series[series.length-1].L]);
+  return { first_stable_L: firstStableL, largest_jump_L: largestJumpL, largest_jump_rad: largestJumpRad, degeneracy_windows: degenWindows };
+}
+
+// ── STRUCTURAL STATE UI (Layer 1) ─────────────────────────────────────────────
+function updateStructuralState(diag) {
+  const card = EL('axisCard');
+  const acv  = EL('acVal');
+  card.className = 'axis-card ' + diag.dom_tier;
+  acv.className  = 'ac-val '    + diag.dom_tier;
+
+  // Large class label in the card
+  acv.textContent = diag.axis_class;
+
+  // Sub-line: gap value with threshold context
+  const gapStr = diag.gap_final < 1e-10 ? '< 1e-10' : diag.gap_final.toExponential(3);
+  EL('acSub').textContent = diag.class_desc.split(' — ')[0];   // short label only
+
+  // J1 / J2 / gap inline readout
+  EL('acGapRow').style.display = 'flex';
+  EL('acJ1').textContent  = diag.J1_final.toFixed(4);
+  EL('acJ2').textContent  = diag.J2_final.toFixed(4);
+  EL('acGap').textContent = gapStr;
+
+  // Class-banner color: override cb-class-val via inline style to match tier
+  const tierColor = { 'ax-ci': 'var(--pass)', 'ax-cii': 'var(--accent)', 'ax-ciii': 'var(--warn)', 'ax-c0': 'var(--text2)' };
+  EL('cbClass').textContent     = diag.axis_class;
+  EL('cbClass').style.color     = tierColor[diag.dom_tier] || 'var(--text2)';
+  EL('cbDesc').textContent      = diag.class_desc;
+
+  const stab = diag.stability_depth;
+  EL('mcStab').textContent    = stab !== null ? 'L='+stab : 'none';
+  EL('mcStabSub').textContent = stab !== null ? 'stable from L='+stab : 'no stable window found';
+  EL('mcTrans').textContent   = diag.transition_count;
+  EL('mcDegen').textContent   = diag.degeneracy_windows;
+  EL('mcJ1').textContent      = diag.J1_final.toFixed(4);
+  EL('mcJ1sub').textContent   = 'score at L=' + gSeries[gSeries.length-1].L;
+
+  EL('cbAxis').innerHTML = '&theta; = '+diag.final_axis.theta_deg.toFixed(2)+'&deg; &nbsp; &phi; = '+diag.final_axis.phi_deg.toFixed(2)+'&deg;';
+}
+
+// ── VECTOR DISPLAY ────────────────────────────────────────────────────────────
+function updateVectorAt(s) {
+  if (!s) return;
+  EL('vNx').textContent    = s.n_hat[0].toFixed(5);
+  EL('vNy').textContent    = s.n_hat[1].toFixed(5);
+  EL('vNz').textContent    = s.n_hat[2].toFixed(5);
+  EL('vTheta').textContent = (s.theta*180/Math.PI).toFixed(3)+'°';
+  EL('vPhi').textContent   = (s.phi*180/Math.PI).toFixed(3)+'°';
+  EL('vJ1').textContent    = s.J1.toFixed(6);
+  EL('vGap').textContent   = s.gap.toExponential(3);
+  EL('vDegen').textContent = s.degenerate ? 'YES' : 'NO';
+  EL('vJump').textContent  = s.transition_jump ? 'YES' : 'NO';
+  EL('vDelta').textContent = s.delta_axis_rad ? (s.delta_axis_rad*180/Math.PI).toFixed(2) : '—';
+  EL('vecSubLabel').textContent = 'at L=' + s.L;
+  EL('lScrubVal').textContent   = 'L=' + s.L;
+  // raw metrics (layer 3)
+  EL('rmJ1').textContent = s.J1.toFixed(8);
+  EL('rmJ2').textContent = s.J2.toFixed(8);
+  EL('rmGap').textContent   = s.gap.toExponential(4);
+  const bv = (id, v) => { const el = EL(id); el.textContent = v ? 'TRUE' : 'FALSE'; el.className = 'v '+(v?'ok':'err'); };
+  bv('rmDegen', !!s.degenerate);
+  EL('rmDelta').textContent = s.delta_axis_rad ? s.delta_axis_rad.toFixed(6) : '—';
+  bv('rmJump', !!s.transition_jump);
+  bv('rmDE',   !!s.transition_degen_enter);
+  bv('rmDR',   !!s.transition_degen_resolve);
+}
+
+// ── L SCRUBBER ────────────────────────────────────────────────────────────────
+EL('lScrubber').addEventListener('input', () => {
+  if (!gSeries) return;
+  const L = parseInt(EL('lScrubber').value);
+  const s = gSeries.reduce((a,b) => Math.abs(b.L-L) < Math.abs(a.L-L) ? b : a);
+  updateVectorAt(s);
+  gHighlightL = s.L;
+  if (gSeriesCached) drawSphere(gSeriesCached);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPHERE
+// ─────────────────────────────────────────────────────────────────────────────
+let sphereRot = { ax: -0.35, ay: 0.3 };
+let sphereDrag = null;
+let gSeriesCached = null;
+let gHighlightL   = null;
+
+EL('cvSphere').addEventListener('mousedown', e => {
+  sphereDrag = { x: e.clientX, y: e.clientY, ax: sphereRot.ax, ay: sphereRot.ay };
+});
+window.addEventListener('mousemove', e => {
+  if (!sphereDrag) return;
+  sphereRot.ax = sphereDrag.ax + (e.clientY - sphereDrag.y) * 0.005;
+  sphereRot.ay = sphereDrag.ay + (e.clientX - sphereDrag.x) * 0.005;
+  if (gSeriesCached) drawSphere(gSeriesCached);
+});
+window.addEventListener('mouseup', () => { sphereDrag = null; });
+
+function proj(x, y, z) {
+  const ay = sphereRot.ay, ax = sphereRot.ax;
+  let x2 = x*Math.cos(ay) + z*Math.sin(ay);
+  let z2 = -x*Math.sin(ay) + z*Math.cos(ay);
+  let y2 = y*Math.cos(ax) - z2*Math.sin(ax);
+  let z3 = y*Math.sin(ax) + z2*Math.cos(ax);
+  return { sx: x2, sy: y2, depth: z3 };
+}
+
+function lerpColor(t) {
+  const stops = [[0,200,240],[0,220,100],[230,170,20],[230,60,30]];
+  const n = stops.length - 1;
+  const i = Math.min(n-1, Math.floor(t*n));
+  const f = t*n - i;
+  const a = stops[i], b = stops[i+1];
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;
+}
+
+function drawSphere(series) {
+  gSeriesCached = series;
+  const cv  = EL('cvSphere');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.clientWidth  || 288;
+  const H   = cv.clientHeight || 290;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#030710';
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2, R = Math.min(W, H) * 0.38;
+
+  // Grid
+  ctx.strokeStyle = '#0a1828'; ctx.lineWidth = 0.7;
+  for (let lat = -80; lat <= 80; lat += 20) {
+    const z = Math.sin(lat*Math.PI/180), rh = Math.cos(lat*Math.PI/180);
+    ctx.beginPath();
+    for (let i = 0; i <= 64; i++) {
+      const a = (i/64)*2*Math.PI;
+      const p = proj(rh*Math.cos(a), rh*Math.sin(a), z);
+      const px = cx+p.sx*R, py = cy-p.sy*R;
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+  for (let lon = 0; lon < 360; lon += 30) {
+    const r = lon*Math.PI/180;
+    ctx.beginPath();
+    for (let i = 0; i <= 64; i++) {
+      const lat = ((i/64)-0.5)*Math.PI;
+      const z = Math.sin(lat), rh = Math.cos(lat);
+      const p = proj(rh*Math.cos(r), rh*Math.sin(r), z);
+      const px = cx+p.sx*R, py = cy-p.sy*R;
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+
+  // Outline
+  ctx.strokeStyle = '#152638'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*Math.PI); ctx.stroke();
+
+  const Lmin = series[0].L, Lmax = series[series.length-1].L;
+  const pts = series.map((s,i) => ({ p: proj(s.n_hat[0], s.n_hat[1], s.n_hat[2]), s, t: i/(series.length-1) }));
+
+  // Back then front
+  for (const back of [true, false]) {
+    for (const { p, s, t } of pts) {
+      if (back ? p.depth >= 0 : p.depth < 0) continue;
+      const px = cx+p.sx*R, py = cy-p.sy*R;
+      const r = s.transition_jump ? 3.5 : 2;
+      const col = s.transition_jump ? '#e04040' : lerpColor(t);
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 2*Math.PI);
+      ctx.fillStyle = back ? col + '44' : col;
+      ctx.fill();
+      if (!back && s.transition_jump) {
+        ctx.beginPath(); ctx.arc(px, py, r+2.5, 0, 2*Math.PI);
+        ctx.strokeStyle = '#e0404055'; ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+  }
+
+  // Final axis marker
+  const last = series[series.length-1];
+  const pL = proj(last.n_hat[0], last.n_hat[1], last.n_hat[2]);
+  const fx = cx+pL.sx*R, fy = cy-pL.sy*R;
+  ctx.beginPath(); ctx.arc(fx, fy, 7, 0, 2*Math.PI);
+  ctx.fillStyle = '#00dd88'; ctx.fill();
+  ctx.beginPath(); ctx.arc(fx, fy, 10, 0, 2*Math.PI);
+  ctx.strokeStyle = '#00dd8855'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Scrubber highlight
+  if (gHighlightL !== null) {
+    const hs = series.find(x => x.L === gHighlightL);
+    if (hs) {
+      const ph = proj(hs.n_hat[0], hs.n_hat[1], hs.n_hat[2]);
+      ctx.beginPath(); ctx.arc(cx+ph.sx*R, cy-ph.sy*R, 8, 0, 2*Math.PI);
+      ctx.strokeStyle = '#00c8f0'; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#2d4560'; ctx.font = '9px IBM Plex Mono, monospace'; ctx.textAlign = 'center';
+  for (const [v, lbl] of [[[0,0,1],'N'],[[0,0,-1],'S'],[[1,0,0],'x'],[[0,1,0],'y']]) {
+    const p = proj(v[0], v[1], v[2]);
+    ctx.fillText(lbl, cx+p.sx*(R+14), cy-p.sy*(R+14)+3);
+  }
+
+  // Color legend
+  const grd = ctx.createLinearGradient(cx-60, H-12, cx+60, H-12);
+  [0,.33,.67,1].forEach(t => grd.addColorStop(t, lerpColor(t)));
+  ctx.fillStyle = grd; ctx.fillRect(cx-60, H-10, 120, 4);
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono';
+  ctx.textAlign = 'left';  ctx.fillText('L='+Lmin, cx-60, H-1);
+  ctx.textAlign = 'right'; ctx.fillText('L='+Lmax, cx+60, H-1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AXIS PATH PLOT
+// ─────────────────────────────────────────────────────────────────────────────
+function drawAxisPath(series, Lmin, Lmax) {
+  const cv  = EL('cvAxisPath');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.clientWidth;
+  const H   = cv.clientHeight || 175;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#030710'; ctx.fillRect(0,0,W,H);
+
+  const pad = { l:46, r:50, t:14, b:22 };
+  const iw = W - pad.l - pad.r;
+  const ih = H - pad.t - pad.b;
+
+  const toX  = L   => pad.l + iw * (L - Lmin) / (Lmax - Lmin);
+  const toYt = deg => pad.t + ih * (1 - deg / 180);
+  const toYp = deg => pad.t + ih * (1 - deg / 360);
+
+  // Grid
+  ctx.strokeStyle = '#0a1828'; ctx.lineWidth = 0.7;
+  [0,45,90,135,180].forEach(v => {
+    const y = toYt(v);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillStyle='#2d4560'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v+'°', pad.l-4, y+3);
+  });
+  const xTicks = [50,100,150,200,250,300].filter(x=>x>=Lmin&&x<=Lmax);
+  xTicks.forEach(L => {
+    const x = toX(L);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,H-pad.b); ctx.stroke();
+    ctx.fillStyle='#2d4560'; ctx.textAlign='center';
+    ctx.fillText(L, x, H-pad.b+10);
+  });
+
+  // Jump shading
+  for (const s of series) {
+    if (s.transition_jump) {
+      ctx.fillStyle = '#e0404012';
+      ctx.fillRect(toX(s.L)-1, pad.t, 3, ih);
+    }
+  }
+
+  // Degen shading
+  for (const s of series) {
+    if (s.degenerate) {
+      ctx.fillStyle = '#f0a03010';
+      ctx.fillRect(toX(s.L), pad.t, iw/(Lmax-Lmin+1)+1, ih);
+    }
+  }
+
+  // φ line (purple, right-side 0–360)
+  ctx.beginPath(); ctx.strokeStyle = '#9880ffcc'; ctx.lineWidth = 1.2;
+  for (let i = 0; i < series.length; i++) {
+    const x = toX(series[i].L), y = toYp(series[i].phi*180/Math.PI);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // θ line (cyan)
+  ctx.beginPath(); ctx.strokeStyle = '#00c8f0'; ctx.lineWidth = 1.8;
+  for (let i = 0; i < series.length; i++) {
+    const x = toX(series[i].L), y = toYt(series[i].theta*180/Math.PI);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Jump markers
+  for (const s of series) {
+    if (s.transition_jump) {
+      const x = toX(s.L), y = toYt(s.theta*180/Math.PI);
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2*Math.PI);
+      ctx.fillStyle = '#e04040'; ctx.fill();
+    }
+  }
+
+  // Right-side φ labels
+  [0,90,180,270,360].forEach(v => {
+    ctx.fillStyle='#9880ff70'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='left';
+    ctx.fillText(v+'°', W-pad.r+4, toYp(v)+3);
+  });
+
+  // Legend
+  ctx.font = '8px IBM Plex Mono';
+  ctx.fillStyle='#00c8f0'; ctx.textAlign='left'; ctx.fillText('θ(L)', pad.l+6, pad.t+11);
+  ctx.fillStyle='#9880ff'; ctx.fillText('φ(L)', pad.l+38, pad.t+11);
+  ctx.fillStyle='#e04040'; ctx.fillText('jump', pad.l+70, pad.t+11);
+
+  ctx.strokeStyle='#0a1828'; ctx.lineWidth=1;
+  ctx.strokeRect(pad.l, pad.t, iw, ih);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEGENERACY PHASE MAP
+// ─────────────────────────────────────────────────────────────────────────────
+function drawPhaseMap(series, Lmin, Lmax) {
+  const cv  = EL('cvPhaseMap');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.clientWidth;
+  const H   = cv.clientHeight || 115;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#030710'; ctx.fillRect(0,0,W,H);
+
+  const pad = { l:46, r:16, t:26, b:22 };
+  const iw  = W - pad.l - pad.r;
+  const ih  = H - pad.t - pad.b;
+  const cw  = iw / (Lmax - Lmin + 1);
+  const barH = ih * 0.65;
+  const barY = pad.t + (ih - barH)/2;
+
+  // Regime cells
+  for (const s of series) {
+    const x = pad.l + (s.L - Lmin) * cw;
+    const col = s.transition_jump ? '#e0404088' : s.degenerate ? '#f0a03070' : '#00dd8848';
+    ctx.fillStyle = col;
+    ctx.fillRect(x, barY, Math.max(cw, 0.8), barH);
+  }
+
+  // Jump lines above bar
+  for (const s of series) {
+    if (s.transition_jump) {
+      ctx.fillStyle = '#e04040cc';
+      ctx.fillRect(pad.l+(s.L-Lmin)*cw - 0.5, pad.t, Math.max(cw,1.5), barY-pad.t);
+    }
+  }
+
+  // X ticks
+  const xTicks = [50,100,150,200,250,300].filter(x=>x>=Lmin&&x<=Lmax);
+  xTicks.forEach(L => {
+    const x = pad.l + (L - Lmin)*cw;
+    ctx.fillStyle='#2d4560'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(L, x, H-pad.b+10);
+    ctx.strokeStyle='#0a182840'; ctx.lineWidth=0.6;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,H-pad.b); ctx.stroke();
+  });
+
+  ctx.fillStyle='#2d4560'; ctx.font='8px IBM Plex Mono';
+  ctx.textAlign='center'; ctx.fillText('L', W/2, H-2);
+
+  // Legend
+  ctx.font = '8px IBM Plex Mono';
+  [[pad.l,'#00dd88','stable'],[pad.l+60,'#f0a030','degenerate'],[pad.l+138,'#e04040','jump']].forEach(([lx, col, lbl]) => {
+    ctx.fillStyle = col+'77'; ctx.fillRect(lx, pad.t-8, 10, 7);
+    ctx.fillStyle = col;      ctx.textAlign='left'; ctx.fillText(lbl, lx+13, pad.t-2);
+  });
+
+  ctx.strokeStyle='#0a1828'; ctx.lineWidth=1;
+  ctx.strokeRect(pad.l, pad.t, iw, ih);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function doJSON() {
+  if (!gExport) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(gExport,null,2)],{type:'application/json'}));
+  a.download = 'grav_i_axes_v2.json'; a.click();
+}
+function doCSV() {
+  if (!gSeries) return;
+  const hdr = 'L,theta,phi,nx,ny,nz,J1,J2,J2_theta,J2_phi,J2_nx,J2_ny,J2_nz,gap,degenerate,delta_axis_rad,transition_jump,transition_degen_enter,transition_degen_resolve\n';
+  const rows = gSeries.map(s =>
+    [s.L,s.theta,s.phi,s.n_hat[0],s.n_hat[1],s.n_hat[2],
+     s.J1,s.J2,(s.J2_theta??''),(s.J2_phi??''),
+     (s.J2_n_hat?s.J2_n_hat[0]:''),(s.J2_n_hat?s.J2_n_hat[1]:''),(s.J2_n_hat?s.J2_n_hat[2]:''),
+     s.gap,s.degenerate?1:0,s.delta_axis_rad??'',s.transition_jump?1:0,
+     s.transition_degen_enter?1:0,s.transition_degen_resolve?1:0].join(',')
+  ).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv'}));
+  a.download = 'grav_i_axes_v2.csv'; a.click();
+}
+
+// ── GUIDE TOGGLE ─────────────────────────────────────────────────────────────
+function toggleGuide() {
+  const body  = EL('guideBody');
+  const arrow = EL('guideArrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+  body.style.display = open ? 'block' : 'none';
+}
+
+EL('btnJSON').addEventListener('click',  doJSON);
+EL('btnJSON2').addEventListener('click', doJSON);
+EL('btnCSV').addEventListener('click',   doCSV);
+EL('btnCSV2').addEventListener('click',  doCSV);
+EL('btnRun').addEventListener('click',   runSweep);
+</script>
+</body>
+</html>

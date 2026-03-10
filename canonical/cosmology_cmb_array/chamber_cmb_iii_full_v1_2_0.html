@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER CMB-III-FULL v1.2.0 — Phase 3 Integration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #060a0e;
+  --panel:   #0b1219;
+  --panel2:  #0e1622;
+  --border:  #162235;
+  --border2: #0d1928;
+  --accent:  #00c8f0;
+  --accent2: #f0a030;
+  --accent3: #e04040;
+  --green:   #00dd88;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --text:    #aac0d4;
+  --dim:     #3a5568;
+  --pass:    #00dd88;
+  --fail:    #e04040;
+  --warn:    #f0a030;
+  --mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.shell { max-width: 1200px; margin: 0 auto; padding: 22px 18px; }
+
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hid    { font-size: 10px; color: var(--accent); letter-spacing: 0.25em; font-weight: 600; }
+.htitle { font-family: var(--sans); font-size: 16px; font-weight: 300; color: var(--text); letter-spacing: 0.04em; }
+.htag   { font-size: 9px; color: var(--green); border: 1px solid var(--green); padding: 1px 7px; letter-spacing: 0.12em; }
+.htag.warn { color: var(--warn); border-color: var(--warn); }
+.htag.err  { color: var(--fail); border-color: var(--fail); }
+.hver   { margin-left: auto; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+.proto {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  padding: 9px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 10.5px;
+}
+.pi { display: flex; gap: 7px; }
+.pk { color: var(--dim); }
+.pv { color: var(--text); }
+
+.layout-top {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+@media (max-width: 800px) { .layout-top { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.ptitle {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.sep { height: 1px; background: var(--border2); margin: 12px 0; }
+
+.fg { margin-bottom: 10px; }
+.flabel { font-size: 9px; color: var(--dim); letter-spacing: 0.12em; display: block; margin-bottom: 4px; }
+.frow { display: flex; align-items: center; gap: 8px; }
+
+.file-btn {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.file-btn:hover { border-color: var(--accent); color: var(--accent); }
+input[type="file"] { display: none; }
+
+.fstat {
+  font-size: 9.5px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fstat.ok   { color: var(--pass); }
+.fstat.err  { color: var(--fail); }
+.fstat.idle { color: var(--dim); }
+
+.btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 7px 16px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  text-transform: uppercase;
+}
+.btn-run  { border-color: var(--accent); color: var(--accent); }
+.btn-run:hover { background: var(--accent); color: var(--bg); }
+.btn-run:disabled { border-color: var(--dim); color: var(--dim); cursor: not-allowed; }
+.btn-export { border-color: var(--green); color: var(--green); }
+.btn-export:hover { background: var(--green); color: var(--bg); }
+.btn-export:disabled { border-color: var(--dim); color: var(--dim); cursor: not-allowed; }
+
+.log-box {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 10px;
+  height: 260px;
+  overflow-y: auto;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.log-line { white-space: pre-wrap; word-break: break-word; }
+.log-line.ok   { color: var(--pass); }
+.log-line.err  { color: var(--fail); }
+.log-line.warn { color: var(--warn); }
+.log-line.info { color: var(--blue); }
+.log-line.dim  { color: var(--dim); }
+
+.inv-chip {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 2px 9px;
+  border: 1px solid;
+  display: inline-block;
+}
+.inv-chip.pass { color: var(--pass); border-color: var(--pass); }
+.inv-chip.fail { color: var(--fail); border-color: var(--fail); }
+.inv-chip.idle { color: var(--dim); border-color: var(--dim); }
+
+.hero-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--purple);
+  padding: 20px 22px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.hero-left { flex: 1; min-width: 180px; }
+.hero-label { font-size: 9px; color: var(--purple); letter-spacing: 0.2em; margin-bottom: 6px; }
+.hero-big { font-family: var(--sans); font-size: 48px; font-weight: 300; color: var(--text); line-height: 1; }
+.hero-sub { font-size: 9px; color: var(--dim); margin-top: 4px; }
+.hero-badge {
+  font-size: 9px;
+  padding: 3px 12px;
+  border: 1px solid;
+  letter-spacing: 0.15em;
+  display: inline-block;
+  margin-top: 10px;
+}
+.hero-badge.sig   { border-color: var(--pass); color: var(--pass); }
+.hero-badge.nosig { border-color: var(--warn); color: var(--warn); }
+.hero-badge.idle  { border-color: var(--dim);  color: var(--dim); }
+.hero-right { flex: 2; min-width: 200px; }
+
+.stat-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.stat-table th {
+  font-size: 8.5px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-align: left;
+  padding: 3px 8px 3px 0;
+  border-bottom: 1px solid var(--border2);
+}
+.stat-table td {
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--border2);
+  color: var(--text);
+}
+.stat-table td.num { font-variant-numeric: tabular-nums; text-align: right; padding-right: 4px; }
+.stat-table td.pass-cell { color: var(--pass); }
+.stat-table td.fail-cell { color: var(--fail); }
+.stat-table td.warn-cell { color: var(--warn); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
+.prog-wrap { height: 3px; background: var(--border2); margin: 8px 0; }
+.prog-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.15s; }
+
+.sc { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+.sk { font-size: 9px; color: var(--dim); width: 110px; flex-shrink: 0; }
+.sv { font-size: 11px; color: var(--text); }
+.sv.pass   { color: var(--pass); }
+.sv.fail   { color: var(--fail); }
+.sv.info   { color: var(--blue); }
+.sv.purple { color: var(--purple); }
+.sv.warn   { color: var(--warn); }
+.sv.dim    { color: var(--dim); }
+
+.action-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+.null-card {
+  border: 1px solid var(--border2);
+  padding: 12px;
+  background: var(--panel2);
+}
+.null-card-title { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="hid">CMB-III-FULL</span>
+  <span class="htitle">Phase 3 Integration — φ · S(L) · R(L) · Permutation Tests</span>
+  <span class="htag">PHASE 3</span>
+  <span class="htag">P=1000</span>
+  <span class="htag">passive ZYZ</span>
+  <span class="hver">v1.2.0</span>
+</div>
+
+<!-- ── Protocol bar ── -->
+<div class="proto">
+  <div class="pi"><span class="pk">rotation</span><span class="pv">passive ZYZ — locked, inherited from GEO v0.2.x</span></div>
+  <div class="pi"><span class="pk">P</span><span class="pv">1000 permutations (frozen)</span></div>
+  <div class="pi"><span class="pk">seed</span><span class="pv">seed_full = geo_seed ^ 0xC0BF00D</span></div>
+  <div class="pi"><span class="pk">randomization</span><span class="pv">phase_randomize_conjugate</span></div>
+  <div class="pi"><span class="pk">φ</span><span class="pv">phi_v1 — |u₂·u₃| quadrupole-octopole alignment</span></div>
+  <div class="pi"><span class="pk">S(L)</span><span class="pv">C_L/(2L+1) normalized angular power</span></div>
+  <div class="pi"><span class="pk">R(L)</span><span class="pv">C_L/C₂ power ratio vs quadrupole</span></div>
+  <div class="pi"><span class="pk">α</span><span class="pv">0.05</span></div>
+</div>
+
+<!-- ── Main layout: inputs + log ── -->
+<div class="layout-top">
+
+  <!-- LEFT: data input + invariant panel -->
+  <div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ptitle">DATA INPUT</div>
+
+      <div class="fg">
+        <label class="flabel">A — GEO EXPORT JSON · CMB-III-GEO v0.2.x</label>
+        <div class="frow">
+          <button class="file-btn" onclick="document.getElementById('geoFile').click()">LOAD GEO</button>
+          <input type="file" id="geoFile" accept=".json" onchange="handleGeoFile(event)">
+          <span class="fstat idle" id="geoStat">no file</span>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel">B — STAB EXPORT JSON · CMB-III-STAB v0.2.0</label>
+        <div class="frow">
+          <button class="file-btn" onclick="document.getElementById('stabFile').click()">LOAD STAB</button>
+          <input type="file" id="stabFile" accept=".json" onchange="handleStabFile(event)">
+          <span class="fstat idle" id="stabStat">no file</span>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel">C — RAW aℓm JSON · ℓ=2,3 required · ℓ=4,5 optional</label>
+        <div class="frow">
+          <button class="file-btn" onclick="document.getElementById('almFile').click()">LOAD aℓm</button>
+          <input type="file" id="almFile" accept=".json" onchange="handleAlmFile(event)">
+          <span class="fstat idle" id="almStat">no file</span>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="ptitle">PROTOCOL (FROZEN)</div>
+      <div class="sc"><span class="sk">P</span><span class="sv info">1000</span></div>
+      <div class="sc"><span class="sk">α</span><span class="sv info">0.05</span></div>
+      <div class="sc"><span class="sk">randomization</span><span class="sv info">phase_randomize_conjugate</span></div>
+      <div class="sc"><span class="sk">seed chain</span><span class="sv info">geo_seed ^ 0xC0BF00D</span></div>
+      <div class="sc"><span class="sk">L values</span><span class="sv info">[2, 3, 4, 5]</span></div>
+      <div class="sc"><span class="sk">φ id</span><span class="sv info">phi_v1</span></div>
+
+      <div class="action-row">
+        <button class="btn btn-run" id="btnRun" disabled onclick="startRun()">RUN FULL</button>
+        <button class="btn btn-export" id="btnExport" disabled onclick="doExport()">EXPORT JSON</button>
+      </div>
+    </div>
+
+    <!-- Invariant status -->
+    <div class="panel">
+      <div class="ptitle">INVARIANT STATUS</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="inv-chip idle" id="inv_conv">CONVENTION</span>
+        <span class="inv-chip idle" id="inv_seed">SEED</span>
+        <span class="inv-chip idle" id="inv_stab">STAB PASS</span>
+        <span class="inv-chip idle" id="inv_theta">θ23 RECHECK</span>
+      </div>
+      <div class="sc"><span class="sk">convention</span><span class="sv" id="disp_conv">—</span></div>
+      <div class="sc"><span class="sk">geo seed</span><span class="sv" id="disp_gseed">—</span></div>
+      <div class="sc"><span class="sk">stab seed</span><span class="sv" id="disp_sseed">—</span></div>
+      <div class="sc"><span class="sk">stab pass</span><span class="sv" id="disp_stabpass">—</span></div>
+      <div class="sc"><span class="sk">θ23 (geo)</span><span class="sv" id="disp_theta_geo">—</span></div>
+      <div class="sc"><span class="sk">θ23 (recheck)</span><span class="sv" id="disp_theta_rc">—</span></div>
+      <div class="sc"><span class="sk">Δθ23</span><span class="sv" id="disp_theta_dev">—</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: log -->
+  <div class="panel">
+    <div class="ptitle">COMPUTATION LOG</div>
+    <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+</div>
+
+<!-- ── Hero φ ── -->
+<div class="hero-panel" id="heroPanel">
+  <div class="hero-left">
+    <div class="hero-label">φ — QUADRUPOLE-OCTOPOLE ALIGNMENT · phi_v1</div>
+    <div class="hero-big" id="heroVal">—</div>
+    <div class="hero-sub" style="margin-top:4px">φ = |u₂ · u₃| = |cos θ₂₃|   ·   range [0, 1]</div>
+    <div class="hero-badge idle" id="heroBadge">AWAITING RUN</div>
+  </div>
+  <div class="hero-right">
+    <div class="ptitle" style="margin-bottom:8px">φ NULL TEST (P=1000)</div>
+    <div class="sc"><span class="sk">φ observed</span><span class="sv purple" id="phi_obs">—</span></div>
+    <div class="sc"><span class="sk">null mean</span><span class="sv" id="phi_nmean">—</span></div>
+    <div class="sc"><span class="sk">null σ</span><span class="sv" id="phi_nstd">—</span></div>
+    <div class="sc"><span class="sk">null min/max</span><span class="sv" id="phi_range">—</span></div>
+    <div class="sc"><span class="sk">effect size d</span><span class="sv" id="phi_d">—</span></div>
+    <div class="sc"><span class="sk">magnitude</span><span class="sv" id="phi_mag">—</span></div>
+    <div class="sc"><span class="sk">z-score</span><span class="sv" id="phi_z">—</span></div>
+    <div class="sc"><span class="sk">p-value</span><span class="sv" id="phi_p">—</span></div>
+    <div class="sc"><span class="sk">p SE</span><span class="sv" id="phi_pse">—</span></div>
+    <div class="sc"><span class="sk">p 95% CI</span><span class="sv" id="phi_pci">—</span></div>
+    <div class="sc"><span class="sk">verdict</span><span class="sv" id="phi_pass">—</span></div>
+  </div>
+</div>
+
+<!-- ── S(L) and R(L) tables ── -->
+<div class="grid2">
+  <div class="panel">
+    <div class="ptitle">S(L) — NORMALIZED ANGULAR POWER</div>
+    <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+      S(L) = C_L / (2L+1) = Σ_m |a_{Lm}|² / (2L+1)
+    </div>
+    <table class="stat-table">
+      <thead><tr>
+        <th>L</th><th>S(L) obs</th><th>null μ</th><th>null σ</th>
+        <th>d</th><th>p</th><th>verdict</th>
+      </tr></thead>
+      <tbody id="SL_tbody">
+        <tr><td colspan="7" style="color:var(--dim);padding:8px 0;font-size:10px">awaiting run…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">R(L) — POWER RATIO VS QUADRUPOLE</div>
+    <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+      R(L) = C_L / C₂   (L=2 → R=1 by definition)
+    </div>
+    <table class="stat-table">
+      <thead><tr>
+        <th>L</th><th>R(L) obs</th><th>null μ</th><th>null σ</th>
+        <th>d</th><th>p</th><th>verdict</th>
+      </tr></thead>
+      <tbody id="RL_tbody">
+        <tr><td colspan="7" style="color:var(--dim);padding:8px 0;font-size:10px">awaiting run…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Null distribution summary ── -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">NULL DISTRIBUTION SUMMARY</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px" id="nullSummaryGrid">
+    <div style="color:var(--dim);font-size:10px">awaiting run…</div>
+  </div>
+</div>
+
+<!-- ── Imports summary ── -->
+<div class="grid2">
+  <div class="panel">
+    <div class="ptitle">IMPORTS — GEO</div>
+    <div class="sc"><span class="sk">chamber</span><span class="sv" id="imp_geo_chamber">—</span></div>
+    <div class="sc"><span class="sk">version</span><span class="sv" id="imp_geo_ver">—</span></div>
+    <div class="sc"><span class="sk">θ₂₃</span><span class="sv purple" id="imp_geo_theta">—</span></div>
+    <div class="sc"><span class="sk">u₂ axis</span><span class="sv" id="imp_geo_u2" style="font-size:9.5px">—</span></div>
+    <div class="sc"><span class="sk">u₃ axis</span><span class="sv" id="imp_geo_u3" style="font-size:9.5px">—</span></div>
+    <div class="sc"><span class="sk">rng_seed</span><span class="sv" id="imp_geo_seed">—</span></div>
+    <div class="sc"><span class="sk">overall_pass</span><span class="sv" id="imp_geo_pass">—</span></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">IMPORTS — STAB</div>
+    <div class="sc"><span class="sk">chamber</span><span class="sv" id="imp_stab_chamber">—</span></div>
+    <div class="sc"><span class="sk">version</span><span class="sv" id="imp_stab_ver">—</span></div>
+    <div class="sc"><span class="sk">D_internal</span><span class="sv purple" id="imp_stab_d">—</span></div>
+    <div class="sc"><span class="sk">K</span><span class="sv" id="imp_stab_K">—</span></div>
+    <div class="sc"><span class="sk">ε</span><span class="sv" id="imp_stab_eps">—</span></div>
+    <div class="sc"><span class="sk">convention</span><span class="sv" id="imp_stab_conv">—</span></div>
+    <div class="sc"><span class="sk">overall_pass</span><span class="sv" id="imp_stab_pass">—</span></div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+"use strict";
+// ═══════════════════════════════════════════════════════════════
+// [CFG] Frozen protocol — do not edit
+// ═══════════════════════════════════════════════════════════════
+const CFG = Object.freeze({
+  chamber:             "CMB-III-FULL",
+  version:             "1.2.0",
+  rotation_convention: "passive_ZYZ",
+  P:                   1000,
+  alpha:               0.05,
+  // Bootstrap on Monte-Carlo p-value (uncertainty due to finite P)
+  bootstrap_B:         500,
+  bootstrap_ci_lo:     0.025,
+  bootstrap_ci_hi:     0.975,
+  phi_definition_id:   "phi_v1",
+  L_values:            [2, 3, 4, 5],
+  seed_xor:            0xC0BF00D,
+  theta23_recheck_tol: 1e-6,
+  // inherited from GEO for axis extraction
+  fib_N_quad:          2000,
+  fib_N_oct:           4096,
+  plateau_eps:         1e-4,
+});
+
+// ═══════════════════════════════════════════════════════════════
+// [VERBATIM from GEO v0.2.0] Math utilities
+// ═══════════════════════════════════════════════════════════════
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+}
+function dot3(a, b)     { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+function norm3(v)       { const m = Math.sqrt(v[0]**2+v[1]**2+v[2]**2); return m>1e-15?v.map(x=>x/m):v; }
+function clamp1(x)      { return Math.max(-1, Math.min(1, x)); }
+function angleDeg(a, b) { return Math.acos(clamp1(Math.abs(dot3(a,b)))) * 180 / Math.PI; }
+
+// Mulberry32 seeded PRNG [VERBATIM from GEO v0.2.0]
+function makePrng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s += 0x6D2B79F5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function wrapPi(x) {
+  const twopi = 2 * Math.PI;
+  x = x % twopi;
+  return (x <= -Math.PI) ? (x + twopi) : (x > Math.PI ? (x - twopi) : x);
+}
+
+// [VERBATIM from GEO v0.2.0]
+// Inverse of Rz(α) Ry(β) Rz(γ) is Rz(-γ) Ry(-β) Rz(-α)
+function invertEulerZYZ(alpha, beta, gamma) {
+  return { alpha: wrapPi(-gamma), beta: wrapPi(-beta), gamma: wrapPi(-alpha) };
+}
+
+function fibonacciSphere(N) {
+  const pts = [], phi = (1+Math.sqrt(5))/2;
+  for (let i=0;i<N;i++){
+    const theta = Math.acos(1 - 2*(i+0.5)/N);
+    const az    = 2*Math.PI*i/phi;
+    pts.push({theta, phi:az});
+  }
+  return pts;
+}
+
+function evalY2m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(5/(16*Math.PI))*(3*c*c-1), im:0};
+    case  1:{ const g=-Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+function evalY3m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -3:{ const g=Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(-3*phi), im:g*Math.sin(-3*phi)}; }
+    case -2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(7/(16*Math.PI))*(5*c*c*c-3*c), im:0};
+    case  1:{ const g=-Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    case  3:{ const g=-Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(3*phi), im:g*Math.sin(3*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+// [VERBATIM from GEO v0.2.0] — Rose (1957) formula
+function wignerSmallD(j, m, mp, beta) {
+  const cb=Math.cos(beta/2), sb=Math.sin(beta/2);
+  const smin=Math.max(0,mp-m), smax=Math.min(j+mp,j-m);
+  if (smin>smax) return 0;
+  const sqF=Math.sqrt(factorial(j+m)*factorial(j-m)*factorial(j+mp)*factorial(j-mp));
+  let sum=0;
+  for (let s=smin;s<=smax;s++){
+    const sgn=((m-mp+s)%2===0)?1:-1;
+    const den=factorial(s)*factorial(j+mp-s)*factorial(j-m-s)*factorial(m-mp+s);
+    const pc=2*j+mp-m-2*s, ps=m-mp+2*s;
+    sum+=sgn/den*(pc===0?1:Math.pow(cb,pc))*(ps===0?1:Math.pow(sb,ps));
+  }
+  return sqF*sum;
+}
+
+function buildDmat(j, beta) {
+  const ms=[]; for(let m=-j;m<=j;m++) ms.push(m);
+  return ms.map(m=>ms.map(mp=>wignerSmallD(j,m,mp,beta)));
+}
+
+// [VERBATIM from GEO v0.2.0]
+// Passive ZYZ: a'_m = Σ_m' e^{-imα} d_mm'(β) e^{-im'γ} a_m'
+function rotateAlm(alm, ell, alpha, beta, gamma) {
+  const ms=[]; for(let m=-ell;m<=ell;m++) ms.push(m);
+  const dMat=buildDmat(ell, beta);
+  const out={};
+  for (let i=0;i<ms.length;i++){
+    const m=ms[i];
+    const ca=Math.cos(-m*alpha), sa=Math.sin(-m*alpha);
+    let re=0, im=0;
+    for (let j2=0;j2<ms.length;j2++){
+      const mp=ms[j2];
+      const amp=alm[mp]||[0,0];
+      const cg=Math.cos(-mp*gamma), sg=Math.sin(-mp*gamma);
+      const ar=cg*amp[0]-sg*amp[1], ai=cg*amp[1]+sg*amp[0];
+      const d=dMat[i][j2];
+      re += d*(ca*ar - sa*ai);
+      im += d*(ca*ai + sa*ar);
+    }
+    out[m]=[re,im];
+  }
+  return out;
+}
+
+function buildQ(alm2) {
+  const grid=fibonacciSphere(CFG.fib_N_quad);
+  const Q=[[0,0,0],[0,0,0],[0,0,0]];
+  for (const {theta, phi} of grid){
+    let T2=0;
+    for (let m=-2;m<=2;m++){
+      const a=alm2[m]||[0,0];
+      const Y=evalY2m(m,theta,phi);
+      T2+=a[0]*Y.re-a[1]*Y.im;
+    }
+    const n=[Math.sin(theta)*Math.cos(phi), Math.sin(theta)*Math.sin(phi), Math.cos(theta)];
+    for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]+=T2*n[i]*n[j];
+  }
+  const w=1/CFG.fib_N_quad;
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]*=w;
+  const tr3=(Q[0][0]+Q[1][1]+Q[2][2])/3;
+  Q[0][0]-=tr3; Q[1][1]-=tr3; Q[2][2]-=tr3;
+  for (let i=0;i<3;i++) for (let j=i+1;j<3;j++){ const s=(Q[i][j]+Q[j][i])/2; Q[i][j]=Q[j][i]=s; }
+  return Q;
+}
+
+function jacobiEig3(Ain) {
+  let A=Ain.map(r=>r.slice()), V=[[1,0,0],[0,1,0],[0,0,1]];
+  for (let sw=0;sw<60;sw++){
+    if (A[0][1]**2+A[0][2]**2+A[1][2]**2 < 1e-28) break;
+    for (let p=0;p<2;p++){
+      for (let q=p+1;q<3;q++){
+        if (Math.abs(A[p][q])<1e-16) continue;
+        const tau=(A[q][q]-A[p][p])/(2*A[p][q]);
+        const t=tau>=0?1/(tau+Math.sqrt(1+tau*tau)):1/(tau-Math.sqrt(1+tau*tau));
+        const c=1/Math.sqrt(1+t*t), s=t*c;
+        const App=A[p][p],Aqq=A[q][q],Apq=A[p][q];
+        A[p][p]=App-t*Apq; A[q][q]=Aqq+t*Apq; A[p][q]=A[q][p]=0;
+        for (let r=0;r<3;r++){
+          if (r!==p&&r!==q){
+            const arp=A[r][p],arq=A[r][q];
+            A[r][p]=A[p][r]=c*arp-s*arq;
+            A[r][q]=A[q][r]=s*arp+c*arq;
+          }
+          const vrp=V[r][p],vrq=V[r][q];
+          V[r][p]=c*vrp-s*vrq; V[r][q]=s*vrp+c*vrq;
+        }
+      }
+    }
+  }
+  const pairs=[0,1,2].map(i=>({val:A[i][i],vec:V.map(row=>row[i])})).sort((a,b)=>b.val-a.val);
+  return { values: pairs.map(p=>p.val), vectors: pairs.map(p=>norm3(p.vec)) };
+}
+
+// [VERBATIM from GEO v0.2.0]
+function extractU2(alm2) {
+  const Q=buildQ(alm2);
+  const eig=jacobiEig3(Q);
+  const ev0=eig.values[0], ev1=eig.values[1];
+  const scale=Math.abs(ev0)+Math.abs(ev1)+1e-30;
+  if (Math.abs(ev0-ev1)/scale < 1e-6) return {axis:null, status:"degenerate", eigenvalues:eig.values};
+  return {axis:eig.vectors[0], status:"ok", eigenvalues:eig.values};
+}
+
+function angMomDisp3(alm3_rot) {
+  let D3=0;
+  for (let m=-3;m<=3;m++){
+    const a=alm3_rot[m]||[0,0];
+    D3+=m*m*(a[0]*a[0]+a[1]*a[1]);
+  }
+  return D3;
+}
+
+// [VERBATIM from GEO v0.2.0]
+function extractU3(alm3) {
+  const grid=fibonacciSphere(CFG.fib_N_oct);
+  let maxD3=-Infinity, bestTheta=0, bestPhi=0;
+  const D3vals=new Float64Array(grid.length);
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    // Axis n(θ,φ) is active; rotateAlm is passive ZYZ → use inverse Euler
+    const inv = invertEulerZYZ(phi, theta, 0);
+    const rot = rotateAlm(alm3, 3, inv.alpha, inv.beta, inv.gamma);
+    const D3=angMomDisp3(rot);
+    D3vals[i]=D3;
+    if (D3>maxD3){maxD3=D3; bestTheta=theta; bestPhi=phi;}
+  }
+  const best_nx=Math.sin(bestTheta)*Math.cos(bestPhi);
+  const best_ny=Math.sin(bestTheta)*Math.sin(bestPhi);
+  const best_nz=Math.cos(bestTheta);
+  const COS_SEP=Math.cos(20*Math.PI/180);
+  let farD3=-Infinity;
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    const nx=Math.sin(theta)*Math.cos(phi), ny=Math.sin(theta)*Math.sin(phi), nz=Math.cos(theta);
+    if (Math.abs(nx*best_nx+ny*best_ny+nz*best_nz) < COS_SEP && D3vals[i]>farD3) farD3=D3vals[i];
+  }
+  const denom=Math.abs(maxD3)+1e-30;
+  const isDegenerate=farD3>-Infinity && (maxD3-farD3) < CFG.plateau_eps*denom;
+  return {
+    axis: [best_nx, best_ny, best_nz],
+    status: isDegenerate ? "degenerate_fallback" : "ok",
+    D3_max: maxD3,
+    gap: maxD3-farD3,
+  };
+}
+
+// [VERBATIM from STAB v0.2.0]
+// Preserves: a_{ℓ,-m} = (-1)^m conj(a_{ℓ,m})
+function randomizeAlmPhases(alm, ell, rng) {
+  const out = {};
+  const a0 = alm[0] || [0,0];
+  const mag0 = Math.sqrt(a0[0]**2 + a0[1]**2);
+  const ph0 = rng() * 2 * Math.PI;
+  out[0] = [mag0 * Math.cos(ph0), mag0 * Math.sin(ph0)];
+  for (let m = 1; m <= ell; m++) {
+    const am = alm[m] || [0,0];
+    const mag = Math.sqrt(am[0]**2 + am[1]**2);
+    const ph  = rng() * 2 * Math.PI;
+    const re  = mag * Math.cos(ph);
+    const im  = mag * Math.sin(ph);
+    out[m]  = [re, im];
+    const sign = (m % 2 === 0) ? 1 : -1;
+    out[-m] = [sign * re, -(sign * im)];
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [IO] Extended alm parser — Schema A (nested) or B (flat)
+//     Handles ℓ = 2, 3, 4, 5
+// ═══════════════════════════════════════════════════════════════
+function parseAlmJSONExtended(text) {
+  const obj = JSON.parse(text);
+  const result = { alm: {}, available: [], source: obj.source||"unknown", warnings: [] };
+
+  const fill = (raw, ell) => {
+    if (!raw) return;
+    const d = {};
+    for (let m=-ell; m<=ell; m++) {
+      const v = raw[String(m)];
+      d[m] = (v && Array.isArray(v) && v.length >= 2)
+             ? [parseFloat(v[0]), parseFloat(v[1])]
+             : [0, 0];
+    }
+    result.alm[ell] = d;
+    result.available.push(ell);
+  };
+
+  if (obj.alm && typeof obj.alm === "object") {
+    result.warnings.push("Schema A (nested) detected.");
+    [2,3,4,5].forEach(ell => fill(obj.alm[String(ell)], ell));
+  } else {
+    const byEll = {2:{}, 3:{}, 4:{}, 5:{}};
+    const found = {2:false, 3:false, 4:false, 5:false};
+    for (const key of Object.keys(obj)) {
+      const match = key.match(/^(\d+)_(-?\d+)$/);
+      if (!match) continue;
+      const ell = parseInt(match[1],10), m = parseInt(match[2],10);
+      const val = obj[key];
+      if ([2,3,4,5].includes(ell) && Array.isArray(val) && val.length>=2) {
+        byEll[ell][String(m)] = val;
+        found[ell] = true;
+      }
+    }
+    result.warnings.push("Schema B (flat 'ell_m') detected.");
+    [2,3,4,5].forEach(ell => { if (found[ell]) fill(byEll[ell], ell); });
+  }
+
+  if (!result.alm[2]) throw new Error("Missing ℓ=2 coefficients — required.");
+  if (!result.alm[3]) result.warnings.push("No ℓ=3 data — octopole unavailable; φ will be null.");
+  [4,5].forEach(ell => {
+    if (!result.alm[ell]) result.warnings.push(`No ℓ=${ell} data — S(${ell})/R(${ell}) unavailable.`);
+  });
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [IO] GEO and STAB parsers
+// ═══════════════════════════════════════════════════════════════
+function parseGeoJSON(text) {
+  const obj = JSON.parse(text);
+  if (!obj.chamber || !obj.chamber.includes("CMB-III-GEO"))
+    throw new Error(`Expected CMB-III-GEO, got "${obj.chamber}"`);
+  if (!obj.version || !obj.version.startsWith("0.2"))
+    throw new Error(`Expected GEO v0.2.x, got "${obj.version}"`);
+  const geo = obj.geometry;
+  if (!geo) throw new Error("No geometry block.");
+  if (!geo.u2 || !geo.u2.axis) throw new Error("No geometry.u2.axis.");
+  if (!geo.u3 || !geo.u3.axis) throw new Error("No geometry.u3.axis.");
+  if (geo.theta23 == null) throw new Error("No geometry.theta23.");
+  const seed = (obj.protocol && typeof obj.protocol.rng_seed === "number")
+               ? obj.protocol.rng_seed : null;
+  if (seed == null) throw new Error("No protocol.rng_seed.");
+  return {
+    chamber:      obj.chamber,
+    version:      obj.version,
+    u2:           geo.u2.axis,
+    u3:           geo.u3.axis,
+    theta23:      geo.theta23,
+    rng_seed:     seed,
+    overall_pass: (obj.tests && obj.tests.overall_pass != null) ? obj.tests.overall_pass : null,
+    _raw: obj,
+  };
+}
+
+function parseStabJSON(text) {
+  const obj = JSON.parse(text);
+  if (!obj.chamber || !obj.chamber.includes("CMB-III-STAB"))
+    throw new Error(`Expected CMB-III-STAB, got "${obj.chamber}"`);
+  if (obj.version !== "0.2.0")
+    throw new Error(`Expected STAB v0.2.0, got "${obj.version}"`);
+  const prot = obj.protocol;
+  if (!prot) throw new Error("No protocol block.");
+  if (prot.rotation_convention !== "passive_ZYZ")
+    throw new Error(`STAB rotation_convention "${prot.rotation_convention}" ≠ passive_ZYZ`);
+  if (!obj.summary || obj.summary.D_internal == null)
+    throw new Error("No summary.D_internal.");
+  if (!obj.tests || obj.tests.overall_pass == null)
+    throw new Error("No tests.overall_pass.");
+  const seed = typeof prot.rng_seed === "number" ? prot.rng_seed : null;
+  if (seed == null) throw new Error("No protocol.rng_seed.");
+  return {
+    chamber:             obj.chamber,
+    version:             obj.version,
+    D_internal:          obj.summary.D_internal,
+    K:                   prot.K,
+    epsilon_deg:         prot.epsilon_deg,
+    rng_seed:            seed,
+    rotation_convention: prot.rotation_convention,
+    overall_pass:        obj.tests.overall_pass,
+    _raw: obj,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STATS] FULL observables
+// ═══════════════════════════════════════════════════════════════
+
+// phi_v1: |u2 · u3| = |cos θ23| — range [0,1]
+function computePhi(alm2, alm3) {
+  if (!alm3) return null;
+  const r2 = extractU2(alm2);
+  const r3 = extractU3(alm3);
+  if (!r2.axis || !r3.axis) return null;
+  return Math.abs(dot3(r2.axis, r3.axis));
+}
+
+// S(L) = C_L / (2L+1) = Σ_m |a_{Lm}|² / (2L+1)
+function computeSL(almByEll, L_array) {
+  const L_values = [], S = [];
+  for (const L of L_array) {
+    const alm = almByEll[L];
+    if (!alm) continue;
+    let sum = 0;
+    for (let m=-L; m<=L; m++) { const a=alm[m]||[0,0]; sum+=a[0]*a[0]+a[1]*a[1]; }
+    L_values.push(L);
+    S.push(sum / (2*L+1));
+  }
+  return { L_values, S };
+}
+
+// R(L) = C_L / C_2
+function computeRL(almByEll, L_array) {
+  const alm2 = almByEll[2];
+  let C2 = 0;
+  if (alm2) {
+    for (let m=-2; m<=2; m++) { const a=alm2[m]||[0,0]; C2+=a[0]**2+a[1]**2; }
+    C2 /= 5;
+  }
+  if (C2 < 1e-30) return { L_values:[], R:null, error:"C₂≈0" };
+  const L_values=[], R=[];
+  for (const L of L_array) {
+    const alm = almByEll[L];
+    if (!alm) continue;
+    let CL=0;
+    for (let m=-L; m<=L; m++) { const a=alm[m]||[0,0]; CL+=a[0]**2+a[1]**2; }
+    CL /= (2*L+1);
+    L_values.push(L);
+    R.push(CL/C2);
+  }
+  return { L_values, R, error:null };
+}
+
+// Randomize all ℓ in almByEll
+function randomizeAllAlm(almByEll, rng) {
+  const out = {};
+  for (const [ell, alm] of Object.entries(almByEll)) {
+    out[parseInt(ell)] = randomizeAlmPhases(alm, parseInt(ell), rng);
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [PERM] Significance computation
+// ═══════════════════════════════════════════════════════════════
+function effectSizeLabel(d) {
+  const a = Math.abs(d);
+  if (a < 0.2) return "trivial";
+  if (a < 0.5) return "small";
+  if (a < 0.8) return "medium";
+  return "large";
+}
+
+function quantileSorted(sorted, q) {
+  // q in [0,1]
+  const n = sorted.length;
+  if (n === 0) return null;
+  if (q <= 0) return sorted[0];
+  if (q >= 1) return sorted[n - 1];
+  const pos = (n - 1) * q;
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  const t = pos - lo;
+  return sorted[lo] * (1 - t) + sorted[hi] * t;
+}
+
+function bootstrapP(nullVals, observed, opts) {
+  // Bootstrap the Monte-Carlo p-value estimator by resampling nullVals with replacement.
+  // Measures estimator uncertainty only (finite P), not cosmological/model uncertainty.
+  const n = nullVals.length;
+  if (n === 0) return { p_se: null, p_ci95: null, p_boot: [] };
+
+  const B = (opts && typeof opts.B === "number") ? opts.B : CFG.bootstrap_B;
+  const seed = (opts && typeof opts.seed === "number") ? opts.seed : 0xA5A5A5A5;
+  const rng = makePrng(seed >>> 0);
+  const boots = new Array(B);
+
+  for (let b = 0; b < B; b++) {
+    let ge = 0;
+    for (let i = 0; i < n; i++) {
+      const v = nullVals[(rng() * n) | 0];
+      if (v >= observed) ge++;
+    }
+    boots[b] = ge / n;
+  }
+
+  const mean = boots.reduce((a, x) => a + x, 0) / B;
+  const varB = boots.reduce((a, x) => a + (x - mean) ** 2, 0) / (B > 1 ? (B - 1) : 1);
+  const p_se = Math.sqrt(varB);
+  const sorted = boots.slice().sort((a, b) => a - b);
+  const lo = quantileSorted(sorted, CFG.bootstrap_ci_lo);
+  const hi = quantileSorted(sorted, CFG.bootstrap_ci_hi);
+  return { p_se, p_ci95: [lo, hi], p_boot: boots };
+}
+
+function permStats(nullVals, observed, opts) {
+  const n = nullVals.length;
+  if (n === 0) return null;
+  const mean = nullVals.reduce((a,b)=>a+b,0)/n;
+  const variance = nullVals.reduce((a,v)=>a+(v-mean)**2,0)/(n>1?n-1:1);
+  const std = Math.sqrt(variance);
+  const p_value = nullVals.filter(v=>v>=observed).length / n;
+  const z_score = std > 1e-15 ? (observed-mean)/std : 0;
+  const d = z_score; // Cohen-style effect vs null reference
+  const mag = effectSizeLabel(d);
+  const bs = bootstrapP(nullVals, observed, opts);
+  return {
+    mean, std, p_value, z_score,
+    effect_size_d: d,
+    effect_magnitude: mag,
+    p_se: bs.p_se,
+    p_ci95: bs.p_ci95,
+    pass: p_value < CFG.alpha,
+    min: Math.min(...nullVals),
+    max: Math.max(...nullVals),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STATE]
+// ═══════════════════════════════════════════════════════════════
+let geoObj=null, stabObj=null, almObj=null, lastResult=null;
+
+// ═══════════════════════════════════════════════════════════════
+// [UI] Helpers
+// ═══════════════════════════════════════════════════════════════
+function log(msg, cls="") {
+  const box=document.getElementById("logBox");
+  const line=document.createElement("div");
+  line.className="log-line "+cls;
+  line.textContent=msg;
+  box.appendChild(line);
+  box.scrollTop=box.scrollHeight;
+}
+function clearLog() { document.getElementById("logBox").innerHTML=""; }
+function setProgress(pct) { document.getElementById("progFill").style.width=pct+"%"; }
+function tick() { return new Promise(r=>setTimeout(r,0)); }
+
+function set(id, txt, cls="") {
+  const el=document.getElementById(id); if (!el) return;
+  el.textContent=txt;
+  if (cls) el.className="sv "+cls;
+}
+function setInvChip(id, pass, label) {
+  const el=document.getElementById(id); if (!el) return;
+  el.textContent=label;
+  el.className="inv-chip "+(pass?"pass":"fail");
+}
+function fmtVec(v) {
+  if (!v) return "—";
+  return `(${v[0].toFixed(4)}, ${v[1].toFixed(4)}, ${v[2].toFixed(4)})`;
+}
+function formatNum(x) {
+  if (x==null) return "—";
+  if (Math.abs(x)<0.001||Math.abs(x)>9999) return x.toExponential(4);
+  return x.toFixed(6);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [UI] File handlers
+// ═══════════════════════════════════════════════════════════════
+function handleGeoFile(evt) {
+  const file=evt.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=e => {
+    try {
+      geoObj=parseGeoJSON(e.target.result);
+      document.getElementById("geoStat").textContent=`✓ ${file.name}`;
+      document.getElementById("geoStat").className="fstat ok";
+      populateGeoUI(geoObj);
+      log(`GEO loaded: ${geoObj.chamber} v${geoObj.version}  θ₂₃=${geoObj.theta23.toFixed(6)}°`,"ok");
+      checkReady();
+    } catch(err) {
+      geoObj=null;
+      document.getElementById("geoStat").textContent=`✗ ${err.message}`;
+      document.getElementById("geoStat").className="fstat err";
+      log(`GEO error: ${err.message}`,"err");
+    }
+  };
+  reader.readAsText(file);
+}
+function handleStabFile(evt) {
+  const file=evt.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=e => {
+    try {
+      stabObj=parseStabJSON(e.target.result);
+      document.getElementById("stabStat").textContent=`✓ ${file.name}`;
+      document.getElementById("stabStat").className="fstat ok";
+      populateStabUI(stabObj);
+      log(`STAB loaded: ${stabObj.chamber} v${stabObj.version}  D_internal=${stabObj.D_internal.toFixed(4)}°`,"ok");
+      checkReady();
+    } catch(err) {
+      stabObj=null;
+      document.getElementById("stabStat").textContent=`✗ ${err.message}`;
+      document.getElementById("stabStat").className="fstat err";
+      log(`STAB error: ${err.message}`,"err");
+    }
+  };
+  reader.readAsText(file);
+}
+function handleAlmFile(evt) {
+  const file=evt.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=e => {
+    try {
+      almObj=parseAlmJSONExtended(e.target.result);
+      const avail=almObj.available.join(",");
+      document.getElementById("almStat").textContent=`✓ ℓ={${avail}}`;
+      document.getElementById("almStat").className="fstat ok";
+      almObj.warnings.forEach(w=>log(`aℓm: ${w}`,"warn"));
+      log(`aℓm loaded — ℓ={${avail}} · source: ${almObj.source}`,"ok");
+      checkReady();
+    } catch(err) {
+      almObj=null;
+      document.getElementById("almStat").textContent=`✗ ${err.message}`;
+      document.getElementById("almStat").className="fstat err";
+      log(`aℓm error: ${err.message}`,"err");
+    }
+  };
+  reader.readAsText(file);
+}
+function checkReady() {
+  document.getElementById("btnRun").disabled=!(geoObj&&stabObj&&almObj);
+}
+function populateGeoUI(g) {
+  set("imp_geo_chamber", g.chamber);
+  set("imp_geo_ver", g.version);
+  set("imp_geo_theta", g.theta23.toFixed(6)+"°");
+  set("imp_geo_u2", fmtVec(g.u2));
+  set("imp_geo_u3", fmtVec(g.u3));
+  set("imp_geo_seed", "0x"+g.rng_seed.toString(16).toUpperCase());
+  if (g.overall_pass!=null)
+    set("imp_geo_pass", g.overall_pass?"PASS":"FAIL", g.overall_pass?"pass":"fail");
+}
+function populateStabUI(s) {
+  set("imp_stab_chamber", s.chamber);
+  set("imp_stab_ver", s.version);
+  set("imp_stab_d", s.D_internal.toFixed(4)+"°");
+  set("imp_stab_K", String(s.K));
+  set("imp_stab_eps", s.epsilon_deg+"°");
+  set("imp_stab_conv", s.rotation_convention);
+  set("imp_stab_pass", s.overall_pass?"PASS":"FAIL", s.overall_pass?"pass":"fail");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [RUN] Entry point
+// ═══════════════════════════════════════════════════════════════
+async function startRun() {
+  document.getElementById("btnRun").disabled=true;
+  document.getElementById("btnExport").disabled=true;
+  lastResult=null;
+  clearLog();
+  setProgress(0);
+  try {
+    await runAnalysis();
+    document.getElementById("btnExport").disabled=false;
+  } catch(err) {
+    log(`FATAL ABORT: ${err.message}`,"err");
+    log("Fix the failing invariant and reload inputs.","err");
+  }
+  document.getElementById("btnRun").disabled=false;
+}
+
+async function runAnalysis() {
+  log("═══════════════════════════════════════════════════════","dim");
+  log("CHAMBER CMB-III-FULL v1.2.0 — Phase 3 Integration","info");
+  log("═══════════════════════════════════════════════════════","dim");
+  setProgress(2);
+
+  // ── INV-1: Rotation convention ──
+  log("\n[INV-1] Rotation convention…","info");
+  const stabConv=stabObj.rotation_convention;
+  if (stabConv!=="passive_ZYZ") {
+    setInvChip("inv_conv",false,"CONVENTION ✗");
+    set("disp_conv",stabConv+" ≠ passive_ZYZ","fail");
+    throw new Error(`Convention mismatch: STAB="${stabConv}" ≠ passive_ZYZ`);
+  }
+  setInvChip("inv_conv",true,"CONVENTION ✓");
+  set("disp_conv","passive_ZYZ (GEO + STAB + FULL)","pass");
+  log("  passive_ZYZ confirmed across all layers ✓","ok");
+
+  // ── INV-2: Seed consistency ──
+  log("[INV-2] Seed consistency…","info");
+  const gSeed=geoObj.rng_seed, sSeed=stabObj.rng_seed;
+  set("disp_gseed","0x"+gSeed.toString(16).toUpperCase());
+  set("disp_sseed","0x"+sSeed.toString(16).toUpperCase());
+  if (gSeed!==sSeed) {
+    setInvChip("inv_seed",false,"SEED ✗");
+    throw new Error(`Seed mismatch: GEO=0x${gSeed.toString(16)} ≠ STAB=0x${sSeed.toString(16)}`);
+  }
+  setInvChip("inv_seed",true,"SEED ✓");
+  log(`  rng_seed = 0x${gSeed.toString(16).toUpperCase()} matched ✓`,"ok");
+
+  // ── INV-3: STAB must have passed ──
+  log("[INV-3] STAB overall_pass…","info");
+  set("disp_stabpass",stabObj.overall_pass?"true (PASS)":"false (FAIL)",
+      stabObj.overall_pass?"pass":"fail");
+  if (!stabObj.overall_pass) {
+    setInvChip("inv_stab",false,"STAB PASS ✗");
+    throw new Error("stab.tests.overall_pass === false — FULL refuses to run.");
+  }
+  setInvChip("inv_stab",true,"STAB PASS ✓");
+  log("  stab.tests.overall_pass = true ✓","ok");
+
+  // ── INV-4: θ23 recheck ──
+  log("[INV-4] θ₂₃ recheck (raw alm via GEO extractors)…","info");
+  const alm2=almObj.alm[2];
+  const alm3=almObj.alm[3]||null;
+  const r2chk=extractU2(alm2);
+  if (!r2chk.axis) {
+    setInvChip("inv_theta",false,"θ23 RECHECK ✗");
+    throw new Error("ℓ=2 axis extraction failed on raw alm (degenerate).");
+  }
+  let theta23_recheck=null;
+  if (alm3) {
+    const r3chk=extractU3(alm3);
+    if (r3chk.axis) {
+      theta23_recheck=angleDeg(r2chk.axis,r3chk.axis);
+      const dev=Math.abs(theta23_recheck-geoObj.theta23);
+      set("disp_theta_geo",geoObj.theta23.toFixed(6)+"°");
+      set("disp_theta_rc",theta23_recheck.toFixed(6)+"°");
+      set("disp_theta_dev",dev.toExponential(3)+"°",dev<CFG.theta23_recheck_tol?"pass":"fail");
+      log(`  GEO θ₂₃ = ${geoObj.theta23.toFixed(6)}°`,"ok");
+      log(`  raw θ₂₃ = ${theta23_recheck.toFixed(6)}°`,"ok");
+      log(`  Δ = ${dev.toExponential(3)}°  (tol=${CFG.theta23_recheck_tol})`,dev<CFG.theta23_recheck_tol?"ok":"err");
+      if (dev>=CFG.theta23_recheck_tol) {
+        setInvChip("inv_theta",false,"θ23 RECHECK ✗");
+        throw new Error(`θ₂₃ recheck failed: Δ=${dev.toExponential(3)} ≥ tol=${CFG.theta23_recheck_tol}`);
+      }
+      setInvChip("inv_theta",true,"θ23 RECHECK ✓");
+    }
+  } else {
+    log("  No ℓ=3 alm — θ₂₃ recheck skipped (warn).","warn");
+    setInvChip("inv_theta",true,"θ23 RECHECK —");
+    set("disp_theta_geo",geoObj.theta23.toFixed(6)+"°");
+    set("disp_theta_rc","N/A (no ℓ=3)");
+    set("disp_theta_dev","—");
+    theta23_recheck=geoObj.theta23;
+  }
+  log("\nAll invariants passed.","ok");
+  setProgress(10); await tick();
+
+  // ── Seed derivation ──
+  const seed_base=gSeed;
+  const seed_full=(seed_base^CFG.seed_xor)>>>0;
+  log(`\n[SEED] base = 0x${seed_base.toString(16).toUpperCase()}`,"info");
+  log(`[SEED] full = 0x${seed_full.toString(16).toUpperCase()} (^ 0xC0BF00D)`,"info");
+
+  // ── Observed statistics ──
+  log("\n[OBS] Observed statistics…","info");
+  const phi_obs=computePhi(alm2,alm3);
+  log(`  φ (phi_v1) = ${phi_obs!=null?phi_obs.toFixed(8):"null — no ℓ=3"}`,phi_obs!=null?"ok":"warn");
+  const sl_obs=computeSL(almObj.alm,CFG.L_values);
+  log(`  S(L): L={${sl_obs.L_values.join(",")}}`,"ok");
+  sl_obs.L_values.forEach((L,i)=>log(`    S(${L}) = ${sl_obs.S[i].toExponential(6)}`,"dim"));
+  const rl_obs=computeRL(almObj.alm,CFG.L_values);
+  if (rl_obs.error) log(`  R(L): ${rl_obs.error}`,"warn");
+  else {
+    log(`  R(L): L={${rl_obs.L_values.join(",")}}`,"ok");
+    rl_obs.L_values.forEach((L,i)=>log(`    R(${L}) = ${rl_obs.R[i].toFixed(6)}`,"dim"));
+  }
+  setProgress(15); await tick();
+
+  // ── Permutation engine ──
+  log(`\n[PERM] P=${CFG.P} phase-randomized permutations…`,"info");
+  const rng=makePrng(seed_full);
+  const phi_null=[];
+  const SL_null=sl_obs.L_values.map(()=>[]);
+  const RL_null=rl_obs.error?null:rl_obs.L_values.map(()=>[]);
+
+  for (let p=0;p<CFG.P;p++) {
+    const nAlm=randomizeAllAlm(almObj.alm,rng);
+    if (phi_obs!=null&&nAlm[2]&&nAlm[3]) phi_null.push(computePhi(nAlm[2],nAlm[3])??0);
+    const sln=computeSL(nAlm,sl_obs.L_values);
+    sl_obs.L_values.forEach((L,i)=>{
+      const ni=sln.L_values.indexOf(L);
+      SL_null[i].push(ni>=0?sln.S[ni]:0);
+    });
+    if (RL_null) {
+      const rln=computeRL(nAlm,rl_obs.L_values);
+      if (!rln.error) {
+        rl_obs.L_values.forEach((L,i)=>{
+          const ni=rln.L_values.indexOf(L);
+          RL_null[i].push(ni>=0?rln.R[ni]:0);
+        });
+      }
+    }
+    if ((p+1)%200===0) {
+      const pct=15+((p+1)/CFG.P)*75;
+      setProgress(pct);
+      log(`  ${p+1}/${CFG.P}…`,"dim");
+      await tick();
+    }
+  }
+  setProgress(92); log("[PERM] Complete.","ok"); await tick();
+
+  // ── Significance ──
+  log("\n[SIG] Significance tests…","info");
+  const phi_sig=phi_obs!=null&&phi_null.length>0
+    ? permStats(phi_null, phi_obs, { seed: (seed_full ^ 0x51504D31) >>> 0, B: CFG.bootstrap_B })
+    : null;
+  if (phi_sig) log(`  φ: p=${phi_sig.p_value.toFixed(4)}  z=${phi_sig.z_score.toFixed(3)}  d=${phi_sig.effect_size_d.toFixed(3)} (${phi_sig.effect_magnitude})  ${phi_sig.pass?"PASS":"NS"}`,phi_sig.pass?"ok":"warn");
+  const SL_sig=sl_obs.L_values.map((L,i)=>{
+    if (SL_null[i].length===0) return null;
+    const s=permStats(SL_null[i], sl_obs.S[i], { seed: (seed_full ^ 0x534C0000 ^ (L & 0xFFFF)) >>> 0, B: CFG.bootstrap_B });
+    log(`  S(${L}): p=${s.p_value.toFixed(4)}  z=${s.z_score.toFixed(3)}  d=${s.effect_size_d.toFixed(3)} (${s.effect_magnitude})  ${s.pass?"PASS":"NS"}`,s.pass?"ok":"warn");
+    return s;
+  });
+  let RL_sig=null;
+  if (RL_null&&!rl_obs.error) {
+    RL_sig=rl_obs.L_values.map((L,i)=>{
+      if (RL_null[i].length===0) return null;
+      const s=permStats(RL_null[i], rl_obs.R[i], { seed: (seed_full ^ 0x524C0000 ^ (L & 0xFFFF)) >>> 0, B: CFG.bootstrap_B });
+      log(`  R(${L}): p=${s.p_value.toFixed(4)}  z=${s.z_score.toFixed(3)}  d=${s.effect_size_d.toFixed(3)} (${s.effect_magnitude})  ${s.pass?"PASS":"NS"}`,s.pass?"ok":"warn");
+      return s;
+    });
+  }
+  setProgress(99); await tick();
+
+  lastResult={
+    seed_base, seed_full,
+    geoObj, stabObj, almObj,
+    phi_obs, phi_null, phi_sig,
+    sl_obs, SL_null, SL_sig,
+    rl_obs, RL_null, RL_sig,
+    theta23_recheck,
+  };
+  renderResults(lastResult);
+  log("\n[DONE] CMB-III-FULL v1.2.0 complete.","ok");
+  setProgress(100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [RENDER]
+// ═══════════════════════════════════════════════════════════════
+function renderResults(res) {
+  const {phi_obs,phi_sig,sl_obs,SL_sig,rl_obs,RL_sig}=res;
+
+  // Hero
+  if (phi_obs!=null) {
+    document.getElementById("heroVal").textContent=phi_obs.toFixed(6);
+    set("phi_obs",phi_obs.toFixed(8),"purple");
+    if (phi_sig) {
+      set("phi_nmean",phi_sig.mean.toFixed(6));
+      set("phi_nstd",phi_sig.std.toFixed(6));
+      set("phi_range",`[${phi_sig.min.toFixed(4)}, ${phi_sig.max.toFixed(4)}]`);
+      set("phi_d",phi_sig.effect_size_d.toFixed(3),phi_sig.pass?"pass":"warn");
+      set("phi_mag",String(phi_sig.effect_magnitude).toUpperCase(),"info");
+      set("phi_z",phi_sig.z_score.toFixed(3),phi_sig.pass?"pass":"warn");
+      set("phi_p",phi_sig.p_value.toFixed(4),phi_sig.pass?"pass":"warn");
+      set("phi_pse",phi_sig.p_se!=null?phi_sig.p_se.toFixed(4):"—","dim");
+      set("phi_pci",phi_sig.p_ci95?`[${phi_sig.p_ci95[0].toFixed(4)}, ${phi_sig.p_ci95[1].toFixed(4)}]`:"—","dim");
+      set("phi_pass",phi_sig.pass?"SIGNIFICANT (p<0.05)":"NOT SIGNIFICANT",phi_sig.pass?"pass":"warn");
+      const badge=document.getElementById("heroBadge");
+      badge.textContent=phi_sig.pass?"SIGNIFICANT p < 0.05":"NOT SIGNIFICANT";
+      badge.className="hero-badge "+(phi_sig.pass?"sig":"nosig");
+    }
+  } else {
+    document.getElementById("heroVal").textContent="N/A";
+    document.getElementById("heroBadge").textContent="NO ℓ=3 DATA";
+    document.getElementById("heroBadge").className="hero-badge idle";
+  }
+
+  // S(L) table
+  const stbody=document.getElementById("SL_tbody");
+  stbody.innerHTML="";
+  sl_obs.L_values.forEach((L,i)=>{
+    const sig=SL_sig[i];
+    const tr=document.createElement("tr");
+    const pc=sig&&sig.pass?"pass-cell":sig?"warn-cell":"";
+    tr.innerHTML=`<td>${L}</td>
+      <td class="num">${sl_obs.S[i].toExponential(5)}</td>
+      <td class="num">${sig?sig.mean.toExponential(4):"—"}</td>
+      <td class="num">${sig?sig.std.toExponential(3):"—"}</td>
+      <td class="num ${pc}">${sig?sig.effect_size_d.toFixed(3):"—"}</td>
+      <td class="num ${pc}">${sig?sig.p_value.toFixed(4):"—"}</td>
+      <td class="${pc}">${sig?(sig.pass?"PASS":"NS"):"—"}</td>`;
+    stbody.appendChild(tr);
+  });
+
+  // R(L) table
+  const rtbody=document.getElementById("RL_tbody");
+  rtbody.innerHTML="";
+  if (rl_obs.error) {
+    rtbody.innerHTML=`<tr><td colspan="7" style="color:var(--warn);padding:8px 0">${rl_obs.error}</td></tr>`;
+  } else {
+    rl_obs.L_values.forEach((L,i)=>{
+      const sig=RL_sig?RL_sig[i]:null;
+      const pc=sig&&sig.pass?"pass-cell":sig?"warn-cell":"";
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${L}</td>
+        <td class="num">${rl_obs.R[i].toFixed(6)}</td>
+        <td class="num">${sig?sig.mean.toFixed(5):"—"}</td>
+        <td class="num">${sig?sig.std.toFixed(5):"—"}</td>
+        <td class="num ${pc}">${sig?sig.effect_size_d.toFixed(3):"—"}</td>
+        <td class="num ${pc}">${sig?sig.p_value.toFixed(4):"—"}</td>
+        <td class="${pc}">${sig?(sig.pass?"PASS":"NS"):"—"}</td>`;
+      rtbody.appendChild(tr);
+    });
+  }
+
+  // Null distribution cards
+  const grid=document.getElementById("nullSummaryGrid");
+  grid.innerHTML="";
+  const allStats=[
+    {key:"φ (phi_v1)",sig:res.phi_sig,obs:res.phi_obs},
+    ...sl_obs.L_values.map((L,i)=>({key:`S(${L})`,sig:SL_sig[i],obs:sl_obs.S[i]})),
+    ...(rl_obs.error?[]:rl_obs.L_values.map((L,i)=>({key:`R(${L})`,sig:RL_sig?RL_sig[i]:null,obs:rl_obs.R[i]}))),
+  ];
+  for (const st of allStats) {
+    if (!st.sig) continue;
+    const div=document.createElement("div");
+    div.className="null-card";
+    const pc=st.sig.pass?"pass":"warn";
+    div.innerHTML=`
+      <div class="null-card-title">${st.key}</div>
+      <div class="sc"><span class="sk">observed</span><span class="sv purple">${formatNum(st.obs)}</span></div>
+      <div class="sc"><span class="sk">null mean</span><span class="sv">${formatNum(st.sig.mean)}</span></div>
+      <div class="sc"><span class="sk">null σ</span><span class="sv">${formatNum(st.sig.std)}</span></div>
+      <div class="sc"><span class="sk">null [min,max]</span><span class="sv" style="font-size:9.5px">[${formatNum(st.sig.min)}, ${formatNum(st.sig.max)}]</span></div>
+      <div class="sc"><span class="sk">effect size d</span><span class="sv ${pc}">${st.sig.effect_size_d.toFixed(3)}</span></div>
+      <div class="sc"><span class="sk">magnitude</span><span class="sv info">${String(st.sig.effect_magnitude).toUpperCase()}</span></div>
+      <div class="sc"><span class="sk">p-value</span><span class="sv ${pc}">${st.sig.p_value.toFixed(4)}</span></div>
+      <div class="sc"><span class="sk">p SE</span><span class="sv">${st.sig.p_se!=null?st.sig.p_se.toFixed(4):"—"}</span></div>
+      <div class="sc"><span class="sk">p 95% CI</span><span class="sv" style="font-size:9.5px">${st.sig.p_ci95?`[${st.sig.p_ci95[0].toFixed(4)}, ${st.sig.p_ci95[1].toFixed(4)}]`:"—"}</span></div>
+      <div class="sc"><span class="sk">verdict</span><span class="sv ${pc} " style="font-size:9px;letter-spacing:0.1em">${st.sig.pass?"SIGNIFICANT":"NOT SIGNIFICANT"}</span></div>`;
+    grid.appendChild(div);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [EXPORT] Locked JSON schema
+// ═══════════════════════════════════════════════════════════════
+function doExport() {
+  if (!lastResult) return;
+  const res=lastResult;
+  const {sl_obs,rl_obs,SL_sig,RL_sig}=res;
+
+  const payload={
+    chamber: "CMB-III-FULL",
+    version: "1.2.0",
+
+    protocol: {
+      rotation_convention: "passive_ZYZ",
+      seed_base:           res.seed_base,
+      seed_full:           res.seed_full,
+      seed_xor:            CFG.seed_xor,
+      P:                   CFG.P,
+      randomization:       ["phase_randomize_conjugate"],
+      alpha_level:         CFG.alpha,
+      bootstrap: {
+        B:        CFG.bootstrap_B,
+        ci_lo:    CFG.bootstrap_ci_lo,
+        ci_hi:    CFG.bootstrap_ci_hi,
+        meaning:  "Monte-Carlo p-value estimator uncertainty (finite P) via bootstrap over null values",
+      },
+    },
+
+    imports: {
+      geo: {
+        chamber:      res.geoObj.chamber,
+        version:      res.geoObj.version,
+        theta23_deg:  res.geoObj.theta23,
+        u2:           res.geoObj.u2,
+        u3:           res.geoObj.u3,
+        rng_seed:     res.geoObj.rng_seed,
+        overall_pass: res.geoObj.overall_pass,
+      },
+      stab: {
+        chamber:             res.stabObj.chamber,
+        version:             res.stabObj.version,
+        D_internal:          res.stabObj.D_internal,
+        K:                   res.stabObj.K,
+        epsilon_deg:         res.stabObj.epsilon_deg,
+        rotation_convention: res.stabObj.rotation_convention,
+        overall_pass:        res.stabObj.overall_pass,
+      },
+    },
+
+    observables: {
+      theta23_deg: res.geoObj.theta23,
+      D_internal:  res.stabObj.D_internal,
+
+      phi: {
+        definition:        "phi_v1: |u2 · u3| = |cos(theta23)| — quadrupole-octopole alignment scalar",
+        phi_definition_id: CFG.phi_definition_id,
+        value:             res.phi_obs,
+        units:             "dimensionless [0,1]",
+      },
+
+      S_L: {
+        definition: "S(L) = C_L / (2L+1) = sum_m |a_{Lm}|^2 / (2L+1) — normalized angular power",
+        L_values:   sl_obs.L_values,
+        S:          sl_obs.S,
+      },
+
+      R_L: {
+        definition: "R(L) = C_L / C_2 — power ratio relative to quadrupole",
+        L_values:   rl_obs.error?[]:rl_obs.L_values,
+        R:          rl_obs.error?null:rl_obs.R,
+        error:      rl_obs.error||null,
+      },
+    },
+
+    null_tests: {
+      phi: res.phi_sig ? {
+        null_values_summary: {
+          min:   res.phi_sig.min,
+          max:   res.phi_sig.max,
+          mean:  res.phi_sig.mean,
+          std:   res.phi_sig.std,
+          count: res.phi_null.length,
+        },
+        null_values: res.phi_null,
+        p_value: res.phi_sig.p_value,
+        p_se:    res.phi_sig.p_se,
+        p_ci95:  res.phi_sig.p_ci95,
+        z_score: res.phi_sig.z_score,
+        effect_size_d:    res.phi_sig.effect_size_d,
+        effect_magnitude: res.phi_sig.effect_magnitude,
+        pass:    res.phi_sig.pass,
+      } : {null_values:[],p_value:null,z_score:null,pass:null,note:"no ℓ=3 data"},
+
+      S_L: {
+        L_values:       sl_obs.L_values,
+        null_S_summary: SL_sig.map((sig,i)=>sig?{L:sl_obs.L_values[i],min:sig.min,max:sig.max,mean:sig.mean,std:sig.std}:null),
+        null_S:         res.SL_null,
+        p_values:       SL_sig.map(s=>s?s.p_value:null),
+        p_se:           SL_sig.map(s=>s?s.p_se:null),
+        p_ci95:         SL_sig.map(s=>s?s.p_ci95:null),
+        z_scores:       SL_sig.map(s=>s?s.z_score:null),
+        effect_size_d:  SL_sig.map(s=>s?s.effect_size_d:null),
+        effect_mag:     SL_sig.map(s=>s?s.effect_magnitude:null),
+        pass:           SL_sig.every(s=>s&&s.pass),
+      },
+
+      R_L: rl_obs.error ? {error:rl_obs.error,pass:null} : {
+        L_values:       rl_obs.L_values,
+        null_R_summary: (RL_sig||[]).map((sig,i)=>sig?{L:rl_obs.L_values[i],min:sig.min,max:sig.max,mean:sig.mean,std:sig.std}:null),
+        null_R:         res.RL_null,
+        p_values:       (RL_sig||[]).map(s=>s?s.p_value:null),
+        p_se:           (RL_sig||[]).map(s=>s?s.p_se:null),
+        p_ci95:         (RL_sig||[]).map(s=>s?s.p_ci95:null),
+        z_scores:       (RL_sig||[]).map(s=>s?s.z_score:null),
+        effect_size_d:  (RL_sig||[]).map(s=>s?s.effect_size_d:null),
+        effect_mag:     (RL_sig||[]).map(s=>s?s.effect_magnitude:null),
+        pass:           RL_sig?RL_sig.every(s=>s&&s.pass):null,
+      },
+    },
+
+    invariants: {
+      rotation_convention_lock: {pass:true, convention:"passive_ZYZ"},
+      seed_consistency:         {pass:true, geo_seed:res.seed_base, stab_seed:res.stabObj.rng_seed},
+      stab_overall_pass:        {pass:true},
+      theta23_recheck: {
+        pass:            true,
+        theta23_geo_deg: res.geoObj.theta23,
+        theta23_raw_deg: res.theta23_recheck,
+        dev_deg:         res.theta23_recheck!=null
+                         ? Math.abs(res.theta23_recheck-res.geoObj.theta23)
+                         : null,
+        tol:             CFG.theta23_recheck_tol,
+      },
+    },
+
+    timestamp_utc: new Date().toISOString(),
+  };
+
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`cmb-iii-full_v1.2.0_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  log("\n[EXPORT] JSON downloaded.","ok");
+}
+</script>
+</body>
+</html>

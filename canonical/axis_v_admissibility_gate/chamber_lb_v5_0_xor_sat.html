@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber L-B (V-5.0) · XOR-SAT Feasibility | UNNS Laboratory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4a9eff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .header .axis-label {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(74, 158, 255, 0.2);
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #4a9eff;
+            margin-top: 10px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.85em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 0.95em;
+            width: 120px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4a9eff, #7b68ee);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 158, 255, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: rgba(123, 104, 238, 0.3);
+            border: 1px solid rgba(123, 104, 238, 0.5);
+        }
+
+        button.secondary:hover {
+            background: rgba(123, 104, 238, 0.4);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.collapsed {
+            background: #ef4444;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #4a9eff;
+        }
+
+        .metric-value.success {
+            color: #4ade80;
+        }
+
+        .metric-value.danger {
+            color: #ef4444;
+        }
+
+        .canvas-container {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        canvas {
+            width: 100%;
+            border-radius: 5px;
+            background: #1a1a1a;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            flex: 1;
+            font-size: 0.95em;
+        }
+
+        .validation-panel {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .validation-panel h3 {
+            margin-bottom: 15px;
+            color: #4a9eff;
+        }
+
+        .validation-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.pass {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .badge.fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .badge.pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .spec-panel {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .spec-panel h3 {
+            color: #7b68ee;
+            margin-bottom: 15px;
+        }
+
+        .spec-item {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid #7b68ee;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+
+        .spec-item strong {
+            color: #4a9eff;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chamber L-B (V-5.0)</h1>
+            <div class="subtitle">XOR-SAT Feasibility · Instantaneous Constraint Satisfaction</div>
+            <div class="axis-label">AXIS V · LOGIC CONTAINER L-B · MECHANISM V-5</div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Seed</label>
+                    <input type="number" id="seedInput" value="12345">
+                </div>
+                <div class="control-group">
+                    <label>Max Steps</label>
+                    <input type="number" id="maxStepsInput" value="1000" min="100" max="5000">
+                </div>
+                <div class="control-group">
+                    <label>p_backedge</label>
+                    <input type="number" id="pBackedgeInput" value="0.02" step="0.01" min="0" max="0.1">
+                </div>
+                <div class="control-group">
+                    <label>U_crit</label>
+                    <input type="number" id="uCritInput" value="0.15" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>α (clause density)</label>
+                    <input type="number" id="alphaInput" value="0.80" step="0.05" min="0.10" max="3.00">
+                </div>
+                <div class="control-group">
+                    <label>d (clause degree)</label>
+                    <input type="number" id="degreeInput" value="5" step="1" min="3" max="15">
+                </div>
+                <button id="runButton">Run Single</button>
+                <button id="runBatchButton">Run Batch (50)</button>
+                <button id="exportButton">Export JSON</button>
+                <button id="diagRewireButton" class="secondary">Diag: Edge-Rewire Invariance</button>
+                <button id="diagFlipButton" class="secondary">Diag: Bit-Flip Sensitivity</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <div class="status-text" id="statusText">Ready to run</div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Current Step</div>
+                <div class="metric-value" id="currentStep">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">SAT Feasible</div>
+                <div class="metric-value" id="feasibleStatus">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">unsat_count</div>
+                <div class="metric-value" id="unsatCount">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">m (clauses)</div>
+                <div class="metric-value" id="clauseCount">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Utility Realized</div>
+                <div class="metric-value" id="utilityStatus">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Current U_t</div>
+                <div class="metric-value" id="currentUtility">0.000</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Violation Step</div>
+                <div class="metric-value" id="violationStep">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Utility Step</div>
+                <div class="metric-value" id="utilityStep">—</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <h3 style="margin-bottom: 10px; color: #4a9eff;">Timeline Visualization</h3>
+            <canvas id="timelineCanvas"></canvas>
+        </div>
+
+        <div class="validation-panel">
+            <h3>Validation Statistics (Batch Mode)</h3>
+            <div class="validation-stats">
+                <div class="metric-card">
+                    <div class="metric-label">Total Runs</div>
+                    <div class="metric-value" id="totalRuns">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">P(utility | F=true)</div>
+                    <div class="metric-value" id="pUtilityGivenFeasible">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">P(utility | F=false)</div>
+                    <div class="metric-value" id="pUtilityGivenCollapsed">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Mean Cliffness</div>
+                    <div class="metric-value" id="meanCliffness">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Falsifier Triggers</div>
+                    <div class="metric-value" id="falsifierCount">0</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <strong>Upgrade Decision:</strong>
+                <span id="upgradeDecision" class="badge pending">PENDING</span>
+            </div>
+        </div>
+
+        <div class="spec-panel">
+            <h3>Chamber Specification</h3>
+            <div class="spec-item">
+                <strong>Invariant:</strong> F(H) = XOR-SAT over GF(2) on node-local observed bits o(H) (boolean)
+            </div>
+            <div class="spec-item">
+                <strong>Falsifier:</strong> Utility realized while SAT is false (unsatisfiable prefix at t_utility)
+            </div>
+            <div class="spec-item">
+                <strong>Expected Signature:</strong> Feasibility cliff (B_u) — abrupt collapse at first violated parity check
+            </div>
+            <div class="spec-item">
+                <strong>Coupling Rule:</strong> τ admissible iff F.feasible == true (irreversible)
+            </div>
+            <div class="spec-item">
+                <strong>Utility:</strong> Shared EMA threshold (k=8 consecutive steps above U_crit)
+            </div>
+        </div>
+
+        <div class="log-panel" id="logPanel"></div>
+
+        <div class="footer">
+            Chamber L-B (V-5.0) · XOR-SAT Feasibility · UNNS Laboratory<br>
+            Axis V · Surgical Orthogonality Test Suite
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CHAMBER L-B (V-5.0) - XOR-SAT FEASIBILITY
+        // Axis V · Logic Container L-B · Mechanism V-5
+        // ============================================================
+
+        // ============================================================
+        // V-5 FEASIBILITY PREDICATE: XOR-SAT (LDPC-style) on observed node bits
+        // Kernel: xor_sat_ldpc_v1
+        // ============================================================
+
+        function mixU32(x) {
+            x >>>= 0;
+            x ^= x >>> 16; x = Math.imul(x, 0x7feb352d) >>> 0;
+            x ^= x >>> 15; x = Math.imul(x, 0x846ca68b) >>> 0;
+            x ^= x >>> 16;
+            return x >>> 0;
+        }
+
+        function randIndex(seed, n, j) {
+            // deterministic "random" index in [0, n)
+            return mixU32(seed ^ (j * 0x9e3779b9)) % n;
+        }
+
+        // Node-local observed bit o_i (no edges)
+        function observedBit(event, e0) {
+            const sameSymbol = (event.local_state.symbol === e0.local_state.symbol) ? 1 : 0;
+            const payloadUp = (event.local_state.payload > e0.local_state.payload) ? 1 : 0;
+            return (sameSymbol ^ payloadUp) & 1;
+        }
+
+        class XorSatFeasibilityPredicate {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.feasible = true;
+                this.violation_step = null;
+                this.unsat_count = 0;
+                this.m = 0;
+                this.constraints = null; // cached after first build for a given n
+                this.last_n = null;
+            }
+
+            buildConstraints(n, seed, alpha, d) {
+                const m = Math.max(1, Math.floor(alpha * n));
+                const clauses = [];
+
+                for (let j = 0; j < m; j++) {
+                    const used = new Set();
+                    const vars = [];
+                    // generate d distinct indices
+                    let t = 0;
+                    while (vars.length < d && t < d * 10) {
+                        const idx = randIndex(seed ^ 0xA5A5A5A5, n, j * 131 + t);
+                        if (!used.has(idx)) {
+                            used.add(idx);
+                            vars.push(idx);
+                        }
+                        t++;
+                    }
+                    // RHS bit b_j from seed+clause index (independent of graph)
+                    const b = (mixU32(seed ^ (j * 0x85ebca6b)) & 1);
+
+                    clauses.push({ vars, b });
+                }
+
+                return { m, clauses };
+            }
+
+            // Evaluate satisfiability on PREFIX: only clauses fully inside prefix are "active"
+            // If any active clause is violated -> UNSAT prefix -> collapse at that step.
+            evaluate(partialH, config) {
+                const events = partialH.events;
+                const n = events.length;
+                if (n <= 1) {
+                    this.feasible = true;
+                    this.unsat_count = 0;
+                    this.m = 0;
+                    return { feasible: true, violation_step: null, unsat_count: 0, m: 0 };
+                }
+
+                // Build/cache constraints based on current n (prefix)
+                const alpha = config.alpha;
+                const d = config.degree;
+                const seed = config.seed;
+
+                // Rebuild only when n changes
+                if (this.last_n !== n) {
+                    this.constraints = this.buildConstraints(n, seed, alpha, d);
+                    this.last_n = n;
+                    this.m = this.constraints.m;
+                }
+
+                const e0 = events[0];
+                // observed bitstring o[0..n-1]
+                const o = new Array(n);
+                for (let i = 0; i < n; i++) o[i] = observedBit(events[i], e0);
+
+                let unsat = 0;
+                const clauses = this.constraints.clauses;
+
+                // All clauses are defined over indices < n by construction; all are active
+                for (let j = 0; j < clauses.length; j++) {
+                    const cl = clauses[j];
+                    let lhs = 0;
+                    for (let k = 0; k < cl.vars.length; k++) lhs ^= o[cl.vars[k]];
+                    if (lhs !== cl.b) unsat++;
+                }
+
+                this.unsat_count = unsat;
+
+                if (unsat > 0) {
+                    this.feasible = false;
+                    this.violation_step = n - 1;
+                } else {
+                    this.feasible = true;
+                    this.violation_step = null;
+                }
+
+                return {
+                    feasible: this.feasible,
+                    violation_step: this.violation_step,
+                    unsat_count: this.unsat_count,
+                    m: this.m
+                };
+            }
+        }
+
+        class SharedUtilityEvaluator {
+            constructor(config) {
+                this.U_crit = config.U_crit;
+                this.k = config.k;
+                this.ema_alpha = config.ema_alpha;
+                this.reset();
+            }
+
+            reset() {
+                this.U_t = 0;
+                this.above_threshold_count = 0;
+                this.realized = false;
+                this.t_realized = null;
+                this.timeline = [];
+            }
+
+            update(event, t) {
+                // Compute instantaneous utility
+                const u_t = event.metrics.local_gain - event.metrics.local_cost;
+                
+                // Update EMA
+                this.U_t = this.ema_alpha * u_t + (1 - this.ema_alpha) * this.U_t;
+
+                // Check threshold
+                if (this.U_t > this.U_crit) {
+                    this.above_threshold_count++;
+                    if (!this.realized && this.above_threshold_count >= this.k) {
+                        this.realized = true;
+                        this.t_realized = t;
+                    }
+                } else {
+                    this.above_threshold_count = 0;
+                }
+
+                this.timeline.push({ t, U_t: this.U_t, u_t });
+
+                return {
+                    U_t: this.U_t,
+                    above_threshold_count: this.above_threshold_count,
+                    realized: this.realized
+                };
+            }
+        }
+
+        class HistoryGenerator {
+            constructor(config) {
+                this.config = config;
+                this.events = [];
+                this.rng_state = config.seed;
+            }
+
+            setSeed(seed) {
+                this.rng_state = seed;
+            }
+
+            rng() {
+                this.rng_state = mixU32(this.rng_state + 0x9e3779b9);
+                return this.rng_state / 0x100000000;
+            }
+
+            generate(n) {
+                this.events = [];
+                
+                // Generate n events
+                for (let i = 0; i < n; i++) {
+                    const event = this.generateEvent(i);
+                    this.events.push(event);
+                }
+
+                return {
+                    events: this.events,
+                    utility: { realized: false, t_realized: null }
+                };
+            }
+
+            generateEvent(id) {
+                const symbol = Math.floor(this.rng() * 10);
+                const payload = this.rng();
+
+                const local_gain = this.rng() * 0.8 + 0.1;
+                const local_cost = this.rng() * 0.6;
+
+                const parents = id === 0 ? [] : this.selectParents(id);
+
+                return {
+                    id: id,
+                    local_state: { symbol, payload },
+                    metrics: { local_gain, local_cost },
+                    parents: parents
+                };
+            }
+
+            selectParents(id) {
+                const parents = [];
+                const candidates = [];
+                
+                // Collect candidates (all previous events)
+                for (let i = 0; i < id; i++) {
+                    candidates.push(this.events[i]);
+                }
+
+                // Decide number of parents (1 or 2)
+                const maxParents = Math.min(this.config.max_parents, id);
+                const numParents = 1 + Math.floor(this.rng() * maxParents);
+
+                // Select parents
+                for (let p = 0; p < numParents; p++) {
+                    if (candidates.length === 0) break;
+                    const idx = Math.floor(this.rng() * candidates.length);
+                    parents.push(candidates[idx].id);
+                    candidates.splice(idx, 1);
+                }
+
+                return parents;
+            }
+        }
+
+        class ChamberL {
+            constructor() {
+                this.F_predicate = new XorSatFeasibilityPredicate();
+                this.utility_evaluator = null;
+                this.generator = null;
+                this.H = null;
+                this.feasibility_timeline = [];
+                this.unsat_timeline = [];
+                this.m_timeline = [];
+                this.collapsed = false;
+                this.collapse_step = null;
+                this.batchResults = [];
+            }
+
+            initialize(config) {
+                this.config = config;
+                this.utility_evaluator = new SharedUtilityEvaluator({
+                    U_crit: config.U_crit,
+                    k: config.k || 8,
+                    ema_alpha: config.ema_alpha || 0.2
+                });
+                this.generator = new HistoryGenerator({
+                    seed: config.seed,
+                    p_backedge: config.p_backedge,
+                    max_parents: config.max_parents || 2
+                });
+                this.generator.setSeed(config.seed);
+            }
+
+            run(maxSteps) {
+                this.H = this.generator.generate(maxSteps);
+                this.feasibility_timeline = [];
+                this.unsat_timeline = [];
+                this.m_timeline = [];
+                this.collapsed = false;
+                this.collapse_step = null;
+                this.utility_evaluator.reset();
+                this.F_predicate.reset();
+
+                // Evaluate step by step
+                for (let t = 0; t < this.H.events.length; t++) {
+                    const event = this.H.events[t];
+                    const result = this.evaluateStep_LB(t, event);
+                    
+                    if (result.collapsed) {
+                        this.collapsed = true;
+                        this.collapse_step = result.collapse_step;
+                        // Continue evaluating but utility is now impossible
+                    }
+                }
+
+                // Final utility state
+                this.H.utility.realized = this.utility_evaluator.realized;
+                this.H.utility.t_realized = this.utility_evaluator.t_realized;
+
+                return this.H;
+            }
+
+            evaluateStep_LB(t, event) {
+                // Build partial history up to current step
+                const partialH = {
+                    events: this.H.events.slice(0, t + 1)
+                };
+
+                // Evaluate feasibility
+                const F_result = this.F_predicate.evaluate(partialH, this.config);
+
+                // Record timeline
+                this.feasibility_timeline.push({
+                    t: t,
+                    feasible: F_result.feasible,
+                    violation_step: F_result.violation_step
+                });
+
+                this.unsat_timeline.push({ t: t, unsat_count: F_result.unsat_count });
+                this.m_timeline.push({ t: t, m: F_result.m });
+
+                // Apply L-B coupling rule
+                if (!F_result.feasible) {
+                    return {
+                        tau_admissible: false,
+                        collapsed: true,
+                        collapse_step: F_result.violation_step,
+                        utility_possible: false
+                    };
+                }
+
+                // If feasible and not already collapsed, update utility
+                if (!this.collapsed) {
+                    const U_result = this.utility_evaluator.update(event, t);
+                    return {
+                        tau_admissible: true,
+                        collapsed: false,
+                        utility: U_result
+                    };
+                }
+
+                // If already collapsed from earlier, utility remains impossible
+                return {
+                    tau_admissible: false,
+                    collapsed: true,
+                    collapse_step: this.collapse_step,
+                    utility_possible: false
+                };
+            }
+
+            testFalsifier() {
+                if (!this.H || !this.H.utility || !this.H.utility.realized) return "FALSIFIER_SURVIVED";
+
+                const tU = this.H.utility.t_realized;
+
+                // Find unsat_count at t_utility (prefix state)
+                const entry = this.unsat_timeline.find(x => x.t === tU);
+                if (!entry) return "FALSIFIER_SURVIVED";
+
+                if (entry.unsat_count > 0) return "FALSIFIER_TRIGGERED";
+                return "FALSIFIER_SURVIVED";
+            }
+
+            exportJSON() {
+                return {
+                    chamber_id: "CHAMBER_LB",
+                    version: "5.0",
+                    axis: "V",
+                    mechanism: "V-5",
+                    logic_container: "L-B",
+                    instantiation: {
+                        v_chamber: "V-5",
+                        invariant: {
+                            type: "F",
+                            kernel: "xor_sat_ldpc_v1",
+                            alpha: this.config.alpha,
+                            degree: this.config.degree
+                        },
+                        falsifier: "utility_while_unsat",
+                        expected_signature: "feasibility_cliff_Bu"
+                    },
+                    config: this.config,
+                    H: this.H,
+                    F_timeline: this.feasibility_timeline,
+                    unsat_timeline: this.unsat_timeline,
+                    m_timeline: this.m_timeline,
+                    U_timeline: this.utility_evaluator.timeline,
+                    outcome: {
+                        feasible: !this.collapsed,
+                        t_violation: this.collapse_step,
+                        utility_realized: this.H.utility.realized,
+                        t_utility: this.H.utility.t_realized,
+                        falsifier_status: this.testFalsifier()
+                    }
+                };
+            }
+        }
+
+        // ============================================================
+        // UI AND VISUALIZATION
+        // ============================================================
+
+        const chamber = new ChamberL();
+        let canvas, ctx;
+
+        function initializeUI() {
+            canvas = document.getElementById('timelineCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 400;
+
+            document.getElementById('runButton').addEventListener('click', runSingle);
+            document.getElementById('runBatchButton').addEventListener('click', runBatch);
+            document.getElementById('exportButton').addEventListener('click', exportJSON);
+            document.getElementById('diagRewireButton').addEventListener('click', diagEdgeRewireInvariance);
+            document.getElementById('diagFlipButton').addEventListener('click', diagBitFlipSensitivity);
+        }
+
+        function getConfig() {
+            const seed = parseInt(document.getElementById('seedInput').value);
+            const maxSteps = parseInt(document.getElementById('maxStepsInput').value);
+            const pBackedge = parseFloat(document.getElementById('pBackedgeInput').value);
+            const uCrit = parseFloat(document.getElementById('uCritInput').value);
+            const alpha = parseFloat(document.getElementById('alphaInput').value);
+            const degree = parseInt(document.getElementById('degreeInput').value, 10);
+
+            return {
+                seed: seed,
+                p_backedge: pBackedge,
+                max_parents: 2,
+                U_crit: uCrit,
+                k: 8,
+                ema_alpha: 0.2,
+                alpha: alpha,
+                degree: degree
+            };
+        }
+
+        function runSingle() {
+            const config = getConfig();
+
+            chamber.initialize(config);
+            log(`Starting run with seed ${config.seed}...`);
+            
+            const startTime = performance.now();
+            chamber.run(parseInt(document.getElementById('maxStepsInput').value));
+            const elapsed = (performance.now() - startTime).toFixed(2);
+
+            log(`Run complete in ${elapsed}ms`);
+            log(`Feasible: ${!chamber.collapsed}, Utility: ${chamber.H.utility.realized}`);
+            log(`Falsifier: ${chamber.testFalsifier()}`);
+
+            updateMetrics();
+            visualizeTimeline();
+        }
+
+        async function runBatch() {
+            const baseSeed = parseInt(document.getElementById('seedInput').value);
+            const maxSteps = parseInt(document.getElementById('maxStepsInput').value);
+            const pBackedge = parseFloat(document.getElementById('pBackedgeInput').value);
+            const uCrit = parseFloat(document.getElementById('uCritInput').value);
+            const alpha = parseFloat(document.getElementById('alphaInput').value);
+            const degree = parseInt(document.getElementById('degreeInput').value, 10);
+            const numRuns = 50;
+
+            chamber.batchResults = [];
+            log(`Starting batch run with ${numRuns} iterations...`);
+
+            const startTime = performance.now();
+
+            for (let i = 0; i < numRuns; i++) {
+                const config = {
+                    seed: baseSeed + i,
+                    p_backedge: pBackedge,
+                    max_parents: 2,
+                    U_crit: uCrit,
+                    k: 8,
+                    ema_alpha: 0.2,
+                    alpha: alpha,
+                    degree: degree
+                };
+
+                chamber.initialize(config);
+                chamber.run(maxSteps);
+
+                chamber.batchResults.push({
+                    seed: config.seed,
+                    feasible: !chamber.collapsed,
+                    utility_realized: chamber.H.utility.realized,
+                    falsifier: chamber.testFalsifier()
+                });
+
+                // Update UI periodically
+                if ((i + 1) % 10 === 0) {
+                    document.getElementById('statusText').textContent = 
+                        `Batch progress: ${i + 1}/${numRuns}`;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
+
+            const elapsed = (performance.now() - startTime).toFixed(2);
+            log(`Batch complete in ${elapsed}ms`);
+            
+            updateBatchStatistics();
+            document.getElementById('statusText').textContent = 'Batch run complete';
+        }
+
+        function updateMetrics() {
+            document.getElementById('currentStep').textContent = chamber.H.events.length;
+            
+            const feasible = !chamber.collapsed;
+            const feasibleEl = document.getElementById('feasibleStatus');
+            feasibleEl.textContent = feasible ? 'TRUE' : 'FALSE';
+            feasibleEl.className = 'metric-value ' + (feasible ? 'success' : 'danger');
+
+            const lastUnsat = chamber.unsat_timeline.length ? chamber.unsat_timeline[chamber.unsat_timeline.length - 1].unsat_count : 0;
+            const lastM = chamber.m_timeline.length ? chamber.m_timeline[chamber.m_timeline.length - 1].m : 0;
+
+            document.getElementById('unsatCount').textContent = String(lastUnsat);
+            document.getElementById('clauseCount').textContent = lastM ? String(lastM) : '—';
+
+            const utilityEl = document.getElementById('utilityStatus');
+            utilityEl.textContent = chamber.H.utility.realized ? 'TRUE' : 'FALSE';
+            utilityEl.className = 'metric-value ' + (chamber.H.utility.realized ? 'success' : '');
+
+            document.getElementById('currentUtility').textContent = 
+                chamber.utility_evaluator.U_t.toFixed(3);
+
+            document.getElementById('violationStep').textContent = 
+                chamber.collapse_step !== null ? chamber.collapse_step : '—';
+
+            document.getElementById('utilityStep').textContent = 
+                chamber.H.utility.t_realized !== null ? chamber.H.utility.t_realized : '—';
+
+            const statusIndicator = document.getElementById('statusIndicator');
+            if (chamber.collapsed) {
+                statusIndicator.classList.add('collapsed');
+                document.getElementById('statusText').textContent = 
+                    `Run collapsed at step ${chamber.collapse_step}`;
+            } else {
+                statusIndicator.classList.remove('collapsed');
+                document.getElementById('statusText').textContent = 
+                    chamber.H.utility.realized ? 
+                    `Utility realized at step ${chamber.H.utility.t_realized}` :
+                    'Run complete, feasible, utility not realized';
+            }
+        }
+
+        function visualizeTimeline() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw background
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (!chamber.H) return;
+
+            const maxT = chamber.H.events.length;
+            const xScale = (width - 80) / maxT;
+            const yScale = height - 80;
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = 40 + (yScale / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(40, y);
+                ctx.lineTo(width - 40, y);
+                ctx.stroke();
+            }
+
+            // Draw U_t timeline
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < chamber.utility_evaluator.timeline.length; i++) {
+                const point = chamber.utility_evaluator.timeline[i];
+                const x = 40 + point.t * xScale;
+                const y = 40 + yScale - (point.U_t * yScale);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Draw U_crit threshold
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            const thresholdY = 40 + yScale - (chamber.config.U_crit * yScale);
+            ctx.beginPath();
+            ctx.moveTo(40, thresholdY);
+            ctx.lineTo(width - 40, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw collapse marker
+            if (chamber.collapsed) {
+                const collapseX = 40 + chamber.collapse_step * xScale;
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(collapseX, 40);
+                ctx.lineTo(collapseX, 40 + yScale);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('COLLAPSE', collapseX + 5, 55);
+            }
+
+            // Draw utility realization marker
+            if (chamber.H.utility.realized) {
+                const utilityX = 40 + chamber.H.utility.t_realized * xScale;
+                ctx.strokeStyle = '#4ade80';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(utilityX, 40);
+                ctx.lineTo(utilityX, 40 + yScale);
+                ctx.stroke();
+
+                ctx.fillStyle = '#4ade80';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('UTILITY', utilityX + 5, 70);
+            }
+
+            // Draw axes labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('0', 10, 40 + yScale);
+            ctx.fillText(chamber.config.U_crit.toFixed(2), 10, thresholdY);
+            ctx.fillText('t=0', 40, height - 20);
+            ctx.fillText(`t=${maxT}`, width - 60, height - 20);
+            ctx.fillText('U_t', 10, 30);
+        }
+
+        function updateBatchStatistics() {
+            const results = chamber.batchResults;
+            document.getElementById('totalRuns').textContent = results.length;
+
+            // Calculate P(utility | feasible)
+            const feasibleRuns = results.filter(r => r.feasible);
+            const feasibleWithUtility = feasibleRuns.filter(r => r.utility_realized);
+            const pUtilityGivenFeasible = feasibleRuns.length > 0 ? 
+                (feasibleWithUtility.length / feasibleRuns.length) : 0;
+
+            // Calculate P(utility | collapsed)
+            const collapsedRuns = results.filter(r => !r.feasible);
+            const collapsedWithUtility = collapsedRuns.filter(r => r.utility_realized);
+            const pUtilityGivenCollapsed = collapsedRuns.length > 0 ? 
+                (collapsedWithUtility.length / collapsedRuns.length) : 0;
+
+            // Calculate cliffness (simplified metric)
+            const cliffness = Math.abs(pUtilityGivenFeasible - pUtilityGivenCollapsed);
+
+            // Count falsifier triggers
+            const falsifierTriggers = results.filter(r => r.falsifier === 'FALSIFIER_TRIGGERED').length;
+
+            // Update display
+            document.getElementById('pUtilityGivenFeasible').textContent = 
+                pUtilityGivenFeasible.toFixed(3);
+            document.getElementById('pUtilityGivenCollapsed').textContent = 
+                pUtilityGivenCollapsed.toFixed(3);
+            document.getElementById('meanCliffness').textContent = cliffness.toFixed(3);
+            document.getElementById('falsifierCount').textContent = falsifierTriggers;
+
+            // Upgrade decision
+            const upgradeEl = document.getElementById('upgradeDecision');
+            const criterion1 = pUtilityGivenFeasible > 0.05;
+            const criterion2 = pUtilityGivenCollapsed < 0.01;
+            const criterion3 = cliffness > 0.30;
+
+            if (criterion1 && criterion2 && criterion3) {
+                upgradeEl.textContent = 'UPGRADE TO V-5';
+                upgradeEl.className = 'badge pass';
+                log(`UPGRADE SUCCESS: C1=${criterion1}, C2=${criterion2}, C3=${criterion3}`);
+            } else {
+                upgradeEl.textContent = 'STAY AT V-4';
+                upgradeEl.className = 'badge fail';
+                log(`UPGRADE FAILED: C1=${criterion1}, C2=${criterion2}, C3=${criterion3}`);
+            }
+        }
+
+        function exportJSON() {
+            if (!chamber.H) {
+                alert('No run data to export. Run a simulation first.');
+                return;
+            }
+
+            const data = chamber.exportJSON();
+            const blob = new Blob([JSON.stringify(data, null, 2)], 
+                { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chamber_lb_v5_0_seed_${chamber.config.seed}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('JSON exported successfully');
+        }
+
+        // ============================================================
+        // DIAGNOSTIC FUNCTIONS (NON-OVERLAP TESTS)
+        // ============================================================
+
+        function computeSatForEvents(events, config) {
+            const pred = new XorSatFeasibilityPredicate();
+            pred.reset();
+            const partialH = { events: events };
+            return pred.evaluate(partialH, config); // feasible, unsat_count, m
+        }
+
+        function rewireEdgesCopy(events, seed) {
+            const rngSeed = mixU32(seed ^ 0xC0FFEE);
+            let x = rngSeed;
+
+            function rng() { x = mixU32(x + 0x9e3779b9); return (x / 0xFFFFFFFF); }
+
+            // Deep-ish copy
+            const out = events.map(e => ({
+                ...e,
+                parents: []
+            }));
+
+            for (let i = 1; i < out.length; i++) {
+                const maxParents = Math.min(2, i);
+                const k = 1 + Math.floor(rng() * maxParents);
+                const candidates = [];
+                for (let j = 0; j < i; j++) candidates.push(out[j].id);
+
+                const chosen = [];
+                for (let t = 0; t < k && candidates.length; t++) {
+                    const idx = Math.floor(rng() * candidates.length);
+                    chosen.push(candidates[idx]);
+                    candidates.splice(idx, 1);
+                }
+                out[i].parents = chosen;
+            }
+            return out;
+        }
+
+        function diagEdgeRewireInvariance() {
+            if (!chamber.H || !chamber.H.events) { log('Diag: run a single history first.'); return; }
+            const cfg = getConfig();
+
+            const base = computeSatForEvents(chamber.H.events, cfg);
+            const rewiredEvents = rewireEdgesCopy(chamber.H.events, cfg.seed + 999);
+            const rewired = computeSatForEvents(rewiredEvents, cfg);
+
+            log('=== DIAG: Edge-Rewire Invariance ===');
+            log(`Base: feasible=${base.feasible}, unsat=${base.unsat_count}/${base.m}`);
+            log(`Rewired: feasible=${rewired.feasible}, unsat=${rewired.unsat_count}/${rewired.m}`);
+            log(base.feasible === rewired.feasible ? 'PASS: SAT invariant under edge rewiring' : 'FAIL: SAT changed under edge rewiring (contamination)');
+        }
+
+        function flipOneBitCopy(events, idx) {
+            const out = events.map(e => ({ ...e, local_state: { ...e.local_state }, parents: [...(e.parents || [])] }));
+            // Nudge payload to flip (payload > payload0) branch; minimal change
+            if (idx > 0) {
+                out[idx].local_state.payload = out[0].local_state.payload - 1e-6; // force payloadUp=0
+            }
+            return out;
+        }
+
+        function diagBitFlipSensitivity() {
+            if (!chamber.H || !chamber.H.events) { log('Diag: run a single history first.'); return; }
+            const cfg = getConfig();
+
+            const base = computeSatForEvents(chamber.H.events, cfg);
+
+            // choose a non-root index deterministically
+            const n = chamber.H.events.length;
+            const idx = Math.max(1, (mixU32(cfg.seed ^ 0xB17B17) % (n - 1)) + 1);
+
+            const flippedEvents = flipOneBitCopy(chamber.H.events, idx);
+            const flipped = computeSatForEvents(flippedEvents, cfg);
+
+            log('=== DIAG: Bit-Flip Sensitivity ===');
+            log(`Flip index: ${idx}`);
+            log(`Base: feasible=${base.feasible}, unsat=${base.unsat_count}/${base.m}`);
+            log(`Flipped: feasible=${flipped.feasible}, unsat=${flipped.unsat_count}/${flipped.m}`);
+            log(base.feasible !== flipped.feasible ? 'PASS: SAT sensitive to node-bit flip' : 'NOTE: SAT unchanged this time (try another seed/index)');
+        }
+
+        function log(message) {
+            const logPanel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">[${time}]</span>${message}`;
+            
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', initializeUI);
+    </script>
+</body>
+</html>

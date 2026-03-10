@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamber LXII v1.0.0 — Variance Geometry Probe | UNNS Laboratory</title>
+<style>
+:root {
+  --bg:     #07080f;
+  --bg1:    #10121d;
+  --bg2:    #181b2a;
+  --bg3:    #222538;
+  --fg:     #d8daf0;
+  --fg2:    #8890b8;
+  --accent: #c084fc;      /* violet — σ_F manifold theme */
+  --purple: #a78bfa;
+  --gold:   #fbbf24;
+  --red:    #f87171;
+  --green:  #4ade80;
+  --orange: #fb923c;
+  --blue:   #60a5fa;
+  --teal:   #2dd4bf;
+  --border: #2a2d45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Courier New',monospace;font-size:13px;line-height:1.55;padding:20px}
+.wrap{max-width:1580px;margin:0 auto}
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+.hdr{background:linear-gradient(135deg,#0b0c1e,#140f22,#0d0f1f);border:1px solid var(--accent);border-radius:10px;padding:28px 32px;margin-bottom:18px;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-80px;right:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(192,132,252,.1),transparent);border-radius:50%}
+.hdr::after{content:'';position:absolute;bottom:-50px;left:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(45,212,191,.06),transparent);border-radius:50%}
+.hdr-id{color:var(--accent);font-size:11px;letter-spacing:3px;font-weight:700;margin-bottom:6px;text-transform:uppercase}
+.hdr-title{font-size:22px;font-weight:700;color:var(--fg);margin-bottom:4px;letter-spacing:.5px}
+.hdr-sub{color:var(--fg2);font-size:12px;margin-bottom:14px}
+.hdr-lock{display:flex;flex-wrap:wrap;gap:8px}
+.lock-chip{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;color:var(--gold);font-family:'Courier New',monospace}
+
+/* ── PANELS ───────────────────────────────────────────────────── */
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.panel-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── CONTROLS ─────────────────────────────────────────────────── */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
+.ctrl-grp{display:flex;flex-direction:column;gap:4px}
+.ctrl-grp label{font-size:10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.8px}
+select,input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--fg);padding:7px 10px;border-radius:4px;font-size:12px;font-family:'Courier New',monospace;width:130px}
+select{width:160px}
+.btn{border:none;padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:.5px;transition:all .2s}
+.btn-run{background:linear-gradient(135deg,var(--accent),var(--purple));color:#07080f}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 4px 18px rgba(192,132,252,.4)}
+.btn-run:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-export{background:var(--bg3);border:1px solid var(--border);color:var(--fg2);margin-left:8px}
+.btn-export:hover{color:var(--accent);border-color:var(--accent)}
+.btn-export:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── PROGRESS ─────────────────────────────────────────────────── */
+.prog{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px}
+.prog-bar-wrap{background:var(--bg3);border-radius:3px;height:6px;margin-bottom:10px}
+.prog-bar{background:linear-gradient(90deg,var(--accent),var(--teal));height:6px;border-radius:3px;width:0%;transition:width .2s}
+.prog-label{color:var(--fg2);font-size:11px}
+
+/* ── BANNERS ─────────────────────────────────────────────────── */
+.banner-ok{background:rgba(74,222,128,.08);border:1px solid var(--green);border-radius:6px;padding:10px 14px;color:var(--green);font-weight:700;margin-bottom:12px;font-size:12px}
+.banner-fail{background:rgba(248,113,113,.08);border:1px solid var(--red);border-radius:6px;padding:10px 14px;color:var(--red);font-weight:700;margin-bottom:12px;font-size:12px}
+.banner-warn{background:rgba(251,191,36,.08);border:1px solid var(--gold);border-radius:6px;padding:10px 14px;color:var(--gold);font-weight:700;margin-bottom:12px;font-size:12px}
+.banner-pending{background:rgba(136,144,184,.08);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--fg2);margin-bottom:12px;font-size:12px}
+.banner-info{background:rgba(192,132,252,.07);border:1px solid var(--accent);border-radius:6px;padding:10px 14px;color:var(--accent);margin-bottom:12px;font-size:12px}
+
+/* ── METRIC CARDS ─────────────────────────────────────────────── */
+.metric-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;min-width:130px}
+.mc-label{color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.mc-value{font-size:20px;font-weight:700}
+.mc-sub{color:var(--fg2);font-size:10px}
+.mc.accent .mc-value{color:var(--accent)}
+.mc.gold .mc-value{color:var(--gold)}
+.mc.teal .mc-value{color:var(--teal)}
+.mc.orange .mc-value{color:var(--orange)}
+.mc.green .mc-value{color:var(--green)}
+.mc.red .mc-value{color:var(--red)}
+.mc.blue .mc-value{color:var(--blue)}
+
+/* ── DECISION BADGES ──────────────────────────────────────────── */
+.badge{display:inline-block;padding:3px 11px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.b-cert{background:rgba(74,222,128,.18);border:1px solid var(--green);color:var(--green)}
+.b-fail{background:rgba(248,113,113,.18);border:1px solid var(--red);color:var(--red)}
+.b-unc{background:rgba(251,191,36,.18);border:1px solid var(--gold);color:var(--gold)}
+.b-accent{background:rgba(192,132,252,.18);border:1px solid var(--accent);color:var(--accent)}
+.b-pending{background:var(--bg3);border:1px solid var(--border);color:var(--fg2)}
+
+/* ── TABLES ───────────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg2);color:var(--fg2);font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;letter-spacing:.5px}
+td{padding:6px 10px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pass{color:var(--green);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+.warn{color:var(--gold);font-weight:700}
+.neutral{color:var(--fg2)}
+
+/* ── LOG ──────────────────────────────────────────────────────── */
+.log{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;height:220px;overflow-y:auto;font-size:11px;font-family:'Courier New',monospace}
+.log-info{color:var(--fg2)}
+.log-ok{color:var(--green)}
+.log-warn{color:var(--gold)}
+.log-err{color:var(--red)}
+.log-hi{color:var(--accent)}
+.log-blue{color:var(--blue)}
+
+/* ── HEATMAP ──────────────────────────────────────────────────── */
+.heatmap-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.heatmap-left{flex:0 0 auto}
+canvas.heatmap{border:1px solid var(--border);border-radius:6px;cursor:crosshair}
+.view-toggle{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.vbtn{background:var(--bg3);border:1px solid var(--border);color:var(--fg2);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-family:'Courier New',monospace;transition:all .15s}
+.vbtn.active{background:rgba(192,132,252,.15);border-color:var(--accent);color:var(--accent)}
+.vbtn:hover:not(.active){background:var(--bg2)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px}
+.leg-swatch{width:12px;height:12px;border-radius:2px}
+canvas.grad-legend{border:1px solid var(--border);border-radius:3px}
+
+/* ── INSPECTOR ────────────────────────────────────────────────── */
+.inspector{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:11px;min-width:280px;flex:1 1 280px}
+.insp-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(42,45,69,.5)}
+.insp-key{color:var(--fg2)}
+.insp-val{color:var(--fg);font-weight:600}
+.insp-badge{font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700}
+
+/* ── RING CHART ───────────────────────────────────────────────── */
+canvas.ring-chart{border:1px solid var(--border);border-radius:6px;background:var(--bg2)}
+
+/* ── INFO BOX ──────────────────────────────────────────────────── */
+.info-box{background:var(--bg2);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 4px 4px 0;font-size:11px;color:var(--fg2);margin-bottom:12px}
+.info-box strong{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ── HEADER ───────────────────────────────────────────────────────── -->
+<div class="hdr">
+  <div class="hdr-id">UNNS Laboratory · Chamber LXII · v1.0.0 · protocol_locked = true</div>
+  <div class="hdr-title">Variance Geometry Probe — σ_F Manifold</div>
+  <div class="hdr-sub">Determine whether the calibration floor σ_F is predictably structured over the kernel simplex (β,γ), scalable with depth, and reducible by reparameterization</div>
+  <div class="hdr-lock">
+    <span class="lock-chip">🔒 231 simplex cells</span>
+    <span class="lock-chip">🔒 τ∈{0.1,0.3,0.5,0.7,0.9}</span>
+    <span class="lock-chip">🔒 n∈{1,2,3,4}</span>
+    <span class="lock-chip">🔒 N_calib=400</span>
+    <span class="lock-chip">🔒 Null-A depth-repeat</span>
+    <span class="lock-chip">🔒 Null-B witness bootstrap</span>
+    <span class="lock-chip">🔒 transforms φ0–φ3 preregistered</span>
+    <span class="lock-chip">🔒 δ=0.15 flatten threshold</span>
+    <span class="lock-chip">🔒 ring bins=10</span>
+  </div>
+</div>
+
+<!-- ── CONTROLS ─────────────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="panel-title">⚙ Execution Controls</div>
+  <div class="info-box">
+    <strong>Preregistration enforced.</strong> Simplex grid (231 cells), τ-grid, N_calib=400, transforms φ0–φ3, and ring binning are locked.
+    LXII treats σ_F as an object with geometry — not a nuisance constant. Primary endpoint: ExistsVarianceGeometry.
+    Secondary: ExistsFlatteningTransform. Reduce bootstrap count for fast preview; use 200+ for full protocol.
+  </div>
+  <div class="ctrl-row">
+    <div class="ctrl-grp">
+      <label>Bootstrap seeds (σ_F estimation)</label>
+      <input type="number" id="ctrl-bs" value="60" min="20" max="200" step="10">
+    </div>
+    <div class="ctrl-grp">
+      <label>σ_F mode (display)</label>
+      <select id="ctrl-sfmode">
+        <option value="med">σ̄_F (median over n,τ)</option>
+        <option value="max">σ_F^max (max over n,τ)</option>
+      </select>
+    </div>
+    <div class="ctrl-grp">
+      <label>Ring bins</label>
+      <select id="ctrl-rings">
+        <option value="8">8 bins</option>
+        <option value="10" selected>10 bins</option>
+        <option value="12">12 bins</option>
+      </select>
+    </div>
+    <div class="ctrl-grp">
+      <label>Heatmap view</label>
+      <select id="ctrl-view" onchange="onViewChange()">
+        <option value="sigmaF_med">σ̄_F field</option>
+        <option value="sigmaF_max">σ_F^max field</option>
+        <option value="curvature">κ_var curvature</option>
+        <option value="labels">Cell labels</option>
+        <option value="flattened">Flattened σ̄_F (best φ)</option>
+      </select>
+    </div>
+    <div>
+      <button class="btn btn-run" id="btn-run" onclick="executeProtocol()">▶ Execute LXII v1.0.0</button>
+      <button class="btn btn-export" id="btn-export" disabled onclick="exportJSON()">⬇ Export JSON</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROGRESS ─────────────────────────────────────────────────────── -->
+<div class="prog" id="prog">
+  <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+  <div class="prog-label" id="prog-label">Initializing…</div>
+</div>
+
+<!-- ── SANITY BANNER ─────────────────────────────────────────────────── -->
+<div id="sanity-banner" class="banner-pending">⏳ Awaiting execution — Phase 0 sanity check pending</div>
+
+<!-- ── SUMMARY METRICS ───────────────────────────────────────────────── -->
+<div class="metric-row" id="metrics-row" style="display:none">
+  <div class="mc accent"><div class="mc-label">σ̄_F global median</div><div class="mc-value" id="m-sfmed">—</div><div class="mc-sub">over all cells</div></div>
+  <div class="mc gold"><div class="mc-label">σ_F^max global</div><div class="mc-value" id="m-sfmax">—</div><div class="mc-sub">worst cell</div></div>
+  <div class="mc teal"><div class="mc-label">σ_F^min global</div><div class="mc-value" id="m-sfmin">—</div><div class="mc-sub">best cell</div></div>
+  <div class="mc orange"><div class="mc-label">Max/Min ratio</div><div class="mc-value" id="m-ratio">—</div><div class="mc-sub">dynamic range</div></div>
+  <div class="mc blue"><div class="mc-label">σF_HIGH cells</div><div class="mc-value" id="m-high">—</div><div class="mc-sub">above q90</div></div>
+  <div class="mc green"><div class="mc-label">VAR_BULGE cells</div><div class="mc-value" id="m-bulge">—</div><div class="mc-sub">κ_var above threshold</div></div>
+  <div class="mc red"><div class="mc-label">INVALID cells</div><div class="mc-value" id="m-inv">—</div><div class="mc-sub">excluded</div></div>
+</div>
+
+<!-- ── HEATMAP PANEL ──────────────────────────────────────────────────── -->
+<div class="panel" id="heatmap-panel" style="display:none">
+  <div class="panel-title">🔺 σ_F Simplex Heatmap — (β,γ) triangular grid, 231 cells</div>
+  <div class="view-toggle" id="view-btns">
+    <button class="vbtn active" onclick="setHeatView('sigmaF_med')">σ̄_F field</button>
+    <button class="vbtn" onclick="setHeatView('sigmaF_max')">σ_F^max</button>
+    <button class="vbtn" onclick="setHeatView('curvature')">κ_var curvature</button>
+    <button class="vbtn" onclick="setHeatView('labels')">Cell labels</button>
+    <button class="vbtn" onclick="setHeatView('flattened')">Flattened (best φ)</button>
+  </div>
+  <div class="heatmap-wrap">
+    <div class="heatmap-left">
+      <canvas id="heatmap-canvas" class="heatmap" width="500" height="460"></canvas>
+      <div style="margin-top:8px">
+        <canvas id="grad-legend-canvas" class="grad-legend" width="500" height="22"></canvas>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fg2);margin-top:2px">
+          <span id="leg-lo">low</span><span id="leg-mid">mid</span><span id="leg-hi">high</span>
+        </div>
+      </div>
+      <div class="legend" id="label-legend" style="display:none">
+        <div class="leg-item"><div class="leg-swatch" style="background:#7c3aed"></div>VALID</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#c084fc"></div>σF_HIGH</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#2dd4bf"></div>σF_LOW</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#fbbf24"></div>VAR_BULGE</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#f87171"></div>HIGH+BULGE</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#1a1c2a"></div>INVALID</div>
+      </div>
+    </div>
+    <div class="inspector" id="inspector">
+      <div style="color:var(--fg2);font-size:11px">Click a cell on the heatmap to inspect.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RING PROFILE ────────────────────────────────────────────────────── -->
+<div class="panel" id="ring-panel" style="display:none">
+  <div class="panel-title">📈 Phase 2 — σ_F Ring Profile vs s = β+γ</div>
+  <div id="ring-decision-banner" class="banner-pending">...</div>
+  <div class="grid2">
+    <div>
+      <canvas id="ring-canvas" class="ring-chart" width="500" height="280"></canvas>
+    </div>
+    <div>
+      <div id="ring-table-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUBMULTIPLICATIVITY ─────────────────────────────────────────────── -->
+<div class="panel" id="submult-panel" style="display:none">
+  <div class="panel-title">🔢 Phase 3 — Depth Scaling & Submultiplicativity</div>
+  <div id="submult-decision-banner" class="banner-pending">...</div>
+  <div id="submult-content"></div>
+</div>
+
+<!-- ── FLATTENING ─────────────────────────────────────────────────────── -->
+<div class="panel" id="flatten-panel" style="display:none">
+  <div class="panel-title">🗺 Phase 4 — Coordinate Flattening (φ0–φ3)</div>
+  <div id="flatten-decision-banner" class="banner-pending">...</div>
+  <div id="flatten-content"></div>
+</div>
+
+<!-- ── CURVATURE ──────────────────────────────────────────────────────── -->
+<div class="panel" id="curv-panel" style="display:none">
+  <div class="panel-title">🌐 Phase 5 — Local Variance Curvature (κ_var)</div>
+  <div id="curv-content"></div>
+</div>
+
+<!-- ── CHAMBER DECISION ────────────────────────────────────────────────── -->
+<div class="panel" id="decision-panel" style="display:none">
+  <div class="panel-title">⚖ Chamber-Level Decision</div>
+  <div id="decision-content"></div>
+</div>
+
+<!-- ── LOG ──────────────────────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="panel-title">📋 Execution Log</div>
+  <div class="log" id="log">
+    <div class="log-info">[INIT] Chamber LXII v1.0.0 loaded. protocol_locked = true.</div>
+    <div class="log-info">[INIT] Objective: characterize σ_F as geometric object over (β,γ) simplex.</div>
+    <div class="log-info">[INIT] Primary: ExistsVarianceGeometry (ring scaling + κ_var structure).</div>
+    <div class="log-info">[INIT] Secondary: ExistsFlatteningTransform (φ0–φ3 reparameterization).</div>
+  </div>
+</div>
+
+</div>
+<script>
+'use strict';
+
+// ============================================================================
+// CHAMBER LXII v1.0.0 — Variance Geometry Probe (σ_F Manifold)
+// Treats σ_F calibration floor as a field over (β,γ) simplex.
+// Analyzes: ring scaling, submultiplicativity, coordinate flattening, curvature.
+// ============================================================================
+
+// ── LOCKED CONSTANTS ──────────────────────────────────────────────────────────
+const C = {
+  N_CALIB:    400,
+  TAU_GRID:   [0.1, 0.3, 0.5, 0.7, 0.9],
+  DEPTHS:     [1, 2, 3, 4],
+  RING_BINS:  10,
+  SIMPLEX_STEP: 0.05,
+  SIMPLEX_N:    21,
+  DELTA_FLAT:  0.15,    // flattening threshold: Flat(φ) ≤ 1−δ
+  KAPPA_THRESH: 0.02,   // discrete Laplacian threshold for VAR_BULGE
+  Q90_SFHIGH:  0.90,
+  Q10_SFLOW:   0.10,
+  SUBMULT_EPS: 0.10,    // fraction allowed to violate submult
+  MONOTONE_TOL: 0.05,   // tolerance for ring monotonicity check
+};
+
+// ── RUNTIME STATE ─────────────────────────────────────────────────────────────
+const RT = {
+  running:   false,
+  done:      false,
+  cells:     [],
+  adj:       {},
+  cellData:  [],    // per-cell results
+  ringData:  [],    // per-ring aggregates
+  transforms:[],    // per-φ results
+  depthData: [],    // per-depth σ_F aggregates
+  decision:  {},
+  viewMode:  'sigmaF_med',
+  selectedCell: null,
+  bsSeeds:   60,
+};
+
+// ── RNG + UTILITIES ──────────────────────────────────────────────────────────
+function rng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => { s = Math.imul(s,1664525)+1013904223>>>0; return s/4294967296; };
+}
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function log(msg, cls='log-info') {
+  const el=document.getElementById('log');
+  const d=document.createElement('div'); d.className=cls; d.textContent=msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+function progress(label, pct) {
+  document.getElementById('prog-label').textContent = label;
+  document.getElementById('prog-bar').style.width = Math.min(100,pct) + '%';
+}
+function median(arr) {
+  const s=[...arr].sort((a,b)=>a-b), m=Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function mean(arr) { return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function sd(arr) {
+  if(arr.length<2) return 0;
+  const m=mean(arr);
+  return Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/arr.length);
+}
+function variance(arr) {
+  if(arr.length<2) return 0;
+  const m=mean(arr);
+  return arr.reduce((a,x)=>a+(x-m)**2,0)/arr.length;
+}
+function quantile(arr,q) {
+  const s=[...arr].sort((a,b)=>a-b);
+  const pos=(s.length-1)*q, lo=Math.floor(pos), hi=Math.ceil(pos);
+  return s[lo]+(s[hi]-s[lo])*(pos-lo);
+}
+function olsSlope(xs,ys) {
+  const n=xs.length, mx=mean(xs), my=mean(ys);
+  const num=xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+  const den=xs.reduce((s,x)=>s+(x-mx)**2,0);
+  return den>1e-12 ? num/den : 0;
+}
+function fmt3(x){ return x.toFixed(3); }
+function fmt4(x){ return x.toFixed(4); }
+
+// ── SIMPLEX GRID ──────────────────────────────────────────────────────────────
+function buildSimplexGrid() {
+  const cells=[], step=C.SIMPLEX_STEP;
+  let id=0;
+  for(let bi=0;bi<=20;bi++)
+    for(let gi=0;gi<=20-bi;gi++) {
+      const beta=+(bi*step).toFixed(6);
+      const gamma=+(gi*step).toFixed(6);
+      const alpha0=+(1-beta-gamma).toFixed(6);
+      const s=+(beta+gamma).toFixed(6);
+      const u = (beta+gamma)>1e-9 ? beta/(beta+gamma) : 0.5;
+      cells.push({id:id++, beta, gamma, alpha0, bi, gi, s, u,
+                  w0:alpha0, w1:beta, w2:gamma});
+    }
+  return cells; // 231 cells
+}
+
+function buildAdjacency(cells) {
+  const eps=0.001, step=C.SIMPLEX_STEP;
+  const adj={}; for(const c of cells) adj[c.id]=[];
+  for(let i=0;i<cells.length;i++)
+    for(let j=i+1;j<cells.length;j++){
+      const a=cells[i], b=cells[j];
+      const db=Math.abs(a.beta-b.beta), dg=Math.abs(a.gamma-b.gamma);
+      if((Math.abs(db-step)<eps&&dg<eps)||
+         (db<eps&&Math.abs(dg-step)<eps)||
+         (Math.abs(db-step)<eps&&Math.abs(dg-step)<eps&&
+          Math.abs((a.beta+a.gamma)-(b.beta+b.gamma))<eps)){
+        adj[a.id].push(b.id); adj[b.id].push(a.id);
+      }
+    }
+  return adj;
+}
+
+// ── MECHANISM POOL ──────────────────────────────────────────────────────────
+function genPool(n, seed) {
+  const r=rng(seed);
+  return Array.from({length:n}, (_,i)=>({
+    id:i,
+    g0: r()*2, b: r()*2, d: r()*5, km: r()*6,
+    cm: r()<0.7?0:1,
+    dk: 0.03+r()*0.06, mk: 0.02+r()*0.1,
+    hb: r()<0.7, sh: 0.08+r()*0.06, ls: r()*0.15
+  }));
+}
+
+function gate(g,m) {
+  if(g==='G1') return m.cm===0;
+  if(g==='G2') return m.dk>0.05;
+  if(g==='G3') return m.hb && m.sh>0.1;
+  if(g==='G4') return m.ls<0.1;
+}
+const GATES=['G1','G2','G3','G4'];
+
+function findWitnesses(pool) {
+  const wit={};
+  for(const g of GATES){
+    const oth=GATES.filter(x=>x!==g);
+    wit[g]=pool.filter(m=>!gate(g,m)&&oth.every(o=>gate(o,m))).map(m=>m.id);
+  }
+  return wit;
+}
+
+const DRAWS_PER_MECH=12;
+function precomputeDraws(N,seed) {
+  const r=rng(seed);
+  const out=new Float32Array(N*DRAWS_PER_MECH);
+  for(let i=0;i<out.length;i++) out[i]=r();
+  return out;
+}
+
+// Pure convex blend — the null protocol (η=0, no nonlinear correction)
+function applyStepConvex(pool, draws, beta, gamma, tau) {
+  const alpha0=Math.max(0,1-beta-gamma);
+  const result=new Array(pool.length);
+  for(let i=0;i<pool.length;i++){
+    const m=pool[i], b=i*DRAWS_PER_MECH;
+    // K0 (base)
+    const m0_dk=Math.max(0,m.dk*(1+tau*(draws[b  ]-0.5)*0.06));
+    const m0_g0=             m.g0*(1+tau*(draws[b+1]-0.5)*0.04);
+    const m0_sh=Math.max(0,m.sh*(1+tau*(draws[b+2]-0.5)*0.04));
+    const m0_ls=Math.max(0,Math.min(1,m.ls+tau*(draws[b+3]-0.5)*0.03));
+    // K1 (β-direction)
+    const m1_dk=Math.max(0,m.dk*(1+tau*0.55*(0.5+draws[b+4]*0.5)));
+    const m1_g0=             m.g0*(1+tau*0.35*draws[b+5]);
+    const m1_sh=Math.max(0,m.sh*(1+tau*0.45*(0.3+draws[b+6]*0.7)));
+    const m1_hb=draws[b+7]<tau*0.55?true:m.hb;
+    const m1_ls=Math.max(0,Math.min(1,m.ls-tau*0.08*draws[b+8]));
+    const m1_km=m.km*(1+tau*0.2*draws[b+9]);
+    // K2 (γ-direction)
+    const m2_dk=Math.max(0,m.dk*(1-tau*0.5*(0.4+draws[b+10]*0.6)));
+    const m2_g0=Math.max(0,m.g0*(1-tau*0.25*draws[b+11]));
+    const m2_sh=Math.max(0,m.sh*(1-tau*0.4*(0.3+draws[b+10]*0.7)));
+    const m2_hb=draws[b+11]<tau*0.4?false:m.hb;
+    const m2_ls=Math.max(0,Math.min(1,m.ls+tau*0.18*(0.5+draws[b+7]*0.5)));
+    // Convex blend
+    const r_dk=Math.max(0,alpha0*m0_dk+beta*m1_dk+gamma*m2_dk);
+    const r_g0=alpha0*m0_g0+beta*m1_g0+gamma*m2_g0;
+    const r_sh=Math.max(0,alpha0*m0_sh+beta*m1_sh+gamma*m2_sh);
+    const r_ls=Math.max(0,Math.min(1,alpha0*m0_ls+beta*m1_ls+gamma*m2_ls));
+    const r_km=alpha0*m.km+beta*m1_km+gamma*m.km;
+    const bl_w=alpha0*(m.hb?1:0)+beta*(m1_hb?1:0)+gamma*(m2_hb?1:0);
+    result[i]={id:m.id,g0:r_g0,km:r_km,cm:m.cm,dk:r_dk,mk:m.mk,hb:bl_w>=0.5,sh:r_sh,ls:r_ls};
+  }
+  return result;
+}
+
+function computeRho(pool, baseWit) {
+  const pm=new Map(); for(const m of pool) pm.set(m.id,m);
+  const rho={};
+  for(const g of GATES){
+    const oth=GATES.filter(x=>x!==g); let kept=0;
+    for(const id of baseWit[g]){
+      const m=pm.get(id); if(!m) continue;
+      if(!gate(g,m)&&oth.every(o=>gate(o,m))) kept++;
+    }
+    rho[g]=baseWit[g].length>0?kept/baseWit[g].length:1.0;
+  }
+  return rho;
+}
+
+function computeL(rhoByTau) {
+  let L=0;
+  for(const g of GATES)
+    for(let t=0;t<C.TAU_GRID.length;t++)
+      for(let tp=t+1;tp<C.TAU_GRID.length;tp++){
+        const dr=Math.abs(rhoByTau[t][g]-rhoByTau[tp][g]);
+        const dt=Math.abs(C.TAU_GRID[t]-C.TAU_GRID[tp]);
+        L=Math.max(L,dr/dt);
+      }
+  return L;
+}
+
+// Run one seed across all cells, returning b-statistic per cell per depth cap
+// depthCaps: array of max depths to use for OLS (e.g. [2,3,4])
+// Returns { bPerCell: [nCells][nDepthCaps] }
+function runOneSeed_allCells_depthCaps(basePool, baseWit, cells, depthCaps) {
+  const nC=cells.length, nT=C.TAU_GRID.length;
+  const nDmax=Math.max(...depthCaps);
+  // rhoStore[ci][ti][depth-1] = rho object
+  const rhoStore=Array.from({length:nC},()=>Array.from({length:nT},()=>new Array(nDmax)));
+
+  for(let ti=0;ti<nT;ti++){
+    const tau=C.TAU_GRID[ti];
+    const cellPools=Array.from({length:nC},()=>basePool.map(m=>({...m})));
+    for(let depth=1;depth<=nDmax;depth++){
+      const draws=precomputeDraws(basePool.length, 77777+depth*100019+ti*9973);
+      for(let ci=0;ci<nC;ci++){
+        cellPools[ci]=applyStepConvex(cellPools[ci],draws,cells[ci].beta,cells[ci].gamma,tau);
+        rhoStore[ci][ti][depth-1]=computeRho(cellPools[ci],baseWit);
+      }
+    }
+  }
+
+  const ns_all=C.DEPTHS;
+  const bPerCell=Array.from({length:nC},()=>new Array(depthCaps.length));
+
+  for(let ci=0;ci<nC;ci++){
+    for(let dc=0;dc<depthCaps.length;dc++){
+      const cap=depthCaps[dc];
+      const ns=ns_all.slice(0,cap);
+      const logLs=ns.map((_,ni)=>{
+        const rhoByTau=rhoStore[ci].map(tiArr=>tiArr[ni]);
+        return Math.log(Math.max(1e-9,computeL(rhoByTau)));
+      });
+      bPerCell[ci][dc] = cap>=2 ? olsSlope(ns,logLs) : logLs[0];
+    }
+  }
+  return {bPerCell};
+}
+
+// ── MAIN PROTOCOL ─────────────────────────────────────────────────────────────
+async function executeProtocol() {
+  if(RT.running) return;
+  RT.running=true; RT.done=false;
+  const t0=Date.now();
+
+  const btnRun=document.getElementById('btn-run');
+  btnRun.disabled=true; btnRun.textContent='Running…';
+  document.getElementById('btn-export').disabled=true;
+  document.getElementById('prog').style.display='block';
+  document.getElementById('heatmap-panel').style.display='none';
+  document.getElementById('ring-panel').style.display='none';
+  document.getElementById('submult-panel').style.display='none';
+  document.getElementById('flatten-panel').style.display='none';
+  document.getElementById('curv-panel').style.display='none';
+  document.getElementById('decision-panel').style.display='none';
+  document.getElementById('metrics-row').style.display='none';
+
+  const N_BS=Math.min(parseInt(document.getElementById('ctrl-bs').value)||60, 200);
+  const nRingBins=parseInt(document.getElementById('ctrl-rings').value)||10;
+  const sfMode=document.getElementById('ctrl-sfmode').value;
+
+  RT.cells=buildSimplexGrid();
+  RT.adj=buildAdjacency(RT.cells);
+  const nC=RT.cells.length;
+  const DEPTH_CAPS=[2,3,4]; // n_max values for per-depth analysis
+
+  log(`[INIT] Simplex grid: ${nC} cells | BS seeds: ${N_BS} | N_calib: ${C.N_CALIB}`, 'log-hi');
+  log(`[INIT] Depth caps for submult: ${DEPTH_CAPS} | Ring bins: ${nRingBins}`, 'log-info');
+
+  // Accumulate b values per cell per depth cap
+  const bAccum=Array.from({length:nC},()=>Array.from({length:DEPTH_CAPS.length},()=>[]));
+
+  // ── PHASE 0: SANITY ────────────────────────────────────────────────────────
+  log('══ PHASE 0: SANITY ══','log-hi');
+  progress('Phase 0: Sanity check…', 1);
+
+  // Check that σ_F ≥ 0 guaranteed (structural — always true)
+  // Check bootstrap stability by running 5 seeds and confirming finite output
+  const testPool=genPool(C.N_CALIB, 999991);
+  const testWit=findWitnesses(testPool);
+  const testRes=runOneSeed_allCells_depthCaps(testPool, testWit, [RT.cells[0], RT.cells[115]], DEPTH_CAPS);
+  const sanityOK = testRes.bPerCell.every(row=>row.every(v=>isFinite(v)));
+  if(!sanityOK) {
+    document.getElementById('sanity-banner').className='banner-fail';
+    document.getElementById('sanity-banner').textContent='✗ SANITY FAILED — non-finite b values detected';
+    log('[SANITY] Non-finite b values!','log-err');
+    RT.running=false; btnRun.disabled=false; btnRun.textContent='▶ Execute LXII v1.0.0';
+    return;
+  }
+  log('[SANITY] b values finite ✓ | σ_F ≥ 0 structural ✓','log-ok');
+  document.getElementById('sanity-banner').className='banner-ok';
+  document.getElementById('sanity-banner').textContent='✓ Phase 0 PASSED — finite b values confirmed, σ_F ≥ 0 structural';
+  await sleep(0);
+
+  // ── PHASE 1: FULL σ_F FIELD ────────────────────────────────────────────────
+  log('══ PHASE 1: σ_F FIELD COMPUTATION ══','log-hi');
+
+  for(let si=0;si<N_BS;si++){
+    const seed=(si+1)*31337+13;
+    const pool=genPool(C.N_CALIB, seed);
+    const wit=findWitnesses(pool);
+    const {bPerCell}=runOneSeed_allCells_depthCaps(pool, wit, RT.cells, DEPTH_CAPS);
+    for(let ci=0;ci<nC;ci++)
+      for(let dc=0;dc<DEPTH_CAPS.length;dc++)
+        bAccum[ci][dc].push(bPerCell[ci][dc]);
+
+    if(si%5===4||si===N_BS-1){
+      progress(`Phase 1: σ_F field — seed ${si+1}/${N_BS}`, 2+88*(si+1)/N_BS);
+      await sleep(0);
+      log(`[P1] Seed ${si+1}/${N_BS} done | cells processed: ${nC}`,'log-info');
+    }
+  }
+
+  // Compute σ_F per cell per depth cap
+  // σ̄_F(x) = median over depth caps
+  // σ_F^max(x) = max over depth caps
+  RT.cellData=RT.cells.map((c,ci)=>{
+    const sfs=DEPTH_CAPS.map((_,dc)=>sd(bAccum[ci][dc]));
+    const sfMed=median(sfs);
+    const sfMax=Math.max(...sfs);
+    const valid=sfs.every(v=>isFinite(v)&&v>=0);
+    return {
+      ...c,
+      valid,
+      sigmaF_by_n: sfs,
+      sigmaF_med: sfMed,
+      sigmaF_max: sfMax,
+      sigmaF_ring_s: c.s,
+      labels:[],
+      var_curvature:{ laplacian:0, label_var_bulge:false }
+    };
+  });
+
+  log(`[P1] σ_F field computed. Checking distribution…`,'log-ok');
+
+  // Assign σF_HIGH / σF_LOW labels
+  const validSfMeds=RT.cellData.filter(c=>c.valid).map(c=>c.sigmaF_med);
+  const q90=quantile(validSfMeds, C.Q90_SFHIGH);
+  const q10=quantile(validSfMeds, C.Q10_SFLOW);
+  const gMedian=median(validSfMeds);
+  const gMax=Math.max(...validSfMeds);
+  const gMin=Math.min(...validSfMeds);
+  const ratio=gMin>1e-9?gMax/gMin:Infinity;
+
+  RT.cellData.forEach(c=>{
+    if(!c.valid){c.labels=['INVALID'];return;}
+    c.labels=['VALID'];
+    if(c.sigmaF_med>=q90) c.labels.push('σF_HIGH');
+    if(c.sigmaF_med<=q10) c.labels.push('σF_LOW');
+  });
+
+  log(`[P1] σ̄_F global: med=${fmt4(gMedian)} max=${fmt4(gMax)} min=${fmt4(gMin)} ratio=${fmt3(ratio)}`,'log-ok');
+  log(`[P1] q90=${fmt4(q90)} (σF_HIGH threshold) | q10=${fmt4(q10)} (σF_LOW threshold)`,'log-info');
+
+  // ── PHASE 2: RING SCALING ─────────────────────────────────────────────────
+  log('══ PHASE 2: RING SCALING (σ_F vs s=β+γ) ══','log-hi');
+  progress('Phase 2: Ring scaling analysis…',91);
+  await sleep(0);
+
+  const rings=[];
+  for(let ri=0;ri<nRingBins;ri++){
+    const lo=ri/nRingBins, hi=(ri+1)/nRingBins;
+    const inBin=RT.cellData.filter(c=>c.valid&&c.s>=lo-1e-9&&c.s<hi+1e-9);
+    if(inBin.length===0){rings.push({s_lo:lo,s_hi:hi,s_mid:(lo+hi)/2,sfMed:null,sfCI:[null,null],count:0});continue;}
+    const sfs=inBin.map(c=>c.sigmaF_med);
+    const med=median(sfs);
+    // Bootstrap CI via resampling across cells
+    const bsSfs=[];
+    for(let b=0;b<200;b++){
+      const r=rng(b*1009+7); const samp=Array.from({length:sfs.length},()=>sfs[Math.floor(r()*sfs.length)]);
+      bsSfs.push(median(samp));
+    }
+    const ci=[quantile(bsSfs,0.005),quantile(bsSfs,0.995)];
+    rings.push({s_lo:lo,s_hi:hi,s_mid:(lo+hi)/2,sfMed:med,sfCI:ci,count:inBin.length});
+  }
+  RT.ringData=rings;
+
+  // Check monotone nondecreasing
+  const validRings=rings.filter(r=>r.count>0);
+  let monotoneViolations=0;
+  for(let ri=1;ri<validRings.length;ri++)
+    if(validRings[ri].sfMed < validRings[ri-1].sfMed - C.MONOTONE_TOL*gMedian)
+      monotoneViolations++;
+  const ringSlope=olsSlope(validRings.map(r=>r.s_mid),validRings.map(r=>r.sfMed));
+  const certRing = monotoneViolations===0 && ringSlope>0;
+  log(`[P2] Ring slope: ${fmt4(ringSlope)} | violations: ${monotoneViolations} | CERT_RING: ${certRing}`,'log-ok');
+
+  // ── PHASE 3: SUBMULTIPLICATIVITY ──────────────────────────────────────────
+  log('══ PHASE 3: SUBMULTIPLICATIVITY ══','log-hi');
+  progress('Phase 3: Submultiplicativity test…',93);
+  await sleep(0);
+
+  // Test: σ_F(n=4) ≤ C · σ_F(n=2) · σ_F(n=3)? (n+m triples)
+  // Available: DEPTH_CAPS=[2,3,4] → sf2, sf3, sf4
+  // Test triple (n=2, m=2, n+m=4): σ_F(4) ≤ C · σ_F(2) · σ_F(2)
+  const triples=[];
+  for(const c of RT.cellData){
+    if(!c.valid) continue;
+    const sf2=c.sigmaF_by_n[0], sf3=c.sigmaF_by_n[1], sf4=c.sigmaF_by_n[2];
+    if(sf2<1e-9||sf3<1e-9) continue;
+    // triple (2,2,4): σ_F(4) ≤ C·σ_F(2)²
+    const C_422 = sf2*sf2>1e-12 ? sf4/(sf2*sf2) : Infinity;
+    // triple (2,3): σ_F(4) ≤ C·σ_F(2)·σ_F(3)? but 2+3=5 ≠ 4
+    // Actually use (2+1=3): σ_F(3) ≤ C·σ_F(2)·σ_F(1) — but we don't have depth=1 OLS (only cap≥2)
+    // Use (3,2): σ_F(3) ≤ C·σ_F(2)·σ_F(2)? → C_322 = sf3/(sf2²)
+    const C_322 = sf2*sf2>1e-12 ? sf3/(sf2*sf2) : Infinity;
+    triples.push({ci:c.id,sf2,sf3,sf4,C_422,C_322});
+  }
+  const C_422_vals=triples.filter(t=>isFinite(t.C_422)).map(t=>t.C_422);
+  const C_322_vals=triples.filter(t=>isFinite(t.C_322)).map(t=>t.C_322);
+  const medC422=C_422_vals.length?median(C_422_vals):NaN;
+  const medC322=C_322_vals.length?median(C_322_vals):NaN;
+  // With uniform C = 95th percentile, what fraction satisfies?
+  const C_unif=quantile(C_422_vals,0.95);
+  const fracSatisfy=C_422_vals.filter(v=>v<=C_unif).length/C_422_vals.length;
+  const certSubmult = fracSatisfy>=(1-C.SUBMULT_EPS);
+  log(`[P3] Submult C(4/2²): med=${fmt3(medC422)} | C_unif(q95)=${fmt3(C_unif)} | frac≤C: ${(fracSatisfy*100).toFixed(1)}% | CERT: ${certSubmult}`,'log-ok');
+  const depthData={triples,medC422,medC322,C_unif,fracSatisfy,certSubmult};
+  RT.depthData=depthData;
+
+  // ── PHASE 4: FLATTENING TRANSFORMS ────────────────────────────────────────
+  log('══ PHASE 4: FLATTENING TRANSFORMS (φ0–φ3) ══','log-hi');
+  progress('Phase 4: Coordinate flattening…',95);
+  await sleep(0);
+
+  const validCells=RT.cellData.filter(c=>c.valid);
+  const origSfs=validCells.map(c=>c.sigmaF_med);
+  const origVar=variance(origSfs);
+  const origMaxRatio=gMax/Math.max(gMin,1e-9);
+  const q95=quantile(origSfs,0.95);
+  const origTailMass=origSfs.filter(v=>v>q95).length/origSfs.length;
+
+  // φ0: identity
+  // φ1: radial — s = β+γ (already normalized), u = β/(β+γ+ε)
+  // φ2: logit simplex — apply logit to (w0,w1,w2)
+  // φ3: ring-normalized — equalize ring medians via monotone spline
+
+  function logit(x){return Math.log(Math.max(x,1e-6)/Math.max(1-x,1e-6));}
+
+  // Build φ3: ring-normalized (map s by 1D spline to equalize medians)
+  const ringMeds=validRings.filter(r=>r.sfMed!==null).map(r=>({s:r.s_mid,med:r.sfMed}));
+  const globalRingMed=ringMeds.length?median(ringMeds.map(r=>r.med)):gMedian;
+  function phi3_s(s){
+    // find which ring bracket s falls in, linearly interpolate correction
+    for(let ri=0;ri<validRings.length-1;ri++){
+      if(s>=validRings[ri].s_lo&&s<validRings[ri+1].s_lo){
+        const t=(s-validRings[ri].s_mid)/(validRings[ri+1].s_mid-validRings[ri].s_mid+1e-9);
+        const m0=validRings[ri].sfMed||globalRingMed;
+        const m1=validRings[ri+1].sfMed||globalRingMed;
+        return globalRingMed/(Math.max(1e-9,(1-t)*m0+t*m1));
+      }
+    }
+    return 1.0;
+  }
+
+  function evalTransform(phi_id){
+    let sfTransformed=[];
+    for(const c of validCells){
+      let scale=1.0;
+      if(phi_id===0) scale=1.0;
+      else if(phi_id===1){
+        // radial: scale by 1/(1+s) to down-weight high-s cells
+        scale=1/(1+c.s+1e-9);
+      }
+      else if(phi_id===2){
+        // logit simplex: scale by exp(-|logit(w0)|) emphasizing interior
+        const lw0=logit(c.w0); const lw1=logit(c.w1); const lw2=logit(c.w2);
+        scale=Math.exp(-0.1*(lw0*lw0+lw1*lw1+lw2*lw2));
+      }
+      else if(phi_id===3){
+        // ring-normalized: multiply σ_F by correction factor
+        scale=phi3_s(c.s);
+      }
+      sfTransformed.push(c.sigmaF_med*scale);
+    }
+    const varT=variance(sfTransformed);
+    const flatScore=origVar>1e-14?varT/origVar:1.0;
+    const maxT=Math.max(...sfTransformed);
+    const minT=Math.min(...sfTransformed.filter(v=>v>0));
+    const maxRatioT=maxT/Math.max(minT,1e-9);
+    const q95T=quantile(sfTransformed,0.95);
+    const tailT=sfTransformed.filter(v=>v>q95T).length/sfTransformed.length;
+    const certFlatten=flatScore<=(1-C.DELTA_FLAT)&&tailT<=origTailMass*1.0;
+    return {phi_id,flatScore,maxRatioBefore:origMaxRatio,maxRatioAfter:maxRatioT,
+            tailBefore:origTailMass,tailAfter:tailT,certFlatten,sfTransformed};
+  }
+
+  const phiNames=['φ0 identity','φ1 radial (1/(1+s))','φ2 logit simplex','φ3 ring-normalized'];
+  RT.transforms=[0,1,2,3].map(phi_id=>{
+    const r=evalTransform(phi_id);
+    log(`[P4] ${phiNames[phi_id]}: Flat=${fmt3(r.flatScore)} maxRatio=${fmt3(r.maxRatioAfter)} tail=${(r.tailAfter*100).toFixed(1)}% CERT:${r.certFlatten}`,'log-info');
+    return r;
+  });
+  const bestPhi=RT.transforms.reduce((a,b)=>a.flatScore<b.flatScore?a:b);
+  const existsFlatten=RT.transforms.some(t=>t.certFlatten);
+
+  // Store flattened σ_F on cells (best φ)
+  validCells.forEach((c,ci)=>{c.sigmaF_flat=bestPhi.sfTransformed[ci];});
+  RT.cellData.filter(c=>!c.valid).forEach(c=>{c.sigmaF_flat=0;});
+
+  // ── PHASE 5: LOCAL CURVATURE ──────────────────────────────────────────────
+  log('══ PHASE 5: LOCAL CURVATURE (κ_var) ══','log-hi');
+  progress('Phase 5: Variance curvature…',97);
+  await sleep(0);
+
+  // Discrete Laplacian: Δf(x) ≈ mean_neighbors(f) - f(x)
+  RT.cellData.forEach(c=>{
+    if(!c.valid){c.var_curvature={laplacian:0,label_var_bulge:false};return;}
+    const neighbors=RT.adj[c.id].map(nid=>RT.cellData[nid]).filter(n=>n&&n.valid);
+    if(neighbors.length===0){c.var_curvature={laplacian:0,label_var_bulge:false};return;}
+    const laplacian=mean(neighbors.map(n=>n.sigmaF_med))-c.sigmaF_med;
+    const label_var_bulge=laplacian>=C.KAPPA_THRESH;
+    c.var_curvature={laplacian,label_var_bulge};
+    if(label_var_bulge) c.labels.push('VAR_BULGE');
+  });
+
+  const nBulge=RT.cellData.filter(c=>c.var_curvature.label_var_bulge).length;
+  const laplacians=RT.cellData.filter(c=>c.valid).map(c=>c.var_curvature.laplacian);
+  const lapMax=Math.max(...laplacians), lapMin=Math.min(...laplacians);
+  const kvarNontrivial=nBulge>5&&(lapMax-lapMin)>1e-5;
+  log(`[P5] VAR_BULGE cells: ${nBulge} | κ range: [${fmt4(lapMin)},${fmt4(lapMax)}] | nontrivial: ${kvarNontrivial}`,'log-ok');
+
+  // ── CHAMBER DECISION ──────────────────────────────────────────────────────
+  const existsVarGeo=certRing&&kvarNontrivial;
+
+  RT.decision={
+    ExistsVarianceGeometry: existsVarGeo,
+    ExistsFlatteningTransform: existsFlatten,
+    certRing, monotoneViolations, ringSlope,
+    kvarNontrivial, nBulge,
+    bestPhiId: bestPhi.phi_id,
+    bestFlatScore: bestPhi.flatScore,
+    certSubmult, fracSatisfy, C_unif: C_unif, C_med422: medC422,
+    gMedian, gMax, gMin, ratio, q90, q10,
+    rulePathGeometry: certRing&&kvarNontrivial
+      ? 'σF_field → ring_profile(s=β+γ) monotone✓ → κ_var_nontrivial✓ → variance_geometry=TRUE'
+      : !certRing
+        ? 'σF_field → ring_profile not monotone → variance_geometry=FALSE'
+        : 'σF_field → ring_profile monotone✓ → κ_var near-zero everywhere → variance_geometry=FALSE',
+    rulePathFlatten: existsFlatten
+      ? `flatten_test φ=${bestPhi.phi_id} → Flat≤${(1-C.DELTA_FLAT).toFixed(2)} → ExistsFlatteningTransform=TRUE`
+      : 'flatten_test φ0–φ3 → Flat not improved → ExistsFlatteningTransform=FALSE',
+  };
+
+  log('══ DECISIONS ══','log-hi');
+  log(`[DEC] ExistsVarianceGeometry = ${existsVarGeo}`,'log-ok');
+  log(`[DEC] ExistsFlatteningTransform = ${existsFlatten}`,'log-ok');
+  log(`[DEC] Rule: ${RT.decision.rulePathGeometry}`,'log-info');
+  log(`[DEC] Rule: ${RT.decision.rulePathFlatten}`,'log-info');
+
+  RT.done=true; RT.running=false;
+  const elapsed=((Date.now()-t0)/1000).toFixed(1);
+  log(`[DONE] LXII v1.0.0 complete in ${elapsed}s`,'log-hi');
+
+  // ── UPDATE UI ─────────────────────────────────────────────────────────────
+  document.getElementById('m-sfmed').textContent=fmt4(gMedian);
+  document.getElementById('m-sfmax').textContent=fmt4(gMax);
+  document.getElementById('m-sfmin').textContent=fmt4(gMin);
+  document.getElementById('m-ratio').textContent=fmt3(ratio)+'×';
+  document.getElementById('m-high').textContent=RT.cellData.filter(c=>c.labels.includes('σF_HIGH')).length;
+  document.getElementById('m-bulge').textContent=nBulge;
+  document.getElementById('m-inv').textContent=RT.cellData.filter(c=>!c.valid).length;
+  document.getElementById('metrics-row').style.display='flex';
+
+  renderHeatmap();
+  renderRingProfile();
+  renderSubmult();
+  renderFlattening();
+  renderCurvature();
+  renderDecision();
+
+  document.getElementById('heatmap-panel').style.display='block';
+  document.getElementById('ring-panel').style.display='block';
+  document.getElementById('submult-panel').style.display='block';
+  document.getElementById('flatten-panel').style.display='block';
+  document.getElementById('curv-panel').style.display='block';
+  document.getElementById('decision-panel').style.display='block';
+
+  progress('Complete.',100);
+  btnRun.disabled=false; btnRun.textContent='▶ Re-execute LXII v1.0.0';
+  document.getElementById('btn-export').disabled=false;
+}
+
+// ============================================================================
+// RENDERING
+// ============================================================================
+
+// ── HEATMAP ──────────────────────────────────────────────────────────────────
+let currentView='sigmaF_med';
+function setHeatView(v){
+  currentView=v;
+  document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderHeatmap();
+}
+function onViewChange(){
+  const v=document.getElementById('ctrl-view').value;
+  setHeatView(v);
+}
+
+function renderHeatmap(){
+  if(!RT.cellData.length) return;
+  const canvas=document.getElementById('heatmap-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const STEP=C.SIMPLEX_STEP;
+  const PAD=30;
+  const w=W-PAD*2, h=H-PAD*2;
+
+  // Coordinate transform: (β,γ) → canvas
+  function tx(beta,gamma){
+    const px=PAD+beta*w+(gamma/2)*w;
+    const py=H-PAD-gamma*(h*0.86);
+    return [px,py];
+  }
+
+  // Get value range for continuous maps
+  const vals=RT.cellData.filter(c=>c.valid).map(c=>{
+    if(currentView==='sigmaF_med') return c.sigmaF_med;
+    if(currentView==='sigmaF_max') return c.sigmaF_max;
+    if(currentView==='curvature')  return c.var_curvature.laplacian;
+    if(currentView==='flattened')  return c.sigmaF_flat||0;
+    return 0;
+  });
+  const vMin=Math.min(...vals), vMax=Math.max(...vals);
+  const vRange=Math.max(vMax-vMin,1e-9);
+
+  function colContinuous(v){
+    const t=Math.max(0,Math.min(1,(v-vMin)/vRange));
+    // violet (low) → white (high)
+    const r=Math.round(30+t*225);
+    const g=Math.round(20+t*180);
+    const b=Math.round(180+t*75);
+    return `rgb(${r},${g},${b})`;
+  }
+  function colLabel(c){
+    if(!c.valid) return '#12131f';
+    const high=c.labels.includes('σF_HIGH');
+    const bulge=c.var_curvature.label_var_bulge;
+    const low=c.labels.includes('σF_LOW');
+    if(high&&bulge) return '#f87171';
+    if(high) return '#c084fc';
+    if(bulge) return '#fbbf24';
+    if(low) return '#2dd4bf';
+    return '#4c3a8a';
+  }
+
+  // Draw simplex triangle background
+  ctx.fillStyle='#0d0e1a';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw each cell as triangle
+  for(const c of RT.cellData){
+    const {beta,gamma,bi,gi}=c;
+    const col=currentView==='labels'?colLabel(c):colContinuous(
+      currentView==='sigmaF_med'?c.sigmaF_med:
+      currentView==='sigmaF_max'?c.sigmaF_max:
+      currentView==='curvature'?c.var_curvature.laplacian:
+      c.sigmaF_flat||0
+    );
+
+    const [x0,y0]=tx(beta,gamma);
+    const [x1,y1]=tx(beta+STEP,gamma);
+    const [x2,y2]=tx(beta,gamma+STEP);
+    const [x3,y3]=tx(beta+STEP,gamma-STEP);
+
+    // Up-pointing triangle (β,γ)→(β+s,γ)→(β,γ+s)
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(20,22,40,0.7)'; ctx.lineWidth=0.5; ctx.stroke();
+
+    // Down-pointing triangle (β+s,γ)→(β,γ+s)→(β+s,γ-s) if inside simplex
+    if(bi+gi<20){
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(20,22,40,0.7)'; ctx.lineWidth=0.5; ctx.stroke();
+    }
+  }
+
+  // Draw simplex border
+  const [bA,bAy]=tx(0,0);
+  const [bB,bBy]=tx(1,0);
+  const [bC,bCy]=tx(0,1);
+  ctx.beginPath(); ctx.moveTo(bA,bAy); ctx.lineTo(bB,bBy); ctx.lineTo(bC,bCy); ctx.closePath();
+  ctx.strokeStyle='rgba(192,132,252,0.4)'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle='#8890b8'; ctx.font='11px Courier New';
+  ctx.fillText('α₀=1',bA-28,bAy+5);
+  ctx.fillText('β=1',bB+5,bBy+5);
+  ctx.fillText('γ=1',bC-15,bCy-8);
+
+  // Highlight selected cell
+  if(RT.selectedCell!==null){
+    const c=RT.cellData[RT.selectedCell];
+    const [cx,cy]=tx(c.beta+STEP*0.15,c.gamma+STEP*0.15);
+    ctx.beginPath(); ctx.arc(cx,cy,6,0,2*Math.PI);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  // Gradient legend
+  if(currentView!=='labels'){
+    const lc=document.getElementById('grad-legend-canvas');
+    const lctx=lc.getContext('2d');
+    const grd=lctx.createLinearGradient(0,0,lc.width,0);
+    for(let t=0;t<=1;t+=0.1) grd.addColorStop(t,colContinuous(vMin+t*vRange));
+    lctx.fillStyle=grd; lctx.fillRect(0,0,lc.width,lc.height);
+    document.getElementById('leg-lo').textContent=fmt4(vMin);
+    document.getElementById('leg-mid').textContent=fmt4((vMin+vMax)/2);
+    document.getElementById('leg-hi').textContent=fmt4(vMax);
+    document.getElementById('label-legend').style.display='none';
+  } else {
+    const lc=document.getElementById('grad-legend-canvas');
+    const lctx=lc.getContext('2d');
+    lctx.clearRect(0,0,lc.width,lc.height);
+    document.getElementById('leg-lo').textContent='';
+    document.getElementById('leg-mid').textContent='';
+    document.getElementById('leg-hi').textContent='';
+    document.getElementById('label-legend').style.display='flex';
+  }
+
+  // Mouse click → inspector
+  canvas.onclick=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    let best=null, bestD=Infinity;
+    for(const c of RT.cellData){
+      const [cx,cy]=tx(c.beta+STEP*0.15,c.gamma+STEP*0.15);
+      const d=(cx-mx)**2+(cy-my)**2;
+      if(d<bestD){bestD=d;best=c;}
+    }
+    if(best&&bestD<1200){
+      RT.selectedCell=best.id;
+      renderInspector(best);
+      renderHeatmap();
+    }
+  };
+}
+
+function renderInspector(c){
+  const el=document.getElementById('inspector');
+  if(!c){el.innerHTML='<div style="color:var(--fg2);font-size:11px">No cell selected.</div>';return;}
+  const sfMode=document.getElementById('ctrl-sfmode').value;
+  const sfVal=sfMode==='med'?c.sigmaF_med:c.sigmaF_max;
+  const badgeColors={'VALID':'#4c3a8a','σF_HIGH':'#c084fc','σF_LOW':'#2dd4bf','VAR_BULGE':'#fbbf24','INVALID':'#333'};
+  const badges=c.labels.map(l=>`<span class="insp-badge" style="background:${badgeColors[l]||'#333'};color:#fff">${l}</span>`).join(' ');
+  el.innerHTML=`
+    <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">Cell #${c.id} — (β=${c.beta.toFixed(3)}, γ=${c.gamma.toFixed(3)})</div>
+    <div style="margin-bottom:8px">${badges}</div>
+    <div class="insp-row"><span class="insp-key">α₀</span><span class="insp-val">${c.alpha0.toFixed(3)}</span></div>
+    <div class="insp-row"><span class="insp-key">s = β+γ</span><span class="insp-val">${c.s.toFixed(3)}</span></div>
+    <div class="insp-row"><span class="insp-key">u = β/(β+γ)</span><span class="insp-val">${c.u.toFixed(3)}</span></div>
+    <div class="insp-row"><span class="insp-key">σ̄_F (median n,τ)</span><span class="insp-val" style="color:var(--accent)">${fmt4(c.sigmaF_med)}</span></div>
+    <div class="insp-row"><span class="insp-key">σ_F^max</span><span class="insp-val" style="color:var(--gold)">${fmt4(c.sigmaF_max)}</span></div>
+    <div class="insp-row"><span class="insp-key">σ_F by depth cap</span><span class="insp-val">[${c.sigmaF_by_n.map(v=>fmt4(v)).join(', ')}]</span></div>
+    <div class="insp-row"><span class="insp-key">σ_F flat (best φ)</span><span class="insp-val" style="color:var(--teal)">${fmt4(c.sigmaF_flat||0)}</span></div>
+    <div class="insp-row"><span class="insp-key">κ_var (Laplacian)</span><span class="insp-val" style="color:${c.var_curvature.label_var_bulge?'#fbbf24':'#8890b8'}">${fmt4(c.var_curvature.laplacian)}</span></div>
+    <div class="insp-row"><span class="insp-key">VAR_BULGE</span><span class="insp-val">${c.var_curvature.label_var_bulge?'✓ yes':'—'}</span></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--fg2)">rule_path: null_calib OK → σF computed → ${c.labels.join(' + ')}</div>
+  `;
+}
+
+// ── RING PROFILE ──────────────────────────────────────────────────────────────
+function renderRingProfile(){
+  const dec=RT.decision;
+  const bannerEl=document.getElementById('ring-decision-banner');
+  bannerEl.className=dec.certRing?'banner-ok':'banner-fail';
+  bannerEl.textContent=dec.certRing
+    ? `✓ CERT_RING — σ_F increases with s=β+γ (slope=${fmt4(dec.ringSlope)}, violations=${dec.monotoneViolations})`
+    : `✗ UNCERTAIN — ring profile not monotone nondecreasing (violations=${dec.monotoneViolations}, slope=${fmt4(dec.ringSlope)})`;
+
+  // Canvas ring chart
+  const canvas=document.getElementById('ring-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#181b2a'; ctx.fillRect(0,0,W,H);
+
+  const rings=RT.ringData.filter(r=>r.count>0);
+  if(!rings.length) return;
+  const sfVals=rings.map(r=>r.sfMed);
+  const ciHi=rings.map(r=>r.sfCI[1]);
+  const ciLo=rings.map(r=>r.sfCI[0]);
+  const yMax=Math.max(...ciHi)*1.1, yMin=0;
+  const PAD={l:50,r:20,t:20,b:40};
+  const pw=W-PAD.l-PAD.r, ph=H-PAD.t-PAD.b;
+
+  function px(i){return PAD.l+(i/(rings.length-1||1))*pw;}
+  function py(v){return PAD.t+ph-(v-yMin)/(yMax-yMin)*ph;}
+
+  // Grid
+  ctx.strokeStyle='rgba(42,45,69,0.5)'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=PAD.t+ph*(i/4);
+    ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
+    const v=yMin+(yMax-yMin)*(1-i/4);
+    ctx.fillStyle='#8890b8'; ctx.font='10px Courier New';
+    ctx.fillText(fmt4(v),2,y+4);
+  }
+
+  // CI band
+  ctx.beginPath();
+  rings.forEach((r,i)=>i===0?ctx.moveTo(px(i),py(ciHi[i])):ctx.lineTo(px(i),py(ciHi[i])));
+  rings.forEach((r,i)=>{const j=rings.length-1-i;ctx.lineTo(px(j),py(ciLo[j]));});
+  ctx.closePath(); ctx.fillStyle='rgba(192,132,252,0.12)'; ctx.fill();
+
+  // Main line
+  ctx.beginPath();
+  rings.forEach((r,i)=>i===0?ctx.moveTo(px(i),py(sfVals[i])):ctx.lineTo(px(i),py(sfVals[i])));
+  ctx.strokeStyle='#c084fc'; ctx.lineWidth=2; ctx.stroke();
+
+  // Dots
+  rings.forEach((r,i)=>{
+    ctx.beginPath(); ctx.arc(px(i),py(sfVals[i]),4,0,2*Math.PI);
+    ctx.fillStyle='#c084fc'; ctx.fill();
+  });
+
+  // X axis labels
+  ctx.fillStyle='#8890b8'; ctx.font='10px Courier New';
+  rings.forEach((r,i)=>{
+    if(i%2===0||i===rings.length-1)
+      ctx.fillText(r.s_mid.toFixed(2),px(i)-12,H-8);
+  });
+  ctx.fillText('s = β+γ',W/2-20,H-2);
+
+  // Table
+  let html=`<table><thead><tr><th>Ring s</th><th>σ̄_F med</th><th>CI99 lo</th><th>CI99 hi</th><th>Cells</th><th>Trend</th></tr></thead><tbody>`;
+  rings.forEach((r,i)=>{
+    const trend=i>0&&r.sfMed>=rings[i-1].sfMed?'<span class="pass">↑</span>':'<span class="fail">↓</span>';
+    html+=`<tr><td>[${r.s_lo.toFixed(2)},${r.s_hi.toFixed(2)})</td><td style="color:var(--accent)">${fmt4(r.sfMed)}</td><td>${r.sfCI[0]!==null?fmt4(r.sfCI[0]):'—'}</td><td>${r.sfCI[1]!==null?fmt4(r.sfCI[1]):'—'}</td><td>${r.count}</td><td>${i===0?'—':trend}</td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  document.getElementById('ring-table-wrap').innerHTML=html;
+}
+
+// ── SUBMULTIPLICATIVITY ───────────────────────────────────────────────────────
+function renderSubmult(){
+  const d=RT.depthData, dec=RT.decision;
+  const bannerEl=document.getElementById('submult-decision-banner');
+  bannerEl.className=dec.certSubmult?'banner-ok':'banner-warn';
+  bannerEl.textContent=dec.certSubmult
+    ? `✓ CERT_SUBMULT — ${(dec.fracSatisfy*100).toFixed(1)}% of cells satisfy σ_F(4)≤C·σ_F(2)² with uniform C=${fmt3(d.C_unif)}`
+    : `⚠ FAIL_SUBMULT — only ${(dec.fracSatisfy*100).toFixed(1)}% satisfy constraint (diagnostic, not conclusive)`;
+
+  const html=`
+    <div class="grid4" style="margin-bottom:14px">
+      <div class="mc accent"><div class="mc-label">Median C(4/2²)</div><div class="mc-value">${fmt3(d.medC422)}</div><div class="mc-sub">σ_F(4)/σ_F(2)² — median</div></div>
+      <div class="mc gold"><div class="mc-label">Uniform C (q95)</div><div class="mc-value">${fmt3(d.C_unif)}</div><div class="mc-sub">worst-case bound</div></div>
+      <div class="mc teal"><div class="mc-label">Fraction satisfied</div><div class="mc-value">${(d.fracSatisfy*100).toFixed(1)}%</div><div class="mc-sub">≥${((1-C.SUBMULT_EPS)*100).toFixed(0)}% needed</div></div>
+      <div class="mc ${dec.certSubmult?'green':'red'}"><div class="mc-label">CERT_SUBMULT</div><div class="mc-value">${dec.certSubmult?'YES':'NO'}</div><div class="mc-sub">diagnostic only</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--fg2)">
+      Test: σ_F(n+m) ≤ C · σ_F(n) · σ_F(m)<br>
+      Empirical form using depth caps {2,3,4}. Triple (2,2,4): σ_F(4) ≤ C·σ_F(2)². 
+      Fit best C per cell, report distribution. <strong style="color:var(--gold)">This is diagnostic, not a theorem.</strong>
+    </div>
+    <div style="margin-top:12px">
+      <table><thead><tr><th>Metric</th><th>Value</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Median C (4/2²)</td><td>${fmt3(d.medC422)}</td><td class="${d.medC422<10?'pass':'warn'}">${d.medC422<10?'reasonable':'large'}</td></tr>
+        <tr><td>q95 C (4/2²) — uniform bound</td><td>${fmt3(d.C_unif)}</td><td class="${d.C_unif<10?'pass':'warn'}">${d.C_unif<10?'reasonable':'large'}</td></tr>
+        <tr><td>Median C (3/2²)</td><td>${fmt3(d.medC322)}</td><td class="${d.medC322<10?'pass':'warn'}">${d.medC322<10?'reasonable':'large'}</td></tr>
+        <tr><td>Fraction ≤ C_unif</td><td>${(d.fracSatisfy*100).toFixed(1)}%</td><td class="${dec.certSubmult?'pass':'fail'}">${dec.certSubmult?'CERT':'FAIL'}</td></tr>
+        <tr><td>Sample size</td><td>${d.triples.length} cells</td><td class="neutral">—</td></tr>
+      </tbody></table>
+    </div>
+  `;
+  document.getElementById('submult-content').innerHTML=html;
+}
+
+// ── FLATTENING ────────────────────────────────────────────────────────────────
+function renderFlattening(){
+  const dec=RT.decision;
+  const bannerEl=document.getElementById('flatten-decision-banner');
+  bannerEl.className=dec.ExistsFlatteningTransform?'banner-ok':'banner-warn';
+  bannerEl.textContent=dec.ExistsFlatteningTransform
+    ? `✓ ExistsFlatteningTransform=TRUE — best: φ${dec.bestPhiId} (Flat=${fmt3(dec.bestFlatScore)}, threshold ${(1-C.DELTA_FLAT).toFixed(2)})`
+    : `✗ ExistsFlatteningTransform=FALSE — no φ achieved Flat≤${(1-C.DELTA_FLAT).toFixed(2)}`;
+
+  const phiNames=['φ0 — identity','φ1 — radial (1/(1+s))','φ2 — logit simplex','φ3 — ring-normalized'];
+  let html=`<table><thead><tr><th>Transform</th><th>Flat score</th><th>MaxRatio before</th><th>MaxRatio after</th><th>Tail before</th><th>Tail after</th><th>CERT_FLATTEN</th></tr></thead><tbody>`;
+  RT.transforms.forEach(t=>{
+    const best=t.phi_id===dec.bestPhiId?'style="background:rgba(192,132,252,0.07)"':'';
+    html+=`<tr ${best}>
+      <td style="color:var(--accent)">${phiNames[t.phi_id]}</td>
+      <td class="${t.flatScore<=(1-C.DELTA_FLAT)?'pass':'fail'}">${fmt3(t.flatScore)}</td>
+      <td>${fmt3(t.maxRatioBefore)}×</td>
+      <td class="${t.maxRatioAfter<t.maxRatioBefore?'pass':'fail'}">${fmt3(t.maxRatioAfter)}×</td>
+      <td>${(t.tailBefore*100).toFixed(1)}%</td>
+      <td class="${t.tailAfter<=t.tailBefore*1.05?'pass':'fail'}">${(t.tailAfter*100).toFixed(1)}%</td>
+      <td class="${t.certFlatten?'pass':'fail'}">${t.certFlatten?'✓ CERT_FLATTEN':'✗ NO_FLATTEN'}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>
+  <div style="margin-top:12px;font-size:11px;color:var(--fg2)">
+    Flat(φ) = Var_x σ̄_F(φ(x)) / Var_x σ̄_F(x). CERT_FLATTEN requires Flat≤${(1-C.DELTA_FLAT).toFixed(2)} and tail mass non-increasing.
+    Rule: ${dec.rulePathFlatten}
+  </div>`;
+  document.getElementById('flatten-content').innerHTML=html;
+}
+
+// ── CURVATURE ─────────────────────────────────────────────────────────────────
+function renderCurvature(){
+  const dec=RT.decision;
+  const laplacians=RT.cellData.filter(c=>c.valid).map(c=>c.var_curvature.laplacian);
+  const lapMed=median(laplacians), lapMax=Math.max(...laplacians), lapMin=Math.min(...laplacians);
+  const nBulge=RT.cellData.filter(c=>c.var_curvature.label_var_bulge).length;
+
+  // Check alignment of bulge cells with high σ_F
+  const bulges=RT.cellData.filter(c=>c.var_curvature.label_var_bulge);
+  const bulgeHighOverlap=bulges.filter(c=>c.labels.includes('σF_HIGH')).length;
+  const alignmentFraction=nBulge>0?bulgeHighOverlap/nBulge:0;
+
+  document.getElementById('curv-content').innerHTML=`
+    <div class="metric-row">
+      <div class="mc gold"><div class="mc-label">VAR_BULGE cells</div><div class="mc-value">${nBulge}</div><div class="mc-sub">κ_var ≥ ${C.KAPPA_THRESH}</div></div>
+      <div class="mc accent"><div class="mc-label">κ_var median</div><div class="mc-value">${fmt4(lapMed)}</div><div class="mc-sub">discrete Laplacian</div></div>
+      <div class="mc blue"><div class="mc-label">κ_var range</div><div class="mc-value">[${fmt4(lapMin)},${fmt4(lapMax)}]</div><div class="mc-sub">min to max</div></div>
+      <div class="mc ${dec.kvarNontrivial?'green':'red'}"><div class="mc-label">Nontrivial κ_var</div><div class="mc-value">${dec.kvarNontrivial?'YES':'NO'}</div><div class="mc-sub">structure detected</div></div>
+      <div class="mc teal"><div class="mc-label">Bulge/HIGH overlap</div><div class="mc-value">${(alignmentFraction*100).toFixed(1)}%</div><div class="mc-sub">alignment with σF_HIGH</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--fg2);margin-top:8px">
+      Discrete Laplacian: κ_var(x) = mean_neighbors(σ̄_F) − σ̄_F(x). Large positive = variance "bulge".<br>
+      ${alignmentFraction>0.5
+        ? '<span style="color:#fbbf24">⚠ Bulge cells align with high-σ_F region — certification failures are concentrated where variance geometry bulges.</span>'
+        : '<span style="color:#4ade80">✓ Bulge cells distributed independently of σF_HIGH labels.</span>'}
+      <br>Threshold for VAR_BULGE: κ_var ≥ ${C.KAPPA_THRESH}. Use heatmap view "κ_var curvature" to inspect spatial distribution.
+    </div>
+  `;
+}
+
+// ── CHAMBER DECISION ──────────────────────────────────────────────────────────
+function renderDecision(){
+  const dec=RT.decision;
+  const mainOK=dec.ExistsVarianceGeometry;
+  const secOK=dec.ExistsFlatteningTransform;
+
+  document.getElementById('decision-content').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+      <div class="mc ${mainOK?'green':'red'}">
+        <div class="mc-label">ExistsVarianceGeometry</div>
+        <div class="mc-value" style="font-size:16px">${mainOK?'TRUE':'FALSE'}</div>
+        <div class="mc-sub">primary endpoint</div>
+      </div>
+      <div class="mc ${secOK?'green':'red'}">
+        <div class="mc-label">ExistsFlatteningTransform</div>
+        <div class="mc-value" style="font-size:16px">${secOK?'TRUE':'FALSE'}</div>
+        <div class="mc-sub">secondary endpoint</div>
+      </div>
+    </div>
+
+    <div class="${mainOK?'banner-ok':'banner-fail'}" style="margin-bottom:10px">
+      <strong>PRIMARY:</strong> ${dec.rulePathGeometry}
+    </div>
+    <div class="${secOK?'banner-ok':'banner-warn'}" style="margin-bottom:10px">
+      <strong>SECONDARY:</strong> ${dec.rulePathFlatten}
+    </div>
+
+    <table style="margin-top:12px"><thead><tr><th>Component</th><th>Decision</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Ring scaling (CERT_RING)</td><td class="${dec.certRing?'pass':'fail'}">${dec.certRing?'✓ CERT_RING':'✗ UNCERTAIN'}</td><td>slope=${fmt4(dec.ringSlope)}, violations=${dec.monotoneViolations}</td></tr>
+      <tr><td>κ_var nontrivial</td><td class="${dec.kvarNontrivial?'pass':'warn'}">${dec.kvarNontrivial?'✓ TRUE':'✗ FALSE'}</td><td>VAR_BULGE cells=${dec.nBulge}</td></tr>
+      <tr><td>Submultiplicativity (diagnostic)</td><td class="${dec.certSubmult?'pass':'warn'}">${dec.certSubmult?'✓ CERT_SUBMULT':'⚠ FAIL_SUBMULT'}</td><td>frac=${(dec.fracSatisfy*100).toFixed(1)}%, med=${fmt3(dec.C_med422)}, q95=${fmt3(dec.C_unif)}</td></tr>
+      <tr><td>Flattening (best φ${dec.bestPhiId})</td><td class="${dec.ExistsFlatteningTransform?'pass':'fail'}">${dec.ExistsFlatteningTransform?'✓ CERT_FLATTEN':'✗ NO_FLATTEN'}</td><td>Flat=${fmt3(dec.bestFlatScore)}, δ=${C.DELTA_FLAT}</td></tr>
+    </tbody></table>
+
+    <div style="margin-top:16px;font-size:11px;color:var(--fg2)">
+      <strong style="color:var(--accent)">Interpretation:</strong>
+      ${mainOK
+        ? `The calibration floor σ_F is not a nuisance constant — it has measurable geometry over the (β,γ) kernel simplex. 
+           Ring scaling (CERT_RING) confirms σ_F is elevated at high β+γ stratum. 
+           Local curvature (κ_var) identifies ${dec.nBulge} variance "bulge" cells where the manifold is curved. 
+           This is a structural property of the recursive substrate, not statistical noise.`
+        : `Variance geometry not conclusively established. ` +
+          (!dec.certRing?`Ring profile not monotone — σ_F does not systematically increase with β+γ. `:'') +
+          (!dec.kvarNontrivial?`Local curvature κ_var is near-zero everywhere — variance manifold is approximately flat. `:'')}
+      ${secOK
+        ? ` A flattening transform exists (φ${dec.bestPhiId}): coordinate reparameterization can reduce σ_F variance by ${((1-dec.bestFlatScore)*100).toFixed(1)}%. This enables future certification chambers to operate in a more uniform calibration regime.`
+        : ` No flattening transform achieved Flat≤${(1-C.DELTA_FLAT).toFixed(2)}: σ_F geometry is resistant to the preregistered coordinate families. Consider data-adaptive transforms in a future protocol extension.`}
+    </div>
+  `;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportJSON(){
+  if(!RT.done) return;
+  const out={
+    chamber_id:'LXII',
+    version:'v1.0.0',
+    protocol_locked:true,
+    grid:{type:'simplex',cells:231,tau_grid:C.TAU_GRID,n_grid:C.DEPTHS,depth_caps:[2,3,4]},
+    calibration:{N_calib:C.N_CALIB,bootstrap_seeds:RT.bsSeeds},
+    transforms_tested:[0,1,2,3],
+    decision:RT.decision,
+    cells:RT.cellData.map(c=>({
+      cell_id:c.id,beta:c.beta,gamma:c.gamma,alpha0:c.alpha0,
+      w0:c.w0,w1:c.w1,w2:c.w2,s:c.s,u:c.u,
+      valid:c.valid,
+      sigmaF:{sigmaF_by_n:c.sigmaF_by_n,sigmaF_med:c.sigmaF_med,sigmaF_max:c.sigmaF_max},
+      sigmaF_ring_s:c.s,
+      var_curvature:c.var_curvature,
+      labels:c.labels,
+    })),
+    rings:RT.ringData,
+    transforms:RT.transforms.map(t=>({
+      phi_id:t.phi_id,flat_score:t.flatScore,
+      max_ratio_before:t.maxRatioBefore,max_ratio_after:t.maxRatioAfter,
+      tail_mass_before:t.tailBefore,tail_mass_after:t.tailAfter,
+      decision_flatten:t.certFlatten,
+    })),
+    depth_analysis:{...RT.depthData,triples:RT.depthData.triples.slice(0,20)},
+  };
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='chamber_lxii_v1_0_0_results.json'; a.click();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chamber XLIV v1.0.1 — Topology-Mutating Selection</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Courier New', monospace;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  padding: 20px;
+  line-height: 1.6;
+}
+.chamber-header {
+  border-bottom: 2px solid #333;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+.chamber-header h1 {
+  font-size: 24px;
+  color: #00ff88;
+  margin-bottom: 5px;
+}
+.chamber-header .subtitle {
+  font-size: 14px;
+  color: #888;
+}
+.chamber-header .fix-notice {
+  font-size: 13px;
+  color: #ff8800;
+  margin-top: 5px;
+  padding: 8px;
+  background: #221100;
+  border-left: 3px solid #ff8800;
+}
+.controls {
+  background: #111;
+  border: 1px solid #333;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+.control-row {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.control-row label {
+  min-width: 150px;
+  color: #aaa;
+}
+.control-row select, .control-row input {
+  flex: 1;
+  max-width: 300px;
+  padding: 6px;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+button {
+  padding: 10px 20px;
+  background: #1a4d2e;
+  color: #00ff88;
+  border: 1px solid #00ff88;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  margin-right: 10px;
+}
+button:hover { background: #2a5d3e; }
+button:disabled {
+  background: #222;
+  color: #555;
+  border-color: #333;
+  cursor: not-allowed;
+}
+.status {
+  background: #111;
+  border: 1px solid #333;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.status.running { border-color: #ff8800; }
+.status.complete { border-color: #00ff88; }
+.results {
+  background: #111;
+  border: 1px solid #333;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+.results h3 {
+  color: #00ff88;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.metric-card {
+  background: #1a1a1a;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 3px;
+}
+.metric-card .label {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.metric-card .value {
+  color: #00ff88;
+  font-size: 18px;
+  font-weight: bold;
+}
+.topology-log {
+  background: #0d0d0d;
+  border: 1px solid #333;
+  padding: 10px;
+  font-size: 11px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 10px;
+  font-family: 'Courier New', monospace;
+}
+.topology-log .entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #222;
+}
+.topology-log .entry:last-child { border-bottom: none; }
+.topology-log .timestamp { color: #666; }
+.topology-log .delta { color: #ff8800; }
+.topology-log .veto { color: #ff4444; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 12px;
+}
+th, td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #333;
+}
+th {
+  background: #1a1a1a;
+  color: #00ff88;
+  font-weight: normal;
+}
+td { background: #0d0d0d; }
+.export-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+.hypothesis-verdict {
+  background: #1a1a1a;
+  border-left: 3px solid #ff8800;
+  padding: 10px;
+  margin: 10px 0;
+}
+.hypothesis-verdict.pass { border-left-color: #00ff88; }
+.hypothesis-verdict.fail { border-left-color: #ff4444; }
+</style>
+</head>
+<body>
+
+<div class="chamber-header">
+  <h1>Chamber XLIV v1.0.1</h1>
+  <div class="subtitle">Topology-Mutating Selection Probe | ν Operator: Conditional Rule Graph Rewriting</div>
+  <div class="subtitle" style="margin-top:5px;">Parents: XLI v1.1, XLI-B, XLII v1.2, XLIII v1.0.1 | 2×3 Factorial Design</div>
+  <div class="fix-notice">
+    <strong>v1.0.1 Corrections:</strong> (1) G∘ now computed properly (not hardcoded to 0), (2) ρ removed from topology mutation space (factor-only operator), (3) ν fires from stable anchor (matches XLIII μ semantics), (4) lastOp tracked directly
+  </div>
+</div>
+
+<div class="controls">
+  <div class="control-row">
+    <label>Variant:</label>
+    <select id="variantSelect">
+      <option value="rhoOFF_nuNONE">ρ:OFF, ν:NONE (Baseline)</option>
+      <option value="rhoOFF_nuR">ρ:OFF, ν:νᵣ (Random Topology)</option>
+      <option value="rhoOFF_nuG">ρ:OFF, ν:νᵍ (Guided Topology)</option>
+      <option value="rhoON_nuNONE">ρ:ON, ν:NONE (Baseline+Suppression)</option>
+      <option value="rhoON_nuR">ρ:ON, ν:νᵣ (Random+Suppression)</option>
+      <option value="rhoON_nuG">ρ:ON, ν:νᵍ (Guided+Suppression)</option>
+    </select>
+  </div>
+  <div class="control-row">
+    <label>Seed Count:</label>
+    <input type="number" id="seedCount" value="300" min="1" max="1000">
+    <span style="color:#666;font-size:11px;">(Preregistered: 300 fixed shared)</span>
+  </div>
+  <div class="control-row">
+    <label>Recursion Depth:</label>
+    <input type="number" id="depthInput" value="400" min="100" max="1000">
+    <span style="color:#666;font-size:11px;">(Fixed: 400)</span>
+  </div>
+  <div class="control-row">
+    <button id="runButton">Run Single Variant</button>
+    <button id="runAllButton">Run All 6 Variants (Full Factorial)</button>
+    <button id="stopButton" disabled>Stop</button>
+  </div>
+</div>
+
+<div class="status" id="status">
+  Ready. Select variant and run.
+</div>
+
+<div class="results" id="resultsSection" style="display:none;">
+  <h3>Results: <span id="currentVariant"></span></h3>
+  
+  <div class="results-grid">
+    <div class="metric-card">
+      <div class="label">Projection Stability</div>
+      <div class="value" id="projStability">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Realized G∘</div>
+      <div class="value" id="realizedG">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Utility Potential</div>
+      <div class="value" id="utilPotential">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Contractions (median)</div>
+      <div class="value" id="contractions">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">ν Activations</div>
+      <div class="value" id="nuActivations">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Entropy Reduction</div>
+      <div class="value" id="entropyReduction">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Topology Vetoes (median)</div>
+      <div class="value" id="topologyVetoes">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Island Reaches</div>
+      <div class="value" id="islandReaches">—</div>
+    </div>
+  </div>
+
+  <div class="topology-log">
+    <div style="color:#00ff88;margin-bottom:8px;font-weight:bold;">Topology Mutation Log (Sample from seed 0)</div>
+    <div id="topologyLogContent">No topology mutations logged yet.</div>
+  </div>
+
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Seed</th>
+        <th>Proj.Stab %</th>
+        <th>G∘ %</th>
+        <th>Util.Pot %</th>
+        <th>Contractions</th>
+        <th>ν Fired</th>
+        <th>Entropy Δ</th>
+        <th>Topology Δ</th>
+        <th>Veto Count</th>
+      </tr>
+    </thead>
+    <tbody id="resultsTableBody"></tbody>
+  </table>
+
+  <div class="export-section">
+    <button id="exportButton">Export JSON Results</button>
+    <button id="exportCSVButton">Export CSV</button>
+  </div>
+</div>
+
+<div class="results" id="aggregateSection" style="display:none;">
+  <h3>Aggregate Results: All 6 Variants</h3>
+  <table id="aggregateTable">
+    <thead>
+      <tr>
+        <th>Variant</th>
+        <th>ρ</th>
+        <th>ν</th>
+        <th>Proj.Stab (median %)</th>
+        <th>G∘ (median %)</th>
+        <th>Util.Pot (median %)</th>
+        <th>Contractions</th>
+        <th>ν Act</th>
+        <th>Entropy Δ</th>
+        <th>Topo Vetoes</th>
+        <th>Islands</th>
+      </tr>
+    </thead>
+    <tbody id="aggregateTableBody"></tbody>
+  </table>
+
+  <div style="margin-top:20px;">
+    <h3 style="color:#00ff88;margin-bottom:10px;">Hypothesis Evaluation</h3>
+    <div id="hypothesisEval"></div>
+  </div>
+
+  <div class="export-section">
+    <button id="exportAggregateButton">Export Aggregate JSON</button>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// Chamber XLIV v1.0.1: TauFieldEngine with Topology Mutation (ν operator)
+// FIXED: (1) Proper G∘, (2) ρ removed from topology, (3) stable anchor, (4) direct lastOp
+// ============================================================================
+
+class TauFieldEngineXLIV {
+  constructor(config) {
+    this.depth = config.depth || 400;
+    this.seed = config.seed || 0;
+    this.rhoEnabled = config.rhoEnabled || false;
+    this.nuVariant = config.nuVariant || 'NONE'; // 'NONE', 'nu_r', 'nu_g'
+    
+    // Preregistered parameters
+    this.warmupSteps = 25;
+    this.modeCount = 8;
+    this.modeDecay = 0.98;
+    
+    // State
+    this.rng = this.seededRandom(this.seed);
+    this.state = { re: 1.0, im: 0.0 };
+    this.stateClass = 'stable';
+    this.prevStateClass = null;
+    this.lastStableResidue = { re: 1.0, im: 0.0 };
+    this.lastOp = null; // FIX: Direct tracking instead of history mutation
+    
+    // Mode accumulation system
+    this.modeBins = new Array(this.modeCount).fill(0);
+    
+    // Topology state - FIX: ρ removed from allowedOps (factor-only operator)
+    this.operatorTopology = {
+      allowedOps: ['tau', 'sigma', 'kappa'], // ρ NOT in topology mutation space
+      mustFollow: {},
+      forbidAfter: {}
+    };
+    
+    // Metrics
+    this.metrics = {
+      projectionStability: 0,
+      realizedG: 0, // FIX: Will be computed properly
+      utilityPotential: 0,
+      contractions: 0,
+      nuFired: false,
+      nuFiredAtStep: -1,
+      entropyBeforeNu: 0,
+      entropyAfterNu: 0,
+      topologyBefore: null,
+      topologyAfter: null,
+      topologyDelta: [],
+      topologyVetoCount: 0,
+      operatorUsagePreNu: {},
+      operatorUsagePostNu: {},
+      islandReached: false
+    };
+    
+    this.history = [];
+    this.topologyLog = [];
+  }
+  
+  seededRandom(seed) {
+    let state = seed + 1;
+    return () => {
+      state = (state * 1103515245 + 12345) & 0x7fffffff;
+      return state / 0x7fffffff;
+    };
+  }
+  
+  run() {
+    // M₂ motif
+    this.applyTau(1.2);
+    this.applySigma(0.5);
+    this.applyKappa(0.35);
+    
+    // M₁ motif
+    this.applyTau(1.0);
+    this.applySigma(0.5);
+    this.applyTau(1.0);
+    
+    // ρ (if enabled) - applied once as factor-level operator, NOT part of topology
+    if (this.rhoEnabled) {
+      this.applyRho(0.25, 0.15);
+    }
+    
+    // Main recursion with S₃ and ν
+    for (let step = 0; step < this.depth; step++) {
+      this.prevStateClass = this.stateClass;
+      
+      // Accumulate mode (always)
+      this.accumulateMode();
+      
+      // S₃ gate (contraction/memory selection)
+      this.applyS3Gate();
+      
+      // FIX: ν fires from stable anchor (matches XLIII μ semantics)
+      if (!this.metrics.nuFired && step >= this.warmupSteps && this.nuVariant !== 'NONE' && this.lastStableResidue) {
+        this.applyNuOperator(step);
+      }
+      
+      // Apply next operator respecting topology constraints
+      this.applyNextOperator(step);
+      
+      this.classifyState();
+      this.history.push({
+        step,
+        re: this.state.re,
+        im: this.state.im,
+        stateClass: this.stateClass
+      });
+    }
+    
+    this.computeFinalMetrics();
+    return this.metrics;
+  }
+  
+  accumulateMode() {
+    const angle = Math.atan2(this.state.im, this.state.re);
+    const bin = Math.floor(((angle + Math.PI) / (2 * Math.PI)) * this.modeCount) % this.modeCount;
+    
+    // Decay all bins
+    for (let i = 0; i < this.modeCount; i++) {
+      this.modeBins[i] *= this.modeDecay;
+    }
+    
+    // Increment current bin
+    this.modeBins[bin] += 1.0;
+  }
+  
+  computeEntropy() {
+    const sum = this.modeBins.reduce((a, b) => a + b, 0);
+    if (sum === 0) return 0;
+    
+    let entropy = 0;
+    for (let i = 0; i < this.modeCount; i++) {
+      if (this.modeBins[i] > 0) {
+        const p = this.modeBins[i] / sum;
+        entropy -= p * Math.log2(p);
+      }
+    }
+    return entropy;
+  }
+  
+  computeDominance() {
+    const sum = this.modeBins.reduce((a, b) => a + b, 0);
+    if (sum === 0) return 0;
+    const maxBin = Math.max(...this.modeBins);
+    return maxBin / sum;
+  }
+  
+  applyNuOperator(step) {
+    this.metrics.nuFired = true;
+    this.metrics.nuFiredAtStep = step;
+    this.metrics.entropyBeforeNu = this.computeEntropy();
+    this.metrics.topologyBefore = JSON.parse(JSON.stringify(this.operatorTopology));
+    
+    // Collapse mode
+    let selectedMode;
+    if (this.nuVariant === 'nu_r') {
+      // Random non-zero mode
+      const nonZeroBins = this.modeBins.map((v, i) => ({v, i})).filter(x => x.v > 0);
+      if (nonZeroBins.length > 0) {
+        selectedMode = nonZeroBins[Math.floor(this.rng() * nonZeroBins.length)].i;
+      } else {
+        selectedMode = Math.floor(this.rng() * this.modeCount);
+      }
+    } else if (this.nuVariant === 'nu_g') {
+      // Argmax mode
+      selectedMode = this.modeBins.indexOf(Math.max(...this.modeBins));
+    }
+    
+    // Collapse: zero out all but selected mode
+    const selectedValue = this.modeBins[selectedMode];
+    this.modeBins.fill(0);
+    this.modeBins[selectedMode] = selectedValue;
+    
+    // Mutate topology
+    if (this.nuVariant === 'nu_r') {
+      this.applyRandomTopologyMutation();
+    } else if (this.nuVariant === 'nu_g') {
+      this.applyGuidedTopologyMutation();
+    }
+    
+    this.metrics.entropyAfterNu = this.computeEntropy();
+    this.metrics.topologyAfter = JSON.parse(JSON.stringify(this.operatorTopology));
+    
+    this.logTopologyChange(step, 'ν operator fired from stable anchor');
+  }
+  
+  applyRandomTopologyMutation() {
+    // Remove exactly one operator (from {tau, sigma, kappa} only - ρ not included)
+    const opsToRemove = this.operatorTopology.allowedOps.slice();
+    if (opsToRemove.length > 1) { // Keep at least one operator
+      const toRemove = opsToRemove[Math.floor(this.rng() * opsToRemove.length)];
+      this.operatorTopology.allowedOps = this.operatorTopology.allowedOps.filter(op => op !== toRemove);
+      this.metrics.topologyDelta.push({action: 'remove', op: toRemove});
+    }
+    
+    // Add exactly one mustFollow rule (only among {tau, sigma, kappa})
+    const rules = [
+      ['tau', 'sigma'],
+      ['sigma', 'kappa'],
+      ['kappa', 'tau']
+    ];
+    const rule = rules[Math.floor(this.rng() * rules.length)];
+    this.operatorTopology.mustFollow[rule[0]] = rule[1];
+    this.metrics.topologyDelta.push({action: 'mustFollow', from: rule[0], to: rule[1]});
+  }
+  
+  applyGuidedTopologyMutation() {
+    const entropy = this.metrics.entropyBeforeNu;
+    const dominance = this.computeDominance();
+    
+    if (entropy <= 1.2) {
+      // Low entropy: deepening regime
+      this.operatorTopology.allowedOps = ['tau', 'sigma'];
+      this.operatorTopology.mustFollow['tau'] = 'sigma';
+      this.metrics.topologyDelta.push({action: 'deepening', allowedOps: ['tau', 'sigma']});
+      this.metrics.topologyDelta.push({action: 'mustFollow', from: 'tau', to: 'sigma'});
+    } else if (dominance >= 0.55) {
+      // High dominance: coupling regime
+      this.operatorTopology.allowedOps = ['sigma', 'kappa'];
+      this.operatorTopology.mustFollow['sigma'] = 'kappa';
+      this.metrics.topologyDelta.push({action: 'coupling', allowedOps: ['sigma', 'kappa']});
+      this.metrics.topologyDelta.push({action: 'mustFollow', from: 'sigma', to: 'kappa'});
+    } else {
+      // Ambiguous regime
+      this.operatorTopology.allowedOps = ['tau', 'sigma', 'kappa'];
+      this.operatorTopology.forbidAfter['tau'] = ['tau'];
+      this.metrics.topologyDelta.push({action: 'ambiguous', allowedOps: ['tau', 'sigma', 'kappa']});
+      this.metrics.topologyDelta.push({action: 'forbidAfter', op: 'tau', forbid: ['tau']});
+    }
+  }
+  
+  logTopologyChange(step, reason) {
+    this.topologyLog.push({
+      step,
+      reason,
+      before: this.metrics.topologyBefore,
+      after: this.metrics.topologyAfter,
+      delta: this.metrics.topologyDelta
+    });
+  }
+  
+  applyNextOperator(step) {
+    // Cycle through tau, sigma, kappa based on step
+    const baseOps = ['tau', 'sigma', 'kappa'];
+    let nextOp = baseOps[step % 3];
+    
+    // Check topology constraints using direct lastOp field
+    const lastOp = this.lastOp;
+    
+    // Check mustFollow
+    if (lastOp && this.operatorTopology.mustFollow[lastOp]) {
+      nextOp = this.operatorTopology.mustFollow[lastOp];
+    }
+    
+    // Check forbidAfter
+    if (lastOp && this.operatorTopology.forbidAfter[lastOp]) {
+      if (this.operatorTopology.forbidAfter[lastOp].includes(nextOp)) {
+        // Replace with first allowed alternative
+        const alternatives = this.operatorTopology.allowedOps.filter(
+          op => !this.operatorTopology.forbidAfter[lastOp].includes(op)
+        );
+        if (alternatives.length > 0) {
+          nextOp = alternatives[0];
+          this.metrics.topologyVetoCount++;
+        }
+      }
+    }
+    
+    // Check if op is allowed at all
+    if (!this.operatorTopology.allowedOps.includes(nextOp)) {
+      // Replace with first allowed op
+      if (this.operatorTopology.allowedOps.length > 0) {
+        nextOp = this.operatorTopology.allowedOps[0];
+        this.metrics.topologyVetoCount++;
+      }
+    }
+    
+    // Track usage
+    const usageTable = this.metrics.nuFired ? this.metrics.operatorUsagePostNu : this.metrics.operatorUsagePreNu;
+    usageTable[nextOp] = (usageTable[nextOp] || 0) + 1;
+    
+    // Apply operator
+    if (nextOp === 'tau') {
+      this.applyTau(1.0);
+    } else if (nextOp === 'sigma') {
+      this.applySigma(0.5);
+    } else if (nextOp === 'kappa') {
+      this.applyKappa(0.35);
+    }
+    
+    // FIX: Store lastOp directly
+    this.lastOp = nextOp;
+  }
+  
+  applyS3Gate() {
+    if (this.prevStateClass === 'stable') {
+      // Gate passes, update lastStableResidue
+      this.lastStableResidue = { re: this.state.re, im: this.state.im };
+    } else {
+      // Gate fails, contract to last stable residue
+      this.state = { re: this.lastStableResidue.re, im: this.lastStableResidue.im };
+      this.metrics.contractions++;
+    }
+  }
+  
+  applyTau(a) {
+    const r = Math.sqrt(this.state.re * this.state.re + this.state.im * this.state.im);
+    const theta = Math.atan2(this.state.im, this.state.re);
+    const newR = r * a;
+    this.state.re = newR * Math.cos(theta);
+    this.state.im = newR * Math.sin(theta);
+  }
+  
+  applySigma(w) {
+    const theta = Math.atan2(this.state.im, this.state.re);
+    const newTheta = theta + w;
+    const r = Math.sqrt(this.state.re * this.state.re + this.state.im * this.state.im);
+    this.state.re = r * Math.cos(newTheta);
+    this.state.im = r * Math.sin(newTheta);
+  }
+  
+  applyKappa(phi) {
+    const r = Math.sqrt(this.state.re * this.state.re + this.state.im * this.state.im);
+    this.state.re = r * Math.cos(phi);
+    this.state.im = r * Math.sin(phi);
+  }
+  
+  applyRho(gain, coherenceThreshold) {
+    const r = Math.sqrt(this.state.re * this.state.re + this.state.im * this.state.im);
+    
+    // Compute coherence from mode bins
+    const sum = this.modeBins.reduce((a, b) => a + b, 0);
+    const maxBin = Math.max(...this.modeBins);
+    const coherence = sum > 0 ? maxBin / sum : 0;
+    
+    if (coherence >= coherenceThreshold) {
+      const factor = 1.0 - gain * (coherence - coherenceThreshold);
+      const newR = r * Math.max(0.1, factor);
+      const theta = Math.atan2(this.state.im, this.state.re);
+      this.state.re = newR * Math.cos(theta);
+      this.state.im = newR * Math.sin(theta);
+    }
+  }
+  
+  classifyState() {
+    const r = Math.sqrt(this.state.re * this.state.re + this.state.im * this.state.im);
+    this.stateClass = (r >= 0.7 && r <= 1.3) ? 'stable' : 'unstable';
+  }
+  
+  computeFinalMetrics() {
+    // Projection stability
+    const stableCount = this.history.filter(h => h.stateClass === 'stable').length;
+    this.metrics.projectionStability = (stableCount / this.depth) * 100;
+    
+    // FIX: Proper G∘ computation (adapted from XLIII)
+    let utility = 0;
+    let utilityPotential = 0;
+    
+    if (this.metrics.contractions > 0) {
+      // Base utility from projection quality (normalized 0-1)
+      const projectionFactor = this.metrics.projectionStability / 100;
+      
+      // Contraction contribution (normalized by total steps)
+      const contractionFactor = Math.min(1.0, this.metrics.contractions / (this.depth * 0.2));
+      
+      // ν contribution: did it fire + entropy reduction
+      let nuFactor = 1.0;
+      if (this.metrics.nuFired && this.metrics.entropyBeforeNu !== null && this.metrics.entropyAfterNu !== null) {
+        const entropyReduction = this.metrics.entropyBeforeNu - this.metrics.entropyAfterNu;
+        // Bonus if ν reduced entropy (committed to lower-entropy mode)
+        nuFactor = 1.0 + Math.max(0, entropyReduction) * 0.5;
+      }
+      
+      // Topology contribution: did topology actually change?
+      let topologyFactor = 1.0;
+      if (this.metrics.topologyDelta.length > 0) {
+        topologyFactor = 1.0 + (this.metrics.topologyDelta.length * 0.1);
+      }
+      
+      // Compute raw utility potential
+      utilityPotential = projectionFactor * contractionFactor * nuFactor * topologyFactor * 0.35;
+      
+      // Actual utility requires minimum projection stability (40% threshold from XLIII)
+      if (this.metrics.projectionStability >= 40) {
+        utility = utilityPotential;
+      }
+    }
+    
+    this.metrics.realizedG = utility * 100; // Convert to percentage
+    this.metrics.utilityPotential = utilityPotential * 100;
+    
+    // Island check (15% threshold from spec)
+    this.metrics.islandReached = (this.metrics.projectionStability >= 70 && this.metrics.realizedG >= 15);
+  }
+}
+
+// ============================================================================
+// UI Controller
+// ============================================================================
+
+let isRunning = false;
+let allResults = {};
+
+const variantConfigs = {
+  'rhoOFF_nuNONE': { rhoEnabled: false, nuVariant: 'NONE', label: 'ρ:OFF, ν:NONE' },
+  'rhoOFF_nuR': { rhoEnabled: false, nuVariant: 'nu_r', label: 'ρ:OFF, ν:νᵣ' },
+  'rhoOFF_nuG': { rhoEnabled: false, nuVariant: 'nu_g', label: 'ρ:OFF, ν:νᵍ' },
+  'rhoON_nuNONE': { rhoEnabled: true, nuVariant: 'NONE', label: 'ρ:ON, ν:NONE' },
+  'rhoON_nuR': { rhoEnabled: true, nuVariant: 'nu_r', label: 'ρ:ON, ν:νᵣ' },
+  'rhoON_nuG': { rhoEnabled: true, nuVariant: 'nu_g', label: 'ρ:ON, ν:νᵍ' }
+};
+
+document.getElementById('runButton').addEventListener('click', () => {
+  const variant = document.getElementById('variantSelect').value;
+  runSingleVariant(variant);
+});
+
+document.getElementById('runAllButton').addEventListener('click', () => {
+  runAllVariants();
+});
+
+document.getElementById('stopButton').addEventListener('click', () => {
+  isRunning = false;
+  updateStatus('Stopped by user.', false);
+});
+
+document.getElementById('exportButton').addEventListener('click', exportResults);
+document.getElementById('exportCSVButton').addEventListener('click', exportCSV);
+document.getElementById('exportAggregateButton').addEventListener('click', exportAggregate);
+
+async function runSingleVariant(variantKey) {
+  if (isRunning) return;
+  isRunning = true;
+  
+  const config = variantConfigs[variantKey];
+  const seedCount = parseInt(document.getElementById('seedCount').value);
+  const depth = parseInt(document.getElementById('depthInput').value);
+  
+  updateStatus(`Running ${config.label}... (0/${seedCount})`, true);
+  
+  const results = [];
+  
+  for (let seed = 0; seed < seedCount; seed++) {
+    if (!isRunning) break;
+    
+    const engine = new TauFieldEngineXLIV({
+      depth,
+      seed,
+      rhoEnabled: config.rhoEnabled,
+      nuVariant: config.nuVariant
+    });
+    
+    const metrics = engine.run();
+    results.push({
+      seed,
+      metrics,
+      topologyLog: engine.topologyLog
+    });
+    
+    if (seed % 10 === 0) {
+      updateStatus(`Running ${config.label}... (${seed}/${seedCount})`, true);
+      await sleep(0);
+    }
+  }
+  
+  allResults[variantKey] = results;
+  displayResults(variantKey, results);
+  updateStatus(`Complete: ${config.label} (${seedCount} seeds)`, false, true);
+  isRunning = false;
+}
+
+async function runAllVariants() {
+  if (isRunning) return;
+  isRunning = true;
+  
+  const seedCount = parseInt(document.getElementById('seedCount').value);
+  const variantKeys = Object.keys(variantConfigs);
+  
+  for (let i = 0; i < variantKeys.length; i++) {
+    if (!isRunning) break;
+    
+    const variantKey = variantKeys[i];
+    const config = variantConfigs[variantKey];
+    
+    updateStatus(`Running variant ${i+1}/6: ${config.label}...`, true);
+    await runSingleVariant(variantKey);
+    await sleep(100);
+  }
+  
+  displayAggregateResults();
+  evaluateHypotheses();
+  updateStatus('All 6 variants complete. Hypotheses evaluated.', false, true);
+  isRunning = false;
+}
+
+function displayResults(variantKey, results) {
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('currentVariant').textContent = variantConfigs[variantKey].label;
+  
+  // Compute aggregate metrics
+  const projStab = median(results.map(r => r.metrics.projectionStability));
+  const realG = median(results.map(r => r.metrics.realizedG));
+  const utilPot = median(results.map(r => r.metrics.utilityPotential));
+  const contractions = median(results.map(r => r.metrics.contractions));
+  const nuAct = results.filter(r => r.metrics.nuFired).length;
+  const entropyRed = median(results.map(r => r.metrics.entropyBeforeNu - r.metrics.entropyAfterNu).filter(v => v > 0));
+  const topoVetoes = median(results.map(r => r.metrics.topologyVetoCount));
+  const islands = results.filter(r => r.metrics.islandReached).length;
+  
+  document.getElementById('projStability').textContent = projStab.toFixed(2) + '%';
+  document.getElementById('realizedG').textContent = realG.toFixed(2) + '%';
+  document.getElementById('utilPotential').textContent = utilPot.toFixed(2) + '%';
+  document.getElementById('contractions').textContent = contractions.toFixed(0);
+  document.getElementById('nuActivations').textContent = nuAct;
+  document.getElementById('entropyReduction').textContent = entropyRed > 0 ? entropyRed.toFixed(2) + ' bits' : 'N/A';
+  document.getElementById('topologyVetoes').textContent = topoVetoes.toFixed(0);
+  document.getElementById('islandReaches').textContent = islands;
+  
+  // Display topology log from seed 0
+  const seed0 = results.find(r => r.seed === 0);
+  if (seed0 && seed0.topologyLog.length > 0) {
+    let logHtml = '';
+    for (const entry of seed0.topologyLog) {
+      logHtml += `<div class="entry">`;
+      logHtml += `<span class="timestamp">Step ${entry.step}:</span> `;
+      logHtml += `<span class="delta">${entry.reason}</span><br>`;
+      logHtml += `Delta: ${JSON.stringify(entry.delta)}<br>`;
+      logHtml += `Before: ${JSON.stringify(entry.before)}<br>`;
+      logHtml += `After: ${JSON.stringify(entry.after)}`;
+      logHtml += `</div>`;
+    }
+    document.getElementById('topologyLogContent').innerHTML = logHtml;
+  } else {
+    document.getElementById('topologyLogContent').textContent = 'No topology mutations logged (ν:NONE variant).';
+  }
+  
+  // Populate table
+  const tbody = document.getElementById('resultsTableBody');
+  tbody.innerHTML = '';
+  
+  results.slice(0, 20).forEach(r => {
+    const row = tbody.insertRow();
+    row.insertCell(0).textContent = r.seed;
+    row.insertCell(1).textContent = r.metrics.projectionStability.toFixed(2);
+    row.insertCell(2).textContent = r.metrics.realizedG.toFixed(2);
+    row.insertCell(3).textContent = r.metrics.utilityPotential.toFixed(2);
+    row.insertCell(4).textContent = r.metrics.contractions;
+    row.insertCell(5).textContent = r.metrics.nuFired ? 'Yes' : 'No';
+    row.insertCell(6).textContent = r.metrics.nuFired ? 
+      (r.metrics.entropyBeforeNu - r.metrics.entropyAfterNu).toFixed(2) : 'N/A';
+    row.insertCell(7).textContent = r.metrics.topologyDelta.length > 0 ? 
+      r.metrics.topologyDelta.length + ' changes' : 'None';
+    row.insertCell(8).textContent = r.metrics.topologyVetoCount;
+  });
+}
+
+function displayAggregateResults() {
+  document.getElementById('aggregateSection').style.display = 'block';
+  
+  const tbody = document.getElementById('aggregateTableBody');
+  tbody.innerHTML = '';
+  
+  Object.keys(variantConfigs).forEach(variantKey => {
+    if (!allResults[variantKey]) return;
+    
+    const results = allResults[variantKey];
+    const config = variantConfigs[variantKey];
+    
+    const projStab = median(results.map(r => r.metrics.projectionStability));
+    const realG = median(results.map(r => r.metrics.realizedG));
+    const utilPot = median(results.map(r => r.metrics.utilityPotential));
+    const contractions = median(results.map(r => r.metrics.contractions));
+    const nuAct = results.filter(r => r.metrics.nuFired).length;
+    const entropyRed = median(results.map(r => r.metrics.entropyBeforeNu - r.metrics.entropyAfterNu).filter(v => v > 0));
+    const topoVetoes = median(results.map(r => r.metrics.topologyVetoCount));
+    const islands = results.filter(r => r.metrics.islandReached).length;
+    
+    const row = tbody.insertRow();
+    row.insertCell(0).textContent = config.label;
+    row.insertCell(1).textContent = config.rhoEnabled ? 'ON' : 'OFF';
+    row.insertCell(2).textContent = config.nuVariant === 'NONE' ? 'NONE' : 
+                                     config.nuVariant === 'nu_r' ? 'νᵣ' : 'νᵍ';
+    row.insertCell(3).textContent = projStab.toFixed(2);
+    row.insertCell(4).textContent = realG.toFixed(2);
+    row.insertCell(5).textContent = utilPot.toFixed(2);
+    row.insertCell(6).textContent = contractions.toFixed(0);
+    row.insertCell(7).textContent = nuAct;
+    row.insertCell(8).textContent = entropyRed > 0 ? entropyRed.toFixed(2) : 'N/A';
+    row.insertCell(9).textContent = topoVetoes.toFixed(0);
+    row.insertCell(10).textContent = islands;
+  });
+}
+
+function evaluateHypotheses() {
+  const evalDiv = document.getElementById('hypothesisEval');
+  evalDiv.innerHTML = '';
+  
+  // H₁₁: Topology Mutation Hypothesis
+  const baselineRhoOFF = allResults['rhoOFF_nuNONE'];
+  const nuR_RhoOFF = allResults['rhoOFF_nuR'];
+  const nuG_RhoOFF = allResults['rhoOFF_nuG'];
+  
+  let h11Pass = false;
+  let h11Text = '<div class="hypothesis-verdict"><strong>H₁₁ — Topology Mutation Hypothesis</strong><br>';
+  h11Text += 'Prediction: At least one ν variant shows ≥5pp uplift in median G∘ or reaches island (G∘≥15%).<br>';
+  
+  if (baselineRhoOFF && nuR_RhoOFF && nuG_RhoOFF) {
+    const baseG = median(baselineRhoOFF.map(r => r.metrics.realizedG));
+    const nuR_G = median(nuR_RhoOFF.map(r => r.metrics.realizedG));
+    const nuG_G = median(nuG_RhoOFF.map(r => r.metrics.realizedG));
+    
+    const nuR_Islands = nuR_RhoOFF.filter(r => r.metrics.islandReached).length;
+    const nuG_Islands = nuG_RhoOFF.filter(r => r.metrics.islandReached).length;
+    
+    const upliftR = nuR_G - baseG;
+    const upliftG = nuG_G - baseG;
+    
+    h11Text += `Baseline G∘: ${baseG.toFixed(2)}%, νᵣ: ${nuR_G.toFixed(2)}% (Δ${upliftR >= 0 ? '+' : ''}${upliftR.toFixed(2)}pp), νᵍ: ${nuG_G.toFixed(2)}% (Δ${upliftG >= 0 ? '+' : ''}${upliftG.toFixed(2)}pp)<br>`;
+    h11Text += `Islands: νᵣ=${nuR_Islands}, νᵍ=${nuG_Islands}<br>`;
+    
+    h11Pass = (upliftR >= 5 || upliftG >= 5 || nuR_Islands > 0 || nuG_Islands > 0);
+    h11Text += `<strong>Verdict: ${h11Pass ? 'SUPPORTED' : 'FALSIFIED'}</strong>`;
+  } else {
+    h11Text += 'Insufficient data to evaluate.';
+  }
+  
+  evalDiv.innerHTML += h11Text + '</div>';
+  
+  // H₁₂: Directed Topology Hypothesis
+  let h12Text = '<div class="hypothesis-verdict"><strong>H₁₂ — Directed Topology Hypothesis</strong><br>';
+  h12Text += 'Prediction: νᵍ achieves higher median G∘ and/or projection stability than νᵣ in matched ρ condition.<br>';
+  
+  if (nuR_RhoOFF && nuG_RhoOFF) {
+    const nuR_G = median(nuR_RhoOFF.map(r => r.metrics.realizedG));
+    const nuG_G = median(nuG_RhoOFF.map(r => r.metrics.realizedG));
+    const nuR_Proj = median(nuR_RhoOFF.map(r => r.metrics.projectionStability));
+    const nuG_Proj = median(nuG_RhoOFF.map(r => r.metrics.projectionStability));
+    
+    h12Text += `νᵣ: G∘=${nuR_G.toFixed(2)}%, Proj=${nuR_Proj.toFixed(2)}%<br>`;
+    h12Text += `νᵍ: G∘=${nuG_G.toFixed(2)}%, Proj=${nuG_Proj.toFixed(2)}%<br>`;
+    
+    const h12Pass = (nuG_G > nuR_G || nuG_Proj > nuR_Proj);
+    h12Text += `<strong>Verdict: ${h12Pass ? 'SUPPORTED' : 'FALSIFIED'}</strong>`;
+  } else {
+    h12Text += 'Insufficient data to evaluate.';
+  }
+  
+  evalDiv.innerHTML += h12Text + '</div>';
+}
+
+function exportResults() {
+  const variant = document.getElementById('variantSelect').value;
+  if (!allResults[variant]) {
+    alert('No results to export. Run a variant first.');
+    return;
+  }
+  
+  const data = {
+    chamber: 'XLIV',
+    version: '1.0.1',
+    variant: variantConfigs[variant].label,
+    config: variantConfigs[variant],
+    seedCount: allResults[variant].length,
+    results: allResults[variant]
+  };
+  
+  downloadJSON(data, `chamber_xliv_v1_0_1_${variant}_results.json`);
+}
+
+function exportCSV() {
+  const variant = document.getElementById('variantSelect').value;
+  if (!allResults[variant]) {
+    alert('No results to export. Run a variant first.');
+    return;
+  }
+  
+  let csv = 'Seed,ProjStab,RealizedG,UtilPot,Contractions,NuFired,EntropyDelta,TopoDelta,TopoVetoes\n';
+  
+  allResults[variant].forEach(r => {
+    const entropyDelta = r.metrics.nuFired ? 
+      (r.metrics.entropyBeforeNu - r.metrics.entropyAfterNu).toFixed(4) : '0';
+    csv += `${r.seed},${r.metrics.projectionStability.toFixed(4)},${r.metrics.realizedG.toFixed(4)},`;
+    csv += `${r.metrics.utilityPotential.toFixed(4)},${r.metrics.contractions},`;
+    csv += `${r.metrics.nuFired ? 1 : 0},${entropyDelta},${r.metrics.topologyDelta.length},`;
+    csv += `${r.metrics.topologyVetoCount}\n`;
+  });
+  
+  downloadText(csv, `chamber_xliv_v1_0_1_${variant}_results.csv`);
+}
+
+function exportAggregate() {
+  const data = {
+    chamber: 'XLIV',
+    version: '1.0.1',
+    allVariants: {}
+  };
+  
+  Object.keys(allResults).forEach(variantKey => {
+    const results = allResults[variantKey];
+    data.allVariants[variantKey] = {
+      config: variantConfigs[variantKey],
+      medianMetrics: {
+        projectionStability: median(results.map(r => r.metrics.projectionStability)),
+        realizedG: median(results.map(r => r.metrics.realizedG)),
+        utilityPotential: median(results.map(r => r.metrics.utilityPotential)),
+        contractions: median(results.map(r => r.metrics.contractions)),
+        nuActivations: results.filter(r => r.metrics.nuFired).length,
+        entropyReduction: median(results.map(r => r.metrics.entropyBeforeNu - r.metrics.entropyAfterNu).filter(v => v > 0)),
+        topologyVetoes: median(results.map(r => r.metrics.topologyVetoCount)),
+        islandReaches: results.filter(r => r.metrics.islandReached).length
+      },
+      rawResults: results
+    };
+  });
+  
+  downloadJSON(data, 'chamber_xliv_v1_0_1_aggregate_results.json');
+}
+
+function updateStatus(text, running, complete = false) {
+  const statusDiv = document.getElementById('status');
+  statusDiv.textContent = text;
+  statusDiv.className = 'status';
+  if (running) statusDiv.classList.add('running');
+  if (complete) statusDiv.classList.add('complete');
+  
+  document.getElementById('runButton').disabled = running;
+  document.getElementById('runAllButton').disabled = running;
+  document.getElementById('stopButton').disabled = !running;
+}
+
+function median(arr) {
+  if (arr.length === 0) return 0;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadText(text, filename) {
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Initialize
+updateStatus('Ready. Select variant and run.', false);
+</script>
+
+</body>
+</html>

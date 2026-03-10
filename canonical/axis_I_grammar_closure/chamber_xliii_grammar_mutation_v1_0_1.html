@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber XLIII — Grammar-Mutating Selection Probe v1.0.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #b8b8b8;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #6bc4db;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        h2 {
+            font-size: 1.3em;
+            margin: 25px 0 15px 0;
+            color: #6bc4db;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        h2:hover {
+            color: #8dd4e8;
+        }
+        h2.collapsible::before {
+            content: '▼ ';
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        h2.collapsible.collapsed::before {
+            transform: rotate(-90deg);
+        }
+        h3 {
+            font-size: 1.1em;
+            margin: 20px 0 10px 0;
+            color: #9ca3af;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .section {
+            background: #0a0a0a;
+            border: 1px solid #4a5568;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .section.collapsed .section-content {
+            display: none;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .control-group {
+            background: #0d0d0d;
+            border: 1px solid #374151;
+            padding: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #9ca3af;
+            font-weight: bold;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            color: #b8b8b8;
+            border: 1px solid #4a5568;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        select:hover, button:hover {
+            background: #0d0d0d;
+            border-color: #6bc4db;
+        }
+        button {
+            margin-top: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        button:active {
+            background: #1a1a1a;
+        }
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .status {
+            background: #0a0a0a;
+            border: 1px solid #374151;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            color: #9ca3af;
+        }
+        .status.running {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+        .status.complete {
+            border-color: #6bc4db;
+            color: #6bc4db;
+        }
+        .status.error {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .result-card {
+            background: #0d0d0d;
+            border: 1px solid #374151;
+            padding: 15px;
+        }
+        .result-card h4 {
+            color: #6bc4db;
+            margin-bottom: 10px;
+            font-size: 1em;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 5px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .metric-label {
+            color: #6b7280;
+        }
+        .metric-value {
+            color: #b8b8b8;
+            font-weight: bold;
+        }
+        .metric-value.highlight {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        .metric-value.success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .metric-value.fail {
+            color: #9ca3af;
+        }
+        .metric-value.dim {
+            color: #4a5568;
+            font-weight: normal;
+        }
+        .hypothesis-eval {
+            background: #0a0a0a;
+            border: 1px solid #4a5568;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .hypothesis-eval h3 {
+            color: #6bc4db;
+            margin-bottom: 10px;
+        }
+        .hypothesis-result {
+            padding: 10px;
+            margin: 10px 0;
+            background: #0d0d0d;
+            border-left: 3px solid #374151;
+        }
+        .hypothesis-result.supported {
+            border-left-color: #10b981;
+        }
+        .hypothesis-result.rejected {
+            border-left-color: #9ca3af;
+        }
+        .hypothesis-result.inconclusive {
+            border-left-color: #f59e0b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #374151;
+        }
+        th {
+            background: #0d0d0d;
+            color: #6bc4db;
+            font-weight: bold;
+        }
+        td {
+            background: #0a0a0a;
+        }
+        .code {
+            background: #0a0a0a;
+            border: 1px solid #374151;
+            padding: 10px;
+            overflow-x: auto;
+            font-size: 0.85em;
+        }
+        .info-box {
+            background: #0d0d0d;
+            border-left: 3px solid #6bc4db;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #0d0d0d;
+            border-left: 3px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            color: #f59e0b;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #0a0a0a;
+            border: 1px solid #374151;
+            margin: 10px 0;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4a5568, #6bc4db);
+            transition: width 0.3s;
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #b8b8b8;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⟨ Chamber XLIII — Grammar-Mutating Selection Probe ⟩</h1>
+        <div class="subtitle">
+            Self-Referential Rule Bias and the Emergence of Utility | v1.0.1 | UNNS Framework
+        </div>
+
+        <div class="warning-box" style="margin-bottom: 20px; border-color: #f59e0b;">
+            <strong>v1.0.1 — CRITICAL FIX (Activation Bottleneck):</strong><br>
+            • <strong>Issue:</strong> v1.0 μ never fired (required stable && step≥25, but stability occurred early)<br>
+            • <strong>Fix:</strong> μ now fires using lastStableState anchor, guaranteeing execution post-warmup<br>
+            • <strong>Preserves:</strong> S₃ → μ ordering and stable-derived semantics<br>
+            • v1.0 results invalid (μ variants identical to μ=NONE) — v1.0.1 required for H₉/H₁₀ testing
+        </div>
+
+        <div class="warning-box" style="margin-bottom: 20px;">
+            <strong>Chamber XLIII — New Hypothesis Class:</strong><br>
+            • <strong>μ operator</strong>: Combines collapse (like ω) with grammar mutation via bias multipliers<br>
+            • <strong>Self-referential rule change</strong>: Post-μ, operator strengths are scaled by persistent bias<br>
+            • <strong>Test</strong>: Does utility require selection that mutates future grammar, not just state pruning?<br>
+            • Inherits XLII v1.2 foundations: accumulated modes (decay 0.98), warmup (25 steps), 6 variants
+        </div>
+
+        <div class="section collapsed" id="identitySection">
+            <h2 class="collapsible collapsed" onclick="toggleSection('identitySection')">Chamber Identity</h2>
+            <div class="section-content">
+                <div class="info-box">
+                    <strong>Chamber ID:</strong> XLIII<br>
+                    <strong>Parent Chambers:</strong> XLI v1.1, XLI-B, XLII v1.2<br>
+                    <strong>Status:</strong> Exploratory, hypothesis-opening<br>
+                    <strong>Schema:</strong> unns.xliii.operator_program.v1.0
+                </div>
+                
+                <h3>Core Question</h3>
+                <p>Does utility require selection events that mutate future grammar, not just state collapse or pruning?</p>
+                
+                <h3>Empirical Motivation</h3>
+                <p>XLII established accumulated mode collapse (ω). XLIII tests whether utility demands self-referential rule change:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>XLII ω: collapse modes, continue with same grammar</li>
+                    <li>XLIII μ: collapse modes AND mutate operator strengths for remainder of recursion</li>
+                    <li>If μ succeeds where ω failed: substrate rewards rule adaptation, not just discard</li>
+                </ul>
+                
+                <h3>New Primitive: μ (Mutator Operator)</h3>
+                <div class="code">
+μ is a grammar-mutating operator that:
+  • Collapses accumulated phase bins (K=8, decay 0.98) like ω
+  • Simultaneously sets bias multipliers for future operator applications
+  • Biases persist for remainder of recursion (no drift, no adaptation)
+  • Applies after warmup (≥25 steps) and fires once when stable
+
+μᵣ (Random): Random mode + random bias jitter U(0.9,1.1) per operator
+μᵍ (Guided): Argmax mode + directed bias based on entropy/dominance:
+  - Low entropy (H≤1.2): boost τ (tau: 1.15, others: 0.95)
+  - High dominance (A≥0.55): boost σ/κ (sigma/kappa: 1.10, tau: 0.95)
+  - Else: boost ρ coherence (rho: 1.15, others: 0.95)
+
+Bias application: multiply operator strength parameters
+  τ: a ← a × bias.tau
+  σ: w ← w × bias.sigma
+  κ: φ ← φ × bias.kappa  
+  ρ: gain ← gain × bias.rho
+  All clamped to [0.8, 1.2]
+                </div>
+            </div>
+        </div>
+
+        <div class="section collapsed" id="hypothesesSection">
+            <h2 class="collapsible collapsed" onclick="toggleSection('hypothesesSection')">Hypotheses</h2>
+            <div class="section-content">
+                <div class="hypothesis-result">
+                    <strong>H₉ — Grammar-Mutation Hypothesis</strong><br>
+                    <em>Claim:</em> Utility islands require selection events that mutate future grammar, not just state collapse.<br>
+                    <em>Prediction:</em> μ variants show discontinuous uplift in median G∘ relative to μ=NONE (target ≥15% in at least one μ condition), or uplift ≥5 percentage points.<br>
+                    <em>Falsifier:</em> Both μᵣ and μᵍ fail to increase median G∘ above baseline by ≥5 percentage points AND no islands appear.
+                </div>
+                <div class="hypothesis-result">
+                    <strong>H₁₀ — Directed Mutation Hypothesis</strong><br>
+                    <em>Claim:</em> Guided mutation outperforms random mutation.<br>
+                    <em>Prediction:</em> μᵍ yields higher median G∘ and/or higher projection stability than μᵣ in matched ρ conditions.<br>
+                    <em>Falsifier:</em> μᵍ shows no consistent advantage over μᵣ (or is worse).
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Execution Controls</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="variantSelect">Variant</label>
+                    <select id="variantSelect">
+                        <option value="0">M₂→M₁ | ρ:OFF | μ:NONE | S₃</option>
+                        <option value="1">M₂→M₁ | ρ:OFF | μ:μᵣ | S₃</option>
+                        <option value="2">M₂→M₁ | ρ:OFF | μ:μᵍ | S₃</option>
+                        <option value="3">M₂→M₁ | ρ:ON | μ:NONE | S₃</option>
+                        <option value="4">M₂→M₁ | ρ:ON | μ:μᵣ | S₃</option>
+                        <option value="5">M₂→M₁ | ρ:ON | μ:μᵍ | S₃</option>
+                    </select>
+                    <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
+                        Grammar: [M₂→M₁] → (ρ?) → S₃ → (μ?)
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Execution Parameters</label>
+                    <div class="metric">
+                        <span class="metric-label">Depth:</span>
+                        <span class="metric-value">400 steps</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Seeds:</span>
+                        <span class="metric-value">300</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Mode Bins:</span>
+                        <span class="metric-value">K=8 over [0,2π)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="runButton" onclick="runChamber()">► Run Selected Variant</button>
+            <button id="runAllButton" onclick="runAllVariants()">► Run All 6 Variants</button>
+            <button id="exportButton" onclick="exportResults()" disabled>⬇ Export Results (JSON)</button>
+            
+            <div id="status" class="status">Ready to execute</div>
+            <div id="progress" class="progress" style="display: none;">
+                <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
+                <div id="progressText" class="progress-text">0%</div>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="section" style="display: none;">
+            <h2>Results</h2>
+            <div class="info-box" style="margin-bottom: 20px; font-size: 0.85em;">
+                <strong>Color Key:</strong>
+                <span style="color: #10b981; margin-left: 10px;">● Success</span> (threshold met)
+                <span style="color: #f59e0b; margin-left: 15px;">● Highlight</span> (notable but sub-threshold)
+                <span style="color: #b8b8b8; margin-left: 15px;">● Neutral</span> (expected/moderate)
+                <span style="color: #4a5568; margin-left: 15px;">● Dim</span> (insignificant/zero)
+            </div>
+            <div id="resultsContainer"></div>
+        </div>
+
+        <div id="hypothesisSection" class="section" style="display: none;">
+            <h2>Hypothesis Evaluation</h2>
+            <div id="hypothesisContainer"></div>
+        </div>
+
+        <div class="section">
+            <h2>Technical Specifications</h2>
+            <h3>Metrics & Thresholds (Inherited)</h3>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Threshold</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td>Projection Stability</td>
+                    <td>≥ 70%</td>
+                    <td>Stable trajectory criterion</td>
+                </tr>
+                <tr>
+                    <td>Utility Island (G∘)</td>
+                    <td>≥ 15%</td>
+                    <td>Actionable structure emergence</td>
+                </tr>
+                <tr>
+                    <td>Survival Depth</td>
+                    <td>≥ 200 steps</td>
+                    <td>Adequate recursion exposure</td>
+                </tr>
+                <tr>
+                    <td>Admissibility (Gτ, G₂)</td>
+                    <td>Non-explosive</td>
+                    <td>Substrate permission bound</td>
+                </tr>
+            </table>
+            
+            <h3>Late Stabilization Index (LSI) — Diagnostic Only</h3>
+            <p>LSI = projection stability measured over final 50% of recursion steps</p>
+            <div class="warning-box">
+                LSI does not replace projection criterion | Not used for hypothesis acceptance | Exists to interpret path-dependence revealed in XLI-B
+            </div>
+            
+            <h3>Variant Space (Frozen)</h3>
+            <table>
+                <tr>
+                    <th>Axis</th>
+                    <th>Values</th>
+                    <th>Count</th>
+                </tr>
+                <tr>
+                    <td>Resonance (ρ)</td>
+                    <td>OFF, ON</td>
+                    <td>2</td>
+                </tr>
+                <tr>
+                    <td>Mutation (μ)</td>
+                    <td>NONE, μᵣ, μᵍ</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td colspan="2"><strong>6 variants</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CHAMBER XLIII — GRAMMAR-MUTATING SELECTION PROBE v1.0
+        // Schema: unns.xliii.operator_program.v1.0
+        // ============================================================================
+
+        const CHAMBER_CONFIG = {
+            id: 'XLIII',
+            version: '1.0.1',
+            schema: 'unns.xliii.operator_program.v1.0',
+            depth: 400,
+            seedCount: 300,
+            modeBins: 8,
+            thresholds: {
+                projectionStability: 0.70,
+                utilityIsland: 0.15,
+                survivalDepth: 200
+            }
+        };
+
+        const VARIANTS = [
+            {
+                id: "XLIII_M2M1__rhoOFF__muNONE__S3",
+                rho: false,
+                mu: 'NONE',
+                label: "M₂→M₁ | ρ:OFF | μ:NONE | S₃"
+            },
+            {
+                id: "XLIII_M2M1__rhoOFF__muR__S3",
+                rho: false,
+                mu: 'mu_r',
+                label: "M₂→M₁ | ρ:OFF | μ:μᵣ | S₃"
+            },
+            {
+                id: "XLIII_M2M1__rhoOFF__muG__S3",
+                rho: false,
+                mu: 'mu_g',
+                label: "M₂→M₁ | ρ:OFF | μ:μᵍ | S₃"
+            },
+            {
+                id: "XLIII_M2M1__rhoON__muNONE__S3",
+                rho: true,
+                mu: 'NONE',
+                label: "M₂→M₁ | ρ:ON | μ:NONE | S₃"
+            },
+            {
+                id: "XLIII_M2M1__rhoON__muR__S3",
+                rho: true,
+                mu: 'mu_r',
+                label: "M₂→M₁ | ρ:ON | μ:μᵣ | S₃"
+            },
+            {
+                id: "XLIII_M2M1__rhoON__muG__S3",
+                rho: true,
+                mu: 'mu_g',
+                label: "M₂→M₁ | ρ:ON | μ:μᵍ | S₃"
+            }
+        ];
+
+        let executionResults = [];
+        let isRunning = false;
+
+        // ============================================================================
+        // TAU FIELD ENGINE WITH ω OPERATOR
+        // ============================================================================
+
+        class TauFieldEngineXLIII {
+            constructor(config) {
+                this.depth = config.depth;
+                this.modeBins = config.modeBins;
+                this.seed = config.seed;
+                this.rho = config.rho;
+                this.mu = config.mu; // XLIII: μ replaces ω
+                
+                this.history = [];
+                this.modeHistory = [];
+                this.lastStableState = null;
+                this.contractionCount = 0;
+                this.muActivations = 0; // XLIII: Track μ activations
+                this.muUsed = false; // Track if μ has fired
+                this.muFiredAtStep = -1; // Track exact step when μ fired
+                this.firstStableStep = -1; // Track when first stable state occurs
+                this.modeEntropyBeforeMu = null; // Diagnostic
+                this.modeEntropyAfterMu = null; // Diagnostic
+                this.biasApplied = null; // XLIII: Store final bias multipliers
+            }
+
+            execute() {
+                // Initialize state with accumulated mode bins and operator bias
+                let state = {
+                    tau: this.seed,
+                    sigma: 0,
+                    kappa: 0,
+                    phase: 0,
+                    prev_state_class: 'stable',
+                    modesBins: new Array(this.modeBins).fill(0), // v1.2: Persistent accumulated modes
+                    operatorBias: { tau: 1.0, sigma: 1.0, kappa: 1.0, rho: 1.0 } // XLIII: Grammar mutation bias
+                };
+
+                for (let step = 0; step < this.depth; step++) {
+                    // Apply operator program: [M₂→M₁] → (ρ?) → S₃ → (μ?)
+                    
+                    // M₂ motif: τ(1.2), σ(0.5), κ_phase(0.35)
+                    state = this.applyTau(state, 1.2);
+                    state = this.applySigma(state, 0.5);
+                    state = this.applyKappa(state, 0.35);
+                    
+                    // M₁ motif: τ(1.0), σ(0.5), τ(1.0)
+                    state = this.applyTau(state, 1.0);
+                    state = this.applySigma(state, 0.5);
+                    state = this.applyTau(state, 1.0);
+                    
+                    // Optional ρ (resonance)
+                    if (this.rho) {
+                        state = this.applyRho(state);
+                    }
+                    
+                    // v1.2: Update accumulated mode bins (with decay)
+                    this.updateModes(state);
+                    
+                    // Get current modes for diagnostics
+                    const modes = this.getModes(state);
+                    this.modeHistory.push({...modes});
+                    
+                    // S₃ selection gate (memory-based)
+                    const stateClass = this.classifyState(state);
+                    const prevClass = state.prev_state_class;
+                    
+                    if (prevClass !== 'stable') {
+                        // Contraction: rebind to last stable residue
+                        if (this.lastStableState) {
+                            state = {...this.lastStableState};
+                            this.contractionCount++;
+                        }
+                    }
+                    
+                    // Update state class memory
+                    state.prev_state_class = stateClass;
+                    if (stateClass === 'stable') {
+                        this.lastStableState = {...state};
+                        if (this.firstStableStep === -1) {
+                            this.firstStableStep = step;
+                        }
+                    }
+                    
+                    // Check admissibility before ω
+                    if (!this.isAdmissible(state)) {
+                        break;
+                    }
+                    
+                    // XLIII v1.0.1: μ must fire once post-warmup using the last stable anchor.
+                    // This preserves S₃ → μ even when the current step is unstable.
+                    if (this.mu !== 'NONE' && !this.muUsed && step >= 25 && this.lastStableState) {
+                        // Fire μ on the last stable snapshot (anchor), then continue recursion under mutated grammar.
+                        let anchor = { ...this.lastStableState };
+
+                        // Entropy diagnostics must use the anchor's accumulated bins.
+                        this.modeEntropyBeforeMu = this.computeModeEntropy(anchor);
+
+                        // Build modes from anchor for collapse selection.
+                        const anchorModes = this.getModes(anchor);
+
+                        anchor = this.applyMu(anchor, anchorModes);
+
+                        this.modeEntropyAfterMu = this.computeModeEntropy(anchor);
+                        this.muUsed = true;
+                        this.muFiredAtStep = step;
+                        this.biasApplied = { ...anchor.operatorBias };
+
+                        // Commit mutated grammar + collapsed phase back into live state
+                        state.operatorBias = { ...anchor.operatorBias };
+                        state.phase = anchor.phase;
+                        state.modesBins = [...anchor.modesBins];
+                    }
+                    
+                    // Record history
+                    this.history.push({
+                        step,
+                        tau: state.tau,
+                        sigma: state.sigma,
+                        kappa: state.kappa,
+                        phase: state.phase,
+                        stateClass,
+                        modes: {...modes}
+                    });
+                }
+
+                return this.computeMetrics();
+            }
+
+            applyTau(state, a) {
+                // XLIII: Apply bias multiplier
+                const biasedA = a * state.operatorBias.tau;
+                return {
+                    ...state,
+                    tau: state.tau * biasedA,
+                    phase: (state.phase + 0.1) % (2 * Math.PI)
+                };
+            }
+
+            applySigma(state, w) {
+                // XLIII: Apply bias multiplier
+                const biasedW = w * state.operatorBias.sigma;
+                const coupling = Math.sin(state.phase) * biasedW;
+                return {
+                    ...state,
+                    sigma: state.sigma + coupling,
+                    phase: (state.phase + coupling * 0.1) % (2 * Math.PI)
+                };
+            }
+
+            applyKappa(state, phi) {
+                // XLIII: Apply bias multiplier to phi
+                const biasedPhi = phi * state.operatorBias.kappa;
+                return {
+                    ...state,
+                    kappa: state.kappa + Math.cos(state.phase + biasedPhi),
+                    phase: (state.phase + biasedPhi) % (2 * Math.PI)
+                };
+            }
+
+            applyRho(state) {
+                // XLIII: Apply bias multiplier to gain
+                const coherence = Math.abs(Math.cos(state.phase));
+                if (coherence > 0.15) {
+                    const biasedGain = 0.25 * state.operatorBias.rho;
+                    return {
+                        ...state,
+                        tau: state.tau * (1 + biasedGain * coherence),
+                        sigma: state.sigma * (1 + biasedGain * coherence * 0.5)
+                    };
+                }
+                return state;
+            }
+
+            updateModes(state) {
+                // v1.2: Accumulate modes with decay (creates genuine plurality)
+                const decay = 0.98;
+                for (let i = 0; i < state.modesBins.length; i++) {
+                    state.modesBins[i] *= decay;
+                }
+                
+                // Add current amplitude to current phase bin
+                const binWidth = (2 * Math.PI) / this.modeBins;
+                const binIndex = Math.floor(state.phase / binWidth) % this.modeBins;
+                const amplitude = Math.sqrt(state.tau * state.tau + state.sigma * state.sigma);
+                state.modesBins[binIndex] += amplitude;
+            }
+
+            getModes(state) {
+                // v1.2: Return current accumulated modes (for diagnostics)
+                const binWidth = (2 * Math.PI) / this.modeBins;
+                const dominantBin = state.modesBins.indexOf(Math.max(...state.modesBins));
+                return { 
+                    bins: [...state.modesBins], 
+                    dominantBin, 
+                    amplitude: state.modesBins[dominantBin] 
+                };
+            }
+
+            computeModeEntropy(modes) {
+                // Shannon entropy of mode distribution
+                const bins = modes.bins || modes.modesBins;
+                const total = bins.reduce((sum, val) => sum + Math.abs(val), 0);
+                if (total === 0) return 0;
+                
+                let entropy = 0;
+                for (let i = 0; i < bins.length; i++) {
+                    const p = Math.abs(bins[i]) / total;
+                    if (p > 0) {
+                        entropy -= p * Math.log2(p);
+                    }
+                }
+                return entropy;
+            }
+
+            applyMu(state, modes) {
+                // XLIII: μ operator - collapse + mutate grammar
+                this.muActivations++;
+                
+                const bins = state.modesBins;
+                let selectedBin;
+                
+                // Step 1: Collapse (same as ω)
+                if (this.mu === 'mu_r') {
+                    // μᵣ: Random collapse
+                    const nonZeroBins = bins.map((val, i) => val > 0 ? i : -1).filter(i => i >= 0);
+                    if (nonZeroBins.length > 0) {
+                        selectedBin = nonZeroBins[Math.floor(Math.random() * nonZeroBins.length)];
+                    } else {
+                        selectedBin = Math.floor(Math.random() * this.modeBins);
+                    }
+                } else if (this.mu === 'mu_g') {
+                    // μᵍ: Guided collapse - argmax amplitude
+                    selectedBin = bins.indexOf(Math.max(...bins));
+                    const maxAmp = bins[selectedBin];
+                    const candidates = bins.map((amp, i) => amp === maxAmp ? i : -1).filter(i => i >= 0);
+                    if (candidates.length > 1) {
+                        selectedBin = candidates[0];
+                    }
+                }
+                
+                // Collapse bins
+                const binWidth = (2 * Math.PI) / this.modeBins;
+                const collapsedPhase = (selectedBin + 0.5) * binWidth;
+                state.modesBins = state.modesBins.map((v, i) => i === selectedBin ? v : 0);
+                
+                // Step 2: Mutate grammar (set bias multipliers)
+                if (this.mu === 'mu_r') {
+                    // μᵣ: Random jitter U(0.9, 1.1)
+                    state.operatorBias = {
+                        tau: 0.9 + Math.random() * 0.2,    // U(0.9, 1.1)
+                        sigma: 0.9 + Math.random() * 0.2,
+                        kappa: 0.9 + Math.random() * 0.2,
+                        rho: 0.9 + Math.random() * 0.2
+                    };
+                } else if (this.mu === 'mu_g') {
+                    // μᵍ: Guided mutation based on entropy/dominance
+                    const total = bins.reduce((sum, v) => sum + Math.abs(v), 0);
+                    const entropy = this.modeEntropyBeforeMu || 0;
+                    const dominance = total > 0 ? Math.max(...bins) / total : 0;
+                    
+                    if (entropy <= 1.2) {
+                        // Low entropy: boost τ
+                        state.operatorBias = { tau: 1.15, sigma: 0.95, kappa: 0.95, rho: 0.95 };
+                    } else if (dominance >= 0.55) {
+                        // High dominance: boost σ/κ
+                        state.operatorBias = { tau: 0.95, sigma: 1.10, kappa: 1.10, rho: 0.95 };
+                    } else {
+                        // Else: boost ρ (coherence)
+                        state.operatorBias = { tau: 0.95, sigma: 0.95, kappa: 0.95, rho: 1.15 };
+                    }
+                }
+                
+                // Clamp all biases to [0.8, 1.2]
+                for (const key in state.operatorBias) {
+                    state.operatorBias[key] = Math.max(0.8, Math.min(1.2, state.operatorBias[key]));
+                }
+                
+                return {
+                    ...state,
+                    phase: collapsedPhase
+                };
+            }
+
+            classifyState(state) {
+                const magnitude = Math.sqrt(state.tau * state.tau + state.sigma * state.sigma);
+                if (magnitude < 10 && magnitude > 0.1) {
+                    return 'stable';
+                }
+                return 'unstable';
+            }
+
+            isAdmissible(state) {
+                const tau = state.tau;
+                const sigma = state.sigma;
+                
+                // Explosive check
+                if (Math.abs(tau) > 1e6 || Math.abs(sigma) > 1e6) {
+                    return false;
+                }
+                
+                // NaN/Inf check
+                if (!isFinite(tau) || !isFinite(sigma)) {
+                    return false;
+                }
+                
+                return true;
+            }
+
+            computeMetrics() {
+                if (this.history.length === 0) {
+                    return this.nullMetrics();
+                }
+
+                const totalSteps = this.history.length;
+                const stableSteps = this.history.filter(h => h.stateClass === 'stable').length;
+                const projectionStability = stableSteps / totalSteps;
+                
+                // Late Stabilization Index (LSI): stability in final 50%
+                const lateStartIndex = Math.floor(totalSteps / 2);
+                const lateSteps = this.history.slice(lateStartIndex);
+                const lateStableSteps = lateSteps.filter(h => h.stateClass === 'stable').length;
+                const lsi = lateSteps.length > 0 ? lateStableSteps / lateSteps.length : 0;
+                
+                // v1.1: Utility metric (G∘) - compute potential even for sub-threshold projection
+                // This allows us to see approach-to-utility, not just post-island utility
+                let utility = 0;
+                let utilityPotential = 0; // Raw utility signal before gating
+                
+                if (this.contractionCount > 0) {
+                    // Base utility from projection quality (no hard gate)
+                    const projectionFactor = projectionStability; // Use raw projection, not gated
+                    
+                    // Contraction contribution (normalized by total steps)
+                    const contractionFactor = Math.min(1.0, this.contractionCount / (totalSteps * 0.2));
+                    
+                    // XLIII: μ contribution: did it fire + entropy reduction
+                    let muFactor = 1.0;
+                    if (this.muUsed && this.modeEntropyBeforeMu !== null && this.modeEntropyAfterMu !== null) {
+                        const entropyReduction = this.modeEntropyBeforeMu - this.modeEntropyAfterMu;
+                        // Bonus if μ reduced entropy (committed to lower-entropy mode)
+                        muFactor = 1.0 + Math.max(0, entropyReduction) * 0.5;
+                    }
+                    
+                    // Compute raw utility potential
+                    utilityPotential = projectionFactor * contractionFactor * muFactor * 0.35;
+                    
+                    // Actual utility requires minimum projection stability
+                    if (projectionStability >= 0.40) {
+                        utility = utilityPotential;
+                    }
+                }
+                
+                // Admissibility metrics
+                const finalTau = this.history[totalSteps - 1].tau;
+                const finalSigma = this.history[totalSteps - 1].sigma;
+                const tauAdmissibility = Math.abs(finalTau) < 1e4 ? 1.0 : 0.0;
+                const g2 = 1.0 - (Math.abs(finalTau) / 1e6);
+                
+                return {
+                    projectionStability,
+                    lsi,
+                    utility,
+                    utilityPotential,
+                    survivalDepth: totalSteps,
+                    contractions: this.contractionCount,
+                    muActivations: this.muUsed ? 1 : 0, // XLIII: Binary flag (0 or 1)
+                    muFiredAtStep: this.muFiredAtStep, // XLIII: When μ fired
+                    modeEntropyBeforeMu: this.modeEntropyBeforeMu, // XLIII: Diagnostic
+                    modeEntropyAfterMu: this.modeEntropyAfterMu, // XLIII: Diagnostic
+                    entropyReduction: this.modeEntropyBeforeMu !== null && this.modeEntropyAfterMu !== null ? 
+                                     this.modeEntropyBeforeMu - this.modeEntropyAfterMu : null,
+                    biasApplied: this.biasApplied, // XLIII: Bias multipliers set by μ
+                    admissibility: {
+                        gTau: tauAdmissibility,
+                        g2: Math.max(0, g2)
+                    },
+                    reachesIsland: utility >= CHAMBER_CONFIG.thresholds.utilityIsland,
+                    meetsProjection: projectionStability >= CHAMBER_CONFIG.thresholds.projectionStability,
+                    meetsSurvival: totalSteps >= CHAMBER_CONFIG.thresholds.survivalDepth
+                };
+            }
+
+            nullMetrics() {
+                return {
+                    projectionStability: 0,
+                    lsi: 0,
+                    utility: 0,
+                    utilityPotential: 0,
+                    survivalDepth: 0,
+                    contractions: 0,
+                    muActivations: 0,
+                    muFiredAtStep: -1,
+                    modeEntropyBeforeMu: null,
+                    modeEntropyAfterMu: null,
+                    entropyReduction: null,
+                    biasApplied: null,
+                    admissibility: { gTau: 0, g2: 0 },
+                    reachesIsland: false,
+                    meetsProjection: false,
+                    meetsSurvival: false
+                };
+            }
+        }
+
+        // ============================================================================
+        // EXECUTION ORCHESTRATION
+        // ============================================================================
+
+        async function runChamber() {
+            if (isRunning) return;
+            
+            const variantIndex = parseInt(document.getElementById('variantSelect').value);
+            const variant = VARIANTS[variantIndex];
+            
+            setStatus('running', `Executing ${variant.label}...`);
+            setControlsEnabled(false);
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const result = await executeVariant(variant);
+            executionResults[variantIndex] = result;
+            
+            displayResults();
+            setStatus('complete', `Execution complete: ${variant.label}`);
+            setControlsEnabled(true);
+            document.getElementById('exportButton').disabled = false;
+        }
+
+        async function runAllVariants() {
+            if (isRunning) return;
+            
+            setStatus('running', 'Executing all 6 variants...');
+            setControlsEnabled(false);
+            showProgress(true);
+            
+            executionResults = [];
+            
+            for (let i = 0; i < VARIANTS.length; i++) {
+                const variant = VARIANTS[i];
+                updateProgress((i / VARIANTS.length) * 100, `Running variant ${i + 1}/6: ${variant.label}`);
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const result = await executeVariant(variant);
+                executionResults[i] = result;
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            updateProgress(100, 'Complete');
+            displayResults();
+            evaluateHypotheses();
+            
+            setStatus('complete', 'All variants executed successfully');
+            setControlsEnabled(true);
+            showProgress(false);
+            document.getElementById('exportButton').disabled = false;
+        }
+
+        async function executeVariant(variant) {
+            const seeds = generateSeeds(CHAMBER_CONFIG.seedCount);
+            const metrics = [];
+            
+            for (const seed of seeds) {
+                const engine = new TauFieldEngineXLIII({
+                    depth: CHAMBER_CONFIG.depth,
+                    modeBins: CHAMBER_CONFIG.modeBins,
+                    seed: seed,
+                    rho: variant.rho,
+                    mu: variant.mu // XLIII: μ instead of ω
+                });
+                
+                const result = engine.execute();
+                metrics.push(result);
+            }
+            
+            return aggregateMetrics(variant, metrics);
+        }
+
+        function generateSeeds(count) {
+            const seeds = [];
+            for (let i = 0; i < count; i++) {
+                seeds.push(0.5 + (i * 0.00123456) % 0.5);
+            }
+            return seeds;
+        }
+
+        function aggregateMetrics(variant, metrics) {
+            const aggregate = {
+                variantId: variant.id,
+                variantLabel: variant.label,
+                rho: variant.rho,
+                mu: variant.mu, // XLIII: μ instead of ω
+                seedCount: metrics.length,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Compute statistics for each metric
+            const keys = ['projectionStability', 'lsi', 'utility', 'utilityPotential', 'survivalDepth', 'contractions', 'muActivations'];
+            
+            keys.forEach(key => {
+                const values = metrics.map(m => m[key]);
+                aggregate[key] = {
+                    median: median(values),
+                    mean: mean(values),
+                    std: std(values),
+                    min: Math.min(...values),
+                    max: Math.max(...values)
+                };
+            });
+            
+            // XLIII: μ diagnostic metrics (only meaningful if μ variant)
+            if (variant.mu !== 'NONE') {
+                const entropyReductions = metrics.map(m => m.entropyReduction).filter(v => v !== null);
+                if (entropyReductions.length > 0) {
+                    aggregate.entropyReduction = {
+                        median: median(entropyReductions),
+                        mean: mean(entropyReductions),
+                        std: std(entropyReductions),
+                        min: Math.min(...entropyReductions),
+                        max: Math.max(...entropyReductions)
+                    };
+                } else {
+                    aggregate.entropyReduction = null;
+                }
+                
+                const muSteps = metrics.map(m => m.muFiredAtStep).filter(v => v >= 0);
+                aggregate.muFiredAtStep = {
+                    median: muSteps.length > 0 ? median(muSteps) : -1,
+                    mean: muSteps.length > 0 ? mean(muSteps) : -1
+                };
+                
+                // XLIII: Bias aggregation
+                const biases = metrics.filter(m => m.biasApplied !== null).map(m => m.biasApplied);
+                if (biases.length > 0) {
+                    aggregate.biasApplied = {
+                        tau: {
+                            median: median(biases.map(b => b.tau)),
+                            mean: mean(biases.map(b => b.tau)),
+                            std: std(biases.map(b => b.tau))
+                        },
+                        sigma: {
+                            median: median(biases.map(b => b.sigma)),
+                            mean: mean(biases.map(b => b.sigma)),
+                            std: std(biases.map(b => b.sigma))
+                        },
+                        kappa: {
+                            median: median(biases.map(b => b.kappa)),
+                            mean: mean(biases.map(b => b.kappa)),
+                            std: std(biases.map(b => b.kappa))
+                        },
+                        rho: {
+                            median: median(biases.map(b => b.rho)),
+                            mean: mean(biases.map(b => b.rho)),
+                            std: std(biases.map(b => b.rho))
+                        }
+                    };
+                } else {
+                    aggregate.biasApplied = null;
+                }
+            }
+            
+            // Admissibility
+            aggregate.admissibility = {
+                gTau: {
+                    median: median(metrics.map(m => m.admissibility.gTau)),
+                    mean: mean(metrics.map(m => m.admissibility.gTau))
+                },
+                g2: {
+                    median: median(metrics.map(m => m.admissibility.g2)),
+                    mean: mean(metrics.map(m => m.admissibility.g2))
+                }
+            };
+            
+            // Success counts
+            aggregate.successCounts = {
+                reachesIsland: metrics.filter(m => m.reachesIsland).length,
+                meetsProjection: metrics.filter(m => m.meetsProjection).length,
+                meetsSurvival: metrics.filter(m => m.meetsSurvival).length
+            };
+            
+            aggregate.successRates = {
+                reachesIsland: aggregate.successCounts.reachesIsland / metrics.length,
+                meetsProjection: aggregate.successCounts.meetsProjection / metrics.length,
+                meetsSurvival: aggregate.successCounts.meetsSurvival / metrics.length
+            };
+            
+            return aggregate;
+        }
+
+        // ============================================================================
+        // DISPLAY FUNCTIONS
+        // ============================================================================
+
+        function displayResults() {
+            const container = document.getElementById('resultsContainer');
+            const section = document.getElementById('resultsSection');
+            
+            section.style.display = 'block';
+            container.innerHTML = '';
+            
+            const validResults = executionResults.filter(r => r !== undefined);
+            if (validResults.length === 0) return;
+            
+            const html = validResults.map(result => createResultCard(result)).join('');
+            container.innerHTML = `<div class="results-grid">${html}</div>`;
+        }
+
+        function createResultCard(result) {
+            // Intelligent color assignment based on values and thresholds
+            
+            // Projection Stability: success if ≥70%, highlight if ≥40%, dim if <40%
+            const projStab = result.projectionStability.median;
+            const projectionClass = projStab >= CHAMBER_CONFIG.thresholds.projectionStability ? 'success' : 
+                                   projStab >= 0.40 ? 'highlight' : 
+                                   projStab >= 0.10 ? '' : 'dim';
+            
+            // LSI: highlight if significantly different from overall projection (shows path-dependence)
+            const lsiDiff = Math.abs(result.lsi.median - projStab);
+            const lsiClass = lsiDiff > 0.10 ? 'highlight' : 
+                           result.lsi.median >= 0.40 ? 'highlight' : 
+                           result.lsi.median > 0 ? '' : 'dim';
+            
+            // Utility Potential - shows approach even if gated
+            const utilityPot = result.utilityPotential.median;
+            const utilityPotClass = utilityPot >= 0.10 ? 'highlight' : 
+                                  utilityPot >= 0.03 ? '' : 'dim';
+            
+            // Utility: success if ≥15%, highlight if ≥5%, dim if near-zero
+            const utility = result.utility.median;
+            const utilityClass = utility >= CHAMBER_CONFIG.thresholds.utilityIsland ? 'success' : 
+                               utility >= 0.05 ? 'highlight' : 
+                               utility > 0 ? '' : 'dim';
+            
+            // Survival Depth: success if ≥200, dim if <200
+            const survivalClass = result.survivalDepth.median >= CHAMBER_CONFIG.thresholds.survivalDepth ? 'success' : 'dim';
+            
+            // Contractions: highlight if high (>100), neutral if moderate, dim if low
+            const contractions = result.contractions.median;
+            const contractionsClass = contractions > 100 ? 'highlight' : 
+                                     contractions > 10 ? '' : 'dim';
+            
+            // XLIII: μ Activations - should be 0 or 1
+            const muAct = result.muActivations.median;
+            const muClass = muAct > 0 ? 'success' : 'dim';
+            
+            // G₂ Admissibility: success if >90%, highlight if >60%, dim if low
+            const g2 = result.admissibility.g2.median;
+            const g2Class = g2 > 0.90 ? 'success' : 
+                          g2 > 0.60 ? 'highlight' : 'dim';
+            
+            // Island Reach Rate: success if any islands reached, dim if none
+            const islandRate = result.successRates.reachesIsland;
+            const islandClass = islandRate > 0 ? 'success' : 'dim';
+            
+            // XLIII: Entropy reduction (μ variants only)
+            let entropyReductionRow = '';
+            if (result.entropyReduction && result.entropyReduction.median !== undefined) {
+                const entRed = result.entropyReduction.median;
+                const entRedClass = entRed > 0.5 ? 'success' : 
+                                  entRed > 0.1 ? 'highlight' : 
+                                  entRed > 0 ? '' : 'dim';
+                entropyReductionRow = `
+                    <div class="metric">
+                        <span class="metric-label">μ Entropy Reduction:</span>
+                        <span class="metric-value ${entRedClass}">${entRed.toFixed(3)} bits</span>
+                    </div>
+                `;
+            }
+            
+            // XLIII: μ firing step (μ variants only)
+            let muStepRow = '';
+            if (result.muFiredAtStep && result.muFiredAtStep.median >= 0) {
+                muStepRow = `
+                    <div class="metric">
+                        <span class="metric-label">μ Fired at Step:</span>
+                        <span class="metric-value">${result.muFiredAtStep.median.toFixed(0)}</span>
+                    </div>
+                `;
+            }
+            
+            // XLIII: Bias multipliers (μ variants only)
+            let biasRows = '';
+            if (result.biasApplied) {
+                const biases = result.biasApplied;
+                biasRows = `
+                    <div class="metric" style="margin-top: 10px; border-top: 1px solid #374151; padding-top: 5px;">
+                        <span class="metric-label">Bias: τ=${biases.tau.median.toFixed(2)}, σ=${biases.sigma.median.toFixed(2)}, κ=${biases.kappa.median.toFixed(2)}, ρ=${biases.rho.median.toFixed(2)}</span>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="result-card">
+                    <h4>${result.variantLabel}</h4>
+                    <div class="metric">
+                        <span class="metric-label">Projection Stability:</span>
+                        <span class="metric-value ${projectionClass}">${(result.projectionStability.median * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">LSI (Late Stab):</span>
+                        <span class="metric-value ${lsiClass}">${(result.lsi.median * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Utility Potential:</span>
+                        <span class="metric-value ${utilityPotClass}">${(result.utilityPotential.median * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Utility (G∘):</span>
+                        <span class="metric-value ${utilityClass}">${(result.utility.median * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Survival Depth:</span>
+                        <span class="metric-value ${survivalClass}">${result.survivalDepth.median.toFixed(0)}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Contractions:</span>
+                        <span class="metric-value ${contractionsClass}">${result.contractions.median.toFixed(1)}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">μ Fired:</span>
+                        <span class="metric-value ${muClass}">${muAct > 0 ? 'YES' : 'NO'}</span>
+                    </div>
+                    ${muStepRow}
+                    ${entropyReductionRow}
+                    ${biasRows}
+                    <div class="metric">
+                        <span class="metric-label">G₂ (Admissibility):</span>
+                        <span class="metric-value ${g2Class}">${(result.admissibility.g2.median * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Island Reach Rate:</span>
+                        <span class="metric-value ${islandClass}">${(result.successRates.reachesIsland * 100).toFixed(1)}%</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function evaluateHypotheses() {
+            const container = document.getElementById('hypothesisContainer');
+            const section = document.getElementById('hypothesisSection');
+            
+            section.style.display = 'block';
+            
+            // H₉: Grammar-Mutation Hypothesis
+            const h9 = evaluateH9();
+            
+            // H₁₀: Directed Mutation Hypothesis
+            const h10 = evaluateH10();
+            
+            container.innerHTML = `
+                <div class="hypothesis-result ${h9.status}">
+                    <strong>H₉ — Grammar-Mutation Hypothesis</strong><br>
+                    <em>Status:</em> ${h9.verdict}<br>
+                    <em>Evidence:</em> ${h9.evidence}
+                </div>
+                <div class="hypothesis-result ${h10.status}">
+                    <strong>H₁₀ — Directed Mutation Hypothesis</strong><br>
+                    <em>Status:</em> ${h10.verdict}<br>
+                    <em>Evidence:</em> ${h10.evidence}
+                </div>
+                <div class="info-box" style="margin-top: 20px;">
+                    <strong>Interpretation Guidelines:</strong><br>
+                    • If μ changes utility while ω did not: substrate rewards self-referential rule change<br>
+                    • If μ still does nothing: current primitive alphabet may be structurally closed for utility<br>
+                    • Partial uplift without island formation is still informative<br>
+                    • Bias patterns reveal which operators benefit from adaptation
+                </div>
+            `;
+        }
+
+        function evaluateH9() {
+            // H₉: Variants with μ should show discontinuous increase in G∘ vs μ=NONE
+            const muNone = executionResults.filter(r => r && r.mu === 'NONE');
+            const muPresent = executionResults.filter(r => r && r.mu !== 'NONE');
+            
+            if (muNone.length === 0 || muPresent.length === 0) {
+                return {
+                    status: 'inconclusive',
+                    verdict: 'Inconclusive',
+                    evidence: 'Insufficient data for comparison'
+                };
+            }
+            
+            // Use utility potential to detect approach even if not island-level
+            const noneMedianUtility = mean(muNone.map(r => r.utility.median));
+            const presentMedianUtility = mean(muPresent.map(r => r.utility.median));
+            const noneMedianPotential = mean(muNone.map(r => r.utilityPotential.median));
+            const presentMedianPotential = mean(muPresent.map(r => r.utilityPotential.median));
+            
+            const islandCount = muPresent.reduce((sum, r) => sum + r.successCounts.reachesIsland, 0);
+            
+            const utilityUplift = presentMedianUtility - noneMedianUtility;
+            const potentialUplift = presentMedianPotential - noneMedianPotential;
+            const upliftPercentagePoints = utilityUplift * 100; // Convert to percentage points
+            
+            if (islandCount > 0) {
+                return {
+                    status: 'supported',
+                    verdict: 'SUPPORTED',
+                    evidence: `μ variants produced ${islandCount} island reaches across ${muPresent.length * CHAMBER_CONFIG.seedCount} seeds. Median G∘ uplift: +${upliftPercentagePoints.toFixed(2)} percentage points. Grammar mutation unlocks utility.`
+                };
+            } else if (upliftPercentagePoints >= 5.0) {
+                return {
+                    status: 'supported',
+                    verdict: 'SUPPORTED (UPLIFT CRITERION)',
+                    evidence: `μ variants show G∘ uplift of +${upliftPercentagePoints.toFixed(2)} percentage points (≥5pp threshold). No islands yet but discontinuous improvement observed. Utility potential uplift: +${(potentialUplift * 100).toFixed(2)}%.`
+                };
+            } else if (potentialUplift > 0.02 || upliftPercentagePoints > 0) {
+                return {
+                    status: 'inconclusive',
+                    verdict: 'PARTIAL SUPPORT',
+                    evidence: `μ variants show modest uplift: G∘ +${upliftPercentagePoints.toFixed(2)}pp, potential +${(potentialUplift * 100).toFixed(2)}%. Below 5pp threshold and no islands. Grammar mutation contributes but insufficient alone.`
+                };
+            } else {
+                return {
+                    status: 'rejected',
+                    verdict: 'REJECTED',
+                    evidence: `No systematic utility uplift from μ. G∘ difference: ${upliftPercentagePoints.toFixed(2)}pp, potential: ${(potentialUplift * 100).toFixed(2)}%. No variants reached island threshold. Grammar mutation ineffective.`
+                };
+            }
+        }
+
+        function evaluateH10() {
+            // H₁₀: μᵍ should outperform μᵣ in stability and utility
+            const muRandom = executionResults.filter(r => r && r.mu === 'mu_r');
+            const muGuided = executionResults.filter(r => r && r.mu === 'mu_g');
+            
+            if (muRandom.length === 0 || muGuided.length === 0) {
+                return {
+                    status: 'inconclusive',
+                    verdict: 'Inconclusive',
+                    evidence: 'Insufficient data for μᵣ vs μᵍ comparison'
+                };
+            }
+            
+            const randomUtility = mean(muRandom.map(r => r.utility.median));
+            const guidedUtility = mean(muGuided.map(r => r.utility.median));
+            const randomPotential = mean(muRandom.map(r => r.utilityPotential.median));
+            const guidedPotential = mean(muGuided.map(r => r.utilityPotential.median));
+            const randomStability = mean(muRandom.map(r => r.projectionStability.median));
+            const guidedStability = mean(muGuided.map(r => r.projectionStability.median));
+            
+            const utilityAdvantage = guidedUtility - randomUtility;
+            const potentialAdvantage = guidedPotential - randomPotential;
+            const stabilityAdvantage = guidedStability - randomStability;
+            
+            const guidedIslands = muGuided.reduce((sum, r) => sum + r.successCounts.reachesIsland, 0);
+            const randomIslands = muRandom.reduce((sum, r) => sum + r.successCounts.reachesIsland, 0);
+            
+            // Check entropy reduction as evidence of directed collapse
+            let entropyEvidence = '';
+            const guidedEntropy = muGuided.filter(r => r.entropyReduction).map(r => r.entropyReduction.median);
+            const randomEntropy = muRandom.filter(r => r.entropyReduction).map(r => r.entropyReduction.median);
+            if (guidedEntropy.length > 0 && randomEntropy.length > 0) {
+                const guidedEntReduction = mean(guidedEntropy);
+                const randomEntReduction = mean(randomEntropy);
+                const entropyDiff = guidedEntReduction - randomEntReduction;
+                if (Math.abs(entropyDiff) > 0.1) {
+                    entropyEvidence = ` Entropy reduction: μᵍ=${guidedEntReduction.toFixed(3)}, μᵣ=${randomEntReduction.toFixed(3)} (Δ=${entropyDiff.toFixed(3)} bits).`;
+                }
+            }
+            
+            // Check bias patterns
+            let biasEvidence = '';
+            const guidedBiases = muGuided.filter(r => r.biasApplied).map(r => r.biasApplied);
+            const randomBiases = muRandom.filter(r => r.biasApplied).map(r => r.biasApplied);
+            if (guidedBiases.length > 0 && randomBiases.length > 0) {
+                const guidedTau = mean(guidedBiases.map(b => b.tau.median));
+                const randomTau = mean(randomBiases.map(b => b.tau.median));
+                const tauDiff = guidedTau - randomTau;
+                if (Math.abs(tauDiff) > 0.05) {
+                    biasEvidence = ` Bias divergence: τ(μᵍ)=${guidedTau.toFixed(3)}, τ(μᵣ)=${randomTau.toFixed(3)} (Δ=${tauDiff.toFixed(3)}).`;
+                }
+            }
+            
+            if ((utilityAdvantage > 0.02 || potentialAdvantage > 0.02) && stabilityAdvantage > 0.05) {
+                return {
+                    status: 'supported',
+                    verdict: 'SUPPORTED',
+                    evidence: `μᵍ outperforms μᵣ: G∘ +${(utilityAdvantage * 100).toFixed(2)}%, potential +${(potentialAdvantage * 100).toFixed(2)}%, stability +${(stabilityAdvantage * 100).toFixed(2)}%. Island reaches: μᵍ=${guidedIslands}, μᵣ=${randomIslands}.${entropyEvidence}${biasEvidence} Directed mutation effective.`
+                };
+            } else if (utilityAdvantage > 0 || potentialAdvantage > 0.01 || stabilityAdvantage > 0) {
+                return {
+                    status: 'inconclusive',
+                    verdict: 'WEAK SUPPORT',
+                    evidence: `Modest advantage for μᵍ: G∘ +${(utilityAdvantage * 100).toFixed(2)}%, potential +${(potentialAdvantage * 100).toFixed(2)}%, stability +${(stabilityAdvantage * 100).toFixed(2)}%.${entropyEvidence}${biasEvidence} Directionality helps but effect size small.`
+                };
+            } else {
+                return {
+                    status: 'rejected',
+                    verdict: 'REJECTED',
+                    evidence: `No systematic advantage for μᵍ over μᵣ. G∘ difference: ${(utilityAdvantage * 100).toFixed(2)}%, potential: ${(potentialAdvantage * 100).toFixed(2)}%, stability: ${(stabilityAdvantage * 100).toFixed(2)}%.${entropyEvidence}${biasEvidence}`
+                };
+            }
+        }
+
+        // ============================================================================
+        // EXPORT
+        // ============================================================================
+
+        function exportResults() {
+            const exportData = {
+                chamber: {
+                    id: CHAMBER_CONFIG.id,
+                    version: CHAMBER_CONFIG.version,
+                    schema: CHAMBER_CONFIG.schema
+                },
+                executionTimestamp: new Date().toISOString(),
+                config: CHAMBER_CONFIG,
+                variants: VARIANTS,
+                results: executionResults.filter(r => r !== undefined),
+                hypotheses: executionResults.length === 6 ? {
+                    h9: evaluateH9(),
+                    h10: evaluateH10()
+                } : null
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chamber_xliii_results_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================================================
+        // UI HELPERS
+        // ============================================================================
+
+        function setStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function setControlsEnabled(enabled) {
+            isRunning = !enabled;
+            document.getElementById('runButton').disabled = !enabled;
+            document.getElementById('runAllButton').disabled = !enabled;
+            document.getElementById('variantSelect').disabled = !enabled;
+        }
+
+        function showProgress(show) {
+            document.getElementById('progress').style.display = show ? 'block' : 'none';
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text || `${percent.toFixed(0)}%`;
+        }
+
+        // ============================================================================
+        // STATISTICS
+        // ============================================================================
+
+        function median(arr) {
+            if (arr.length === 0) return 0;
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+        }
+
+        function mean(arr) {
+            if (arr.length === 0) return 0;
+            return arr.reduce((sum, val) => sum + val, 0) / arr.length;
+        }
+
+        function std(arr) {
+            if (arr.length === 0) return 0;
+            const m = mean(arr);
+            const variance = arr.reduce((sum, val) => sum + Math.pow(val - m, 2), 0) / arr.length;
+            return Math.sqrt(variance);
+        }
+
+        // ============================================================================
+        // COLLAPSIBLE SECTIONS
+        // ============================================================================
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const header = section.querySelector('h2.collapsible');
+            
+            if (section.classList.contains('collapsed')) {
+                section.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+            } else {
+                section.classList.add('collapsed');
+                header.classList.add('collapsed');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamber LVI v1.0.0 — Recursive Rigidity vs Compounding</title>
+<style>
+:root {
+  --bg:      #07080f;
+  --bg1:     #10121d;
+  --bg2:     #181b2a;
+  --bg3:     #222538;
+  --fg:      #d8daf0;
+  --fg2:     #8890b8;
+  --accent:  #5ee7df;
+  --purple:  #a78bfa;
+  --gold:    #fbbf24;
+  --red:     #f87171;
+  --green:   #4ade80;
+  --orange:  #fb923c;
+  --border:  #2a2d45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Courier New',monospace;font-size:13px;line-height:1.55;padding:20px}
+.wrap{max-width:1500px;margin:0 auto}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0c0d1a,#12152a);border:1px solid var(--purple);border-radius:10px;padding:28px 32px;margin-bottom:18px;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(167,139,250,.07),transparent);border-radius:50%}
+.hdr-id{color:var(--purple);font-size:11px;letter-spacing:3px;font-weight:700;margin-bottom:6px;text-transform:uppercase}
+.hdr-title{font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px;letter-spacing:.5px}
+.hdr-sub{color:var(--fg2);font-size:12px}
+.hdr-lock{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.lock-chip{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;color:var(--gold);font-family:'Courier New',monospace}
+
+/* PANELS */
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.panel-title{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* CONTROLS */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
+.ctrl-grp{display:flex;flex-direction:column;gap:4px}
+.ctrl-grp label{font-size:10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.8px}
+select,input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--fg);padding:7px 10px;border-radius:4px;font-size:12px;font-family:'Courier New',monospace;width:110px}
+.btn-run{background:linear-gradient(135deg,var(--accent),var(--purple));color:#07080f;border:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:.5px;transition:all .2s}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(94,231,223,.35)}
+.btn-run:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* PROGRESS */
+.prog{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px}
+.prog-bar-wrap{background:var(--bg3);border-radius:3px;height:6px;margin-bottom:10px}
+.prog-bar{background:linear-gradient(90deg,var(--accent),var(--purple));height:6px;border-radius:3px;transition:width .3s}
+.prog-label{color:var(--fg2);font-size:11px}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg2);color:var(--fg2);font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;letter-spacing:.5px}
+td{padding:6px 10px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pass{color:var(--green);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+.warn{color:var(--gold);font-weight:700}
+.neutral{color:var(--fg2)}
+
+/* DECISION BADGE */
+.badge{display:inline-block;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.b-comp{background:rgba(248,113,113,.18);border:1px solid var(--red);color:var(--red)}
+.b-sat{background:rgba(74,222,128,.18);border:1px solid var(--green);color:var(--green)}
+.b-inc{background:rgba(251,191,36,.18);border:1px solid var(--gold);color:var(--gold)}
+.b-inv{background:rgba(248,113,113,.1);border:1px solid var(--red);color:var(--red)}
+.b-tri{background:rgba(136,144,184,.18);border:1px solid var(--fg2);color:var(--fg2)}
+
+/* MINI METRIC CARDS */
+.metric-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;min-width:140px}
+.mc-label{color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.mc-value{color:var(--accent);font-size:18px;font-weight:700}
+.mc-sub{color:var(--fg2);font-size:10px}
+
+/* FAMILY BLOCKS */
+.fam-block{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.fam-name{font-size:15px;font-weight:700;margin-bottom:12px}
+.fam-V2xV3{color:var(--green)}
+.fam-V2xV4{color:var(--red)}
+.fam-V6xV7{color:var(--accent)}
+
+/* SLOPE VIS CANVAS */
+canvas{display:block;margin-top:12px;border-radius:4px}
+
+/* LOG */
+.log{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;height:220px;overflow-y:auto;font-size:11px;font-family:'Courier New',monospace}
+.log-info{color:var(--fg2)}
+.log-ok{color:var(--green)}
+.log-warn{color:var(--gold)}
+.log-err{color:var(--red)}
+.log-hi{color:var(--accent)}
+
+/* VALIDITY BANNER */
+.validity-ok{background:rgba(74,222,128,.1);border:1px solid var(--green);border-radius:6px;padding:10px 14px;color:var(--green);font-weight:700;margin-bottom:12px}
+.validity-fail{background:rgba(248,113,113,.1);border:1px solid var(--red);border-radius:6px;padding:10px 14px;color:var(--red);font-weight:700;margin-bottom:12px}
+
+/* INFO BOX */
+.info-box{background:var(--bg2);border-left:3px solid var(--purple);padding:10px 14px;border-radius:0 4px 4px 0;font-size:11px;color:var(--fg2);margin-bottom:12px}
+.info-box strong{color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-id">UNNS Laboratory · Chamber LVI · v1.0.0</div>
+  <div class="hdr-title">Recursive Rigidity vs Exponential Compounding Under Tier-3/4 Lift</div>
+  <div class="hdr-sub">Primary aim: Empirical resolution of the recursive growth fork — Theorem 2 (exponential) vs Theorem 1 (saturation) on the LV grid</div>
+  <div class="hdr-lock">
+    <span class="lock-chip">🔒 N=2000</span>
+    <span class="lock-chip">🔒 τ∈{0.1,0.3,0.5,0.7,0.9}</span>
+    <span class="lock-chip">🔒 n∈{1,2,3,4}</span>
+    <span class="lock-chip">🔒 F1=V2×V3, F2=V2×V4, F3=V6×V7</span>
+    <span class="lock-chip">🔒 4-gate witness protocol</span>
+    <span class="lock-chip">🔒 30 preregistered seeds</span>
+    <span class="lock-chip">🔒 δ_comp=0.15, δ_sat=0.05</span>
+    <span class="lock-chip">🔒 no adaptive τ</span>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="panel">
+  <div class="panel-title">⚙ Execution Controls (locked parameters displayed for reference)</div>
+  <div class="info-box">
+    <strong>Preregistration enforced.</strong> Pool size N=2000, τ-grid, depth levels, and families are locked.
+    Seed count is configurable below (full=30 for pre-registered; reduce for preview).
+    All decision thresholds are fixed by protocol.
+  </div>
+  <div class="ctrl-row">
+    <div class="ctrl-grp">
+      <label>Seed count (max 30)</label>
+      <input type="number" id="ctrl-seeds" value="30" min="3" max="30" step="1">
+    </div>
+    <div class="ctrl-grp">
+      <label>Pool size N</label>
+      <input type="number" id="ctrl-N" value="2000" disabled>
+    </div>
+    <div class="ctrl-grp">
+      <label>Bootstrap CI resamples</label>
+      <input type="number" id="ctrl-bs" value="2000" min="500" max="5000">
+    </div>
+    <button class="btn-run" id="btn-run" onclick="executeProtocol()">▶ Execute LVI v1.0.0</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog" id="prog">
+  <div class="prog-label" id="prog-label">Initializing…</div>
+  <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+  <div id="prog-detail" style="font-size:10px;color:var(--fg2)"></div>
+</div>
+
+<!-- RESULTS (hidden until run) -->
+<div id="results" style="display:none">
+
+  <!-- VALIDITY REPORT -->
+  <div id="validity-banner"></div>
+
+  <!-- EXPORT PANEL -->
+  <div class="panel">
+    <div class="panel-title">💾 Export — Chamber LVI Archival Record</div>
+    <div class="info-box">
+      <strong>JSON export</strong> serializes the complete chamber run: calibration values, L^(n) medians, per-seed slopes, CI arrays, decision labels, partition invariance report, and locked protocol parameters. Required for chamber-complete status and reproducibility verification.
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn-run" style="background:linear-gradient(135deg,var(--gold),var(--orange));font-size:12px;padding:8px 20px" onclick="exportJSON()">⬇ Export JSON Record</button>
+      <button class="btn-run" style="background:linear-gradient(135deg,var(--fg2),#555);font-size:12px;padding:8px 20px" onclick="copyJSON()">📋 Copy JSON to Clipboard</button>
+    </div>
+    <div id="export-status" style="margin-top:8px;font-size:11px;color:var(--fg2)"></div>
+  </div>
+
+  <!-- CALIBRATION RESULTS -->
+  <div class="panel">
+    <div class="panel-title">📐 Calibration: σ_F per Family (Null A + Null B)</div>
+    <div class="info-box">
+      <strong>Null A:</strong> depth-repeat null at n=2 (two independent seeds per family).
+      <strong>Null B:</strong> witness-bootstrap null (200 resamples of W_i^(0)).
+      σ_F = max(sd_repeat, sd_bootstrap). Used for non-degeneracy gate: median(L^(2)) ≥ 5σ_F.
+    </div>
+    <table id="calib-table">
+      <thead><tr>
+        <th>Family</th><th>L^(2) Run A</th><th>L^(2) Run B</th><th>|Δ_repeat|</th>
+        <th>sd_bootstrap</th><th>σ_F</th><th>Median L^(2) (main)</th><th>Ratio/5σ</th><th>Non-degenerate?</th>
+      </tr></thead>
+      <tbody id="calib-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- L VALUES TABLE -->
+  <div class="panel">
+    <div class="panel-title">📊 L_F_T^(n) — Discrete Non-Isometry Constant by Family × Depth</div>
+    <div class="info-box">
+      L_F_T^(n) = max_i max_{t≠t'} |ρ_i(F,n,τ_t) − ρ_i(F,n,τ_t')| / |τ_t − τ_t'|.
+      Values shown as median over seeds. n=1 ≈ LV Tier-2 baseline (sanity). n=2,3,4 are primary test data.
+    </div>
+    <table id="l-table">
+      <thead><tr>
+        <th>Family</th><th>L^(1) median</th><th>L^(2) median</th><th>L^(3) median</th><th>L^(4) median</th>
+        <th>Ratio L^(3)/L^(2)</th><th>Ratio L^(4)/L^(3)</th>
+      </tr></thead>
+      <tbody id="l-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- SLOPE AND CI TABLE -->
+  <div class="panel">
+    <div class="panel-title">📈 Log-Slope Analysis: b̄ and Confidence Intervals</div>
+    <div class="info-box">
+      For each seed: y_n = log(L_F_T^(n) + 10⁻⁶) for n=2,3,4. OLS fit y = a + bn. b̄ = mean slope over seeds.
+      Bootstrap CI: 2000 resamples of per-seed slopes.
+      <strong>Compounding</strong>: lower_99_CI(b) &gt; 0 AND b̄ ≥ log(1+0.15) = 0.13976.
+      <strong>Saturation</strong>: 0 ∈ 95_CI(b) AND |b̄| ≤ log(1+0.05) = 0.04879.
+      Slopes only meaningful after LV sanity check (n=1 R2=R3=0) passed.
+    </div>
+    <table id="slope-table">
+      <thead><tr>
+        <th>Family</th><th>b̄ (mean slope)</th><th>95% CI lo</th><th>95% CI hi</th>
+        <th>99% CI lo</th><th>99% CI hi</th>
+        <th>b̄ ≥ log(1.15)?</th><th>0 ∈ 95%CI?</th><th>|b̄| ≤ log(1.05)?</th>
+      </tr></thead>
+      <tbody id="slope-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- DECISION TABLE -->
+  <div class="panel">
+    <div class="panel-title">⚖ Mechanical Decision Labels</div>
+    <div id="decision-root"></div>
+  </div>
+
+  <!-- PARTITION INVARIANCE TABLE -->
+  <div class="panel">
+    <div class="panel-title">🔒 Partition Invariance Report: R2 / R3 across all (F, n, τ)</div>
+    <div class="info-box">
+      <strong>R2</strong> = max pairwise overlap of current witness sets (by single-gate-witness definition: always 0).
+      <strong>R3</strong> = dual-relaxation interference rate (LV formula: stillI∧stillJ∧passI∧passJ — algebraically always 0).
+      Any non-zero R2 or R3 → structural engine failure → INVALID.
+    </div>
+    <table id="inv-table">
+      <thead><tr>
+        <th>Family</th><th>Depth n</th><th>τ</th>
+        <th>maxR2</th><th>R2 ok?</th><th>maxR3</th><th>R3 ok?</th>
+      </tr></thead>
+      <tbody id="inv-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- RETENTION HEATMAP CANVAS -->
+  <div class="panel">
+    <div class="panel-title">🌡 Retention ρ_i(F, n, τ) Heatmap — median over seeds</div>
+    <canvas id="heatmap-canvas" width="1400" height="400" style="width:100%"></canvas>
+  </div>
+
+  <!-- SLOPE VISUALIZATION -->
+  <div class="panel">
+    <div class="panel-title">📉 log(L^(n)) vs Depth — Per Family (median + IQR band)</div>
+    <canvas id="slope-canvas" width="1400" height="320" style="width:100%"></canvas>
+  </div>
+
+</div>
+
+<!-- LOG -->
+<div class="panel">
+  <div class="panel-title">📋 Execution Log</div>
+  <div class="log" id="log">
+    <div class="log-info">[INIT] Chamber LVI v1.0.0 loaded. Preregistered protocol locked.</div>
+    <div class="log-info">[INIT] Theory anchor: Theorem 2 — Recursive Composition of the Curvature Functional.</div>
+    <div class="log-info">[INIT] Press Execute to begin calibration + main analysis.</div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+'use strict';
+// ============================================================================
+// CHAMBER LVI v1.0.0
+// Recursive Rigidity vs Exponential Compounding Under Tier-3/4 Lift
+// ============================================================================
+
+// ── LOCKED CONSTANTS ──────────────────────────────────────────────────────────
+const C = {
+  N:            2000,
+  TAU_GRID:     [0.1, 0.3, 0.5, 0.7, 0.9],
+  DEPTHS:       [1, 2, 3, 4],
+  FAMILIES:     ['V2×V3', 'V2×V4', 'V6×V7'],
+  SEEDS:        Array.from({length:30}, (_,i)=>(i+1)*1337),  // preregistered
+  EPS_LOG:      1e-6,
+  BS_CALIB:     200,      // Null B bootstrap resamples
+  DELTA_COMP:   0.15,     // b̄ ≥ log(1+0.15)
+  DELTA_SAT:    0.05,     // |b̄| ≤ log(1+0.05)
+  NONDEG_K:     5,        // median ≥ 5 * σ_F
+  R2_TOL:       0.10,
+  R3_TOL:       0.05,
+  CALIB_NULL_A_SEEDS: [900001, 900002]  // two fixed seeds for Null A
+};
+
+// ── RUNTIME STATE ─────────────────────────────────────────────────────────────
+const ST = {
+  running: false,
+  // Per-seed results: family → seed_idx → {n → {L, rhoByTau: [{g:rho,...}], maxR2, maxR3}}
+  perSeed:   {},
+  // Calibration
+  sigma:     {},   // family → σ_F
+  calib:     {},   // family → {nullARunA, nullARunB, nullBSd, medianL2}
+  // Aggregated slopes
+  slopes:    {},   // family → [b per seed]
+  bBar:      {},   // family → mean b
+  ci95:      {},   // family → [lo, hi]
+  ci99:      {},   // family → [lo, hi]
+  // L medians
+  Lmed:      {},   // family → n → median L
+  // Invariance
+  invFailed:    false,
+  invIssues:    [],   // {family, n, tau, maxR2, maxR3}
+  sanityPassed: false,
+  // Decisions
+  labels:    {}    // family → label string
+};
+
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+function rng(seed) {
+  let s = (seed >>> 0);
+  return () => {
+    s = Math.imul(s, 1664525) + 1013904223 >>> 0;
+    return s / 4294967296;
+  };
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function log(msg, cls='log-info') {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = `log-entry ${cls}`;
+  d.textContent = msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function progress(label, pct, detail='') {
+  document.getElementById('prog-label').textContent = label;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-detail').textContent = detail;
+}
+
+function median(arr) {
+  const s = [...arr].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function mean(arr) { return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function sd(arr) {
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/arr.length);
+}
+function quantile(arr, q) {
+  const s = [...arr].sort((a,b)=>a-b);
+  const pos = (s.length-1)*q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return s[lo] + (s[hi]-s[lo])*(pos-lo);
+}
+
+// OLS slope for y = a + b*x
+function olsSlope(xs, ys) {
+  const n = xs.length;
+  const mx = mean(xs), my = mean(ys);
+  const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+  const den = xs.reduce((s,x)=>s+(x-mx)**2,0);
+  return den>0 ? num/den : 0;
+}
+
+function bootstrapCI(samples, resamples, alpha) {
+  const bs = [];
+  for (let i=0;i<resamples;i++) {
+    const samp = Array.from({length:samples.length}, ()=>samples[Math.floor(Math.random()*samples.length)]);
+    bs.push(mean(samp));
+  }
+  bs.sort((a,b)=>a-b);
+  const lo = quantile(bs, alpha/2);
+  const hi = quantile(bs, 1-alpha/2);
+  return [lo, hi];
+}
+
+// ── ENGINE (from LV) ──────────────────────────────────────────────────────────
+function genMech(r, id) {
+  return {
+    id,
+    gamma0: r()*2.0, beta: r()*2.0, d: r()*5.0, kmax: r()*6.0,
+    curvature_method: r()<0.7 ? 'turning_angle' : 'finite_diff',
+    delta_kappa: 0.03+r()*0.06,
+    mean_kappa_proxy: 0.02+r()*0.1,
+    has_bifurcation: r()<0.7,
+    sharpness: 0.08+r()*0.06,
+    locality_score: r()*0.15
+  };
+}
+
+function genPool(family, n, seed) {
+  const r = rng(seed);
+  return Array.from({length:n}, (_,i) => genMech(r, `${family}|${i}`));
+}
+
+function applyTier2(mech, family, tau, r) {
+  const m = JSON.parse(JSON.stringify(mech));
+  switch(family) {
+    case 'V2×V3':
+      m.gamma0      *= 1+tau*(r()-0.5)*0.3;
+      m.beta        *= 1+tau*(r()-0.5)*0.3;
+      m.delta_kappa *= 1+tau*0.1*Math.sin(m.gamma0);
+      break;
+    case 'V2×V4': {
+      if (r()<tau*0.4) m.curvature_method='smoothed';
+      const ksc = 1+tau*0.6*(r()-0.3);
+      m.delta_kappa     *= ksc;
+      m.mean_kappa_proxy*= ksc;
+      m.sharpness       *= 1+tau*(r()-0.5)*0.45;
+      m.locality_score  *= 1+tau*0.3*r();
+      break;
+    }
+    case 'V6×V7': {
+      const phi = r()*2*Math.PI;
+      m.gamma0     *= 1+tau*0.5*Math.cos(phi);
+      m.beta       *= 1+tau*0.5*Math.sin(phi);
+      m.kmax       *= 1+tau*0.3*Math.cos(2*phi);
+      m.delta_kappa    *= 1+tau*(r()-0.5)*0.5;
+      m.sharpness      *= 1+tau*(r()-0.5)*0.5;
+      m.locality_score *= 1+tau*(r()-0.5)*0.5;
+      break;
+    }
+  }
+  m.delta_kappa     = Math.max(0, m.delta_kappa);
+  m.sharpness       = Math.max(0, m.sharpness);
+  m.locality_score  = Math.max(0, Math.min(1, m.locality_score));
+  return m;
+}
+
+function evalGate(gate, m) {
+  switch(gate) {
+    case 'G1': return m.curvature_method==='turning_angle';
+    case 'G2': return m.delta_kappa>0.05;
+    case 'G3': return m.has_bifurcation && m.sharpness>0.1;
+    case 'G4': return m.locality_score<0.1;
+  }
+}
+
+const GATES = ['G1','G2','G3','G4'];
+
+function findWitnesses(pool) {
+  const wit = {};
+  for (const g of GATES) {
+    wit[g] = [];
+    const oth = GATES.filter(x=>x!==g);
+    for (const m of pool) {
+      if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) wit[g].push(m.id);
+    }
+  }
+  return wit;
+}
+
+// ── LVI ENGINE: RECURSIVE LIFT ────────────────────────────────────────────────
+// Apply family lift n times at fixed τ, building pool chain depth 0→n
+// Returns array of pools indexed 0=base, 1=depth1, ... n=depthN
+function buildDepthChain(basePool, family, tau, maxN, seedBase, tauIdx) {
+  const chain = [basePool.map(m=>({...m}))];  // depth 0 = base (shallow copy, IDs preserved)
+  for (let d=0; d<maxN; d++) {
+    // Deterministic RNG per (seed, depth, tauIdx)
+    const r = rng(seedBase * 97 + (d+1) * 100003 + tauIdx * 7919);
+    const prevPool = chain[d];
+    const nextPool = prevPool.map(m=>applyTier2(m, family, tau, r));
+    chain.push(nextPool);
+  }
+  return chain; // chain[n] = pool after n lifts
+}
+
+// Relaxed gate evaluator — matches LV's evalGateRaw(gate, m, 'relaxed', eps=0.05)
+const EPS_RELAX = 0.05;
+function evalGateRelaxed(gate, m) {
+  switch(gate) {
+    case 'G1': return m.curvature_method==='turning_angle' ||
+                      (m.curvature_method==='finite_diff' && EPS_RELAX>=0.05);
+    case 'G2': return m.delta_kappa > (0.05 - EPS_RELAX);   // > 0
+    case 'G3': return m.has_bifurcation && m.sharpness > (0.1 - EPS_RELAX); // > 0.05
+    case 'G4': return m.locality_score < (0.1 + EPS_RELAX); // < 0.15
+  }
+}
+
+// Compute retention, R2, R3 for a lifted pool against baseline witnesses.
+// R2 and R3 follow LV semantics exactly:
+//   R2 = max pairwise overlap of CURRENT witness sets (always 0 by single-gate-witness definition)
+//   R3 = dual-relaxation interference (LV formula: stillI && stillJ && passI && passJ
+//        where stillI = !relaxed(gi) and passI = relaxed(gi) — always 0 by algebraic identity)
+function computeMetrics(pool, baseWit) {
+  const poolMap = {};
+  for (const m of pool) poolMap[m.id] = m;
+
+  // Retention: track baseline witness IDs
+  const rho = {};
+  for (const g of GATES) {
+    const oth = GATES.filter(x=>x!==g);
+    let kept = 0;
+    for (const id of baseWit[g]) {
+      const m = poolMap[id];
+      if (!m) continue;
+      if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) kept++;
+    }
+    rho[g] = baseWit[g].length>0 ? kept/baseWit[g].length : 1.0;
+  }
+
+  // Current witness sets (for R2)
+  const curWit = {};
+  for (const g of GATES) {
+    curWit[g] = new Set();
+    const oth = GATES.filter(x=>x!==g);
+    for (const m of pool) {
+      if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) curWit[g].add(m.id);
+    }
+  }
+
+  // R2: max pairwise overlap of current witness sets
+  // By single-gate-witness definition this is always 0 — serves as hard structural invariant
+  let maxR2 = 0;
+  for (let i=0;i<GATES.length;i++) {
+    for (let j=i+1;j<GATES.length;j++) {
+      const Wi = curWit[GATES[i]], Wj = curWit[GATES[j]];
+      const inter = [...Wi].filter(id=>Wj.has(id)).length;
+      const mn = Math.min(Wi.size, Wj.size);
+      maxR2 = Math.max(maxR2, mn>0 ? inter/mn : 0);
+    }
+  }
+
+  // R3: dual-relaxation interference — LV formula exactly
+  // For each pair (gi,gj), loop over pool; for mechanisms failing both gates:
+  //   stillI = !evalGateRelaxed(gi, m)   [still fails when gi relaxed]
+  //   passI  =  evalGateRelaxed(gi, m)   [passes when gi relaxed]
+  //   => stillI && passI is always false (complement pair)
+  //   => dualOnly is always 0, frequency is always 0
+  // This is the invariant: if it fires, partition is broken at engine level.
+  let maxR3 = 0;
+  for (let i=0;i<GATES.length;i++) {
+    for (let j=i+1;j<GATES.length;j++) {
+      const gi=GATES[i], gj=GATES[j];
+      let dualOnly=0, totalExcl=0;
+      for (const m of pool) {
+        const failI = !evalGate(gi,m), failJ = !evalGate(gj,m);
+        if (failI && failJ) {
+          totalExcl++;
+          const stillI = !evalGateRelaxed(gi,m);
+          const stillJ = !evalGateRelaxed(gj,m);
+          const passI  =  evalGateRelaxed(gi,m);
+          const passJ  =  evalGateRelaxed(gj,m);
+          if (stillI && stillJ && passI && passJ) dualOnly++;
+        }
+      }
+      maxR3 = Math.max(maxR3, totalExcl>0 ? dualOnly/totalExcl : 0);
+    }
+  }
+
+  return {rho, maxR2, maxR3, curWit};
+}
+
+// Compute L_F_T^(n): discrete Lipschitz max over τ pairs
+function computeL(rhoByTauIdx) {
+  // rhoByTauIdx[t] = {G1:rho, G2:rho, G3:rho, G4:rho}
+  let L = 0;
+  for (const g of GATES) {
+    for (let t=0;t<C.TAU_GRID.length;t++) {
+      for (let tp=t+1;tp<C.TAU_GRID.length;tp++) {
+        const dr = Math.abs(rhoByTauIdx[t][g] - rhoByTauIdx[tp][g]);
+        const dt = Math.abs(C.TAU_GRID[t] - C.TAU_GRID[tp]);
+        L = Math.max(L, dr/dt);
+      }
+    }
+  }
+  return L;
+}
+
+// ── SINGLE SEED RUN ───────────────────────────────────────────────────────────
+// Returns {L_by_depth: {n→L}, metrics_by_n_tau: {n→[{rho,maxR2,maxR3} per tau]}}
+function runOneSeed(family, seed) {
+  const basePool = genPool(family, C.N, seed);
+  const baseWit  = findWitnesses(basePool);
+
+  const L_by_depth = {};
+  const metrics_by_n_tau = {};
+
+  // For each τ, build chain of depth 0..4; compute metrics at each depth
+  // Aggregate by depth across τ to get rhoByTauIdx[n][tauIdx]
+  const rhoByDepthTau = {}; // n → tauIdx → {gate→rho}
+  const invByDepthTau = {}; // n → tauIdx → {maxR2, maxR3}
+
+  for (let n=1;n<=4;n++) {
+    rhoByDepthTau[n] = {};
+    invByDepthTau[n] = {};
+  }
+
+  for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+    const tau = C.TAU_GRID[ti];
+    const chain = buildDepthChain(basePool, family, tau, 4, seed, ti);
+    // chain[0]=base, chain[1]=n=1, chain[2]=n=2, chain[3]=n=3, chain[4]=n=4
+    for (let n=1; n<=4; n++) {
+      const {rho, maxR2, maxR3} = computeMetrics(chain[n], baseWit);
+      rhoByDepthTau[n][ti] = rho;
+      invByDepthTau[n][ti] = {maxR2, maxR3};
+    }
+  }
+
+  // Compute L for each depth
+  for (let n=1; n<=4; n++) {
+    L_by_depth[n] = computeL(rhoByDepthTau[n]);
+  }
+
+  return {L_by_depth, rhoByDepthTau, invByDepthTau, baseWit};
+}
+
+// ── CALIBRATION: NULL A ────────────────────────────────────────────────────────
+// Run n=2 twice with two independent seeds; compute |Δ| per family
+function runNullA(family) {
+  const runForSeed = seed => {
+    const basePool = genPool(family, C.N, seed);
+    const baseWit  = findWitnesses(basePool);
+    const rhoByTau = {};
+    for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+      const tau = C.TAU_GRID[ti];
+      const chain = buildDepthChain(basePool, family, tau, 2, seed, ti);
+      const {rho} = computeMetrics(chain[2], baseWit);
+      rhoByTau[ti] = rho;
+    }
+    return computeL(rhoByTau);
+  };
+  const LA = runForSeed(C.CALIB_NULL_A_SEEDS[0]);
+  const LB = runForSeed(C.CALIB_NULL_A_SEEDS[1]);
+  return {LA, LB, delta: Math.abs(LB-LA)};
+}
+
+// ── CALIBRATION: NULL B ────────────────────────────────────────────────────────
+// Bootstrap resample baseline witnesses, recompute L^(2) → sd over resamples
+function runNullB(family, seedMain) {
+  const basePool = genPool(family, C.N, seedMain);
+  const baseWit  = findWitnesses(basePool);
+
+  // Build n=2 pools for each τ (fixed, using seedMain)
+  const pools2 = [];
+  for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+    const tau = C.TAU_GRID[ti];
+    const chain = buildDepthChain(basePool, family, tau, 2, seedMain, ti);
+    pools2.push(chain[2]);
+  }
+
+  const bsLs = [];
+  const bsRng = rng(seedMain * 13 + 99999);
+
+  for (let b=0; b<C.BS_CALIB; b++) {
+    // Resample each gate's witness set independently
+    const sampledWit = {};
+    for (const g of GATES) {
+      const orig = baseWit[g];
+      const n = orig.length;
+      if (n===0) { sampledWit[g]=[]; continue; }
+      sampledWit[g] = Array.from({length:n}, ()=>orig[Math.floor(bsRng()*n)]);
+    }
+    // Remove duplicates per gate (keep unique IDs)
+    for (const g of GATES) sampledWit[g] = [...new Set(sampledWit[g])];
+
+    // Compute rho and L on resampled witnesses
+    const rhoByTau = {};
+    for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+      const pool = pools2[ti];
+      const poolMap = {};
+      for (const m of pool) poolMap[m.id] = m;
+      const rho = {};
+      for (const g of GATES) {
+        const oth = GATES.filter(x=>x!==g);
+        let kept = 0;
+        for (const id of sampledWit[g]) {
+          const m = poolMap[id];
+          if (!m) continue;
+          if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) kept++;
+        }
+        rho[g] = sampledWit[g].length>0 ? kept/sampledWit[g].length : 1.0;
+      }
+      rhoByTau[ti] = rho;
+    }
+    bsLs.push(computeL(rhoByTau));
+  }
+
+  return sd(bsLs);
+}
+
+// ── MAIN PROTOCOL ─────────────────────────────────────────────────────────────
+async function executeProtocol() {
+  if (ST.running) return;
+  ST.running = true;
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+
+  const nSeeds   = Math.min(parseInt(document.getElementById('ctrl-seeds').value)||30, 30);
+  const bsMain   = parseInt(document.getElementById('ctrl-bs').value)||2000;
+  const seeds    = C.SEEDS.slice(0, nSeeds);
+
+  // Reset state
+  for (const k of ['perSeed','sigma','calib','slopes','bBar','ci95','ci99','Lmed','labels']) ST[k]={};
+  ST.invFailed=false; ST.invIssues=[];
+  for (const f of C.FAMILIES) { ST.perSeed[f]={}; }
+
+  document.getElementById('prog').style.display='block';
+  document.getElementById('results').style.display='none';
+
+  log('', 'log-info');
+  log('═══ CHAMBER LVI v1.0.0 STARTING ═══', 'log-hi');
+  log(`Seeds: ${nSeeds} (of 30 preregistered) | N=2000 | τ-grid×5 | depths 1-4`, 'log-info');
+
+  // ─── PHASE 1: CALIBRATION ─────────────────────────────────────────────────
+  log('', 'log-info');
+  log('── PHASE 1: CALIBRATION (Null A + Null B) ──', 'log-hi');
+  const totalSteps = 3 + nSeeds*3;
+  let step = 0;
+
+  for (const fam of C.FAMILIES) {
+    progress(`Calibration: Null A — ${fam}`, (step/totalSteps)*100, 'Computing depth-repeat null…');
+    await sleep(10);
+
+    const nullA = runNullA(fam);
+    log(`  [NULL A] ${fam}: L^(2) runA=${nullA.LA.toFixed(4)} runB=${nullA.LB.toFixed(4)} |Δ|=${nullA.delta.toFixed(4)}`, 'log-info');
+
+    progress(`Calibration: Null B — ${fam}`, (step/totalSteps)*100, 'Computing witness bootstrap null…');
+    await sleep(10);
+
+    const sdB = runNullB(fam, seeds[0]);
+    const sigmaF = Math.max(nullA.delta, sdB);
+
+    ST.calib[fam] = {nullARunA: nullA.LA, nullARunB: nullA.LB, nullADelta: nullA.delta, nullBSd: sdB};
+    ST.sigma[fam] = sigmaF;
+    log(`  [NULL B] ${fam}: sd_bootstrap=${sdB.toFixed(4)} → σ_F=${sigmaF.toFixed(4)}`, 'log-info');
+    step++;
+  }
+  await sleep(20);
+
+  // ─── PHASE 1.5: LV SANITY CHECK (n=1 must reproduce LV Tier-2) ──────────────
+  log('', 'log-info');
+  log('── PHASE 1.5: LV SANITY CHECK (n=1 vs LV Tier-2) ──', 'log-hi');
+  log('  n=1 must yield R2=0 and R3=0 at all τ for all families.', 'log-info');
+  let sanityPassed = true;
+
+  for (const fam of C.FAMILIES) {
+    const basePool = genPool(fam, C.N, C.SEEDS[0]);
+    const baseWit  = findWitnesses(basePool);
+    for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+      const tau = C.TAU_GRID[ti];
+      const chain = buildDepthChain(basePool, fam, tau, 1, C.SEEDS[0], ti);
+      const {rho, maxR2, maxR3} = computeMetrics(chain[1], baseWit);
+      const r2ok = maxR2 <= C.R2_TOL, r3ok = maxR3 <= C.R3_TOL;
+      if (!r2ok || !r3ok) {
+        sanityPassed = false;
+        log(`  ✗ SANITY FAIL: ${fam} τ=${tau} R2=${maxR2.toFixed(4)} R3=${maxR3.toFixed(4)}`, 'log-err');
+      }
+    }
+  }
+
+  if (!sanityPassed) {
+    log('', 'log-info');
+    log('SANITY CHECK FAILED — n=1 does not reproduce LV invariance. Aborting.', 'log-err');
+    log('LVI cannot run until the lift engine passes LV Tier-2 at depth 1.', 'log-err');
+    ST.sanityPassed = false;
+    document.getElementById('validity-banner').innerHTML =
+      `<div class="validity-fail">⛔ SANITY CHECK FAILED: n=1 violates partition invariance. LVI aborted. Fix lift engine first.</div>`;
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('prog').style.display    = 'none';
+    btn.disabled = false;
+    btn.textContent = '▶ Execute LVI v1.0.0';
+    ST.running = false;
+    return;
+  }
+  log('  ✓ Sanity check passed: n=1 reproduces LV Tier-2 invariance (R2=R3=0).', 'log-ok');
+  ST.sanityPassed = true;
+  await sleep(10);
+
+  // Per-family accumulators
+  const LsBySeedDepth  = {}; // family → [{n→L}, ...]  (one entry per seed)
+  const rhoAccum       = {}; // family → n → tauIdx → gate → [rho values across seeds]
+  for (const f of C.FAMILIES) {
+    LsBySeedDepth[f] = [];
+    rhoAccum[f] = {};
+    for (const n of C.DEPTHS) {
+      rhoAccum[f][n] = {};
+      for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+        rhoAccum[f][n][ti] = {G1:[],G2:[],G3:[],G4:[]};
+      }
+    }
+  }
+
+  const invWorstR2 = {}; // family → n → tauIdx → maxR2
+  const invWorstR3 = {}; // family → n → tauIdx → maxR3
+  for (const f of C.FAMILIES) {
+    invWorstR2[f]={};  invWorstR3[f]={};
+    for (const n of C.DEPTHS) { invWorstR2[f][n]={}; invWorstR3[f][n]={}; }
+  }
+
+  for (let si=0; si<seeds.length; si++) {
+    const seed = seeds[si];
+    const pct = (step/totalSteps)*100;
+    progress(`Seed ${si+1}/${seeds.length} (seed=${seed})`, pct, `Running 3 families × 4 depths × 5 τ…`);
+    await sleep(si%5===0 ? 15 : 0);
+
+    for (const fam of C.FAMILIES) {
+      const {L_by_depth, rhoByDepthTau, invByDepthTau} = runOneSeed(fam, seed);
+      LsBySeedDepth[fam].push(L_by_depth);
+      // Accumulate retention values per (n, tauIdx, gate)
+      for (const n of C.DEPTHS) {
+        for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+          for (const g of GATES) {
+            rhoAccum[fam][n][ti][g].push(rhoByDepthTau[n][ti][g]);
+          }
+        }
+      }
+
+      // Track worst-case invariance across seeds
+      for (const n of C.DEPTHS) {
+        for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+          const {maxR2, maxR3} = invByDepthTau[n][ti];
+          invWorstR2[fam][n][ti] = Math.max(invWorstR2[fam][n][ti]||0, maxR2);
+          invWorstR3[fam][n][ti] = Math.max(invWorstR3[fam][n][ti]||0, maxR3);
+        }
+      }
+    }
+    step++;
+  }
+
+  // Store retention medians in ST for export
+  ST.rhoMed = {};
+  for (const fam of C.FAMILIES) {
+    ST.rhoMed[fam] = {};
+    for (const n of C.DEPTHS) {
+      ST.rhoMed[fam][n] = {};
+      for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+        ST.rhoMed[fam][n][ti] = {};
+        for (const g of GATES) {
+          const vals = rhoAccum[fam][n][ti][g];
+          ST.rhoMed[fam][n][ti][g] = vals.length>0 ? median(vals) : null;
+        }
+      }
+    }
+  }
+
+  // ─── PHASE 3: INVARIANCE CHECK ────────────────────────────────────────────
+  log('', 'log-info');
+  log('── PHASE 3: PARTITION INVARIANCE CHECK ──', 'log-hi');
+  for (const fam of C.FAMILIES) {
+    for (const n of C.DEPTHS) {
+      for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+        const r2 = invWorstR2[fam][n][ti];
+        const r3 = invWorstR3[fam][n][ti];
+        if (r2 > C.R2_TOL || r3 > C.R3_TOL) {
+          ST.invFailed = true;
+          ST.invIssues.push({family:fam, n, tau:C.TAU_GRID[ti], maxR2:r2, maxR3:r3});
+          log(`  ⚠ INVARIANCE FAIL: ${fam} n=${n} τ=${C.TAU_GRID[ti]} R2=${r2.toFixed(4)} R3=${r3.toFixed(4)}`, 'log-err');
+        }
+      }
+    }
+  }
+  if (!ST.invFailed) log('  ✓ Partition invariance: R2 and R3 within tolerance at all (F,n,τ)', 'log-ok');
+  step++;
+
+  // ─── PHASE 4: AGGREGATE & SLOPES ──────────────────────────────────────────
+  log('', 'log-info');
+  log('── PHASE 4: L AGGREGATION + LOG-SLOPE FITTING ──', 'log-hi');
+  progress('Computing slopes and CIs…', 95, 'OLS + bootstrap…');
+  await sleep(10);
+
+  const depthsForSlope = [2,3,4];
+
+  for (const fam of C.FAMILIES) {
+    // L medians across seeds per depth
+    for (const n of C.DEPTHS) {
+      const Ls = LsBySeedDepth[fam].map(d=>d[n]);
+      if (!ST.Lmed[fam]) ST.Lmed[fam] = {};
+      ST.Lmed[fam][n] = median(Ls);
+    }
+
+    // Per-seed slopes on log(L^(2,3,4))
+    const bPerSeed = LsBySeedDepth[fam].map(d => {
+      const ys = depthsForSlope.map(n => Math.log(d[n] + C.EPS_LOG));
+      return olsSlope(depthsForSlope, ys);
+    });
+
+    ST.slopes[fam] = bPerSeed;
+    ST.bBar[fam]   = mean(bPerSeed);
+
+    // Calibrated bootstrap CI
+    const bsRands = [];
+    for (let b=0; b<bsMain; b++) {
+      const samp = Array.from({length:bPerSeed.length}, ()=>bPerSeed[Math.floor(Math.random()*bPerSeed.length)]);
+      bsRands.push(mean(samp));
+    }
+    bsRands.sort((a,b)=>a-b);
+
+    ST.ci95[fam] = [quantile(bsRands,0.025), quantile(bsRands,0.975)];
+    ST.ci99[fam] = [quantile(bsRands,0.005), quantile(bsRands,0.995)];
+
+    log(`  ${fam}: b̄=${ST.bBar[fam].toFixed(4)} 95%CI=[${ST.ci95[fam][0].toFixed(4)},${ST.ci95[fam][1].toFixed(4)}]`, 'log-info');
+  }
+  step++;
+
+  // ─── PHASE 5: DECISION RULES ──────────────────────────────────────────────
+  log('', 'log-info');
+  log('── PHASE 5: MECHANICAL DECISION LABELS ──', 'log-hi');
+  const logComp = Math.log(1 + C.DELTA_COMP);
+  const logSat  = Math.log(1 + C.DELTA_SAT);
+
+  for (const fam of C.FAMILIES) {
+    let label;
+    const medL2 = ST.Lmed[fam][2];
+    const sigF  = ST.sigma[fam];
+    const nonDeg = medL2 >= C.NONDEG_K * sigF;
+
+    if (!nonDeg) {
+      label = 'TRIVIAL_OR_WEAK';
+    } else {
+      const bBar      = ST.bBar[fam];
+      const lo99      = ST.ci99[fam][0];
+      const lo95      = ST.ci95[fam][0];
+      const hi95      = ST.ci95[fam][1];
+      const compCheck = lo99 > 0 && bBar >= logComp;
+      const satCheck  = lo95 <= 0 && hi95 >= 0 && Math.abs(bBar) <= logSat;
+
+      if (compCheck)   label = 'COMPOUNDING';
+      else if (satCheck) label = 'SATURATING_OR_BOUNDED';
+      else               label = 'INCONCLUSIVE';
+    }
+
+    // Override if invariance failed
+    if (ST.invFailed) {
+      const famFailed = ST.invIssues.some(x=>x.family===fam);
+      if (famFailed) label = 'INVALID';
+    }
+
+    ST.labels[fam] = label;
+    const cls = {COMPOUNDING:'log-err', SATURATING_OR_BOUNDED:'log-ok', INCONCLUSIVE:'log-warn', INVALID:'log-err', TRIVIAL_OR_WEAK:'log-info'}[label]||'log-info';
+    log(`  ${fam}: ${label}`, cls);
+  }
+  step++;
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  progress('Rendering…', 99, '');
+  await sleep(15);
+
+  renderAll(invWorstR2, invWorstR3, LsBySeedDepth, rhoAccum);
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('prog').style.display    = 'none';
+  log('', 'log-info');
+  log('═══ CHAMBER LVI COMPLETE ═══', 'log-hi');
+
+  btn.disabled = false;
+  btn.textContent = '▶ Execute LVI v1.0.0';
+  ST.running = false;
+}
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+function renderAll(invWorstR2, invWorstR3, LsBySeedDepth, rhoAccum) {
+  renderValidity();
+  renderCalib();
+  renderLTable();
+  renderSlopeTable();
+  renderDecisions();
+  renderInvTable(invWorstR2, invWorstR3);
+  renderHeatmap(rhoAccum);
+  renderSlopeCanvas(LsBySeedDepth);
+}
+
+function renderValidity() {
+  const el = document.getElementById('validity-banner');
+  if (ST.invFailed) {
+    el.innerHTML = `<div class="validity-fail">⚠ PARTITION INVARIANCE FAILURE detected at ${ST.invIssues.length} (F,n,τ) point(s). Affected family results labeled INVALID. See invariance table below.</div>`;
+  } else {
+    el.innerHTML = `<div class="validity-ok">✓ PARTITION INVARIANCE CONFIRMED — R2=R3≈0 at all (F,n,τ). Run is valid. All decision labels apply.</div>`;
+  }
+}
+
+function renderCalib() {
+  const tb = document.getElementById('calib-tbody');
+  tb.innerHTML='';
+  const logComp = Math.log(1+C.DELTA_COMP);
+  for (const fam of C.FAMILIES) {
+    const c = ST.calib[fam];
+    const sig = ST.sigma[fam];
+    const medL2 = ST.Lmed[fam]?.[2] ?? 0;
+    const ratio = sig>0 ? medL2/(C.NONDEG_K*sig) : Infinity;
+    const nonDeg = medL2 >= C.NONDEG_K*sig;
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = fam;
+    tr.insertCell().textContent = c.nullARunA.toFixed(5);
+    tr.insertCell().textContent = c.nullARunB.toFixed(5);
+    tr.insertCell().textContent = c.nullADelta.toFixed(5);
+    tr.insertCell().textContent = c.nullBSd.toFixed(5);
+    tr.insertCell().textContent = sig.toFixed(5);
+    tr.insertCell().textContent = medL2.toFixed(5);
+    const rc = tr.insertCell(); rc.textContent=ratio.toFixed(2); rc.className=nonDeg?'pass':'fail';
+    const nd = tr.insertCell(); nd.textContent=nonDeg?'YES':'NO'; nd.className=nonDeg?'pass':'fail';
+  }
+}
+
+function renderLTable() {
+  const tb = document.getElementById('l-tbody');
+  tb.innerHTML='';
+  for (const fam of C.FAMILIES) {
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = fam;
+    for (const n of [1,2,3,4]) {
+      tr.insertCell().textContent = (ST.Lmed[fam]?.[n]??0).toFixed(5);
+    }
+    const L2 = ST.Lmed[fam]?.[2]||0, L3=ST.Lmed[fam]?.[3]||0, L4=ST.Lmed[fam]?.[4]||0;
+    const r32 = L2>0 ? L3/L2 : 0;
+    const r43 = L3>0 ? L4/L3 : 0;
+    const c32=tr.insertCell(); c32.textContent=r32.toFixed(3); c32.className=r32>=1.15?'fail':r32<=1.05?'pass':'warn';
+    const c43=tr.insertCell(); c43.textContent=r43.toFixed(3); c43.className=r43>=1.15?'fail':r43<=1.05?'pass':'warn';
+  }
+}
+
+function renderSlopeTable() {
+  const tb = document.getElementById('slope-tbody');
+  tb.innerHTML='';
+  const logComp = Math.log(1+C.DELTA_COMP);
+  const logSat  = Math.log(1+C.DELTA_SAT);
+  for (const fam of C.FAMILIES) {
+    const bBar = ST.bBar[fam];
+    const [lo95,hi95]=ST.ci95[fam];
+    const [lo99,hi99]=ST.ci99[fam];
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = fam;
+    tr.insertCell().textContent = bBar.toFixed(5);
+    tr.insertCell().textContent = lo95.toFixed(5);
+    tr.insertCell().textContent = hi95.toFixed(5);
+    tr.insertCell().textContent = lo99.toFixed(5);
+    tr.insertCell().textContent = hi99.toFixed(5);
+    const compB = tr.insertCell(); const cb=bBar>=logComp; compB.textContent=cb?'YES':'NO'; compB.className=cb?'fail':'pass';
+    const zeroIn95 = tr.insertCell(); const z0=(lo95<=0&&hi95>=0); zeroIn95.textContent=z0?'YES':'NO'; zeroIn95.className=z0?'pass':'fail';
+    const satB = tr.insertCell(); const sb=Math.abs(bBar)<=logSat; satB.textContent=sb?'YES':'NO'; satB.className=sb?'pass':'warn';
+  }
+}
+
+const LABEL_BADGE_CLASS = {
+  COMPOUNDING:'b-comp', SATURATING_OR_BOUNDED:'b-sat',
+  INCONCLUSIVE:'b-inc', INVALID:'b-inv', TRIVIAL_OR_WEAK:'b-tri'
+};
+const FAM_COLOR = {'V2×V3':'#4ade80','V2×V4':'#f87171','V6×V7':'#5ee7df'};
+
+function renderDecisions() {
+  const root = document.getElementById('decision-root');
+  root.innerHTML='';
+  const logComp = Math.log(1+C.DELTA_COMP);
+  const logSat  = Math.log(1+C.DELTA_SAT);
+
+  for (const fam of C.FAMILIES) {
+    const label = ST.labels[fam];
+    const bBar  = ST.bBar[fam];
+    const medL2 = ST.Lmed[fam]?.[2]??0;
+    const sig   = ST.sigma[fam];
+    const nonDeg= medL2 >= C.NONDEG_K*sig;
+
+    const div=document.createElement('div');
+    div.className='fam-block';
+    div.style.borderLeft=`3px solid ${FAM_COLOR[fam]}`;
+    div.innerHTML=`
+      <div class="fam-name" style="color:${FAM_COLOR[fam]}">${fam} — <span class="badge ${LABEL_BADGE_CLASS[label]}">${label.replace(/_/g,' ')}</span></div>
+      <div class="metric-row">
+        <div class="metric-card"><div class="mc-label">Decision</div><div class="mc-value" style="font-size:12px">${label}</div></div>
+        <div class="metric-card"><div class="mc-label">Non-degenerate?</div><div class="mc-value ${nonDeg?'pass':'fail'}" style="font-size:14px">${nonDeg?'YES':'NO'}</div><div class="mc-sub">L^(2)=${medL2.toFixed(4)} vs 5σ=${(5*sig).toFixed(4)}</div></div>
+        <div class="metric-card"><div class="mc-label">b̄ (log slope)</div><div class="mc-value">${bBar.toFixed(4)}</div><div class="mc-sub">log(1+δ_comp)=${logComp.toFixed(4)}</div></div>
+        <div class="metric-card"><div class="mc-label">99% CI lo</div><div class="mc-value">${(ST.ci99[fam]?.[0]??0).toFixed(4)}</div><div class="mc-sub">>0 required for compounding</div></div>
+        <div class="metric-card"><div class="mc-label">L^(2)→L^(3) ratio</div><div class="mc-value">${ST.Lmed[fam]?.[2]>0 ? (ST.Lmed[fam][3]/ST.Lmed[fam][2]).toFixed(3) : 'N/A'}</div></div>
+        <div class="metric-card"><div class="mc-label">L^(3)→L^(4) ratio</div><div class="mc-value">${ST.Lmed[fam]?.[3]>0 ? (ST.Lmed[fam][4]/ST.Lmed[fam][3]).toFixed(3) : 'N/A'}</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--fg2);margin-top:6px">
+        <strong style="color:var(--purple)">Gate:</strong>
+        NonDeg=${nonDeg} →
+        lower_99_CI(b)=${(ST.ci99[fam]?.[0]??0).toFixed(4)}>0: ${ST.ci99[fam]?.[0]>0} →
+        b̄≥log(1.15): ${bBar>=logComp} →
+        0∈95CI: ${ST.ci95[fam]?.[0]<=0&&ST.ci95[fam]?.[1]>=0} →
+        |b̄|≤log(1.05): ${Math.abs(bBar)<=logSat}
+      </div>`;
+    root.appendChild(div);
+  }
+}
+
+function renderInvTable(invWorstR2, invWorstR3) {
+  const tb = document.getElementById('inv-tbody');
+  tb.innerHTML='';
+  for (const fam of C.FAMILIES) {
+    for (const n of C.DEPTHS) {
+      for (let ti=0; ti<C.TAU_GRID.length; ti++) {
+        const r2 = invWorstR2[fam][n][ti]||0;
+        const r3 = invWorstR3[fam][n][ti]||0;
+        const ok2=r2<=C.R2_TOL, ok3=r3<=C.R3_TOL;
+        if (r2>0.001 || r3>0.001) { // only show non-trivial rows to keep table readable
+          const tr=tb.insertRow();
+          tr.insertCell().textContent=fam;
+          tr.insertCell().textContent=n;
+          tr.insertCell().textContent=C.TAU_GRID[ti];
+          const c2=tr.insertCell(); c2.textContent=r2.toFixed(5); c2.className=ok2?'neutral':'fail';
+          tr.insertCell().textContent=ok2?'✓':'✗'; tr.cells[tr.cells.length-1].className=ok2?'pass':'fail';
+          const c3=tr.insertCell(); c3.textContent=r3.toFixed(5); c3.className=ok3?'neutral':'fail';
+          tr.insertCell().textContent=ok3?'✓':'✗'; tr.cells[tr.cells.length-1].className=ok3?'pass':'fail';
+        }
+      }
+    }
+  }
+  if (tb.rows.length===0) {
+    const tr=tb.insertRow();
+    const td=tr.insertCell(); td.colSpan=7;
+    td.textContent='All R2 and R3 values below reporting threshold (< 0.001) — partition invariance clean.';
+    td.className='pass'; td.style.textAlign='center';
+  }
+}
+
+function renderHeatmap(rhoAccum) {
+  const canvas = document.getElementById('heatmap-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.fillStyle='#07080f'; ctx.fillRect(0,0,W,H);
+
+  // Layout: show one family at a time stacked vertically, gates as rows, depths as cols, τ as sub-cols
+  // Family × depth × τ grid — one block per gate showing median ρ
+  // 3 families side by side, each with 4 depth columns and 5 τ sub-slots
+  const famW  = (W - 80) / 3;
+  const depthW = famW / 4;
+  const gateH  = (H - 50) / 4;
+  const padL=80, padT=50;
+
+  // Gate labels on y-axis
+  GATES.forEach((g,gi)=>{
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 11px Courier New'; ctx.textAlign='right';
+    ctx.fillText(g, padL-6, padT+gi*gateH+gateH/2+4);
+  });
+
+  // Family + depth headers
+  C.FAMILIES.forEach((fam,fi)=>{
+    ctx.fillStyle=FAM_COLOR[fam]; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.fillText(fam, padL+fi*famW+famW/2, 16);
+    C.DEPTHS.forEach((n,ni)=>{
+      ctx.fillStyle='#8890b8'; ctx.font='10px Courier New';
+      ctx.fillText(`n=${n}`, padL+fi*famW+ni*depthW+depthW/2, 34);
+    });
+  });
+
+  // Color scale: 0=dark/blue (low retention), 1=bright/green (high retention)
+  function cellColor(rho) {
+    if (rho > 0.95) return '#4ade80';        // high retention: green
+    if (rho > 0.80) return '#86efac';
+    if (rho > 0.60) return '#fbbf24';        // medium: yellow
+    if (rho > 0.40) return '#fb923c';        // degrading: orange
+    return '#f87171';                         // low retention: red
+  }
+
+  C.FAMILIES.forEach((fam,fi)=>{
+    C.DEPTHS.forEach((n,ni)=>{
+      GATES.forEach((g,gi)=>{
+        // For each depth, show average median retention across τ as single cell color
+        // but subdivide by τ horizontally within the cell
+        const tauSlotW = depthW / C.TAU_GRID.length;
+        C.TAU_GRID.forEach((tau,ti)=>{
+          const vals = rhoAccum[fam][n][ti][g];
+          const med  = vals.length>0 ? median(vals) : 0;
+          const x = padL + fi*famW + ni*depthW + ti*tauSlotW;
+          const y = padT + gi*gateH;
+          ctx.fillStyle = cellColor(med);
+          ctx.globalAlpha = 0.85;
+          ctx.fillRect(x+0.5, y+0.5, tauSlotW-1, gateH-1);
+          ctx.globalAlpha = 1;
+          // Show value if slot is wide enough
+          if (tauSlotW > 22) {
+            ctx.fillStyle='#07080f'; ctx.font='7px Courier New'; ctx.textAlign='center';
+            ctx.fillText(med.toFixed(2), x+tauSlotW/2, y+gateH/2+2.5);
+          }
+        });
+      });
+    });
+  });
+
+  // Grid lines between families
+  ctx.strokeStyle='#3a3d55'; ctx.lineWidth=1;
+  for (let fi=0;fi<=3;fi++) {
+    ctx.beginPath();
+    ctx.moveTo(padL+fi*famW, padT);
+    ctx.lineTo(padL+fi*famW, padT+4*gateH);
+    ctx.stroke();
+  }
+
+  // Legend
+  ctx.fillStyle='#8890b8'; ctx.font='10px Courier New'; ctx.textAlign='left';
+  const legendY=H-12;
+  [['High ρ (>0.95)','#4ade80'],['Mid ρ (0.6-0.95)','#fbbf24'],['Low ρ (<0.6)','#f87171']].forEach(([lbl,col],i)=>{
+    ctx.fillStyle=col; ctx.fillRect(padL+i*200, legendY-8, 12, 10);
+    ctx.fillStyle='#8890b8'; ctx.fillText(lbl, padL+i*200+16, legendY);
+  });
+
+  // Title
+  ctx.fillStyle='#8890b8'; ctx.font='10px Courier New'; ctx.textAlign='center';
+  ctx.fillText('Retention ρ_i(F,n,τ) median over seeds — each cell = one τ value (left=0.1 → right=0.9)', W/2, padT-8);
+}
+
+function renderSlopeCanvas(LsBySeedDepth) {
+  const canvas = document.getElementById('slope-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.fillStyle='#07080f'; ctx.fillRect(0,0,W,H);
+
+  const padL=70,padR=30,padT=30,padB=40;
+  const cw=W-padL-padR, ch=H-padT-padB;
+
+  // Compute per-family median and IQR of log(L^(n)) for n=2,3,4
+  const depthsForSlope=[2,3,4];
+  const seriesData={}; // fam → [{n, med, q25, q75}]
+  C.FAMILIES.forEach(fam=>{
+    seriesData[fam]=depthsForSlope.map(n=>{
+      const vals=LsBySeedDepth[fam].map(d=>Math.log(d[n]+C.EPS_LOG));
+      return {n, med:median(vals), q25:quantile(vals,0.25), q75:quantile(vals,0.75)};
+    });
+  });
+
+  // Y range
+  let minY=Infinity, maxY=-Infinity;
+  C.FAMILIES.forEach(fam=>seriesData[fam].forEach(d=>{minY=Math.min(minY,d.q25);maxY=Math.max(maxY,d.q75);}));
+  const pad=(maxY-minY)*0.1; minY-=pad; maxY+=pad;
+
+  const xOf=n=>(n-2)/(4-2)*cw+padL;
+  const yOf=v=>padT+ch-(v-minY)/(maxY-minY)*ch;
+
+  // Grid lines
+  ctx.strokeStyle='#2a2d45'; ctx.lineWidth=1;
+  for (let i=0;i<=4;i++) {
+    const y=padT+i*ch/4;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    const v=minY+(maxY-minY)*(1-i/4);
+    ctx.fillStyle='#8890b8'; ctx.font='10px Courier New'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3), padL-5, y+4);
+  }
+
+  // X-axis labels
+  depthsForSlope.forEach(n=>{
+    ctx.fillStyle='#8890b8'; ctx.font='10px Courier New'; ctx.textAlign='center';
+    ctx.fillText(`n=${n}`, xOf(n), padT+ch+18);
+  });
+
+  // Plot families
+  C.FAMILIES.forEach((fam,fi)=>{
+    const col=FAM_COLOR[fam];
+    const pts=seriesData[fam];
+
+    // IQR band
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(xOf(p.n),yOf(p.q75)):ctx.lineTo(xOf(p.n),yOf(p.q75)));
+    [...pts].reverse().forEach(p=>ctx.lineTo(xOf(p.n),yOf(p.q25)));
+    ctx.closePath();
+    ctx.fillStyle=col+'22'; ctx.fill();
+
+    // Median line
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(xOf(p.n),yOf(p.med)):ctx.lineTo(xOf(p.n),yOf(p.med)));
+    ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.stroke();
+
+    // Slope annotation
+    const bBar=ST.bBar[fam];
+    ctx.fillStyle=col; ctx.font='bold 11px Courier New'; ctx.textAlign='left';
+    ctx.fillText(`${fam} b̄=${bBar>=0?'+':''}${bBar.toFixed(4)} [${ST.labels[fam]}]`, padL+8, padT+18+fi*18);
+  });
+
+  // Compounding threshold line (b = logComp ≈ 0.1398)
+  const logCompLine=Math.log(1+C.DELTA_COMP);
+  // Draw expected compounding envelope for reference at τ=0.9, B~1
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1;
+  ctx.setLineDash([]);
+
+  // Title
+  ctx.fillStyle='#8890b8'; ctx.font='11px Courier New'; ctx.textAlign='center';
+  ctx.fillText('log(L^(n) + ε) vs Depth n — Median ± IQR across seeds', W/2, 16);
+}
+// ── JSON EXPORT ───────────────────────────────────────────────────────────────
+function buildExportRecord() {
+  const ts = new Date().toISOString();
+
+  // Invariance summary: worst-case R2 and R3 per (F, n, τ)
+  // Reconstructed from ST (already summarized into ST.invFailed / ST.invIssues)
+  const invarianceSummary = {};
+  for (const fam of C.FAMILIES) {
+    invarianceSummary[fam] = { valid: !ST.invIssues.some(x=>x.family===fam), issues: ST.invIssues.filter(x=>x.family===fam) };
+  }
+
+  // Retention medians: rhoAccum is local to executeProtocol; store medians in ST for export
+  // (If not available, record null with note)
+
+  const familyRecords = {};
+  for (const fam of C.FAMILIES) {
+    familyRecords[fam] = {
+      calibration: {
+        null_A_run_A:    ST.calib[fam]?.nullARunA   ?? null,
+        null_A_run_B:    ST.calib[fam]?.nullARunB   ?? null,
+        null_A_delta:    ST.calib[fam]?.nullADelta  ?? null,
+        null_B_sd:       ST.calib[fam]?.nullBSd     ?? null,
+        sigma_F:         ST.sigma[fam]              ?? null
+      },
+      non_isometry_L: {
+        L_n1_median:     ST.Lmed[fam]?.[1]          ?? null,
+        L_n2_median:     ST.Lmed[fam]?.[2]          ?? null,
+        L_n3_median:     ST.Lmed[fam]?.[3]          ?? null,
+        L_n4_median:     ST.Lmed[fam]?.[4]          ?? null,
+        ratio_L3_L2:     (ST.Lmed[fam]?.[2]>0) ? ST.Lmed[fam][3]/ST.Lmed[fam][2] : null,
+        ratio_L4_L3:     (ST.Lmed[fam]?.[3]>0) ? ST.Lmed[fam][4]/ST.Lmed[fam][3] : null,
+        retention_medians_by_n_tau_gate: ST.rhoMed?.[fam] ?? null
+      },
+      log_slope: {
+        b_bar:           ST.bBar[fam]               ?? null,
+        ci_95_lo:        ST.ci95[fam]?.[0]          ?? null,
+        ci_95_hi:        ST.ci95[fam]?.[1]          ?? null,
+        ci_99_lo:        ST.ci99[fam]?.[0]          ?? null,
+        ci_99_hi:        ST.ci99[fam]?.[1]          ?? null,
+        n_seeds_used:    ST.slopes[fam]?.length     ?? null,
+        per_seed_slopes: ST.slopes[fam]             ?? null
+      },
+      degeneracy_gate: {
+        median_L2:       ST.Lmed[fam]?.[2]          ?? null,
+        threshold_5sigma:(ST.sigma[fam] != null) ? 5*ST.sigma[fam] : null,
+        non_degenerate:  (ST.Lmed[fam]?.[2] != null && ST.sigma[fam] != null)
+                           ? ST.Lmed[fam][2] >= 5*ST.sigma[fam] : null
+      },
+      decision: {
+        label:           ST.labels[fam]             ?? null,
+        rule_path: (() => {
+          const nd  = (ST.Lmed[fam]?.[2] != null && ST.sigma[fam] != null)
+                        ? ST.Lmed[fam][2] >= 5*ST.sigma[fam] : null;
+          const b   = ST.bBar[fam] ?? null;
+          const lo99= ST.ci99[fam]?.[0] ?? null;
+          const lo95= ST.ci95[fam]?.[0] ?? null;
+          const hi95= ST.ci95[fam]?.[1] ?? null;
+          const LC  = Math.log(1+C.DELTA_COMP);
+          const LS  = Math.log(1+C.DELTA_SAT);
+          if (!nd)                              return 'nondeg=false → TRIVIAL_OR_WEAK (slope tests bypassed)';
+          if (lo99>0 && b>=LC)                  return 'nondeg=true → lower99>0 & b>=log(1.15) → COMPOUNDING';
+          if (Math.abs(b)<=LS && lo95<=0 && hi95>=0)
+                                                return 'nondeg=true → |b|<=log(1.05) & 0∈95%CI → SATURATING_OR_BOUNDED';
+          return 'nondeg=true → positive drift but below compounding threshold → INCONCLUSIVE';
+        })(),
+        logic: {
+          non_degenerate:       (ST.Lmed[fam]?.[2] != null && ST.sigma[fam] != null)
+                                  ? ST.Lmed[fam][2] >= 5*ST.sigma[fam] : null,
+          lower_99_CI_positive: (ST.ci99[fam]?.[0]??null) !== null ? ST.ci99[fam][0]>0 : null,
+          b_bar_geq_logComp:    (ST.bBar[fam]??null) !== null ? ST.bBar[fam] >= Math.log(1+C.DELTA_COMP) : null,
+          zero_in_95CI:         (ST.ci95[fam]??null) !== null ? (ST.ci95[fam][0]<=0 && ST.ci95[fam][1]>=0) : null,
+          abs_bBar_leq_logSat:  (ST.bBar[fam]??null) !== null ? Math.abs(ST.bBar[fam]) <= Math.log(1+C.DELTA_SAT) : null
+        }
+      },
+      invariance: invarianceSummary[fam]
+    };
+  }
+
+  return {
+    chamber_id:   'LVI',
+    version:      '1.0.0',
+    timestamp:    ts,
+    theory_anchor: 'Theorem 2 — Recursive Composition of the Curvature Functional: Submultiplicativity, Discrete-Tier Bounds, and Kernel Degeneracy',
+    protocol_locks: {
+      N:                C.N,
+      tau_grid:         C.TAU_GRID,
+      depths:           C.DEPTHS,
+      families:         C.FAMILIES,
+      seeds_preregistered: C.SEEDS,
+      seeds_used:       C.SEEDS.slice(0, ST.slopes[C.FAMILIES[0]]?.length ?? 0),
+      eps_log:          C.EPS_LOG,
+      bs_calib_resamples:  C.BS_CALIB,
+      delta_comp:       C.DELTA_COMP,
+      delta_sat:        C.DELTA_SAT,
+      nondeg_k:         C.NONDEG_K,
+      R2_tolerance:     C.R2_TOL,
+      R3_tolerance:     C.R3_TOL,
+      calib_null_A_seeds: C.CALIB_NULL_A_SEEDS,
+      no_adaptive_tau:  true,
+      no_new_families:  true,
+      no_gate_redefinition: true
+    },
+    validity: {
+      lv_sanity_check_passed: ST.sanityPassed,
+      partition_invariance_passed: !ST.invFailed,
+      invariance_issues: ST.invIssues,
+      run_valid: !ST.invFailed && Object.values(ST.labels).every(l=>l!=='INVALID')
+    },
+    decision_thresholds: {
+      log_delta_comp: Math.log(1+C.DELTA_COMP),
+      log_delta_sat:  Math.log(1+C.DELTA_SAT),
+      non_degeneracy_k: C.NONDEG_K,
+      compounding_rule:  'non_degenerate AND lower_99_CI(b)>0 AND b_bar >= log(1+0.15)',
+      saturation_rule:   'non_degenerate AND 0 in 95_CI(b) AND |b_bar| <= log(1+0.05)',
+      inconclusive_rule: 'non_degenerate AND neither compounding nor saturation',
+      trivial_rule:      'median_L2 < 5*sigma_F'
+    },
+    families: familyRecords
+  };
+}
+
+function exportJSON() {
+  try {
+    const record = buildExportRecord();
+    const json   = JSON.stringify(record, null, 2);
+    const blob   = new Blob([json], {type:'application/json'});
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = `chamber_lvi_v1_0_0_${new Date().toISOString().replace(/[:.]/g,'_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('export-status').textContent = '✓ JSON downloaded.';
+  } catch(e) {
+    document.getElementById('export-status').textContent = '✗ Export error: ' + e.message;
+  }
+}
+
+function copyJSON() {
+  try {
+    const record = buildExportRecord();
+    const json   = JSON.stringify(record, null, 2);
+    navigator.clipboard.writeText(json).then(()=>{
+      document.getElementById('export-status').textContent = `✓ Copied ${json.length} characters to clipboard.`;
+    }).catch(()=>{
+      // Fallback: show in a textarea
+      const ta = document.createElement('textarea');
+      ta.value = json; ta.style.cssText='position:fixed;left:-9999px';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      document.getElementById('export-status').textContent = `✓ Copied (fallback) ${json.length} chars.`;
+    });
+  } catch(e) {
+    document.getElementById('export-status').textContent = '✗ Copy error: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>

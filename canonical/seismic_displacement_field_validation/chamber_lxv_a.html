@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER LXV-A — KUMAMOTO STEP INVARIANCE BASELINE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #080c10;
+    --panel:   #0d1520;
+    --border:  #1a2a3a;
+    --border2: #0f1e2e;
+    --accent:  #00c8a0;
+    --accent2: #f0a040;
+    --accent3: #e05858;
+    --blue:    #4ab0e8;
+    --text:    #b8ccd8;
+    --dim:     #4a6a84;
+    --pass:    #00cc88;
+    --fail:    #e05858;
+    --mono:    'IBM Plex Mono', 'Courier New', monospace;
+    --sans:    'IBM Plex Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ─── Layout ─────────────────────────────────────────── */
+  .shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  /* ─── Header ─────────────────────────────────────────── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-id {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    font-weight: 600;
+  }
+  .header-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .header-version {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── Config block ────────────────────────────────────── */
+  .config-bar {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    font-size: 11px;
+  }
+  .cfg-item { display: flex; gap: 8px; }
+  .cfg-key  { color: var(--dim); }
+  .cfg-val  { color: var(--accent2); }
+
+  /* ─── Drop zone ───────────────────────────────────────── */
+  .drop-zone {
+    border: 1px dashed var(--border);
+    background: var(--panel);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,200,160,0.05);
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+  }
+  .dz-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
+  .dz-title { font-size: 14px; color: var(--text); margin-bottom: 6px; }
+  .dz-sub   { font-size: 11px; color: var(--dim); }
+  .dz-files { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .dz-file-chip {
+    background: rgba(0,200,160,0.12);
+    border: 1px solid rgba(0,200,160,0.3);
+    color: var(--accent);
+    padding: 3px 10px;
+    font-size: 11px;
+    border-radius: 2px;
+  }
+
+  /* ─── Run button ──────────────────────────────────────── */
+  .run-row {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .btn-run {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-run:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-run:not(:disabled):hover { opacity: 0.85; }
+  .btn-download {
+    background: transparent;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    padding: 8px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-download:hover { background: rgba(74,176,232,0.1); }
+
+  /* ─── Status ──────────────────────────────────────────── */
+  .status-bar {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--dim);
+    min-height: 18px;
+  }
+  .status-bar.running { color: var(--accent2); }
+  .status-bar.error   { color: var(--fail); }
+
+  /* ─── Results ─────────────────────────────────────────── */
+  #results { display: none; margin-top: 32px; }
+
+  .section-header {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    text-transform: uppercase;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border2);
+    margin-bottom: 16px;
+    margin-top: 28px;
+  }
+
+  /* verdict chip */
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border: 1px solid;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .verdict.pass { border-color: var(--pass); color: var(--pass); background: rgba(0,204,136,0.08); }
+  .verdict.fail { border-color: var(--fail); color: var(--fail); background: rgba(224,88,88,0.08); }
+  .fail-reasons { font-size: 11px; color: var(--fail); margin-top: 6px; }
+  .fail-reasons li { list-style: none; padding: 2px 0; }
+  .fail-reasons li::before { content: "✗  "; }
+
+  /* meta row */
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 6px;
+    margin-bottom: 4px;
+  }
+  .meta-row span { color: var(--text); }
+
+  /* ─── Station cards ────────────────────────────────────── */
+  .station-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .station-card {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    padding: 14px;
+  }
+  .station-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .station-id { font-size: 15px; font-weight: 600; color: var(--accent); }
+  .station-coords { font-size: 10px; color: var(--dim); }
+  .snr-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+  .snr-pass { background: rgba(0,204,136,0.15); color: var(--pass); border: 1px solid rgba(0,204,136,0.3); }
+  .snr-fail { background: rgba(224,88,88,0.1); color: var(--fail); border: 1px solid rgba(224,88,88,0.25); }
+
+  /* mini table in station card */
+  .mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .mini-table th {
+    text-align: right;
+    color: var(--dim);
+    font-weight: 400;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+  .mini-table th:first-child { text-align: left; }
+  .mini-table td {
+    text-align: right;
+    padding: 2px 6px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .mini-table td:first-child { text-align: left; color: var(--dim); }
+  .mini-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .highlight-w1 td { color: var(--accent2); }
+
+  /* ─── Rank + stability tables ─────────────────────────── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-table th {
+    text-align: center;
+    color: var(--dim);
+    font-weight: 400;
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--border2);
+    letter-spacing: 0.05em;
+  }
+  .data-table th:first-child { text-align: left; }
+  .data-table td {
+    text-align: center;
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .data-table td:first-child { text-align: left; color: var(--dim); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .val-pass { color: var(--pass); }
+  .val-fail { color: var(--fail); }
+  .val-warn { color: var(--accent2); }
+  .rank-1 { color: var(--accent);  font-weight: 600; }
+  .rank-2 { color: var(--accent2); }
+  .rank-3 { color: var(--text); }
+  .rank-4 { color: var(--dim); }
+
+  /* ─── EN vector SVG plot ──────────────────────────────── */
+  .vector-plot-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    padding: 16px;
+    display: inline-block;
+  }
+  .plot-title { font-size: 10px; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 10px; }
+
+  /* ─── Hash block ──────────────────────────────────────── */
+  .hash-block {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    padding: 12px 16px;
+    font-size: 10px;
+    color: var(--dim);
+  }
+  .hash-row { display: flex; gap: 12px; margin-bottom: 3px; flex-wrap: wrap; }
+  .hash-key { color: var(--dim); min-width: 140px; flex-shrink: 0; }
+  .hash-val { color: var(--text); word-break: break-all; font-size: 9px; }
+
+  /* ─── Direction stability ─────────────────────────────── */
+  .cosine-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 500px;
+  }
+  .cosine-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+  }
+  .cosine-label { color: var(--dim); width: 40px; flex-shrink: 0; }
+  .cosine-bar-bg {
+    flex: 1;
+    height: 18px;
+    background: var(--border2);
+    position: relative;
+    overflow: hidden;
+  }
+  .cosine-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.7;
+    transition: width 0.4s;
+  }
+  .cosine-val {
+    width: 56px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .cosine-val.low { color: var(--fail); }
+
+  /* scrollable overflow for narrow screens */
+  .tbl-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-id">UNNS LAB  ·  CHAMBER LXV-A</div>
+    <div class="header-title">Kumamoto Step Invariance Baseline</div>
+    <div class="header-version">ENGINE v1.0.0  ·  SPEC v1.0.0</div>
+  </div>
+
+  <!-- Frozen config display -->
+  <div class="config-bar">
+    <div class="cfg-item"><span class="cfg-key">EVENT</span><span class="cfg-val">KUMAMOTO_2016</span></div>
+    <div class="cfg-item"><span class="cfg-key">BREAK</span><span class="cfg-val">2016-04-15</span></div>
+    <div class="cfg-item"><span class="cfg-key">PRE_FIT</span><span class="cfg-val">60d</span></div>
+    <div class="cfg-item"><span class="cfg-key">PRE_STEP</span><span class="cfg-val">20d</span></div>
+    <div class="cfg-item"><span class="cfg-key">POST_STEP</span><span class="cfg-val">20d</span></div>
+    <div class="cfg-item"><span class="cfg-key">GUARD</span><span class="cfg-val">2d</span></div>
+    <div class="cfg-item"><span class="cfg-key">SMOOTHING</span><span class="cfg-val">[1,3,7,14,21]</span></div>
+    <div class="cfg-item"><span class="cfg-key">SNR_MIN</span><span class="cfg-val">5.0</span></div>
+    <div class="cfg-item"><span class="cfg-key">RANK_METRIC</span><span class="cfg-val">horiz_mm</span></div>
+  </div>
+
+  <!-- File input zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" multiple accept=".txt">
+    <div class="dz-icon">⊡</div>
+    <div class="dz-title">Drop 4 tenv3 fixture files here</div>
+    <div class="dz-sub">J465.tenv3.txt  ·  G071.tenv3.txt  ·  J093.tenv3.txt  ·  J702.tenv3.txt</div>
+    <div class="dz-files" id="dzFiles"></div>
+  </div>
+
+  <div class="run-row">
+    <button class="btn-run" id="btnRun" disabled>RUN PIPELINE</button>
+    <button class="btn-download" id="btnDownload" style="display:none">⬇ DOWNLOAD ARTIFACT JSON</button>
+  </div>
+
+  <div class="status-bar" id="statusBar">Waiting for fixture files…</div>
+
+  <!-- Results section -->
+  <div id="results">
+
+    <div class="section-header">VERDICT</div>
+    <div id="verdictWrap"></div>
+
+    <div class="section-header">PROVENANCE</div>
+    <div class="hash-block" id="hashBlock"></div>
+
+    <div class="section-header">STEP ESTIMATES BY STATION</div>
+    <div class="station-grid" id="stationGrid"></div>
+
+    <div class="section-header">EN DISPLACEMENT VECTORS  <span style="font-weight:300;color:var(--dim)">  (w = 1, detrended)</span></div>
+    <div id="vectorPlotWrap"></div>
+
+    <div class="section-header">RANK ORDER BY SMOOTHING WINDOW</div>
+    <div class="tbl-wrap"><table class="data-table" id="rankTable"></table></div>
+
+    <div class="section-header">SMOOTHING INVARIANCE METRICS  <span style="font-weight:300;color:var(--dim)">  (vs baseline w=1)</span></div>
+    <div class="tbl-wrap"><table class="data-table" id="stabilityTable"></table></div>
+
+    <div class="section-header">DIRECTION STABILITY  <span id="corePairLabel" style="font-weight:300;color:var(--dim)"></span></div>
+    <div class="cosine-bar-wrap" id="cosineBars"></div>
+
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// WORKER CODE  (inlined as a Blob URL)
+// ═══════════════════════════════════════════════════════════════
+const WORKER_SRC = `
+"use strict";
+
+// ── Constants ─────────────────────────────────────────────────
+const MONTHS = {JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+const ENGINE_VERSION = "1.0.0";
+
+// ── Date utilities ─────────────────────────────────────────────
+function tenv3DateToISO(s) {
+  // "16APR15" -> "2016-04-15"
+  const yy  = parseInt(s.slice(0,2), 10);
+  const mon = s.slice(2,5).toUpperCase();
+  const dd  = parseInt(s.slice(5,7), 10);
+  const yr  = yy + (yy >= 80 ? 1900 : 2000);
+  const mm  = MONTHS[mon];
+  if (!mm) throw new Error("Unknown month token: " + s.slice(2,5));
+  return yr + "-" + String(mm).padStart(2,"0") + "-" + String(dd).padStart(2,"0");
+}
+
+function dateToMJD(iso) {
+  // Modified Julian Day (enough for arithmetic; use integer days)
+  const d = new Date(iso + "T00:00:00Z");
+  return d.getTime() / 86400000 + 40587; // offset from 1858-11-17
+}
+
+function addDaysToISO(iso, n) {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0,10);
+}
+
+// ── SHA-256 via SubtleCrypto ───────────────────────────────────
+async function sha256(text) {
+  const buf  = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash))
+              .map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+// ── tenv3 Adapter ─────────────────────────────────────────────
+function parseTenv3(text, filename) {
+  const lines = text.split("\\n");
+
+  // locate header
+  let hdrIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trimStart().startsWith("site ")) { hdrIdx = i; break; }
+  }
+  if (hdrIdx < 0) throw new Error("No tenv3 header found in " + filename);
+
+  const headers = lines[hdrIdx].trim().split(/\\s+/);
+
+  function getCol(name) {
+    const idx = headers.indexOf(name);
+    if (idx < 0) throw new Error("Missing required column '" + name + "' in " + filename);
+    return idx;
+  }
+
+  const iDate  = getCol("YYMMMDD");
+  const iEast  = getCol("__east(m)");
+  const iNorth = getCol("_north(m)");
+  const iUp    = getCol("____up(m)");
+  const iLat   = headers.indexOf("_latitude(deg)");
+  const iLon   = headers.indexOf("_longitude(deg)");
+  const iH     = headers.indexOf("__height(m)");
+  const iSigE  = headers.indexOf("sig_e(m)");
+  const iSigN  = headers.indexOf("sig_n(m)");
+  const iSigU  = headers.indexOf("sig_u(m)");
+
+  const epochs = [], E_mm = [], N_mm = [], U_mm = [];
+  const sE_mm = [], sN_mm = [], sU_mm = [];
+  let lat = null, lon = null, h = null, station_id = null;
+
+  for (let i = hdrIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = line.split(/\\s+/);
+    if (!station_id) station_id = cols[0];
+
+    const iso = tenv3DateToISO(cols[iDate]);
+    epochs.push(iso);
+    E_mm.push(parseFloat(cols[iEast])  * 1000);
+    N_mm.push(parseFloat(cols[iNorth]) * 1000);
+    U_mm.push(parseFloat(cols[iUp])    * 1000);
+
+    if (iSigE >= 0) sE_mm.push(parseFloat(cols[iSigE]) * 1000);
+    if (iSigN >= 0) sN_mm.push(parseFloat(cols[iSigN]) * 1000);
+    if (iSigU >= 0) sU_mm.push(parseFloat(cols[iSigU]) * 1000);
+
+    // Take coords from last available row (stable)
+    if (iLat >= 0 && cols[iLat]) lat = parseFloat(cols[iLat]);
+    if (iLon >= 0 && cols[iLon]) {
+      let lo = parseFloat(cols[iLon]);
+      // normalise UNR's extended longitude to [-180,180]
+      lo = ((lo % 360) + 360) % 360;
+      if (lo > 180) lo -= 360;
+      lon = lo;
+    }
+    if (iH >= 0 && cols[iH]) h = parseFloat(cols[iH]);
+  }
+
+  if (!station_id || epochs.length === 0)
+    throw new Error("No data rows parsed from " + filename);
+
+  return {
+    station_id,
+    network: "UNR_NGL",
+    coords: (lat !== null) ? { lat, lon, h_m: h } : undefined,
+    epochs,
+    E_mm, N_mm, U_mm,
+    sE_mm: iSigE >= 0 ? sE_mm : undefined,
+    sN_mm: iSigN >= 0 ? sN_mm : undefined,
+    sU_mm: iSigU >= 0 ? sU_mm : undefined,
+    source_file: filename
+  };
+}
+
+// ── Epoch Alignment ────────────────────────────────────────────
+function alignEpochs(stations) {
+  // Intersection of all epoch sets
+  let common = new Set(stations[0].epochs);
+  for (let i = 1; i < stations.length; i++) {
+    const s = new Set(stations[i].epochs);
+    common = new Set([...common].filter(e => s.has(e)));
+  }
+  const sortedCommon = [...common].sort();
+
+  return stations.map(st => {
+    const idxMap = new Map(st.epochs.map((e,i) => [e,i]));
+    const pick = (arr) => arr ? sortedCommon.map(e => arr[idxMap.get(e)]) : undefined;
+    return {
+      ...st,
+      epochs: sortedCommon,
+      E_mm: pick(st.E_mm),
+      N_mm: pick(st.N_mm),
+      U_mm: pick(st.U_mm),
+      sE_mm: pick(st.sE_mm),
+      sN_mm: pick(st.sN_mm),
+      sU_mm: pick(st.sU_mm)
+    };
+  });
+}
+
+// ── Least-squares linear fit ───────────────────────────────────
+function linfit(xs, ys) {
+  const n = xs.length;
+  if (n < 2) return { a: (ys[0]||0), b: 0 };
+  let sx=0, sy=0, sxx=0, sxy=0;
+  for (let i = 0; i < n; i++) {
+    sx  += xs[i];  sy  += ys[i];
+    sxx += xs[i]*xs[i]; sxy += xs[i]*ys[i];
+  }
+  const D = n*sxx - sx*sx;
+  if (D === 0) return { a: sy/n, b: 0 };
+  const b = (n*sxy - sx*sy) / D;
+  const a = (sy - b*sx) / n;
+  return { a, b };
+}
+
+// ── Detrend  (pre-fit window only) ────────────────────────────
+function detrend(station, breakDate, preFitDays, guardDays) {
+  const preFitStart = addDaysToISO(breakDate, -preFitDays);
+  const preFitEnd   = addDaysToISO(breakDate, -guardDays);
+
+  const eps = station.epochs;
+  // Select pre-fit epochs
+  const preIdxs = eps.reduce((acc,e,i) => {
+    if (e >= preFitStart && e <= preFitEnd) acc.push(i);
+    return acc;
+  }, []);
+
+  // Use MJD-like numeric time for fitting
+  const t0 = dateToMJD(eps[0]);
+  const ts = eps.map(e => dateToMJD(e) - t0);
+  const preTs = preIdxs.map(i => ts[i]);
+
+  function fitAndSubtract(arr) {
+    const preY = preIdxs.map(i => arr[i]);
+    const { a, b } = linfit(preTs, preY);
+    return arr.map((v, i) => v - (a + b * ts[i]));
+  }
+
+  return {
+    ...station,
+    E_mm: fitAndSubtract(station.E_mm),
+    N_mm: fitAndSubtract(station.N_mm),
+    U_mm: fitAndSubtract(station.U_mm)
+  };
+}
+
+// ── Centered moving average ────────────────────────────────────
+function centeredMA(arr, w) {
+  if (w === 1) return arr.slice();
+  const half       = Math.floor(w / 2);
+  const minPeriods = half;
+  const n = arr.length;
+  const out = new Array(n).fill(NaN);
+  for (let i = 0; i < n; i++) {
+    const lo = Math.max(0, i - half);
+    const hi = Math.min(n - 1, i + half);
+    let sum = 0, cnt = 0;
+    for (let j = lo; j <= hi; j++) {
+      if (!isNaN(arr[j])) { sum += arr[j]; cnt++; }
+    }
+    if (cnt >= minPeriods) out[i] = sum / cnt;
+  }
+  return out;
+}
+
+// ── Median & MAD ──────────────────────────────────────────────
+function median(arr) {
+  if (arr.length === 0) return NaN;
+  const s = arr.slice().sort((a,b) => a - b);
+  const n = s.length;
+  return n % 2 === 1 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2;
+}
+
+function mad(arr) {
+  const med = median(arr);
+  return median(arr.map(x => Math.abs(x - med)));
+}
+
+// ── Robust step estimator ─────────────────────────────────────
+function computeStep(sE, sN, sU, epochs, breakDate, cfg) {
+  const preStart  = addDaysToISO(breakDate, -cfg.pre_step_days);
+  const preEnd    = addDaysToISO(breakDate, -cfg.guard_days);
+  const postStart = addDaysToISO(breakDate,  cfg.guard_days);
+  const postEnd   = addDaysToISO(breakDate,  cfg.post_step_days);
+
+  const preIdx  = epochs.reduce((a,e,i)=>{ if(e>=preStart  && e<=preEnd)  a.push(i); return a; }, []);
+  const postIdx = epochs.reduce((a,e,i)=>{ if(e>=postStart && e<=postEnd) a.push(i); return a; }, []);
+
+  const preE  = preIdx.map(i=>sE[i]).filter(v=>!isNaN(v));
+  const preN  = preIdx.map(i=>sN[i]).filter(v=>!isNaN(v));
+  const preU  = preIdx.map(i=>sU[i]).filter(v=>!isNaN(v));
+  const postE = postIdx.map(i=>sE[i]).filter(v=>!isNaN(v));
+  const postN = postIdx.map(i=>sN[i]).filter(v=>!isNaN(v));
+  const postU = postIdx.map(i=>sU[i]).filter(v=>!isNaN(v));
+
+  const dE = median(postE) - median(preE);
+  const dN = median(postN) - median(preN);
+  const dU = median(postU) - median(preU);
+
+  const horiz = Math.sqrt(dE*dE + dN*dN);
+  const vec3  = Math.sqrt(dE*dE + dN*dN + dU*dU);
+
+  // SNR (horizontal, based on pre window)
+  const medEpre = median(preE);
+  const medNpre = median(preN);
+  const preH = preIdx.map((i,ki) => {
+    const e = sE[i]; const n = sN[i];
+    if (isNaN(e)||isNaN(n)) return NaN;
+    return Math.sqrt((e-medEpre)**2 + (n-medNpre)**2);
+  }).filter(v=>!isNaN(v));
+
+  const sigma = 1.4826 * mad(preH);
+  const snr_h = sigma > 0 ? horiz / sigma : 0;
+
+  return {
+    dE_mm:    dE,
+    dN_mm:    dN,
+    dU_mm:    dU,
+    horiz_mm: horiz,
+    vec3_mm:  vec3,
+    snr_h,
+    _preLen:  preIdx.length,
+    _postLen: postIdx.length
+  };
+}
+
+// ── Rank utilities ─────────────────────────────────────────────
+function rankDescending(values) {
+  // returns rank array (1 = largest) for given values array
+  const indexed = values.map((v,i)=>[v,i]);
+  indexed.sort((a,b) => b[0] - a[0]); // desc
+  const ranks = new Array(values.length);
+  indexed.forEach(([,origIdx], ri) => { ranks[origIdx] = ri + 1; });
+  return ranks;
+}
+
+function pearsonCorr(a, b) {
+  const n = a.length;
+  const ma = a.reduce((s,x)=>s+x,0)/n;
+  const mb = b.reduce((s,x)=>s+x,0)/n;
+  let num=0, da2=0, db2=0;
+  for (let i = 0; i < n; i++) {
+    const da = a[i]-ma, db = b[i]-mb;
+    num += da*db; da2 += da*da; db2 += db*db;
+  }
+  return (da2===0||db2===0) ? 1.0 : num/Math.sqrt(da2*db2);
+}
+
+function spearman(ranks1, ranks2) {
+  // Spearman = Pearson correlation of rank arrays (already ranks)
+  return pearsonCorr(ranks1, ranks2);
+}
+
+function kendallTau(ranks1, ranks2) {
+  const n = ranks1.length;
+  let C=0, D=0;
+  for (let i = 0; i < n; i++) {
+    for (let j = i+1; j < n; j++) {
+      const sa = Math.sign(ranks1[j] - ranks1[i]);
+      const sb = Math.sign(ranks2[j] - ranks2[i]);
+      if      (sa === sb && sa !== 0) C++;
+      else if (sa !== 0  && sb !== 0 && sa !== sb) D++;
+    }
+  }
+  return (C+D) === 0 ? 1.0 : (C-D)/(C+D);
+}
+
+// ── Cosine similarity of horizontal vectors ───────────────────
+function cosineSim2D(dE1,dN1,dE2,dN2) {
+  const h1 = Math.sqrt(dE1*dE1+dN1*dN1);
+  const h2 = Math.sqrt(dE2*dE2+dN2*dN2);
+  if (h1===0||h2===0) return NaN;
+  return (dE1*dE2 + dN1*dN2) / (h1*h2);
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN  COMPUTE  FUNCTION
+// ─────────────────────────────────────────────────────────────
+async function computeLXVA(files) {
+  // files: [{name, content}]
+
+  const CONFIG = {
+    chamber: "LXV-A",
+    event: {
+      event_id:      "KUMAMOTO_2016",
+      break_date:    "2016-04-15",
+      pre_fit_days:  60,
+      pre_step_days: 20,
+      post_step_days:20,
+      guard_days:    2
+    },
+    smoothing_days:     [1,3,7,14,21],
+    gates: {
+      min_common_epochs: 365,
+      min_window_points: 8,
+      snr_h_min:         5.0
+    },
+    rank_metric: "horiz_mm"
+  };
+
+  const configHash = await sha256(JSON.stringify(CONFIG));
+
+  // 1. Parse all files
+  const rawStations = [];
+  const inputMeta   = [];
+  for (const f of files) {
+    const h = await sha256(f.content);
+    const st = parseTenv3(f.content, f.name);
+    st.input_sha256 = h;
+    rawStations.push(st);
+    inputMeta.push({ station_id: st.station_id, source_file: f.name, input_sha256: h });
+  }
+
+  // Sort stations consistently (by station_id)
+  rawStations.sort((a,b) => a.station_id < b.station_id ? -1 : 1);
+  inputMeta.sort((a,b) => a.station_id < b.station_id ? -1 : 1);
+
+  // 2. Align epochs
+  const aligned = alignEpochs(rawStations);
+  const commonEpochs = aligned[0].epochs;
+  const nCommon = commonEpochs.length;
+
+  if (nCommon < CONFIG.gates.min_common_epochs) {
+    throw new Error(
+      "A0 violated: only " + nCommon + " common epochs (need " + CONFIG.gates.min_common_epochs + ")"
+    );
+  }
+
+  // 3. Detrend (pre-fit only) per station
+  const ev = CONFIG.event;
+  const detrended = aligned.map(st =>
+    detrend(st, ev.break_date, ev.pre_fit_days, ev.guard_days)
+  );
+
+  // 4+5+6. For each smoothing window, for each station: smooth → step → SNR
+  const ws = CONFIG.smoothing_days;
+  const stationIds = detrended.map(s => s.station_id);
+
+  // per_station output structure
+  const perStation = {};
+  for (const st of detrended) {
+    perStation[st.station_id] = {
+      coords: st.coords,
+      by_w: {}
+    };
+  }
+
+  // matrix: horizMM[wIdx][stIdx]
+  const horizMatrix = ws.map(() => new Array(stationIds.length).fill(0));
+
+  for (let wi = 0; wi < ws.length; wi++) {
+    const w = ws[wi];
+    for (let si = 0; si < detrended.length; si++) {
+      const st = detrended[si];
+      const sE = centeredMA(st.E_mm, w);
+      const sN = centeredMA(st.N_mm, w);
+      const sU = centeredMA(st.U_mm, w);
+
+      const step = computeStep(sE, sN, sU, st.epochs, ev.break_date, ev);
+
+      perStation[st.station_id].by_w[String(w)] = {
+        dE_mm:    round4(step.dE_mm),
+        dN_mm:    round4(step.dN_mm),
+        dU_mm:    round4(step.dU_mm),
+        horiz_mm: round4(step.horiz_mm),
+        vec3_mm:  round4(step.vec3_mm),
+        snr_h:    round4(step.snr_h)
+      };
+      horizMatrix[wi][si] = step.horiz_mm;
+    }
+  }
+
+  // 7. Rank order for each window
+  const rank_by_w = ws.map((w, wi) => {
+    const vals = horizMatrix[wi];
+    const indexed = stationIds.map((id, si) => ({ id, val: vals[si] }));
+    indexed.sort((a,b) => b.val - a.val);
+    return {
+      w,
+      rank_metric: CONFIG.rank_metric,
+      order: indexed.map(x => x.id)
+    };
+  });
+
+  // 8. Rank stability vs w=1 baseline
+  const baseline_ranks = rankDescending(horizMatrix[0]); // wi=0 is w=1
+
+  const stability_vs_w1 = ws.slice(1).map((w, wri) => {
+    const wi = wri + 1;
+    const cur_ranks = rankDescending(horizMatrix[wi]);
+    const rho = spearman(baseline_ranks, cur_ranks);
+    const tau = kendallTau(baseline_ranks, cur_ranks);
+    const maxShift = baseline_ranks.reduce((m, br, i) => {
+      return Math.max(m, Math.abs(br - cur_ranks[i]));
+    }, 0);
+    return {
+      w,
+      spearman:       round4(rho),
+      kendall_tau:    round4(tau),
+      max_rank_shift: maxShift
+    };
+  });
+
+  // 9. Direction stability (core pair = top-2 by horiz at w=1)
+  const top2 = rank_by_w[0].order.slice(0, 2);
+  const cosine_by_w = {};
+  for (let wi = 0; wi < ws.length; wi++) {
+    const w = ws[wi];
+    const s1 = perStation[top2[0]].by_w[String(w)];
+    const s2 = perStation[top2[1]].by_w[String(w)];
+    cosine_by_w[String(w)] = round4(cosineSim2D(s1.dE_mm, s1.dN_mm, s2.dE_mm, s2.dN_mm));
+  }
+
+  // 10. Evaluate pass criteria
+  const fail_reasons = [];
+
+  // I3: SNR coverage
+  const snrPassCount = stationIds.filter(id =>
+    perStation[id].by_w["1"].snr_h >= CONFIG.gates.snr_h_min
+  ).length;
+  if (snrPassCount < 3) {
+    fail_reasons.push(
+      "I3 SNR: only " + snrPassCount + " stations pass snr_h >= " + CONFIG.gates.snr_h_min
+    );
+  }
+
+  // I1, I2: rank stability
+  for (const sv of stability_vs_w1) {
+    if (sv.spearman < 0.95) {
+      fail_reasons.push(
+        "I1 Spearman at w=" + sv.w + ": " + sv.spearman.toFixed(4) + " < 0.95"
+      );
+    }
+    if (sv.kendall_tau < 0.90) {
+      fail_reasons.push(
+        "I1 Kendall at w=" + sv.w + ": " + sv.kendall_tau.toFixed(4) + " < 0.90"
+      );
+    }
+    if (sv.max_rank_shift > 1) {
+      fail_reasons.push(
+        "I2 max_rank_shift at w=" + sv.w + ": " + sv.max_rank_shift + " > 1"
+      );
+    }
+  }
+
+  const pass = fail_reasons.length === 0;
+
+  // 11. Build artifact
+  const now = new Date().toISOString().replace(/\\.\\d{3}Z$/, "Z");
+  const artifact = {
+    chamber:      "LXV-A",
+    version:      "1.0.0",
+    engine_version: ENGINE_VERSION,
+    created_utc:  now,
+    config_hash:  configHash,
+    inputs:       inputMeta,
+    event:        ev,
+    common_epochs: {
+      count: nCommon,
+      start: commonEpochs[0],
+      end:   commonEpochs[nCommon-1]
+    },
+    smoothing_days: ws,
+    per_station:  perStation,
+    rank_by_w,
+    stability_vs_w1,
+    direction_stability: {
+      core_pair:    top2,
+      cosine_by_w
+    },
+    gates: CONFIG.gates,
+    pass,
+    fail_reasons
+  };
+
+  return artifact;
+}
+
+function round4(x) {
+  return Math.round(x * 10000) / 10000;
+}
+
+// ── Worker entry point ────────────────────────────────────────
+onmessage = async function(e) {
+  try {
+    const result = await computeLXVA(e.data.files);
+    postMessage({ type: "result", data: result });
+  } catch (err) {
+    postMessage({ type: "error", message: err.message });
+  }
+};
+`;
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN THREAD  UI
+// ═══════════════════════════════════════════════════════════════
+
+let workerBlob, worker;
+let loadedFiles  = {};   // {name: content}
+let lastArtifact = null;
+
+function makeWorker() {
+  const blob = new Blob([WORKER_SRC], { type: 'application/javascript' });
+  const url  = URL.createObjectURL(blob);
+  return new Worker(url);
+}
+
+// ── File handling ──────────────────────────────────────────────
+const EXPECTED = ['J465.tenv3.txt','G071.tenv3.txt','J093.tenv3.txt','J702.tenv3.txt'];
+
+function updateDropUI() {
+  const chips   = document.getElementById('dzFiles');
+  const btnRun  = document.getElementById('btnRun');
+  chips.innerHTML = '';
+  for (const name of Object.keys(loadedFiles)) {
+    const d = document.createElement('div');
+    d.className = 'dz-file-chip';
+    d.textContent = name;
+    chips.appendChild(d);
+  }
+  const count = Object.keys(loadedFiles).length;
+  btnRun.disabled = count < 4;
+  setStatus('Files loaded: ' + count + ' / 4' + (count === 4 ? '  —  Ready.' : ''), '');
+}
+
+function readFiles(fileList) {
+  for (const file of fileList) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      loadedFiles[file.name] = e.target.result;
+      updateDropUI();
+    };
+    reader.readAsText(file);
+  }
+}
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', e => { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop',      e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  readFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => readFiles(e.target.files));
+
+// ── Run pipeline ───────────────────────────────────────────────
+document.getElementById('btnRun').addEventListener('click', () => {
+  if (Object.keys(loadedFiles).length < 4) return;
+  setStatus('Running pipeline…', 'running');
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('btnDownload').style.display = 'none';
+
+  const w = makeWorker();
+  const files = Object.entries(loadedFiles).map(([name, content]) => ({ name, content }));
+  w.postMessage({ files });
+
+  w.onmessage = (e) => {
+    w.terminate();
+    if (e.data.type === 'error') {
+      setStatus('ERROR: ' + e.data.message, 'error');
+      return;
+    }
+    const artifact = e.data.data;
+    lastArtifact = artifact;
+    setStatus('Pipeline complete. Artifact ready.', '');
+    renderResults(artifact);
+    document.getElementById('btnDownload').style.display = 'inline-block';
+  };
+
+  w.onerror = (err) => {
+    w.terminate();
+    setStatus('Worker error: ' + err.message, 'error');
+  };
+});
+
+// ── Download artifact ──────────────────────────────────────────
+document.getElementById('btnDownload').addEventListener('click', () => {
+  if (!lastArtifact) return;
+  const json = JSON.stringify(lastArtifact, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'LXV-A.kumamoto.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ── Status ─────────────────────────────────────────────────────
+function setStatus(msg, cls) {
+  const el = document.getElementById('statusBar');
+  el.textContent  = msg;
+  el.className    = 'status-bar ' + cls;
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmt(n, d=2) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return Number(n).toFixed(d);
+}
+function fmtMM(n)  { return fmt(n, 2) + ' mm'; }
+function fmtSNR(n) { return fmt(n, 1); }
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════════════════════════════════════
+function renderResults(art) {
+  document.getElementById('results').style.display = 'block';
+
+  renderVerdict(art);
+  renderHashes(art);
+  renderStationCards(art);
+  renderVectorPlot(art);
+  renderRankTable(art);
+  renderStabilityTable(art);
+  renderCosineBars(art);
+}
+
+// ── Verdict ────────────────────────────────────────────────────
+function renderVerdict(art) {
+  const wrap = document.getElementById('verdictWrap');
+  const cls  = art.pass ? 'pass' : 'fail';
+  const sym  = art.pass ? '✓' : '✗';
+  const lbl  = art.pass ? 'PASS' : 'FAIL';
+  let html = `<div class="verdict ${cls}">${sym}  ${lbl}</div>`;
+  html += `<div class="meta-row">`;
+  html += `<div>common_epochs <span>${art.common_epochs.count}</span></div>`;
+  html += `<div>range <span>${art.common_epochs.start} → ${art.common_epochs.end}</span></div>`;
+  html += `<div>created <span>${art.created_utc}</span></div>`;
+  html += `</div>`;
+  if (art.fail_reasons.length > 0) {
+    html += `<ul class="fail-reasons">` + art.fail_reasons.map(r=>`<li>${r}</li>`).join('') + `</ul>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// ── Hashes ─────────────────────────────────────────────────────
+function renderHashes(art) {
+  const el = document.getElementById('hashBlock');
+  let html = `<div class="hash-row"><span class="hash-key">config_hash</span><span class="hash-val">${art.config_hash}</span></div>`;
+  for (const inp of art.inputs) {
+    html += `<div class="hash-row"><span class="hash-key">${inp.source_file}</span><span class="hash-val">${inp.input_sha256}</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ── Station cards ───────────────────────────────────────────────
+function renderStationCards(art) {
+  const grid = document.getElementById('stationGrid');
+  const ws   = art.smoothing_days;
+  const snrMin = art.gates.snr_h_min;
+  let html = '';
+
+  for (const [id, data] of Object.entries(art.per_station)) {
+    const snr1 = data.by_w['1'].snr_h;
+    const snrOK = snr1 >= snrMin;
+    const coords = data.coords
+      ? `${data.coords.lat.toFixed(4)}° ${data.coords.lon.toFixed(4)}°`
+      : '';
+
+    html += `<div class="station-card">
+      <div class="station-card-header">
+        <div class="station-id">${id}</div>
+        <div>
+          <span class="snr-badge ${snrOK ? 'snr-pass' : 'snr-fail'}">SNR ${fmtSNR(snr1)}</span>
+          &nbsp;<span style="font-size:10px;color:var(--dim)">${coords}</span>
+        </div>
+      </div>
+      <table class="mini-table">
+        <thead><tr>
+          <th>cmp</th>
+          ${ws.map(w=>`<th>w=${w}</th>`).join('')}
+        </tr></thead><tbody>`;
+
+    for (const [cmp, key] of [['dE','dE_mm'],['dN','dN_mm'],['dU','dU_mm'],['horiz','horiz_mm'],['SNR','snr_h']]) {
+      html += `<tr${ws[0]===1&&key==='horiz_mm'?' class="highlight-w1"':''}>
+        <td>${cmp}</td>`;
+      for (const w of ws) {
+        const v = data.by_w[String(w)][key];
+        html += `<td>${key==='snr_h' ? fmtSNR(v) : fmt(v,2)}</td>`;
+      }
+      html += `</tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ── EN Vector Plot (SVG) ────────────────────────────────────────
+function renderVectorPlot(art) {
+  const wrap = document.getElementById('vectorPlotWrap');
+  const w1 = '1';
+  const S = 200;    // scale: pixels per 1 mm  (auto-scaled below)
+  const PAD = 60;
+  const SIZE = 320;
+
+  // Collect vectors at w=1
+  const vecs = Object.entries(art.per_station).map(([id, d]) => ({
+    id,
+    dE: d.by_w[w1].dE_mm,
+    dN: d.by_w[w1].dN_mm,
+    h:  d.by_w[w1].horiz_mm
+  }));
+
+  // Auto-scale
+  const maxH = Math.max(...vecs.map(v=>v.h));
+  const scale = maxH > 0 ? (SIZE/2 - PAD) / maxH : 1;
+  const cx = SIZE/2 + PAD;
+  const cy = SIZE/2 + PAD;
+  const W  = SIZE + 2*PAD;
+  const H  = SIZE + 2*PAD;
+
+  const COLORS = ['var(--accent)','var(--accent2)','var(--blue)','#c878e8'];
+  const gridStep = maxH > 100 ? 100 : maxH > 20 ? 20 : 5;
+
+  let svg = `<div class="vector-plot-wrap">
+    <div class="plot-title">EN DISPLACEMENT PLANE  ·  w=1  ·  detrended  ·  scale: ${(scale).toFixed(1)} px/mm</div>
+    <svg width="${W}" height="${H}" style="display:block;overflow:visible">`;
+
+  // Grid circles
+  for (let g = gridStep; g <= maxH * 1.2; g += gridStep) {
+    const r = g * scale;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="0.5"/>`;
+    svg += `<text x="${cx+r+2}" y="${cy-2}" fill="var(--dim)" font-size="9" font-family="IBM Plex Mono,monospace">${g}mm</text>`;
+  }
+  // Axes
+  svg += `<line x1="${cx-SIZE/2}" y1="${cy}" x2="${cx+SIZE/2}" y2="${cy}" stroke="var(--border)" stroke-width="0.8"/>`;
+  svg += `<line x1="${cx}" y1="${cy-SIZE/2}" x2="${cx}" y2="${cy+SIZE/2}" stroke="var(--border)" stroke-width="0.8"/>`;
+  // Axis labels
+  svg += `<text x="${cx+SIZE/2-8}" y="${cy+14}" fill="var(--dim)" font-size="9" font-family="IBM Plex Mono,monospace">E</text>`;
+  svg += `<text x="${cx+4}" y="${cy-SIZE/2+10}" fill="var(--dim)" font-size="9" font-family="IBM Plex Mono,monospace">N</text>`;
+
+  // Vectors (E is x-axis, N is y-axis but SVG y is inverted → use -dN)
+  vecs.forEach((v, ci) => {
+    const px = cx + v.dE * scale;
+    const py = cy - v.dN * scale;  // SVG Y inverted
+    const color = COLORS[ci % COLORS.length];
+    svg += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}"
+              stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+    // arrowhead
+    const ang = Math.atan2(py-cy, px-cx);
+    const ah = 8;
+    const ax1 = px - ah*Math.cos(ang-0.35);
+    const ay1 = py - ah*Math.sin(ang-0.35);
+    const ax2 = px - ah*Math.cos(ang+0.35);
+    const ay2 = py - ah*Math.sin(ang+0.35);
+    svg += `<polygon points="${px},${py} ${ax1},${ay1} ${ax2},${ay2}" fill="${color}"/>`;
+    // label
+    svg += `<text x="${px+5}" y="${py-4}" fill="${color}" font-size="10"
+              font-family="IBM Plex Mono,monospace" font-weight="500">${v.id}</text>`;
+  });
+
+  svg += `</svg></div>`;
+  wrap.innerHTML = svg;
+}
+
+// ── Rank table ─────────────────────────────────────────────────
+function renderRankTable(art) {
+  const tbl   = document.getElementById('rankTable');
+  const ws    = art.smoothing_days;
+  const ids   = Object.keys(art.per_station);
+  const RANK_CLS = ['rank-1','rank-2','rank-3','rank-4'];
+
+  let html = `<thead><tr><th>Station</th>${ws.map(w=>`<th>w=${w}</th>`).join('')}</tr></thead><tbody>`;
+
+  for (const id of ids) {
+    html += `<tr><td>${id}</td>`;
+    for (const rw of art.rank_by_w) {
+      const r = rw.order.indexOf(id); // 0-based
+      const cls = RANK_CLS[r] || '';
+      html += `<td class="${cls}">#${r+1}</td>`;
+    }
+    html += `</tr>`;
+  }
+  html += `</tbody>`;
+  tbl.innerHTML = html;
+}
+
+// ── Stability table ─────────────────────────────────────────────
+function renderStabilityTable(art) {
+  const tbl = document.getElementById('stabilityTable');
+  let html = `<thead><tr>
+    <th>w vs baseline</th>
+    <th>Spearman ρ <small style="color:var(--dim)">(≥0.95)</small></th>
+    <th>Kendall τ <small style="color:var(--dim)">(≥0.90)</small></th>
+    <th>max rank shift <small style="color:var(--dim)">(≤1)</small></th>
+  </tr></thead><tbody>`;
+
+  for (const sv of art.stability_vs_w1) {
+    const rhoOK   = sv.spearman    >= 0.95;
+    const tauOK   = sv.kendall_tau >= 0.90;
+    const shiftOK = sv.max_rank_shift <= 1;
+    html += `<tr>
+      <td>w=${sv.w}</td>
+      <td class="${rhoOK?'val-pass':'val-fail'}">${fmt(sv.spearman, 4)}</td>
+      <td class="${tauOK?'val-pass':'val-fail'}">${fmt(sv.kendall_tau, 4)}</td>
+      <td class="${shiftOK?'val-pass':'val-fail'}">${sv.max_rank_shift}</td>
+    </tr>`;
+  }
+  html += `</tbody>`;
+  tbl.innerHTML = html;
+}
+
+// ── Cosine bars ────────────────────────────────────────────────
+function renderCosineBars(art) {
+  const ds  = art.direction_stability;
+  const el  = document.getElementById('cosineBars');
+  const lbl = document.getElementById('corePairLabel');
+  lbl.textContent = '  core pair: ' + ds.core_pair.join(' + ');
+
+  let html = '';
+  for (const [ws, cos] of Object.entries(ds.cosine_by_w)) {
+    const pct   = Math.max(0, Math.min(100, cos * 100));
+    const isLow = cos < 0.95;
+    html += `<div class="cosine-row">
+      <span class="cosine-label">w=${ws}</span>
+      <div class="cosine-bar-bg">
+        <div class="cosine-bar-fill" style="width:${pct}%;background:${isLow?'var(--fail)':'var(--accent)'}"></div>
+      </div>
+      <span class="cosine-val${isLow?' low':''}">${fmt(cos, 4)}</span>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>

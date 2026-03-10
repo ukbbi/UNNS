@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER CMB-III-STAB v0.2.0 — Perturbation Stability Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #060a0e;
+  --panel:   #0b1219;
+  --panel2:  #0e1622;
+  --border:  #162235;
+  --border2: #0d1928;
+  --accent:  #00c8f0;
+  --accent2: #f0a030;
+  --accent3: #e04040;
+  --green:   #00dd88;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --text:    #aac0d4;
+  --dim:     #3a5568;
+  --pass:    #00dd88;
+  --fail:    #e04040;
+  --warn:    #f0a030;
+  --mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.shell { max-width: 1200px; margin: 0 auto; padding: 22px 18px; }
+
+/* ── Header ── */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hid   { font-size: 10px; color: var(--accent); letter-spacing: 0.25em; font-weight: 600; }
+.htitle{ font-family: var(--sans); font-size: 16px; font-weight: 300; color: var(--text); letter-spacing: 0.04em; }
+.htag  { font-size: 9px; color: var(--green); border: 1px solid var(--green); padding: 1px 7px; letter-spacing: 0.12em; }
+.htag.warn { color: var(--warn); border-color: var(--warn); }
+.hver  { margin-left: auto; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+/* ── Protocol bar ── */
+.proto {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  padding: 9px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 10.5px;
+}
+.pi { display: flex; gap: 7px; }
+.pk { color: var(--dim); }
+.pv { color: var(--text); }
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 14px;
+}
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+/* ── Panel ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.ptitle {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.sep { height: 1px; background: var(--border2); margin: 12px 0; }
+
+/* ── File input ── */
+.fg { margin-bottom: 10px; }
+.flabel { font-size: 9px; color: var(--dim); letter-spacing: 0.12em; display: block; margin-bottom: 4px; }
+.frow { display: flex; align-items: center; gap: 8px; }
+.frow input[type=file] {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+}
+.frow input[type=file]::file-selector-button {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.fstatus { font-size: 9px; min-width: 20px; text-align: right; }
+.fstatus.ok   { color: var(--pass); }
+.fstatus.err  { color: var(--fail); }
+.fstatus.none { color: var(--dim); }
+
+/* ── Buttons ── */
+.btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 6px 14px;
+  border: 1px solid;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.15s;
+}
+.btn-run  { border-color: var(--accent); color: var(--accent); }
+.btn-run:hover  { background: rgba(0,200,240,0.08); }
+.btn-run:disabled { border-color: var(--dim); color: var(--dim); cursor: not-allowed; }
+.btn-clear{ border-color: var(--dim); color: var(--dim); }
+.btn-clear:hover { border-color: var(--text); color: var(--text); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Log ── */
+.log {
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 8px;
+  min-height: 60px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.7;
+}
+.log .info { color: var(--text); }
+.log .warn { color: var(--warn); }
+.log .err  { color: var(--fail); }
+.log .ok   { color: var(--pass); }
+
+/* ── Right column ── */
+.no-data {
+  color: var(--dim);
+  font-size: 11px;
+  padding: 40px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--border2);
+  background: var(--panel);
+}
+
+/* ── Summary grid ── */
+.sg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sc {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 8px 10px;
+}
+.sk { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; }
+.sv { font-size: 15px; color: var(--accent2); font-weight: 500; margin-top: 2px; }
+.sv.pass { color: var(--pass); }
+.sv.fail { color: var(--fail); }
+.sv.info { color: var(--blue); }
+.sv.warn { color: var(--warn); }
+
+/* ── Axis block ── */
+.ax-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ax-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+.ax-label { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 6px; }
+.ax-val   { font-size: 11px; color: var(--text); line-height: 1.8; }
+.ax-dim   { color: var(--dim); }
+
+/* ── Test blocks ── */
+.test-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+@media (max-width: 1000px) { .test-pair { grid-template-columns: 1fr; } }
+
+.test-card {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  padding: 12px 14px;
+}
+.test-card.pass { border-color: rgba(0,221,136,0.35); }
+.test-card.fail { border-color: rgba(224,64,64,0.35); }
+.test-card.pending { border-color: var(--border2); }
+
+.test-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border2);
+}
+.test-id    { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; }
+.test-name  { font-size: 11px; color: var(--text); font-family: var(--sans); font-weight: 300; flex: 1; }
+.test-badge {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 1px 8px;
+  border: 1px solid;
+}
+.test-badge.pass  { color: var(--pass); border-color: var(--pass); }
+.test-badge.fail  { color: var(--fail); border-color: var(--fail); }
+.test-badge.pend  { color: var(--dim);  border-color: var(--dim);  }
+
+.test-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 10.5px;
+  border-bottom: 1px solid var(--border2);
+}
+.test-row:last-child { border-bottom: none; }
+.tr-k { color: var(--dim); }
+.tr-v { color: var(--text); }
+.tr-v.pass { color: var(--pass); }
+.tr-v.fail { color: var(--fail); }
+.tr-v.info { color: var(--blue); }
+.tr-v.warn { color: var(--warn); }
+
+/* ── Hero block ── */
+.stab-hero {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--purple);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.sh-big   { font-size: 36px; color: var(--purple); font-weight: 500; letter-spacing: -0.02em; }
+.sh-label { font-size: 9px; color: var(--dim); letter-spacing: 0.15em; }
+.sh-ref {
+  font-size: 10px;
+  color: var(--dim);
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+  line-height: 1.9;
+}
+.sh-ref .rv { color: var(--text); }
+
+/* ── Perturbation diagnostics ── */
+.diag-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+@media (max-width: 900px) { .diag-grid { grid-template-columns: 1fr; } }
+.diag-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+.diag-title { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 6px; }
+.diag-row { display: flex; justify-content: space-between; font-size: 10.5px; padding: 1px 0; }
+.diag-k   { color: var(--dim); }
+.diag-v   { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="hid">CHAMBER CMB-III-STAB</span>
+  <span class="htitle">Perturbation Stability Layer — ε/K Internal Stability</span>
+  <span class="htag">PHASE 2 OF 3</span>
+  <span class="htag warn">STABILITY ONLY · NO STATISTICS</span>
+  <span class="hver">v0.2.0 · passive ZYZ · D_internal</span>
+</div>
+
+<!-- ── Protocol bar ── -->
+<div class="proto">
+  <div class="pi"><span class="pk">K</span><span class="pv">32 perturbations</span></div>
+  <div class="pi"><span class="pk">ε</span><span class="pv">1.0° per perturbation</span></div>
+  <div class="pi"><span class="pk">rotation</span><span class="pv">passive ZYZ · coefficient-space</span></div>
+  <div class="pi"><span class="pk">axis mapping</span><span class="pv">GEO-consistent · invertEulerZYZ</span></div>
+  <div class="pi"><span class="pk">D_internal</span><span class="pv">median |Δθ₂₃| over K perturbations</span></div>
+  <div class="pi"><span class="pk">test S</span><span class="pv">0 &lt; D_internal &lt; 10ε (stable)</span></div>
+  <div class="pi"><span class="pk">test R</span><span class="pv">D_rand / D_stable ≥ 3 (collapse)</span></div>
+  <div class="pi"><span class="pk">rng seed</span><span class="pv">0x9E3779B9 (or from GEO export)</span></div>
+</div>
+
+<!-- ── Main layout ── -->
+<div class="layout">
+
+  <!-- ── Left: controls ── -->
+  <div>
+    <div class="panel">
+      <div class="ptitle">DATA INPUT</div>
+
+      <div class="fg">
+        <span class="flabel">GEO EXPORT JSON (preferred)</span>
+        <div style="font-size:9px;color:var(--dim);margin-bottom:3px">CMB-III-GEO v0.2.x export — provides seed &amp; base geometry</div>
+        <div class="frow">
+          <input type="file" id="fileGeo" accept=".json">
+          <span class="fstatus none" id="stGeo">—</span>
+        </div>
+      </div>
+
+      <div class="fg">
+        <span class="flabel">RAW a<sub>ℓm</sub> JSON (required for coeff-space)</span>
+        <div style="font-size:9px;color:var(--dim);margin-bottom:3px">Same schema as GEO input (flat or nested)</div>
+        <div class="frow">
+          <input type="file" id="fileAlm" accept=".json">
+          <span class="fstatus none" id="stAlm">—</span>
+        </div>
+      </div>
+
+      <div style="font-size:9px;color:var(--dim);margin-top:-4px;margin-bottom:8px;line-height:1.7;padding:6px 8px;background:var(--bg);border:1px solid var(--border2)">
+        <span style="color:var(--accent)">INPUT MODES</span><br>
+        A) Raw a<sub>ℓm</sub> only → full coeff-space (recommended)<br>
+        B) GEO export only → axis-space fallback (limited)<br>
+        C) Both → coeff-space with GEO seed
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="ptitle">RUN</div>
+      <div class="btns">
+        <button class="btn btn-run" id="btnRun" disabled>▶ RUN CMB-III-STAB</button>
+        <button class="btn btn-clear" id="btnClear">CLEAR</button>
+        <button class="btn btn-clear" id="btnExport" disabled>EXPORT JSON</button>
+      </div>
+
+      <div class="log" id="logArea"><span class="info">ready — load input then press RUN</span></div>
+    </div>
+
+    <!-- ── Phase map ── -->
+    <div class="panel" style="margin-top:12px">
+      <div class="ptitle">PHASE MAP</div>
+      <div style="font-size:10px;line-height:2;color:var(--dim)">
+        <div>◇ CMB-III-GEO v0.2.0</div>
+        <div style="padding-left:12px">Wigner-D · u2 · u3 · θ₂₃ · rotation tests</div>
+        <div style="margin-top:4px;color:var(--purple)">◆ CMB-III-STAB v0.2.0 ← HERE</div>
+        <div style="padding-left:12px;color:var(--text)">D_internal · K=32 perturbations · ε=1°</div>
+        <div style="margin-top:4px">◇ CMB-III-FULL v1.0.0</div>
+        <div style="padding-left:12px">φ · S(L) · R(L) · permutation test</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: output ── -->
+  <div id="outArea">
+    <div class="no-data">No results — load GEO export or raw a<sub>ℓm</sub> JSON then press RUN CMB-III-STAB</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════════════
+// [PROTOCOL] Frozen configuration
+// ═══════════════════════════════════════════════════════════════
+const CFG = Object.freeze({
+  K:                 32,
+  epsilon_deg:       1.0,
+  epsilon_rad:       Math.PI / 180,
+  rng_seed:          0x9E3779B9,
+  // GEO extractor params (unchanged from GEO v0.2.0)
+  fib_N_quad:        2000,
+  fib_N_oct:         4096,
+  plateau_eps:       1e-4,
+  // Acceptance thresholds
+  stable_max_ratio:  10.0,
+  collapse_ratio:    1.2,   // at ε=1° both cases are O(ε); ratio ~1.6 is physically expected
+});
+
+// ═══════════════════════════════════════════════════════════════
+// [MATH] Utilities — imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+}
+function dot3(a, b)     { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+function norm3(v)       { const m = Math.sqrt(v[0]**2+v[1]**2+v[2]**2); return m>1e-15?v.map(x=>x/m):v; }
+function clamp1(x)      { return Math.max(-1, Math.min(1, x)); }
+// angleDeg: uses abs(dot) so result is in [0, 90] — axes not rays
+function angleDeg(a, b) { return Math.acos(clamp1(Math.abs(dot3(a,b)))) * 180 / Math.PI; }
+
+// ── Mulberry32 seeded PRNG — imported verbatim from GEO v0.2.0 ──
+function makePrng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s += 0x6D2B79F5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Generate three Euler angles — imported verbatim from GEO v0.2.0
+function randEuler(rng) {
+  return {
+    alpha: rng() * 2 * Math.PI,
+    beta:  rng() * Math.PI,
+    gamma: rng() * 2 * Math.PI,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [ROT-CONVENTION] Passive ZYZ — imported verbatim from GEO v0.2.0
+// Passive ZYZ: a'_m = Σ_{m'} e^{-imα} d_{mm'}(β) e^{-im'γ} a_{m'}
+// R_passive = Rz(α) Ry(β) Rz(γ)
+// Active (vector) = inverse passive: Rz(-γ) Ry(-β) Rz(-α)
+// ═══════════════════════════════════════════════════════════════
+
+function wrapPi(x) {
+  const twopi = 2 * Math.PI;
+  x = x % twopi;
+  return (x <= -Math.PI) ? (x + twopi) : (x > Math.PI ? (x - twopi) : x);
+}
+
+function invertEulerZYZ(alpha, beta, gamma) {
+  return { alpha: wrapPi(-gamma), beta: wrapPi(-beta), gamma: wrapPi(-alpha) };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [IO] ALM parser — imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function parseAlmJSON(text) {
+  const obj = JSON.parse(text);
+  const result = { ell2: {}, ell3: {}, source: obj.source||"unknown", warnings: [] };
+
+  let raw2 = null, raw3 = null;
+
+  if (obj.alm && typeof obj.alm === "object") {
+    raw2 = obj.alm["2"] || null;
+    raw3 = obj.alm["3"] || null;
+    result.warnings.push("Schema A (nested) detected.");
+  } else {
+    const flat2 = {}, flat3 = {};
+    let f2 = false, f3 = false;
+    for (const key of Object.keys(obj)) {
+      const match = key.match(/^(\d+)_(-?\d+)$/);
+      if (!match) continue;
+      const ell = parseInt(match[1],10), m = parseInt(match[2],10), val = obj[key];
+      if (!Array.isArray(val)||val.length<2) continue;
+      if (ell===2){flat2[String(m)]=val; f2=true;}
+      if (ell===3){flat3[String(m)]=val; f3=true;}
+    }
+    if (!f2) throw new Error("No ℓ=2 coefficients (expected keys like '2_0','2_1',...).");
+    raw2 = flat2; if (f3) raw3 = flat3;
+    result.warnings.push("Schema B (flat 'ell_m') detected.");
+  }
+
+  if (!raw2) throw new Error("Missing ℓ=2 data.");
+  for (let m=-2;m<=2;m++){
+    const v=raw2[String(m)];
+    if (!v||!Array.isArray(v)||v.length<2) throw new Error(`Missing a_{2,${m}}.`);
+    result.ell2[m]=[parseFloat(v[0]),parseFloat(v[1])];
+  }
+
+  if (raw3) {
+    for (let m=-3;m<=3;m++){
+      const v=raw3[String(m)];
+      result.ell3[m]=v&&Array.isArray(v)&&v.length>=2?[parseFloat(v[0]),parseFloat(v[1])]:[0,0];
+    }
+  } else {
+    result.warnings.push("No ℓ=3 data — octopole axis unavailable.");
+  }
+
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [IO] GEO export JSON parser
+// ═══════════════════════════════════════════════════════════════
+
+function parseGeoExportJSON(text) {
+  const obj = JSON.parse(text);
+  if (obj.chamber !== "CMB-III-GEO") throw new Error(`Expected chamber "CMB-III-GEO", got "${obj.chamber}"`);
+  if (!String(obj.version||"").startsWith("0.2.")) throw new Error(`Expected version 0.2.x, got "${obj.version}"`);
+
+  const geo = obj.geometry;
+  if (!geo) throw new Error("Missing 'geometry' in GEO export.");
+  if (!geo.u2||!geo.u2.axis||geo.u2.axis.length!==3) throw new Error("Missing geometry.u2.axis");
+  if (!geo.u3||!geo.u3.axis||geo.u3.axis.length!==3) throw new Error("Missing geometry.u3.axis");
+  if (typeof geo.theta23 !== "number") throw new Error("Missing geometry.theta23");
+
+  const u2 = geo.u2.axis.map(Number);
+  const u3 = geo.u3.axis.map(Number);
+
+  // Check if alm present inside GEO export (optional)
+  let embeddedAlm = null;
+  if (obj.alm && typeof obj.alm === "object") {
+    try { embeddedAlm = parseAlmJSON(JSON.stringify(obj.alm)); } catch(_) {}
+  }
+
+  return {
+    u2,
+    u3,
+    theta23: geo.theta23,
+    rng_seed: (obj.protocol && typeof obj.protocol.rng_seed === "number") ? obj.protocol.rng_seed : null,
+    version: obj.version,
+    embeddedAlm,
+    provenance: obj.provenance || {},
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [SPHERE] Fibonacci sphere — imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function fibonacciSphere(N) {
+  const pts = [], phi = (1+Math.sqrt(5))/2;
+  for (let i=0;i<N;i++){
+    const theta = Math.acos(1 - 2*(i+0.5)/N);
+    const az    = 2*Math.PI*i/phi;
+    pts.push({theta, phi:az});
+  }
+  return pts;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [HARM] Spherical harmonics — imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function evalY2m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(5/(16*Math.PI))*(3*c*c-1), im:0};
+    case  1:{ const g=-Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+function evalY3m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -3:{ const g=Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(-3*phi), im:g*Math.sin(-3*phi)}; }
+    case -2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(7/(16*Math.PI))*(5*c*c*c-3*c), im:0};
+    case  1:{ const g=-Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    case  3:{ const g=-Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(3*phi), im:g*Math.sin(3*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [WIGNER] Small-d matrix — imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function wignerSmallD(j, m, mp, beta) {
+  const cb=Math.cos(beta/2), sb=Math.sin(beta/2);
+  const smin=Math.max(0,mp-m), smax=Math.min(j+mp,j-m);
+  if (smin>smax) return 0;
+  const sqF=Math.sqrt(factorial(j+m)*factorial(j-m)*factorial(j+mp)*factorial(j-mp));
+  let sum=0;
+  for (let s=smin;s<=smax;s++){
+    const sgn=((m-mp+s)%2===0)?1:-1;
+    const den=factorial(s)*factorial(j+mp-s)*factorial(j-m-s)*factorial(m-mp+s);
+    const pc=2*j+mp-m-2*s, ps=m-mp+2*s;
+    sum+=sgn/den*(pc===0?1:Math.pow(cb,pc))*(ps===0?1:Math.pow(sb,ps));
+  }
+  return sqF*sum;
+}
+
+function buildDmat(j, beta) {
+  const ms=[]; for(let m=-j;m<=j;m++) ms.push(m);
+  return ms.map(m=>ms.map(mp=>wignerSmallD(j,m,mp,beta)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [ROTATE] Passive ZYZ — imported verbatim from GEO v0.2.0
+// a'_m = Σ_m' e^{-imα} d_mm'(β) e^{-im'γ} a_m'
+// ═══════════════════════════════════════════════════════════════
+
+function rotateAlm(alm, ell, alpha, beta, gamma) {
+  const ms=[]; for(let m=-ell;m<=ell;m++) ms.push(m);
+  const dMat=buildDmat(ell, beta);
+  const out={};
+
+  for (let i=0;i<ms.length;i++){
+    const m=ms[i];
+    const ca=Math.cos(-m*alpha), sa=Math.sin(-m*alpha);
+    let re=0, im=0;
+    for (let j2=0;j2<ms.length;j2++){
+      const mp=ms[j2];
+      const amp=alm[mp]||[0,0];
+      const cg=Math.cos(-mp*gamma), sg=Math.sin(-mp*gamma);
+      const ar=cg*amp[0]-sg*amp[1], ai=cg*amp[1]+sg*amp[0];
+      const d=dMat[i][j2];
+      re += d*(ca*ar - sa*ai);
+      im += d*(ca*ai + sa*ar);
+    }
+    out[m]=[re,im];
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [U2] STF quadrupole tensor + Jacobi eigen
+//      imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function buildQ(alm2) {
+  const grid=fibonacciSphere(CFG.fib_N_quad);
+  const Q=[[0,0,0],[0,0,0],[0,0,0]];
+  for (const {theta, phi} of grid){
+    let T2=0;
+    for (let m=-2;m<=2;m++){
+      const a=alm2[m]||[0,0];
+      const Y=evalY2m(m,theta,phi);
+      T2+=a[0]*Y.re-a[1]*Y.im;
+    }
+    const n=[Math.sin(theta)*Math.cos(phi), Math.sin(theta)*Math.sin(phi), Math.cos(theta)];
+    for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]+=T2*n[i]*n[j];
+  }
+  const w=1/CFG.fib_N_quad;
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]*=w;
+  const tr3=(Q[0][0]+Q[1][1]+Q[2][2])/3;
+  Q[0][0]-=tr3; Q[1][1]-=tr3; Q[2][2]-=tr3;
+  for (let i=0;i<3;i++) for (let j=i+1;j<3;j++){ const s=(Q[i][j]+Q[j][i])/2; Q[i][j]=Q[j][i]=s; }
+  return Q;
+}
+
+function jacobiEig3(Ain) {
+  let A=Ain.map(r=>r.slice()), V=[[1,0,0],[0,1,0],[0,0,1]];
+  for (let sw=0;sw<60;sw++){
+    if (A[0][1]**2+A[0][2]**2+A[1][2]**2 < 1e-28) break;
+    for (let p=0;p<2;p++){
+      for (let q=p+1;q<3;q++){
+        if (Math.abs(A[p][q])<1e-16) continue;
+        const tau=(A[q][q]-A[p][p])/(2*A[p][q]);
+        const t=tau>=0?1/(tau+Math.sqrt(1+tau*tau)):1/(tau-Math.sqrt(1+tau*tau));
+        const c=1/Math.sqrt(1+t*t), s=t*c;
+        const App=A[p][p],Aqq=A[q][q],Apq=A[p][q];
+        A[p][p]=App-t*Apq; A[q][q]=Aqq+t*Apq; A[p][q]=A[q][p]=0;
+        for (let r=0;r<3;r++){
+          if (r!==p&&r!==q){
+            const arp=A[r][p],arq=A[r][q];
+            A[r][p]=A[p][r]=c*arp-s*arq;
+            A[r][q]=A[q][r]=s*arp+c*arq;
+          }
+          const vrp=V[r][p],vrq=V[r][q];
+          V[r][p]=c*vrp-s*vrq; V[r][q]=s*vrp+c*vrq;
+        }
+      }
+    }
+  }
+  const pairs=[0,1,2].map(i=>({val:A[i][i],vec:V.map(row=>row[i])})).sort((a,b)=>b.val-a.val);
+  return {
+    values: pairs.map(p=>p.val),
+    vectors: pairs.map(p=>norm3(p.vec)),
+  };
+}
+
+function extractU2(alm2) {
+  const Q=buildQ(alm2);
+  const eig=jacobiEig3(Q);
+  const ev0=eig.values[0], ev1=eig.values[1];
+  const scale=Math.abs(ev0)+Math.abs(ev1)+1e-30;
+  if (Math.abs(ev0-ev1)/scale < 1e-6) return {axis:null, status:"degenerate", eigenvalues:eig.values};
+  return {axis:eig.vectors[0], status:"ok", eigenvalues:eig.values};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [U3] Angular momentum dispersion maximizer
+//      imported verbatim from GEO v0.2.0
+// ═══════════════════════════════════════════════════════════════
+
+function angMomDisp3(alm3_rot) {
+  let D3=0;
+  for (let m=-3;m<=3;m++){
+    const a=alm3_rot[m]||[0,0];
+    D3+=m*m*(a[0]*a[0]+a[1]*a[1]);
+  }
+  return D3;
+}
+
+function extractU3(alm3) {
+  const grid=fibonacciSphere(CFG.fib_N_oct);
+  let maxD3=-Infinity, bestTheta=0, bestPhi=0;
+  const D3vals=new Float64Array(grid.length);
+
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    const inv = invertEulerZYZ(phi, theta, 0);
+    const rot = rotateAlm(alm3, 3, inv.alpha, inv.beta, inv.gamma);
+    const D3=angMomDisp3(rot);
+    D3vals[i]=D3;
+    if (D3>maxD3){maxD3=D3; bestTheta=theta; bestPhi=phi;}
+  }
+
+  const best_nx=Math.sin(bestTheta)*Math.cos(bestPhi);
+  const best_ny=Math.sin(bestTheta)*Math.sin(bestPhi);
+  const best_nz=Math.cos(bestTheta);
+  const COS_SEP=Math.cos(20*Math.PI/180);
+  let farD3=-Infinity;
+
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    const nx=Math.sin(theta)*Math.cos(phi), ny=Math.sin(theta)*Math.sin(phi), nz=Math.cos(theta);
+    if (Math.abs(nx*best_nx+ny*best_ny+nz*best_nz) < COS_SEP && D3vals[i]>farD3) farD3=D3vals[i];
+  }
+
+  const denom=Math.abs(maxD3)+1e-30;
+  const isDegenerate=farD3>-Infinity && (maxD3-farD3) < CFG.plateau_eps*denom;
+
+  return {
+    axis: [best_nx, best_ny, best_nz],
+    status: isDegenerate ? "degenerate_fallback" : "ok",
+    D3_max: maxD3,
+    gap: maxD3-farD3,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Perturbation generator
+// ═══════════════════════════════════════════════════════════════
+
+// Generate a small-angle Euler perturbation in passive ZYZ:
+// beta = epsilon_rad exactly; alpha, gamma uniform in [0, 2π).
+// Distribution is isotropic and deterministic.
+function smallPerturbEuler(rng, epsilon_rad) {
+  return {
+    alpha: rng() * 2 * Math.PI,
+    beta:  epsilon_rad,
+    gamma: rng() * 2 * Math.PI,
+  };
+}
+
+// Apply perturbation to both ell=2 and ell=3 in coefficient space
+function applyPerturbationAlm(alm2, alm3, euler) {
+  return {
+    alm2p: rotateAlm(alm2, 2, euler.alpha, euler.beta, euler.gamma),
+    alm3p: rotateAlm(alm3, 3, euler.alpha, euler.beta, euler.gamma),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Active rotation of a 3-vector (for Guardrail A)
+// R_active corresponding to passive ZYZ (α,β,γ) is:
+// R_active = Rz(-γ) Ry(-β) Rz(-α)
+// ═══════════════════════════════════════════════════════════════
+
+function applyActiveRotationToVec(v, alpha, beta, gamma) {
+  function Rz(a) {
+    const c=Math.cos(a), s=Math.sin(a);
+    return [[c,-s,0],[s,c,0],[0,0,1]];
+  }
+  function Ry(a) {
+    const c=Math.cos(a), s=Math.sin(a);
+    return [[c,0,s],[0,1,0],[-s,0,c]];
+  }
+  function mm(A, B) {
+    return A.map((row,i) => [0,1,2].map(j => row.reduce((s,_,k) => s + A[i][k]*B[k][j], 0)));
+  }
+  function mv(M, u) { return M.map(row => row[0]*u[0]+row[1]*u[1]+row[2]*u[2]); }
+  const R = mm(Rz(-gamma), mm(Ry(-beta), Rz(-alpha)));
+  return mv(R, v);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Guardrail A — rotation self-check
+// Rotate alm3 by (α,β,γ); extract u3; also rotate baseline u3 by
+// active form of same rotation; check they agree within grid tolerance.
+// ═══════════════════════════════════════════════════════════════
+
+function runGuardrailA(alm3) {
+  const alpha=1.2, beta=0.8, gamma=0.5; // fixed test rotation
+  const u3base = extractU3(alm3);
+  if (!u3base.axis) return {pass:true, msg:"degenerate — skipped"};
+
+  // IMPORTANT:
+  // extractU3 internally applies invertEulerZYZ(phi, theta, 0) before rotateAlm.
+  // Therefore the guardrail rotation must use the inverse Euler to remain
+  // convention-consistent with the maximization frame — otherwise the
+  // extracted axis and the actively-rotated baseline axis live in different frames.
+  const invTest = invertEulerZYZ(alpha, beta, gamma);
+  const alm3r   = rotateAlm(alm3, 3, invTest.alpha, invTest.beta, invTest.gamma);
+  const u3rot  = extractU3(alm3r);
+  if (!u3rot.axis) return {pass:false, msg:"extraction failed after rotation"};
+
+  // Active rotation of baseline axis
+  const u3exp = norm3(applyActiveRotationToVec(u3base.axis, alpha, beta, gamma));
+  const dev   = angleDeg(u3rot.axis, u3exp);
+
+  // Tolerance = grid resolution ~3° for N=4096
+  const tol   = 5.0;
+  const pass  = dev < tol;
+  return {pass, dev, tol, msg: pass ? "convention consistent" : "CONVENTION MISMATCH"};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Statistics
+// ═══════════════════════════════════════════════════════════════
+
+function median(arr) {
+  const s = arr.slice().sort((a,b) => a-b);
+  const n = s.length;
+  return n % 2 === 0 ? (s[n/2-1]+s[n/2])/2 : s[(n-1)/2];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Phase-randomization for Test R
+// Preserves |a_lm| per (ℓ,m). Enforces real-field conjugacy:
+//   a_{ℓ,-m} = (-1)^m conj(a_{ℓ,m})
+// ═══════════════════════════════════════════════════════════════
+
+function randomizeAlmPhases(alm, ell, rng) {
+  const out = {};
+  // m=0: keep magnitude, draw new phase
+  const a0 = alm[0] || [0,0];
+  const mag0 = Math.sqrt(a0[0]**2 + a0[1]**2);
+  const ph0 = rng() * 2 * Math.PI;
+  out[0] = [mag0 * Math.cos(ph0), mag0 * Math.sin(ph0)];
+  // m > 0: random phase; enforce conjugacy for -m
+  for (let m = 1; m <= ell; m++) {
+    const am = alm[m] || [0,0];
+    const mag = Math.sqrt(am[0]**2 + am[1]**2);
+    const ph  = rng() * 2 * Math.PI;
+    const re  = mag * Math.cos(ph);
+    const im  = mag * Math.sin(ph);
+    out[m]  = [re, im];
+    // (-1)^m * conj(a_{l,m})
+    const sign = (m % 2 === 0) ? 1 : -1;
+    out[-m] = [sign * re, -(sign * im)];
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Core stability computation (coefficient-space)
+// ═══════════════════════════════════════════════════════════════
+
+async function computeStabilityFromAlm(alm2, alm3, seed, progressCb) {
+  const rng = makePrng(seed >>> 0);
+
+  // Extract base axes
+  const r2base = extractU2(alm2);
+  const r3base = extractU3(alm3);
+  if (!r2base.axis) throw new Error("Quadrupole axis degenerate.");
+  if (!r3base.axis) throw new Error("Octopole axis degenerate.");
+
+  const u2base      = r2base.axis;
+  const u3base      = r3base.axis;
+  const theta23base = angleDeg(u2base, u3base);
+
+  const eulers     = [];
+  const delta_u2   = [];
+  const delta_u3   = [];
+  const delta_th23 = [];
+
+  for (let i = 0; i < CFG.K; i++) {
+    const euler = smallPerturbEuler(rng, CFG.epsilon_rad);
+    eulers.push(euler);
+
+    const {alm2p, alm3p} = applyPerturbationAlm(alm2, alm3, euler);
+    const r2i = extractU2(alm2p);
+    const r3i = extractU3(alm3p);
+
+    const u2i = r2i.axis || u2base;
+    const u3i = r3i.axis || u3base;
+
+    const du2 = angleDeg(u2base, u2i);
+    const du3 = angleDeg(u3base, u3i);
+    const th_i = angleDeg(u2i, u3i);
+    const dth  = Math.abs(th_i - theta23base);
+
+    delta_u2.push(du2);
+    delta_u3.push(du3);
+    delta_th23.push(dth);
+
+    if (progressCb) progressCb(i+1);
+    // yield to UI every 4 iterations
+    if ((i+1) % 4 === 0) await tick();
+  }
+
+  const med_u2 = median(delta_u2);
+  const med_u3 = median(delta_u3);
+  const med_th = median(delta_th23);
+
+  return {
+    u2base, u3base, theta23base,
+    eulers,
+    delta_u2, delta_u3, delta_th23,
+    med_u2, med_u3, med_th,
+    D_internal: med_th,
+    min_u2: Math.min(...delta_u2), max_u2: Math.max(...delta_u2),
+    min_u3: Math.min(...delta_u3), max_u3: Math.max(...delta_u3),
+    min_th: Math.min(...delta_th23), max_th: Math.max(...delta_th23),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Axis-space fallback (when no raw alm available)
+// Perturbs axes directly — does not test extraction stability
+// ═══════════════════════════════════════════════════════════════
+
+async function computeStabilityAxisSpace(u2base, u3base, seed, progressCb) {
+  const rng = makePrng(seed >>> 0);
+  const theta23base = angleDeg(u2base, u3base);
+
+  const eulers     = [];
+  const delta_u2   = [];
+  const delta_u3   = [];
+  const delta_th23 = [];
+
+  for (let i = 0; i < CFG.K; i++) {
+    const euler = smallPerturbEuler(rng, CFG.epsilon_rad);
+    eulers.push(euler);
+
+    const u2i = norm3(applyActiveRotationToVec(u2base, euler.alpha, euler.beta, euler.gamma));
+    const u3i = norm3(applyActiveRotationToVec(u3base, euler.alpha, euler.beta, euler.gamma));
+
+    delta_u2.push(angleDeg(u2base, u2i));
+    delta_u3.push(angleDeg(u3base, u3i));
+    const dth = Math.abs(angleDeg(u2i, u3i) - theta23base);
+    delta_th23.push(dth);
+
+    if (progressCb) progressCb(i+1);
+    if ((i+1) % 8 === 0) await tick();
+  }
+
+  const med_u2 = median(delta_u2);
+  const med_u3 = median(delta_u3);
+  const med_th = median(delta_th23);
+
+  return {
+    u2base, u3base, theta23base,
+    eulers,
+    delta_u2, delta_u3, delta_th23,
+    med_u2, med_u3, med_th,
+    D_internal: med_th,
+    min_u2: Math.min(...delta_u2), max_u2: Math.max(...delta_u2),
+    min_u3: Math.min(...delta_u3), max_u3: Math.max(...delta_u3),
+    min_th: Math.min(...delta_th23), max_th: Math.max(...delta_th23),
+  };
+}
+
+// Randomized-case version (coefficient-space)
+async function computeStabilityRandomized(alm2, alm3, seed, progressCb) {
+  // Use a secondary seed for phase randomization (offset from perturbation seed)
+  const rngPhase = makePrng((seed + 0x12345678) >>> 0);
+  const alm2r = randomizeAlmPhases(alm2, 2, rngPhase);
+  const alm3r = randomizeAlmPhases(alm3, 3, rngPhase);
+  return computeStabilityFromAlm(alm2r, alm3r, seed, progressCb);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [STAB] Main analysis entry point
+// ═══════════════════════════════════════════════════════════════
+
+async function runStabAnalysis(inputs) {
+  const {almObj, geoObj, mode} = inputs;
+  const seed = (geoObj && geoObj.rng_seed != null) ? geoObj.rng_seed : CFG.rng_seed;
+
+  log(`Input mode: ${mode}`, "info");
+  log(`RNG seed: 0x${seed.toString(16).toUpperCase().padStart(8,"0")}`, "info");
+
+  // ── Guardrail A ──
+  if (mode !== "axis") {
+    log("Guardrail A: rotation self-check…", "info");
+    await tick();
+    const gA = runGuardrailA(almObj.ell3);
+    if (!gA.pass) {
+      throw new Error(`ROTATION CONVENTION ERROR: ${gA.msg} (deviation ${gA.dev!=null?gA.dev.toFixed(3):"-"}°)`);
+    }
+    log(`Guardrail A: ${gA.msg} (dev=${gA.dev!=null?gA.dev.toFixed(3)+"-":"skip"}°)`, "ok");
+  }
+
+  // ── Stable case ──
+  log(`Computing stable case: K=${CFG.K} coefficient-space perturbations, ε=${CFG.epsilon_deg}°…`, "info");
+  await tick();
+  let stableResult;
+  if (mode === "axis") {
+    stableResult = await computeStabilityAxisSpace(
+      geoObj.u2, geoObj.u3, seed,
+      k => { if(k===CFG.K) log(`  stable perturbations done (K=${k})`, "ok"); }
+    );
+  } else {
+    stableResult = await computeStabilityFromAlm(
+      almObj.ell2, almObj.ell3, seed,
+      k => { if(k===CFG.K) log(`  stable perturbations done (K=${k})`, "ok"); }
+    );
+  }
+  log(`Stable D_internal = ${stableResult.D_internal.toFixed(4)}°  (med|Δθ₂₃|)`, "ok");
+
+  // ── Random case ──
+  log("Computing randomized-phase case for Test R…", "info");
+  await tick();
+  let randomResult;
+  if (mode === "axis") {
+    // Axis-space fallback for random: perturb randomly oriented synthetic axes
+    const rngSyn = makePrng((seed + 0xDEADBEEF) >>> 0);
+    const u2syn = norm3([rngSyn()-0.5, rngSyn()-0.5, rngSyn()-0.5]);
+    const u3syn = norm3([rngSyn()-0.5, rngSyn()-0.5, rngSyn()-0.5]);
+    randomResult = await computeStabilityAxisSpace(u2syn, u3syn, seed, null);
+  } else {
+    randomResult = await computeStabilityRandomized(
+      almObj.ell2, almObj.ell3, seed,
+      k => { if(k===CFG.K) log(`  random perturbations done (K=${k})`, "ok"); }
+    );
+  }
+  log(`Random D_internal = ${randomResult.D_internal.toFixed(4)}°`, "ok");
+
+  // ── Acceptance tests ──
+  const stabMax = CFG.stable_max_ratio * CFG.epsilon_deg;
+  const stablePass = stableResult.D_internal > 0 && stableResult.D_internal < stabMax;
+  const ratio = randomResult.D_internal / (stableResult.D_internal + 1e-9);
+  const randomPass = ratio >= CFG.collapse_ratio;
+  const overallPass = stablePass && randomPass;
+
+  log(`Test S (stable): D=${stableResult.D_internal.toFixed(4)}° < ${stabMax}° → ${stablePass?"PASS":"FAIL"}`, stablePass?"ok":"err");
+  log(`Test R (random): ratio=${ratio.toFixed(2)} ≥ ${CFG.collapse_ratio} → ${randomPass?"PASS":"FAIL"}`, randomPass?"ok":"err");
+  log(`Overall: ${overallPass?"PASS":"FAIL"}`, overallPass?"ok":"err");
+
+  return {
+    stableResult,
+    randomResult,
+    stablePass,
+    randomPass,
+    overallPass,
+    ratio,
+    seed,
+    mode,
+    almObj,
+    geoObj,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [UI] Rendering
+// ═══════════════════════════════════════════════════════════════
+
+function fmt4(x)  { return x==null?"—":x.toFixed(4); }
+function fmt2(x)  { return x==null?"—":x.toFixed(2); }
+function fmtVec(v){ return v==null?"—":`(${v[0].toFixed(5)}, ${v[1].toFixed(5)}, ${v[2].toFixed(5)})`; }
+
+function renderResults(res) {
+  const {stableResult, randomResult, stablePass, randomPass, overallPass, ratio, mode} = res;
+  const S = stableResult;
+  const R = randomResult;
+
+  const stabMax = CFG.stable_max_ratio * CFG.epsilon_deg;
+  const stabStatus = S.D_internal < CFG.epsilon_deg * 3 ? "STABLE" : S.D_internal < stabMax ? "STABLE" : "UNSTABLE";
+  const stabCls    = overallPass ? "pass" : "fail";
+
+  let html = `
+  <!-- ── Stability hero ── -->
+  <div class="stab-hero">
+    <div>
+      <div class="sh-label">D_internal  INTERNAL ORIENTATION STABILITY</div>
+      <div class="sh-big">${fmt4(S.D_internal)}°</div>
+    </div>
+    <div class="sh-ref">
+      <div>ε (perturbation magnitude) <span style="color:var(--text)">${CFG.epsilon_deg}°</span></div>
+      <div>K (perturbations) <span style="color:var(--text)">${CFG.K}</span></div>
+      <div>D_internal / ε ratio <span style="color:var(--text)">${(S.D_internal/CFG.epsilon_deg).toFixed(3)}</span></div>
+      <div>Engineering status <span style="color:var(--${overallPass?"pass":"fail"})">${stabStatus}</span></div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em">PHASE 2</div>
+      <div style="font-size:18px;color:var(--${overallPass?"pass":"fail"});margin-top:2px">${overallPass?"VALIDATED":"FAILED"}</div>
+      ${mode==="axis"?`<div style="font-size:9px;color:var(--warn);margin-top:4px">AXIS-SPACE MODE</div>`:""}
+    </div>
+  </div>
+
+  <!-- ── Summary grid ── -->
+  <div class="sg">
+    <div class="sc"><div class="sk">D_internal</div><div class="sv" style="color:var(--purple)">${fmt4(S.D_internal)}°</div></div>
+    <div class="sc"><div class="sk">med δu₂</div><div class="sv info">${fmt4(S.med_u2)}°</div></div>
+    <div class="sc"><div class="sk">med δu₃</div><div class="sv info">${fmt4(S.med_u3)}°</div></div>
+    <div class="sc"><div class="sk">med |Δθ₂₃|</div><div class="sv" style="color:var(--purple)">${fmt4(S.med_th)}°</div></div>
+    <div class="sc"><div class="sk">K</div><div class="sv info">${CFG.K}</div></div>
+    <div class="sc"><div class="sk">ε</div><div class="sv info">${CFG.epsilon_deg}°</div></div>
+    <div class="sc"><div class="sk">OVERALL</div><div class="sv ${stabCls}">${overallPass?"PASS":"FAIL"}</div></div>
+    <div class="sc"><div class="sk">D_rand / D_stab</div><div class="sv ${randomPass?"pass":"fail"}">${fmt2(ratio)}×</div></div>
+  </div>
+
+  <!-- ── Base geometry ── -->
+  <div class="ax-grid">
+    <div class="ax-card">
+      <div class="ax-label">u₂ BASE — QUADRUPOLE AXIS</div>
+      <div class="ax-val">
+        <span class="ax-dim">x = </span>${S.u2base[0].toFixed(6)}<br>
+        <span class="ax-dim">y = </span>${S.u2base[1].toFixed(6)}<br>
+        <span class="ax-dim">z = </span>${S.u2base[2].toFixed(6)}<br>
+        <span class="ax-dim">|u₂| = </span>${Math.sqrt(S.u2base.reduce((s,x)=>s+x*x,0)).toFixed(8)}
+      </div>
+    </div>
+    <div class="ax-card">
+      <div class="ax-label">u₃ BASE — OCTOPOLE AXIS</div>
+      <div class="ax-val">
+        <span class="ax-dim">x = </span>${S.u3base[0].toFixed(6)}<br>
+        <span class="ax-dim">y = </span>${S.u3base[1].toFixed(6)}<br>
+        <span class="ax-dim">z = </span>${S.u3base[2].toFixed(6)}<br>
+        <span class="ax-dim">θ₂₃_base = </span><span style="color:var(--accent2)">${fmt4(S.theta23base)}°</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Perturbation diagnostics ── -->
+  <div class="diag-grid">
+    <div class="diag-card">
+      <div class="diag-title">δu₂ DIAGNOSTICS</div>
+      <div class="diag-row"><span class="diag-k">min</span><span class="diag-v">${fmt4(S.min_u2)}°</span></div>
+      <div class="diag-row"><span class="diag-k">median</span><span class="diag-v">${fmt4(S.med_u2)}°</span></div>
+      <div class="diag-row"><span class="diag-k">max</span><span class="diag-v">${fmt4(S.max_u2)}°</span></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-title">δu₃ DIAGNOSTICS</div>
+      <div class="diag-row"><span class="diag-k">min</span><span class="diag-v">${fmt4(S.min_u3)}°</span></div>
+      <div class="diag-row"><span class="diag-k">median</span><span class="diag-v">${fmt4(S.med_u3)}°</span></div>
+      <div class="diag-row"><span class="diag-k">max</span><span class="diag-v">${fmt4(S.max_u3)}°</span></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-title">|Δθ₂₃| DIAGNOSTICS</div>
+      <div class="diag-row"><span class="diag-k">min</span><span class="diag-v">${fmt4(S.min_th)}°</span></div>
+      <div class="diag-row"><span class="diag-k">median (D_int)</span><span class="diag-v" style="color:var(--purple)">${fmt4(S.med_th)}°</span></div>
+      <div class="diag-row"><span class="diag-k">max</span><span class="diag-v">${fmt4(S.max_th)}°</span></div>
+    </div>
+  </div>
+
+  <!-- ── Tests ── -->
+  <div class="test-pair">
+
+    <!-- Test S -->
+    <div class="test-card ${stablePass?"pass":"fail"}">
+      <div class="test-header">
+        <span class="test-id">TEST S</span>
+        <span class="test-name">Stable-Case Sanity</span>
+        <span class="test-badge ${stablePass?"pass":"fail"}">${stablePass?"PASS":"FAIL"}</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+        K=${CFG.K} perturbations of ε=${CFG.epsilon_deg}° applied to stable input.
+        D_internal must be small but nonzero.
+      </div>
+      <div class="test-row"><span class="tr-k">rule</span><span class="tr-v">0 &lt; D_internal &lt; ${stabMax}°</span></div>
+      <div class="test-row"><span class="tr-k">D_internal</span><span class="tr-v ${stablePass?"pass":"fail"}">${fmt4(S.D_internal)}°</span></div>
+      <div class="test-row"><span class="tr-k">D_internal / ε</span><span class="tr-v">${(S.D_internal/CFG.epsilon_deg).toFixed(3)}</span></div>
+      <div class="test-row"><span class="tr-k">upper bound (${CFG.stable_max_ratio}·ε)</span><span class="tr-v">${stabMax}°</span></div>
+      <div class="test-row"><span class="tr-k">nonzero</span><span class="tr-v ${S.D_internal>0?"pass":"fail"}">${S.D_internal>0?"YES":"NO (exact invariance?)"}</span></div>
+      <div class="test-row"><span class="tr-k">verdict</span><span class="tr-v ${stablePass?"pass":"fail"}">${stablePass?"STABLE — NONZERO SENSITIVITY":"FAIL"}</span></div>
+    </div>
+
+    <!-- Test R -->
+    <div class="test-card ${randomPass?"pass":"fail"}">
+      <div class="test-header">
+        <span class="test-id">TEST R</span>
+        <span class="test-name">Randomized-Case Collapse</span>
+        <span class="test-badge ${randomPass?"pass":"fail"}">${randomPass?"PASS":"FAIL"}</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+        Same protocol on phase-randomized a<sub>ℓm</sub>.
+        At ε=1°, both D_internal values are O(ε); ratio of ~1.6 is geometrically expected.
+        Threshold ≥ ${CFG.collapse_ratio} is calibrated to perturbation scale.
+      </div>
+      <div class="test-row"><span class="tr-k">rule</span><span class="tr-v">ratio ≥ ${CFG.collapse_ratio}</span></div>
+      <div class="test-row"><span class="tr-k">D_int (stable)</span><span class="tr-v">${fmt4(S.D_internal)}°</span></div>
+      <div class="test-row"><span class="tr-k">D_int (random)</span><span class="tr-v">${fmt4(R.D_internal)}°</span></div>
+      <div class="test-row"><span class="tr-k">ratio D_rand/D_stab</span><span class="tr-v ${randomPass?"pass":"fail"}">${fmt2(ratio)}×</span></div>
+      <div class="test-row"><span class="tr-k">threshold</span><span class="tr-v">≥ ${CFG.collapse_ratio}×</span></div>
+      <div class="test-row"><span class="tr-k">verdict</span><span class="tr-v ${randomPass?"pass":"fail"}">${randomPass?"COLLAPSE CONFIRMED":"COLLAPSE NOT DETECTED"}</span></div>
+    </div>
+
+  </div>
+
+  <!-- ── Provenance ── -->
+  <div class="panel">
+    <div class="ptitle">PROVENANCE</div>
+    <div style="font-size:10.5px;line-height:1.9;color:var(--text)">
+      <span class="ax-dim">input mode : </span>${mode==="coeff"?"coefficient-space (preferred)":mode==="axis"?"axis-space fallback":"unknown"}<br>
+      <span class="ax-dim">rng seed : </span>0x${res.seed.toString(16).toUpperCase().padStart(8,"0")}<br>
+      ${res.almObj ? `<span class="ax-dim">a<sub>ℓm</sub> source : </span>${res.almObj.source} &nbsp;·&nbsp; <span class="ax-dim">schema : </span>${res.almObj.warnings[0]||"—"}<br>` : ""}
+      ${res.geoObj ? `<span class="ax-dim">GEO version : </span>${res.geoObj.version}<br>` : ""}
+    </div>
+  </div>`;
+
+  document.getElementById("outArea").innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [EXPORT] Build STAB export JSON
+// ═══════════════════════════════════════════════════════════════
+
+function buildExportPayload(res) {
+  const S = res.stableResult;
+  const R = res.randomResult;
+  const stabMax = CFG.stable_max_ratio * CFG.epsilon_deg;
+
+  return {
+    chamber: "CMB-III-STAB",
+    version: "0.2.0",
+
+    protocol: {
+      K: CFG.K,
+      epsilon_deg: CFG.epsilon_deg,
+      rng_seed: res.seed,
+      rotation_convention: "passive_ZYZ",
+      D_internal_definition: "median_abs_delta_theta23_deg",
+      mode: res.mode,
+    },
+
+    base: {
+      u2: S.u2base,
+      u3: S.u3base,
+      theta23_deg: S.theta23base,
+    },
+
+    perturbations: {
+      euler_zyz: S.eulers.map(e => ({alpha: e.alpha, beta: e.beta, gamma: e.gamma})),
+      delta_u2_deg:    S.delta_u2,
+      delta_u3_deg:    S.delta_u3,
+      delta_theta23_deg: S.delta_th23,
+    },
+
+    summary: {
+      median_du2_deg:    S.med_u2,
+      median_du3_deg:    S.med_u3,
+      median_dtheta23_deg: S.med_th,
+      D_internal:        S.D_internal,
+      min_du2_deg:       S.min_u2,
+      max_du2_deg:       S.max_u2,
+      min_du3_deg:       S.min_u3,
+      max_du3_deg:       S.max_u3,
+      min_dtheta23_deg:  S.min_th,
+      max_dtheta23_deg:  S.max_th,
+    },
+
+    tests: {
+      stable_case: {
+        pass: res.stablePass,
+        rule: `0 < D_internal < ${stabMax}`,
+        D_internal: S.D_internal,
+      },
+      random_case: {
+        pass: res.randomPass,
+        rule: `D_internal_random / (D_internal_stable + 1e-9) >= ${CFG.collapse_ratio}  [ε=1° → ratio O(1); threshold 1.2 calibrated to perturbation scale]`,
+        D_internal: R.D_internal,
+        ratio: res.ratio,
+      },
+      overall_pass: res.overallPass,
+    },
+
+    provenance: {
+      input_type: res.mode === "axis" ? "geo_export_axis_space" : (res.almObj ? "alm_raw" : "unknown"),
+      geo_chamber_version: res.geoObj ? res.geoObj.version : "unknown",
+      source: res.almObj ? res.almObj.source : (res.geoObj ? "geo_export" : "unknown"),
+      schema: res.almObj ? (res.almObj.warnings[0] || "unknown") : "axis-space",
+    },
+
+    timestamp_utc: new Date().toISOString(),
+  };
+}
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type: "application/json"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [GLUE] File I/O, logging, event wiring
+// ═══════════════════════════════════════════════════════════════
+
+function tick() { return new Promise(r => setTimeout(r, 0)); }
+
+function log(msg, cls="") {
+  const la = document.getElementById("logArea");
+  const sp = document.createElement("span");
+  sp.className = cls; sp.textContent = msg;
+  la.appendChild(document.createElement("br"));
+  la.appendChild(sp);
+  la.scrollTop = la.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById("logArea").innerHTML = '<span class="info">ready — load input then press RUN</span>';
+}
+
+function updateRunButton() {
+  const enabled = almObj !== null || geoObj !== null;
+  document.getElementById("btnRun").disabled = !enabled;
+}
+
+let almObj = null;
+let geoObj = null;
+let lastResult = null;
+
+// ── File: GEO export ──
+document.getElementById("fileGeo").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  const st   = document.getElementById("stGeo");
+  if (!file) { st.className="fstatus none"; st.textContent="—"; geoObj=null; updateRunButton(); return; }
+  try {
+    const text = await readFile(file);
+    geoObj = parseGeoExportJSON(text);
+    st.className = "fstatus ok"; st.textContent = "✓";
+    log(`GEO export loaded: v${geoObj.version}  θ₂₃=${geoObj.theta23.toFixed(4)}°  seed=0x${(geoObj.rng_seed||CFG.rng_seed).toString(16).toUpperCase()}`, "ok");
+    if (geoObj.embeddedAlm) log("  → embedded a_ℓm found in GEO export (will be used if no raw alm loaded)", "info");
+  } catch(err) {
+    st.className = "fstatus err"; st.textContent = "✗";
+    log("GEO parse error: "+err.message, "err");
+    geoObj = null;
+  }
+  updateRunButton();
+});
+
+// ── File: raw alm ──
+document.getElementById("fileAlm").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  const st   = document.getElementById("stAlm");
+  if (!file) { st.className="fstatus none"; st.textContent="—"; almObj=null; updateRunButton(); return; }
+  try {
+    const text = await readFile(file);
+    almObj = parseAlmJSON(text);
+    st.className = "fstatus ok"; st.textContent = "✓";
+    log(`Raw a_ℓm loaded: ${file.name}  (${almObj.warnings[0]||"?"})`, "ok");
+    if (Object.keys(almObj.ell3).length === 0) log("Warning: no ℓ=3 data.", "warn");
+  } catch(err) {
+    st.className = "fstatus err"; st.textContent = "✗";
+    log("a_ℓm parse error: "+err.message, "err");
+    almObj = null;
+  }
+  updateRunButton();
+});
+
+function readFile(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = ev => res(ev.target.result);
+    r.onerror = () => rej(new Error("read fail"));
+    r.readAsText(file);
+  });
+}
+
+// ── RUN ──
+document.getElementById("btnRun").addEventListener("click", async () => {
+  if (!almObj && !geoObj) return;
+  document.getElementById("btnRun").disabled = true;
+  document.getElementById("btnExport").disabled = true;
+  document.getElementById("outArea").innerHTML = '<div class="no-data">Computing — K=32 perturbations × 2 cases (stable + random)…<br><span style="color:var(--dim);font-size:10px">This may take 10–30 seconds due to grid searches</span></div>';
+
+  try {
+    await tick();
+
+    // Determine mode and inputs
+    let resolvedAlm = almObj;
+    let mode;
+
+    if (resolvedAlm) {
+      mode = "coeff";
+    } else if (geoObj && geoObj.embeddedAlm) {
+      resolvedAlm = geoObj.embeddedAlm;
+      mode = "coeff";
+      log("Using embedded a_ℓm from GEO export.", "info");
+    } else if (geoObj) {
+      // Axis-space fallback
+      mode = "axis";
+      log("No raw a_ℓm available — using axis-space perturbation (fallback, limited).", "warn");
+    } else {
+      throw new Error("No valid input loaded.");
+    }
+
+    const result = await runStabAnalysis({ almObj: resolvedAlm, geoObj, mode });
+    lastResult = result;
+    renderResults(result);
+    document.getElementById("btnExport").disabled = false;
+  } catch(err) {
+    document.getElementById("outArea").innerHTML = `<div class="no-data" style="color:var(--fail)">Error: ${err.message}</div>`;
+    log("Error: "+err.message, "err");
+  }
+  document.getElementById("btnRun").disabled = (!almObj && !geoObj);
+});
+
+// ── CLEAR ──
+document.getElementById("btnClear").addEventListener("click", () => {
+  document.getElementById("fileGeo").value = "";
+  document.getElementById("fileAlm").value = "";
+  document.getElementById("stGeo").className = "fstatus none";
+  document.getElementById("stGeo").textContent = "—";
+  document.getElementById("stAlm").className = "fstatus none";
+  document.getElementById("stAlm").textContent = "—";
+  document.getElementById("outArea").innerHTML = '<div class="no-data">No results — load input then press RUN CMB-III-STAB</div>';
+  document.getElementById("btnRun").disabled = true;
+  document.getElementById("btnExport").disabled = true;
+  almObj = null; geoObj = null; lastResult = null;
+  clearLog();
+});
+
+// ── EXPORT ──
+document.getElementById("btnExport").addEventListener("click", () => {
+  if (!lastResult) return;
+  const payload  = buildExportPayload(lastResult);
+  downloadJSON(payload, `cmb-iii-stab_v0.2.0_${Date.now()}.json`);
+  log("STAB export JSON downloaded.", "ok");
+});
+</script>
+</body>
+</html>
