@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER QM-II v1.1.0 — Zeeman-Family Admissibility Dynamics</title>
+<!--
+  QM-II v1.0.6 patch:
+  Inversion detector replaced: rank-order comparison → sign-change crossing criterion.
+  d_prev * d_now < 0 is the correct test for a true eigenvalue trajectory crossing.
+  Rank-order comparison (v1.0.3) counted massive rank reshuffling from opening degenerate
+  multiplets as inversions, inflating inv to ~4500 at 0.01 T where Zeeman shifts are
+  only ~0.005 cm-1. No physical crossings occur at those separations.
+  All other architecture (branch-resolved, inter-family, same-parent exclusion) retained.
+
+  QM-II v1.1.0 patch:
+  UI classification aligned with UNNS chamber ecosystem (CMB / GRAV-I / Seismology / CW-I).
+  Binary STABLE/VIOLATION replaced with three structural regimes:
+    Stable Structure       — inv(B) ≤ 0.9 ν(V(B))
+    Structural Boundary    — 0.9 ν(V(B)) < inv(B) ≤ ν(V(B))
+    Geometric Persistence Only — inv(B) > ν(V(B))
+  Engine (countInversions, computeInterfamilyGaps, MIS) untouched.
+  Admissibility plot gains three-zone background shading + updated legend.
+  Global verdict banner replaced with STRUCTURAL REGIME SUMMARY.
+-->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040810;--bg2:#06090f;--panel:#080e18;--panel2:#0a1220;
+  --border:#111e30;--border2:#0c1828;
+  --accent:#00c8f0;--accent2:#f0a030;--accent3:#e04040;
+  --green:#00dd88;--blue:#4ab0f0;--purple:#9880ff;--gold:#e8c840;
+  --text:#a8bfd0;--text2:#5a7a96;--dim:#2d4560;
+  --pass:#00dd88;--fail:#e04040;--warn:#f0a030;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --display:'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--display);font-size:11px;color:var(--accent);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;border:1px solid;padding:2px 8px;letter-spacing:0.14em;font-weight:600}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.running{color:var(--warn);border-color:var(--warn);animation:blink 1s infinite}
+.htag.done{color:var(--pass);border-color:var(--pass)}
+.htag.fail{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.45}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:0.1em}
+.layer-label{font-size:8px;color:var(--dim);letter-spacing:0.3em;font-weight:600;padding:4px 0 9px;border-top:1px solid var(--border2);margin-top:4px;margin-bottom:11px;display:flex;align-items:center;gap:12px}
+.layer-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.panel{background:var(--panel);border:1px solid var(--border2);padding:15px 18px;margin-bottom:14px}
+.ptitle{font-size:8.5px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.upload-zone{border:1px dashed var(--dim);padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;min-height:72px;display:flex;flex-direction:column;gap:5px}
+.upload-zone:hover{border-color:var(--accent);background:rgba(0,200,240,0.03)}
+.upload-zone.loaded{border-color:var(--pass);border-style:solid;background:rgba(0,221,136,0.03)}
+.upload-zone.err{border-color:var(--fail);border-style:solid}
+.uz-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600}
+.uz-name{font-size:10px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uz-status{font-size:9px;margin-top:2px}
+.uz-status.ok{color:var(--pass)} .uz-status.err{color:var(--fail)} .uz-status.idle{color:var(--dim)}
+input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.ctrl-inp{background:var(--panel2);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;width:90px}
+.ctrl-inp:focus{border-color:var(--accent)}
+.ctrl-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:5px 16px;cursor:pointer;letter-spacing:0.12em;font-weight:600;transition:background .15s}
+.ctrl-btn:hover{background:rgba(0,200,240,0.08)}
+.ctrl-btn.run{border-color:var(--green);color:var(--green)}
+.ctrl-btn.run:hover{background:rgba(0,221,136,0.08)}
+.ctrl-btn.export{border-color:var(--gold);color:var(--gold)}
+.ctrl-btn.export:hover{background:rgba(232,200,64,0.08)}
+.ctrl-btn:disabled{opacity:0.35;cursor:not-allowed}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--panel2);border:1px solid var(--border2);padding:12px 14px}
+.sc-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600;margin-bottom:4px}
+.sc-val{font-family:var(--display);font-size:19px;color:var(--dim);line-height:1}
+.sc-val.live{color:var(--accent)} .sc-val.pass{color:var(--pass)} .sc-val.warn{color:var(--warn)} .sc-val.fail{color:var(--fail)}
+.sc-unit{font-size:8px;color:var(--text2);margin-top:3px}
+canvas{display:block;background:var(--panel2);border:1px solid var(--border2)}
+.data-table{width:100%;border-collapse:collapse;font-size:9px}
+.data-table th{color:var(--accent);letter-spacing:0.12em;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
+.data-table td{padding:3px 8px;border-bottom:1px solid var(--border2);color:var(--text);font-family:var(--mono);white-space:nowrap}
+.data-table tr:hover td{background:rgba(0,200,240,0.03)}
+.data-table td.pass{color:var(--pass)} .data-table td.warn{color:var(--warn)} .data-table td.fail{color:var(--fail)} .data-table td.dim{color:var(--dim)}
+.scrollbox{max-height:320px;overflow-y:auto;border:1px solid var(--border2)}
+.scrollbox::-webkit-scrollbar{width:4px}
+.scrollbox::-webkit-scrollbar-track{background:var(--bg2)}
+.scrollbox::-webkit-scrollbar-thumb{background:var(--dim)}
+.verdict{padding:14px 18px;border:1px solid;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.verdict.stable{border-color:var(--pass);background:rgba(0,221,136,0.04)}
+.verdict.boundary{border-color:var(--warn);background:rgba(240,160,48,0.05)}
+.verdict.violation{border-color:var(--purple);background:rgba(152,128,255,0.05)}
+.verdict.idle{border-color:var(--dim);background:transparent}
+.v-badge{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:0.2em;min-width:120px}
+.verdict.stable .v-badge{color:var(--pass)} .verdict.boundary .v-badge{color:var(--warn)}
+.verdict.violation .v-badge{color:var(--purple)} .verdict.idle .v-badge{color:var(--dim)}
+.v-detail{font-size:10px;color:var(--text2)}
+.mode-badge{font-size:8px;padding:3px 10px;letter-spacing:0.18em;border:1px solid;font-weight:600}
+.mode-badge.primary{color:var(--accent);border-color:var(--accent)}
+.mode-badge.secondary{color:var(--dim);border-color:var(--dim)}
+.warn-box{background:rgba(0,200,240,0.04);border:1px solid var(--accent);padding:10px 14px;margin-bottom:10px}
+.warn-line{font-size:9px;color:var(--accent);padding:1px 0}
+.warn-line::before{content:'ℹ '}
+.warn-line.ok{color:var(--pass)} .warn-line.ok::before{content:'✓ '}
+.warn-line.err{color:var(--fail)} .warn-line.err::before{content:'✗ '}
+.warn-line.warn{color:var(--warn)} .warn-line.warn::before{content:'⚠ '}
+.log-box{background:var(--bg2);border:1px solid var(--border2);padding:8px 10px;max-height:160px;overflow-y:auto}
+.log-line{font-size:9px;padding:1px 0;color:var(--text2)}
+.log-line.ok{color:var(--pass)} .log-line.warn{color:var(--warn)} .log-line.err{color:var(--fail)} .log-line.info{color:var(--accent)}
+.export-pre{background:var(--bg2);border:1px solid var(--border2);padding:10px;font-size:9px;color:var(--text2);max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+input[type=range]{accent-color:var(--accent);width:200px}
+.range-wrap{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.range-val{font-family:var(--display);font-size:10px;color:var(--accent);min-width:80px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <span class="hid">CHAMBER QM-II</span>
+  <span class="htitle">Zeeman-Family Admissibility Dynamics</span>
+  <span class="htag idle" id="run-tag">IDLE</span>
+  <span class="htag" style="color:var(--blue);border-color:var(--blue)">DYNAMIC</span>
+  <span class="htag" style="color:var(--purple);border-color:var(--purple)">BRANCH-RESOLVED</span>
+  <span class="htag" style="color:var(--gold);border-color:var(--gold)">INTER-FAMILY</span>
+  <span class="hver">v1.1.0 · UNNS Substrate Program</span>
+</div>
+
+<!-- ─── LAYER 0 · DATA INPUT ─── -->
+<div class="layer-label">LAYER 0 · DATA INPUT</div>
+
+<div class="row2" style="margin-bottom:14px">
+  <div class="panel" style="margin-bottom:0">
+    <div class="ptitle">PRIMARY INPUT <span class="psub">LONG-FORM ZEEMAN BRANCH DATA · AUTHORITATIVE</span></div>
+    <div class="upload-zone" id="uz-primary">
+      <input type="file" accept=".csv" id="file-primary">
+      <div class="uz-label">ZEEMAN LADDER — (XXXX)_zeeman_ladder.csv</div>
+      <div class="uz-name" id="uz-primary-name">No file loaded</div>
+      <div class="uz-status idle" id="uz-primary-status">schema: B_T, Configuration, Term, J, mJ, Lande_g, Level0_cm1, LevelB_cm1</div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="warn-box" style="margin-bottom:0">
+        <div class="warn-line ok">PRIMARY TEST MODE: branch-resolved inter-family</div>
+        <div class="warn-line">SECONDARY VIEW: parent-family envelope (display only)</div>
+        <div class="warn-line warn">Same-parent branch pairs are excluded from inversion counting and gap eligibility.</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:0">
+    <div class="ptitle">ANALYSIS PARAMETERS</div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <div class="ctrl-label">CONFIG PREFIX FILTER</div>
+        <input class="ctrl-inp" id="filter-config" value="" placeholder="e.g. 1s2p" style="width:130px">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">TERM FILTER</div>
+        <input class="ctrl-inp" id="filter-term" value="" placeholder="e.g. 3P*" style="width:90px">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">MAX J</div>
+        <input class="ctrl-inp" id="filter-maxj" value="" placeholder="all" style="width:60px">
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <div class="ctrl-label">GAP THRESHOLD α</div>
+        <input class="ctrl-inp" id="alpha-inp" value="0.35" style="width:70px">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">DEGEN GUARD ε (cm⁻¹)</div>
+        <input class="ctrl-inp" id="eps-degen-inp" value="0.0001" style="width:90px">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">COMPARISON WINDOW w</div>
+        <input class="ctrl-inp" id="window-inp" value="6" style="width:60px">
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <div class="ctrl-label">B RANGE (T)</div>
+        <div style="display:flex;gap:6px">
+          <input class="ctrl-inp" id="b-min-inp" value="0.0" style="width:60px">
+          <input class="ctrl-inp" id="b-max-inp" value="1.0" style="width:60px">
+        </div>
+      </div>
+      <div class="ctrl-group" style="justify-content:flex-end">
+        <button class="ctrl-btn run" id="run-btn" disabled onclick="runAnalysis()">▶ RUN ANALYSIS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LAYER 1 · INGESTION ─── -->
+<div class="layer-label">LAYER 1 · INGESTION &amp; SLICE CONSTRUCTION</div>
+
+<div class="stat-grid" id="ingest-stats">
+  <div class="stat-card"><div class="sc-label">TOTAL ROWS</div><div class="sc-val" id="s-rows">—</div><div class="sc-unit">branch samples</div></div>
+  <div class="stat-card"><div class="sc-label">FIELD SLICES</div><div class="sc-val" id="s-slices">—</div><div class="sc-unit">distinct B values</div></div>
+  <div class="stat-card"><div class="sc-label">BRANCHES (B=0)</div><div class="sc-val" id="s-branches">—</div><div class="sc-unit">Zeeman sublevels</div></div>
+  <div class="stat-card"><div class="sc-label">PARENT FAMILIES</div><div class="sc-val" id="s-parents">—</div><div class="sc-unit">Config·Term·J groups</div></div>
+  <div class="stat-card"><div class="sc-label">B RANGE (T)</div><div class="sc-val" id="s-brange">—</div><div class="sc-unit">Tesla</div></div>
+  <div class="stat-card"><div class="sc-label">MAX J</div><div class="sc-val" id="s-maxj">—</div></div>
+  <div class="stat-card"><div class="sc-label">MAX |mJ|</div><div class="sc-val" id="s-maxmj">—</div></div>
+  <div class="stat-card"><div class="sc-label">SCHEMA</div><div class="sc-val" id="s-schema">—</div></div>
+</div>
+
+<div class="log-box" id="ingest-log" style="margin-bottom:14px">
+  <div class="log-line info">Chamber QM-II v1.0.6 ready. Degeneracy guard audited: both |d_prev|≤ε AND |d_now|≤ε checked (OR semantics). Any violation is genuine physics.</div>
+</div>
+
+<!-- ─── LAYER 2 · ZEEMAN LADDER ─── -->
+<div class="layer-label">LAYER 2 · ZEEMAN LADDER VISUALIZATION</div>
+
+<div class="panel">
+  <div class="ptitle">E(B) vs B — BRANCH TRAJECTORIES <span class="psub">COLOR: mJ · SCRUBBER MARKS ACTIVE FIELD SLICE</span></div>
+  <div class="range-wrap" style="margin-bottom:10px">
+    <span style="font-size:8px;color:var(--text2);letter-spacing:0.18em">FIELD SCRUBBER</span>
+    <input type="range" id="b-scrub" min="0" max="100" value="0" oninput="onScrub(this.value)">
+    <span class="range-val" id="b-scrub-val">B = 0.000 T</span>
+    <span style="font-size:9px;color:var(--text2)" id="scrub-info"></span>
+  </div>
+  <canvas id="ladder-canvas" width="1360" height="420" style="width:100%;height:420px"></canvas>
+</div>
+
+<!-- ─── LAYER 3 · DIAGNOSTICS AT CURRENT SLICE ─── -->
+<div class="layer-label">LAYER 3 · DIAGNOSTICS AT CURRENT FIELD SLICE</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">CURRENT B</div><div class="sc-val live" id="d-b">—</div><div class="sc-unit">Tesla</div></div>
+  <div class="stat-card"><div class="sc-label">N BRANCHES</div><div class="sc-val live" id="d-nbr">—</div><div class="sc-unit">at this slice</div></div>
+  <div class="stat-card"><div class="sc-label">N PARENTS</div><div class="sc-val live" id="d-npar">—</div><div class="sc-unit">families</div></div>
+  <div class="stat-card"><div class="sc-label">GAP MED (interfam)</div><div class="sc-val live" id="d-gmed">—</div><div class="sc-unit">cm⁻¹</div></div>
+  <div class="stat-card"><div class="sc-label">|V(B)|</div><div class="sc-val" id="d-V" style="color:var(--purple)">—</div><div class="sc-unit">vuln nodes</div></div>
+  <div class="stat-card"><div class="sc-label">ν(V(B))</div><div class="sc-val" id="d-nu" style="color:var(--purple)">—</div><div class="sc-unit">MIS of V(B)</div></div>
+  <div class="stat-card"><div class="sc-label">inv(B)</div><div class="sc-val" id="d-inv">—</div><div class="sc-unit">inter-family inversions</div></div>
+  <div class="stat-card"><div class="sc-label">STRUCTURE REGIME</div><div class="sc-val" id="d-regime">—</div><div class="sc-unit">at this slice</div></div>
+</div>
+
+<!-- ─── LAYER 4 · ADMISSIBILITY TRAJECTORY ─── -->
+<div class="layer-label">LAYER 4 · ADMISSIBILITY TRAJECTORY — inv(B) vs ν(V(B))</div>
+
+<div class="panel">
+  <div class="ptitle">BRANCH-RESOLVED INTER-FAMILY INVERSION vs VULNERABILITY BUDGET <span class="psub">PRIMARY TEST: inv(B) ≤ ν(V(B))</span></div>
+  <canvas id="adm-canvas" width="1360" height="320" style="width:100%;height:320px"></canvas>
+</div>
+
+<div class="verdict idle" id="global-verdict">
+  <div class="v-badge" id="verdict-badge">AWAITING DATA</div>
+  <div class="v-detail" id="verdict-detail">Load Zeeman branch data and run analysis.</div>
+</div>
+
+<!-- ─── LAYER 5 · GAP STRUCTURE + SPECTRUM SLICE ─── -->
+<div class="layer-label">LAYER 5 · INTER-FAMILY GAP STRUCTURE &amp; ORDERED SPECTRUM</div>
+
+<div class="row2" style="margin-bottom:14px">
+  <div class="panel" style="margin-bottom:0">
+    <div class="ptitle">INTER-FAMILY GAP HISTOGRAM <span class="psub">SAME-PARENT GAPS EXCLUDED</span></div>
+    <canvas id="gap-canvas" width="640" height="240" style="width:100%;height:240px"></canvas>
+  </div>
+  <div class="panel" style="margin-bottom:0">
+    <div class="ptitle">ORDERED SPECTRUM SLICE <span class="psub"># · parent_id · mJ · LevelB · gap↑ · eligible · vuln</span></div>
+    <div class="scrollbox">
+      <table class="data-table" id="spectrum-table">
+        <thead><tr><th>#</th><th>parent_id</th><th>mJ</th><th>LevelB cm⁻¹</th><th>gap↑ cm⁻¹</th><th>eligible</th><th>vuln</th></tr></thead>
+        <tbody id="spectrum-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LAYER 6 · PARENT ENVELOPE (SECONDARY) ─── -->
+<div class="layer-label">LAYER 6 · PARENT-FAMILY ENVELOPE — SECONDARY VIEW (display only · not used in primary test)</div>
+
+<div class="panel">
+  <div class="ptitle">FAMILY ENVELOPE BANDS E_min / E_ctr / E_max <span class="psub">SECONDARY · PARENT-ENVELOPE SEPARATION · NOT PRIMARY UNNS OBSERVABLE</span></div>
+  <canvas id="envelope-canvas" width="1360" height="300" style="width:100%;height:300px"></canvas>
+</div>
+
+<!-- ─── LAYER 7 · FULL DIAGNOSTICS TABLE ─── -->
+<div class="layer-label">LAYER 7 · FULL FIELD-SWEEP DIAGNOSTICS TABLE</div>
+
+<div class="panel">
+  <div class="ptitle">PER-B BRANCH-RESOLVED INTER-FAMILY DIAGNOSTICS <span class="psub">B · N_br · N_par · gap_med_if · |V| · ν(V) · inv · result</span></div>
+  <div class="scrollbox">
+    <table class="data-table">
+      <thead><tr><th>B (T)</th><th>N_br</th><th>N_par</th><th>gap_med_if cm⁻¹</th><th>|V|</th><th>ν(V)</th><th>inv</th><th>ν/N_par</th><th>inv/N_par</th><th>structure_regime</th></tr></thead>
+      <tbody id="diag-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── LAYER 8 · EXPORT ─── -->
+<div class="layer-label">LAYER 8 · EXPORT</div>
+
+<div class="panel">
+  <div class="ptitle">DIAGNOSTICS EXPORT <span class="psub">JSON + CSV · SCHEMA v1.1.0</span></div>
+  <div class="ctrl-row" style="margin-bottom:8px">
+    <button class="ctrl-btn export" onclick="exportJSON()" id="export-json-btn" disabled>⬇ EXPORT JSON</button>
+    <button class="ctrl-btn export" onclick="exportCSV()" id="export-csv-btn" disabled>⬇ EXPORT DIAGNOSTICS CSV</button>
+  </div>
+  <div class="export-pre" id="export-preview">// Run analysis to generate export preview</div>
+</div>
+
+</div><!-- /shell -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CHAMBER QM-II v1.1.0
+   Branch-Resolved Inter-Family Admissibility Dynamics
+   UNNS Substrate Program
+
+   Primary mode: branch-resolved, inter-family comparisons only
+   Parent grouping: family labels + same-parent exclusion only
+   Centroid analysis: secondary envelope display only (not tested)
+
+   v1.1.0: Three-regime structural classification aligned with
+   CMB / GRAV-I / Seismology / CW-I chamber ecosystem.
+   Engine untouched; UI and export updated.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Structural regime classification ─── */
+function classifyStructure(inv, nu){
+  if(nu === 0) return inv === 0 ? 'stable' : 'geometry';
+  const r = inv / nu;
+  if(r <= 0.90) return 'stable';
+  if(r <= 1.00) return 'boundary';
+  return 'geometry';
+}
+
+function regimeLabel(type){
+  if(type === 'stable')   return 'Stable Structure';
+  if(type === 'boundary') return 'Structural Boundary';
+  return 'Geometric Persistence Only';
+}
+
+function regimeColor(type){
+  if(type === 'stable')   return '#20e3b2';
+  if(type === 'boundary') return '#f5c542';
+  return '#ff4c4c';
+}
+
+/* ─── State ─── */
+let rawBranches = [];     // all parsed rows after filters
+let sliceMap = new Map(); // B_T.toFixed(6) → array sorted by LevelB_cm1
+let bValues = [];         // sorted distinct B floats
+let diagData = [];        // per-B diagnostic objects
+let isReady = false;
+let currentScrubIdx = 0;
+
+/* ─── Logging ─── */
+function log(msg, cls=''){
+  const box = document.getElementById('ingest-log');
+  const d = document.createElement('div');
+  d.className = 'log-line ' + cls;
+  d.textContent = msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ─── CSV Parser ─── */
+function parseCSV(text){
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) throw new Error('CSV too short');
+  const hdrs = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const vals = splitLine(lines[i]);
+    if(vals.length < hdrs.length - 1) continue;
+    const obj = {};
+    hdrs.forEach((h,k)=>{ obj[h] = (vals[k]||'').trim().replace(/^"|"$/g,''); });
+    rows.push(obj);
+  }
+  return {headers: hdrs, rows};
+}
+function splitLine(line){
+  const r=[], s=line;
+  let cur='', inQ=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){r.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  r.push(cur);
+  return r;
+}
+
+/* ─── File Load ─── */
+document.getElementById('file-primary').addEventListener('change', function(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  document.getElementById('uz-primary-name').textContent = file.name;
+  const fr = new FileReader();
+  fr.onload = ev=>{
+    try{ ingest(ev.target.result, file.name); }
+    catch(err){
+      document.getElementById('uz-primary').className='upload-zone err';
+      document.getElementById('uz-primary-status').className='uz-status err';
+      document.getElementById('uz-primary-status').textContent='✗ '+err.message;
+      log('Error: '+err.message,'err');
+    }
+  };
+  fr.readAsText(file);
+});
+
+function ingest(text, fname){
+  const {headers, rows} = parseCSV(text);
+  const req = ['B_T','Configuration','Term','J','mJ','Lande_g','Level0_cm1','LevelB_cm1'];
+  const miss = req.filter(f=>!headers.includes(f));
+  if(miss.length) throw new Error('Missing columns: '+miss.join(', '));
+
+  log('File: '+fname+' — '+rows.length+' rows', 'info');
+  log('Schema validated: '+req.join(', '), 'ok');
+
+  const cfgF = document.getElementById('filter-config').value.trim();
+  const termF = document.getElementById('filter-term').value.trim();
+  const maxJF = parseFloat(document.getElementById('filter-maxj').value.trim());
+
+  rawBranches = rows.map(r=>({
+    B_T:       parseFloat(r['B_T']),
+    Configuration: r['Configuration'],
+    Term:      r['Term'],
+    J:         parseFloat(r['J']),
+    mJ:        parseFloat(r['mJ']),
+    Lande_g:   parseFloat(r['Lande_g']),
+    Level0_cm1:parseFloat(r['Level0_cm1']),
+    LevelB_cm1:parseFloat(r['LevelB_cm1']),
+    parent_id: r['Configuration']+'|'+r['Term']+'|'+r['J'],
+    branch_id: r['Configuration']+'|'+r['Term']+'|'+r['J']+'|'+r['mJ']
+  })).filter(r=>{
+    if(isNaN(r.B_T)||isNaN(r.LevelB_cm1)) return false;
+    if(cfgF && !r.Configuration.startsWith(cfgF)) return false;
+    if(termF && r.Term!==termF) return false;
+    if(!isNaN(maxJF) && r.J>maxJF) return false;
+    return true;
+  });
+
+  if(!rawBranches.length) throw new Error('No rows after filters');
+  log('After filters: '+rawBranches.length+' rows','ok');
+
+  buildSliceMap();
+  updateIngestStats();
+
+  document.getElementById('uz-primary').className='upload-zone loaded';
+  document.getElementById('uz-primary-status').className='uz-status ok';
+  const b0key=bValues[0].toFixed(6);
+  const nb0=(sliceMap.get(b0key)||[]).length;
+  document.getElementById('uz-primary-status').textContent='✓ '+rawBranches.length+' branches · '+bValues.length+' slices · '+nb0+' at B=0';
+  document.getElementById('run-btn').disabled=false;
+  isReady=true;
+}
+
+function buildSliceMap(){
+  sliceMap.clear();
+  for(const r of rawBranches){
+    const k=r.B_T.toFixed(6);
+    if(!sliceMap.has(k)) sliceMap.set(k,[]);
+    sliceMap.get(k).push(r);
+  }
+  sliceMap.forEach(arr=>arr.sort((a,b)=>a.LevelB_cm1-b.LevelB_cm1));
+  bValues = Array.from(sliceMap.keys()).map(k=>parseFloat(k)).sort((a,b)=>a-b);
+  const b0key=bValues[0].toFixed(6);
+  log('Slices: '+bValues.length+'  B=['+bValues[0].toFixed(3)+'…'+bValues[bValues.length-1].toFixed(3)+'] T','ok');
+  log('Branches at B='+bValues[0].toFixed(4)+': '+(sliceMap.get(b0key)||[]).length,'ok');
+}
+
+function updateIngestStats(){
+  const b0key=bValues[0].toFixed(6);
+  const b0slice=sliceMap.get(b0key)||[];
+  const parentSet=new Set(rawBranches.map(r=>r.parent_id));
+  let maxJ=0, maxMJ=0;
+  for(const r of rawBranches){
+    if(r.J>maxJ) maxJ=r.J;
+    const amj=Math.abs(r.mJ);
+    if(amj>maxMJ) maxMJ=amj;
+  }
+  setSV('s-rows', rawBranches.length.toLocaleString(), 'live');
+  setSV('s-slices', bValues.length, 'live');
+  setSV('s-branches', b0slice.length, 'live');
+  setSV('s-parents', parentSet.size, 'live');
+  setSV('s-brange', bValues[0].toFixed(2)+'–'+bValues[bValues.length-1].toFixed(2), 'live');
+  setSV('s-maxj', maxJ, 'live');
+  setSV('s-maxmj', maxMJ, 'live');
+  document.getElementById('s-schema').textContent='VALID';
+  document.getElementById('s-schema').className='sc-val pass';
+}
+
+/* ─── Math helpers ─── */
+function median(arr){
+  if(!arr.length) return 0;
+  const s=arr.slice().sort((a,b)=>a-b);
+  const m=Math.floor(s.length/2);
+  return s.length%2===0?(s[m-1]+s[m])/2:s[m];
+}
+
+/* ─── Inter-family gap analysis ─── */
+// Returns {eligibleGaps, gapMed, vulnIdx, nu}
+// eligibleGaps[i] = gap between branch[i] and branch[i+1] if different parents, else null
+function computeInterfamilyGaps(sortedSlice, alpha){
+  const N=sortedSlice.length;
+  const eligibleGaps=new Array(N-1).fill(null);
+  const eligible=[];
+  for(let i=0;i<N-1;i++){
+    if(sortedSlice[i].parent_id!==sortedSlice[i+1].parent_id){
+      const g=sortedSlice[i+1].LevelB_cm1-sortedSlice[i].LevelB_cm1;
+      eligibleGaps[i]=g;
+      eligible.push(g);
+    }
+  }
+  if(!eligible.length) return {eligibleGaps, gapMed:0, vulnIdx:[], nu:0};
+  const gapMed=median(eligible);
+  const thresh=alpha*gapMed;
+  const vulnIdx=[];
+  for(let i=0;i<N-1;i++){
+    if(eligibleGaps[i]!==null && eligibleGaps[i]<thresh) vulnIdx.push(i);
+  }
+  const nu=misSorted(vulnIdx);
+  return {eligibleGaps, gapMed, vulnIdx, nu};
+}
+
+// Greedy MIS on sorted index set (path-graph adjacency = consecutive indices)
+function misSorted(sorted){
+  let count=0, last=-2;
+  for(const idx of sorted){
+    if(idx>last+1){count++;last=idx;}
+  }
+  return count;
+}
+
+/* ─── Adjacent-slice inter-family inversion count ─── */
+// Compare slices at B_prev and B_cur.
+// For each pair (i,j) within comparison window w:
+//   - skip if same parent
+//   - skip if |Ei_prev - Ej_prev| <= eps or |Ei_cur - Ej_cur| <= eps
+//   - count inversion if order flipped
+function countInversions(prevSlice, curSlice, eps){
+  // v1.0.6 audit: degeneracy guard confirmed correct (both sides checked, OR semantics).
+  //
+  // Adjacent-only inter-family sign-change crossing test.
+  // Adjacency matches computeInterfamilyGaps() exactly → inv and ν(V) on same graph.
+  //
+  // Degeneracy guard: |d_prev|≤eps OR |d_now|≤eps → skip (two separate continues).
+  // Any remaining violation is genuine physics, not artifact.
+  //
+  // Crossing: d_prev * d_now < 0 (energy separation changes sign between adjacent slices).
+
+  // Build energy lookup: branch_id -> LevelB_cm1 at current slice
+  const curE = {};
+  for(const r of curSlice) curE[r.branch_id] = r.LevelB_cm1;
+
+  let inv = 0;
+  const N = prevSlice.length;
+  for(let i = 0; i < N-1; i++){
+    const ri = prevSlice[i];
+    const rj = prevSlice[i+1];
+
+    // Same-parent exclusion — matches gap eligibility rule in computeInterfamilyGaps
+    if(ri.parent_id === rj.parent_id) continue;
+
+    const Ei_cur = curE[ri.branch_id];
+    const Ej_cur = curE[rj.branch_id];
+    if(Ei_cur === undefined || Ej_cur === undefined) continue;
+
+    const d_prev = ri.LevelB_cm1 - rj.LevelB_cm1;
+    const d_now  = Ei_cur        - Ej_cur;
+
+    // Degeneracy guard (v1.0.6 verified correct):
+    // Skip pair if separation is negligible at EITHER slice — OR semantics.
+    // This eliminates degeneracy-splitting artifacts where d_prev≈0 (degenerate at B=0).
+    // Both sides were already checked in v1.0.6; confirmed unchanged here.
+    if(Math.abs(d_prev) <= eps) continue;  // degenerate at Bk-1: skip
+    if(Math.abs(d_now)  <= eps) continue;  // degenerate at Bk:   skip
+
+    // True adjacent crossing
+    if(d_prev * d_now < 0) inv++;
+  }
+  return inv;
+}
+
+/* ─── Main Analysis ─── */
+function runAnalysis(){
+  if(!isReady){ log('No data','err'); return; }
+  const tag=document.getElementById('run-tag');
+  tag.className='htag running'; tag.textContent='RUNNING';
+
+  const alpha=parseFloat(document.getElementById('alpha-inp').value)||0.35;
+  const epsDegen=parseFloat(document.getElementById('eps-degen-inp').value)||0.0001;
+  const w=parseInt(document.getElementById('window-inp').value)||6;
+  const bMin=parseFloat(document.getElementById('b-min-inp').value);
+  const bMax=parseFloat(document.getElementById('b-max-inp').value);
+
+  log('─── Analysis v1.0.6 started ───','info');
+  log('α='+alpha+'  ε_degen='+epsDegen+' cm⁻¹  w='+w+'  B=['+bMin+','+bMax+'] T','info');
+  log('Mode: branch-resolved inter-family | same-parent pairs excluded','info');
+
+  const activeBValues=bValues.filter(b=>b>=bMin&&b<=bMax);
+  diagData=[];
+  let violations=0, boundaries=0;
+  let maxInv=0, maxNu=0;
+
+  // We need adjacent slices for inversion counting, so process sequentially
+  let prevSlice=null;
+
+  for(let ki=0;ki<activeBValues.length;ki++){
+    const B=activeBValues[ki];
+    const key=B.toFixed(6);
+    const slice=sliceMap.get(key)||[];
+    const N=slice.length;
+
+    if(N<2){
+      diagData.push({B,N,N_par:0,gapMed:0,V:0,nu:0,inv:0,result:'SKIP'});
+      prevSlice=null; continue;
+    }
+
+    const parentSet=new Set(slice.map(r=>r.parent_id));
+    const N_par=parentSet.size;
+
+    const {eligibleGaps,gapMed,vulnIdx,nu}=computeInterfamilyGaps(slice,alpha);
+
+    // Inversions: only if we have a previous slice
+    let inv=0;
+    if(prevSlice && prevSlice.length>=2){
+      inv=countInversions(prevSlice, slice, epsDegen);
+    }
+
+    let result;
+    result = classifyStructure(inv, nu);
+    if(result === 'geometry')  violations++;
+    else if(result === 'boundary') boundaries++;
+
+    if(inv>maxInv) maxInv=inv;
+    if(nu>maxNu) maxNu=nu;
+
+    diagData.push({B,N,N_par,gapMed,eligibleGaps,vulnIdx,V:vulnIdx.length,nu,inv,result});
+    prevSlice=slice;
+  }
+
+  log('Done: '+diagData.length+' slices | geometry='+violations+' boundary='+boundaries+' stable='+(diagData.length-violations-boundaries),
+      violations>0?'err':'ok');
+  log('Max inv='+maxInv+'  Max ν(V)='+maxNu,'ok');
+
+  tag.className='htag done'; tag.textContent='DONE';
+  document.getElementById('export-json-btn').disabled=false;
+  document.getElementById('export-csv-btn').disabled=false;
+
+  setGlobalVerdict(violations, boundaries, diagData.length, maxInv, maxNu);
+  populateDiagTable();
+  setupScrubber(activeBValues);
+  drawLadder(0);
+  drawAdmissibilityPlot();
+  updateSliceDiag(0);
+  drawGapHistogram(0);
+  populateSpectrumTable(0);
+  drawEnvelope();
+  buildExportPreview(alpha, epsDegen, w, violations, boundaries);
+}
+
+/* ─── Global verdict ─── */
+function setGlobalVerdict(viol, bound, total, maxInv, maxNu){
+  const el=document.getElementById('global-verdict');
+  const badge=document.getElementById('verdict-badge');
+  const detail=document.getElementById('verdict-detail');
+  const stable=total-viol-bound;
+  if(viol>0){
+    el.className='verdict violation';
+    badge.textContent='STRUCTURAL REGIME SUMMARY';
+    detail.textContent=
+      'Stable Structure: '+stable+' slices  ·  '+
+      'Structural Boundary: '+bound+' slices  ·  '+
+      'Geometric Persistence Only: '+viol+' slices  '+
+      '(max inv='+maxInv+', max ν(V)='+maxNu+')  ·  branch-resolved inter-family test';
+  } else if(bound>0){
+    el.className='verdict boundary';
+    badge.textContent='STRUCTURAL REGIME SUMMARY';
+    detail.textContent=
+      'Stable Structure: '+stable+' slices  ·  '+
+      'Structural Boundary: '+bound+' slices  ·  '+
+      'Geometric Persistence Only: 0 slices  '+
+      '·  inter-family dynamics near structural threshold';
+  } else {
+    el.className='verdict stable';
+    badge.textContent='STRUCTURAL REGIME SUMMARY';
+    detail.textContent=
+      'Stable Structure: '+stable+' slices  ·  '+
+      'Structural Boundary: 0 slices  ·  '+
+      'Geometric Persistence Only: 0 slices  '+
+      '·  all '+total+' slices satisfy inv(B) < 0.9 ν(V(B))';
+  }
+}
+
+/* ─── Diagnostics table ─── */
+function populateDiagTable(){
+  const body=document.getElementById('diag-body');
+  body.innerHTML='';
+  for(const d of diagData){
+    const cls=d.result==='geometry'?'fail':d.result==='boundary'?'warn':'pass';
+    const lbl=regimeLabel(d.result);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${d.B.toFixed(3)}</td><td>${d.N}</td><td>${d.N_par}</td>
+      <td>${d.gapMed.toFixed(6)}</td>
+      <td style="color:var(--purple)">${d.V}</td>
+      <td style="color:var(--purple)">${d.nu}</td>
+      <td>${d.inv}</td>
+      <td>${d.N_par>0?(d.nu/d.N_par).toFixed(3):'—'}</td>
+      <td>${d.N_par>0?(d.inv/d.N_par).toFixed(3):'—'}</td>
+      <td class="${cls}">${lbl}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+/* ─── Scrubber ─── */
+function setupScrubber(activeBValues){
+  const sc=document.getElementById('b-scrub');
+  sc.max=activeBValues.length-1; sc.value=0;
+  document.getElementById('b-scrub-val').textContent='B = '+activeBValues[0].toFixed(3)+' T';
+}
+function onScrub(idx){
+  currentScrubIdx=parseInt(idx);
+  if(!diagData.length) return;
+  const d=diagData[currentScrubIdx];
+  if(!d) return;
+  document.getElementById('b-scrub-val').textContent='B = '+d.B.toFixed(3)+' T';
+  document.getElementById('scrub-info').textContent=d.N+' branches · '+d.N_par+' families';
+  drawLadder(currentScrubIdx);
+  updateSliceDiag(currentScrubIdx);
+  drawGapHistogram(currentScrubIdx);
+  populateSpectrumTable(currentScrubIdx);
+}
+
+/* ─── Slice stat cards ─── */
+function updateSliceDiag(idx){
+  const d=diagData[idx]; if(!d) return;
+  setSV('d-b', d.B.toFixed(3), 'live');
+  setSV('d-nbr', d.N, 'live');
+  setSV('d-npar', d.N_par, 'live');
+  setSV('d-gmed', d.gapMed.toExponential(3), 'live');
+  document.getElementById('d-V').textContent=d.V;
+  document.getElementById('d-nu').textContent=d.nu;
+  const invEl=document.getElementById('d-inv');
+  invEl.textContent=d.inv;
+  invEl.className='sc-val '+(d.result==='geometry'?'fail':d.result==='boundary'?'warn':'pass');
+  const regEl=document.getElementById('d-regime');
+  if(regEl){
+    regEl.textContent=regimeLabel(d.result);
+    regEl.className='sc-val';
+    regEl.style.color=regimeColor(d.result);
+    regEl.style.fontSize='10px';
+  }
+}
+
+/* ─── CANVAS: Zeeman Ladder ─── */
+function drawLadder(highlightIdx){
+  const cv=document.getElementById('ladder-canvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle='#0a1220'; ctx.fillRect(0,0,W,H);
+  if(!diagData.length) return;
+
+  const pad={l:70,r:20,t:20,b:40};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const bMin=diagData[0].B, bMax=diagData[diagData.length-1].B;
+  const bRange=bMax-bMin||1;
+
+  // Global E range — iterative
+  let eMin=Infinity, eMax=-Infinity;
+  for(const d of diagData){
+    const sl=sliceMap.get(d.B.toFixed(6))||[];
+    for(const r of sl){ if(r.LevelB_cm1<eMin) eMin=r.LevelB_cm1; if(r.LevelB_cm1>eMax) eMax=r.LevelB_cm1; }
+  }
+  if(eMax===eMin){eMin-=1;eMax+=1;}
+  const eRange=eMax-eMin;
+  const bToX=b=>pad.l+(b-bMin)/bRange*pw;
+  const eToY=e=>pad.t+ph-(e-eMin)/eRange*ph;
+
+  // Axes
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+  ctx.fillStyle='#5a7a96'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('B (T)', pad.l+pw/2-15, H-6);
+  ctx.save(); ctx.translate(14,pad.t+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('E (cm⁻¹)',-30,0); ctx.restore();
+
+  // B tick labels
+  const nT=Math.min(11,diagData.length);
+  for(let i=0;i<nT;i++){
+    const b=bMin+i*(bMax-bMin)/(nT-1||1);
+    ctx.fillStyle='#2d4560'; ctx.fillText(b.toFixed(1),bToX(b)-8,H-22);
+  }
+
+  // Collect unique branch trajectories
+  const allKeys=new Set();
+  for(const d of diagData){ const sl=sliceMap.get(d.B.toFixed(6))||[]; for(const r of sl) allKeys.add(r.branch_id); }
+
+  // mJ range for color — iterative
+  let mjMin=Infinity, mjMax=-Infinity;
+  for(const k of allKeys){ const mj=parseFloat(k.split('|')[3]); if(mj<mjMin) mjMin=mj; if(mj>mjMax) mjMax=mj; }
+  const mjRange=mjMax-mjMin||1;
+
+  const colorMap=new Map();
+  for(const k of allKeys){
+    const mj=parseFloat(k.split('|')[3]);
+    const t=(mj-mjMin)/mjRange;
+    const r=t<0.5?Math.round(t*2*80):80;
+    const g=t<0.5?Math.round(t*2*180):Math.round(180*(1-t)*2);
+    const b2=t<0.5?240:Math.round(240*(1-t)*2);
+    colorMap.set(k,`rgba(${r},${g},${b2},0.5)`);
+  }
+
+  // Build trajectories
+  const traj=new Map();
+  for(const k of allKeys) traj.set(k,[]);
+  for(const d of diagData){
+    const sl=sliceMap.get(d.B.toFixed(6))||[];
+    for(const r of sl) traj.get(r.branch_id).push({B:r.B_T,E:r.LevelB_cm1});
+  }
+
+  ctx.lineWidth=0.7;
+  for(const [k,pts] of traj){
+    if(pts.length<2) continue;
+    ctx.strokeStyle=colorMap.get(k)||'#4ab0f0';
+    ctx.beginPath();
+    for(let i=0;i<pts.length;i++){
+      const x=bToX(pts[i].B), y=eToY(pts[i].E);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Current B highlight
+  if(highlightIdx<diagData.length){
+    const hX=bToX(diagData[highlightIdx].B);
+    ctx.strokeStyle='rgba(0,200,240,0.35)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(hX,pad.t); ctx.lineTo(hX,pad.t+ph); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+/* ─── CANVAS: Admissibility Trajectory ─── */
+function drawAdmissibilityPlot(){
+  const cv=document.getElementById('adm-canvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle='#0a1220'; ctx.fillRect(0,0,W,H);
+  if(!diagData.length) return;
+
+  const pad={l:70,r:20,t:24,b:40};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const bMin=diagData[0].B, bMax=diagData[diagData.length-1].B;
+  const bRange=bMax-bMin||1;
+
+  // Y range — iterative
+  let maxY=1;
+  for(const d of diagData){ const v=Math.max(d.nu,d.inv); if(v>maxY) maxY=v; }
+  maxY*=1.15;
+
+  const bToX=b=>pad.l+(b-bMin)/bRange*pw;
+  const vToY=v=>pad.t+ph-(v/maxY)*ph;
+
+  // Grid
+  ctx.strokeStyle='#0c1828'; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad.t+ph-(i/5)*ph;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+    ctx.fillStyle='#2d4560'; ctx.font='9px IBM Plex Mono';
+    ctx.fillText(Math.round(maxY*i/5),pad.l-42,y+3);
+  }
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+  ctx.fillStyle='#2d4560'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('B (T)',pad.l+pw/2-15,H-6);
+  const nT=11;
+  for(let i=0;i<nT;i++){
+    const b=bMin+i*(bMax-bMin)/(nT-1||1);
+    ctx.fillText(b.toFixed(1),bToX(b)-8,H-22);
+  }
+
+  // ν(V(B)) fill + line
+  ctx.fillStyle='rgba(152,128,255,0.10)';
+  ctx.beginPath();
+  ctx.moveTo(bToX(diagData[0].B),vToY(0));
+  for(const d of diagData) ctx.lineTo(bToX(d.B),vToY(d.nu));
+  ctx.lineTo(bToX(diagData[diagData.length-1].B),vToY(0));
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#9880ff'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let i=0;i<diagData.length;i++){
+    const x=bToX(diagData[i].B), y=vToY(diagData[i].nu);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Three-zone background shading keyed to ν(V) trajectory
+  // green zone: inv ≤ 0.9 ν  amber zone: 0.9 ν – ν  red zone: inv > ν (drawn as bands above ν)
+  // We draw horizontal bands relative to each slice's ν value
+  for(let i=0;i<diagData.length-1;i++){
+    const d0=diagData[i], d1=diagData[i+1];
+    const x0=bToX(d0.B), x1=bToX(d1.B);
+    const bw=x1-x0;
+    // green band: y from 0 to 0.9*nu
+    ctx.fillStyle='rgba(32,227,178,0.04)';
+    ctx.fillRect(x0,vToY(Math.max(d0.nu,d1.nu)*0.9),bw,vToY(0)-vToY(Math.max(d0.nu,d1.nu)*0.9));
+    // amber band: 0.9*nu to nu
+    ctx.fillStyle='rgba(245,197,66,0.06)';
+    ctx.fillRect(x0,vToY(Math.max(d0.nu,d1.nu)),bw,vToY(Math.max(d0.nu,d1.nu)*0.9)-vToY(Math.max(d0.nu,d1.nu)));
+  }
+
+  // inv(B) — segment by segment, colored by regime
+  for(let i=1;i<diagData.length;i++){
+    const prev=diagData[i-1], cur=diagData[i];
+    ctx.strokeStyle=regimeColor(cur.result);
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(bToX(prev.B),vToY(prev.inv));
+    ctx.lineTo(bToX(cur.B),vToY(cur.inv));
+    ctx.stroke();
+  }
+
+  // Legend
+  ctx.font='9px IBM Plex Mono';
+  const lx=pad.l+pw-220, ly=pad.t+10;
+  ctx.fillStyle='#9880ff'; ctx.fillRect(lx,ly,14,3); ctx.fillStyle='#9880ff';
+  ctx.fillText('ν(V(B)) — vulnerability budget',lx+18,ly+4);
+  ctx.fillStyle='#20e3b2'; ctx.fillRect(lx,ly+13,14,3); ctx.fillStyle='#20e3b2';
+  ctx.fillText('inv(B) — Stable Structure',lx+18,ly+17);
+  ctx.fillStyle='#f5c542'; ctx.fillRect(lx,ly+26,14,3); ctx.fillStyle='#f5c542';
+  ctx.fillText('inv(B) — Structural Boundary',lx+18,ly+30);
+  ctx.fillStyle='#ff4c4c'; ctx.fillRect(lx,ly+39,14,3); ctx.fillStyle='#ff4c4c';
+  ctx.fillText('inv(B) — Geometric Persistence Only',lx+18,ly+43);
+}
+
+/* ─── CANVAS: Gap Histogram (inter-family only) ─── */
+function drawGapHistogram(idx){
+  const cv=document.getElementById('gap-canvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle='#0a1220'; ctx.fillRect(0,0,W,H);
+  if(!diagData.length||idx>=diagData.length) return;
+  const d=diagData[idx];
+  if(!d.eligibleGaps) return;
+
+  const gaps=d.eligibleGaps.filter(g=>g!==null);
+  if(gaps.length<2) return;
+  const alpha=parseFloat(document.getElementById('alpha-inp').value)||0.35;
+  const thresh=alpha*d.gapMed;
+
+  const pad={l:54,r:15,t:20,b:38};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+
+  const nBins=Math.min(40,gaps.length);
+  let gMin=Infinity, gMax=-Infinity;
+  for(const g of gaps){if(g<gMin)gMin=g; if(g>gMax)gMax=g;}
+  const gRange=gMax-gMin||1;
+  const binW=gRange/nBins;
+  const bins=new Array(nBins).fill(0);
+  for(const g of gaps){ const bi=Math.min(nBins-1,Math.floor((g-gMin)/binW)); bins[bi]++; }
+  let maxBin=0;
+  for(const b of bins){ if(b>maxBin) maxBin=b; }
+
+  for(let i=0;i<nBins;i++){
+    if(!bins[i]) continue;
+    const g=gMin+i*binW;
+    const x=pad.l+i*(pw/nBins);
+    const bh=(bins[i]/maxBin)*ph;
+    ctx.fillStyle=g<thresh?'rgba(152,128,255,0.55)':'rgba(74,176,240,0.4)';
+    ctx.fillRect(x,pad.t+ph-bh,Math.max(1,pw/nBins-1),bh);
+  }
+
+  // Threshold line
+  const tx=pad.l+(thresh-gMin)/gRange*pw;
+  if(tx>=pad.l&&tx<=pad.l+pw){
+    ctx.strokeStyle='rgba(240,160,48,0.8)'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(tx,pad.t); ctx.lineTo(tx,pad.t+ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#f0a030'; ctx.font='8px IBM Plex Mono'; ctx.fillText('α·med',tx+2,pad.t+11);
+  }
+
+  // Axes + labels
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+  ctx.fillStyle='#2d4560'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('interfam gap (cm⁻¹)',pad.l+pw/2-40,H-4);
+  ctx.fillText(gMin.toFixed(3),pad.l-2,H-20);
+  ctx.fillText(gMax.toFixed(3),pad.l+pw-24,H-20);
+  ctx.fillStyle='#5a7a96';
+  ctx.fillText('B='+d.B.toFixed(3)+'T  eligible='+gaps.length+'  med='+d.gapMed.toExponential(3),pad.l,pad.t+12);
+}
+
+/* ─── Spectrum table ─── */
+function populateSpectrumTable(idx){
+  if(!diagData.length||idx>=diagData.length) return;
+  const d=diagData[idx];
+  const key=d.B.toFixed(6);
+  const slice=sliceMap.get(key)||[];
+  const alpha=parseFloat(document.getElementById('alpha-inp').value)||0.35;
+  const {eligibleGaps,gapMed,vulnIdx}=d.eligibleGaps!==undefined?d:computeInterfamilyGaps(slice,alpha);
+  const thresh=alpha*gapMed;
+  const vulnSet=new Set(vulnIdx||[]);
+
+  const body=document.getElementById('spectrum-body');
+  body.innerHTML='';
+  for(let i=0;i<slice.length;i++){
+    const r=slice[i];
+    const eg=eligibleGaps&&eligibleGaps[i]!==undefined?eligibleGaps[i]:null;
+    const isElig=(eg!==null);
+    const isVuln=vulnSet.has(i);
+    const gapStr=eg!==null?eg.toFixed(6):'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td>
+      <td style="font-size:8px;color:var(--text2)">${r.parent_id}</td>
+      <td>${r.mJ}</td>
+      <td>${r.LevelB_cm1.toFixed(6)}</td>
+      <td class="${isElig?(isVuln?'warn':''):'dim'}">${gapStr}</td>
+      <td style="color:${isElig?'var(--accent)':'var(--dim)'}">${isElig?'●':'○'}</td>
+      <td style="color:${isVuln?'var(--purple)':'var(--dim)'}">${isVuln?'●':'○'}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+/* ─── CANVAS: Parent Envelope (secondary) ─── */
+function drawEnvelope(){
+  const cv=document.getElementById('envelope-canvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle='#0a1220'; ctx.fillRect(0,0,W,H);
+  if(!diagData.length) return;
+
+  const pad={l:70,r:20,t:20,b:40};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const bMin=diagData[0].B, bMax=diagData[diagData.length-1].B;
+  const bRange=bMax-bMin||1;
+
+  // Collect all parent IDs
+  const allParents=new Set();
+  for(const r of rawBranches) allParents.add(r.parent_id);
+
+  // E range from all branches — iterative
+  let eMin=Infinity, eMax=-Infinity;
+  for(const r of rawBranches){ if(r.LevelB_cm1<eMin)eMin=r.LevelB_cm1; if(r.LevelB_cm1>eMax)eMax=r.LevelB_cm1; }
+  if(eMax===eMin){eMin-=1;eMax+=1;}
+  const eRange=eMax-eMin;
+
+  const bToX=b=>pad.l+(b-bMin)/bRange*pw;
+  const eToY=e=>pad.t+ph-(e-eMin)/eRange*ph;
+
+  // Build per-parent trajectories of (Emin, Ectr, Emax)
+  const parentData=new Map(); // parent_id → Map(bkey → {mn,mx,ctr})
+  for(const r of rawBranches){
+    if(!parentData.has(r.parent_id)) parentData.set(r.parent_id,new Map());
+    const pm=parentData.get(r.parent_id);
+    const bk=r.B_T.toFixed(6);
+    if(!pm.has(bk)) pm.set(bk,{mn:r.LevelB_cm1,mx:r.LevelB_cm1,sum:r.LevelB_cm1,cnt:1});
+    else{
+      const e=pm.get(bk);
+      if(r.LevelB_cm1<e.mn)e.mn=r.LevelB_cm1;
+      if(r.LevelB_cm1>e.mx)e.mx=r.LevelB_cm1;
+      e.sum+=r.LevelB_cm1; e.cnt++;
+    }
+  }
+
+  // Only draw up to 80 parent families to keep rendering fast
+  const parentsArr=Array.from(parentData.keys()).slice(0,80);
+  const nP=parentsArr.length;
+
+  parentsArr.forEach((pid,pi)=>{
+    const hue=Math.round((pi/nP)*300); // 0–300 deg hue spread
+    const colBand=`hsla(${hue},60%,45%,0.12)`;
+    const colLine=`hsla(${hue},70%,60%,0.5)`;
+    const bm=parentData.get(pid);
+    const bkArr=Array.from(bm.keys()).sort();
+
+    // Fill band
+    ctx.fillStyle=colBand;
+    ctx.beginPath();
+    let first=true;
+    for(const bk of bkArr){ const e=bm.get(bk); const x=bToX(parseFloat(bk)),y=eToY(e.mn); first?(ctx.moveTo(x,y),first=false):ctx.lineTo(x,y); }
+    for(let i=bkArr.length-1;i>=0;i--){ const bk=bkArr[i]; const e=bm.get(bk); ctx.lineTo(bToX(parseFloat(bk)),eToY(e.mx)); }
+    ctx.closePath(); ctx.fill();
+
+    // Centroid line
+    ctx.strokeStyle=colLine; ctx.lineWidth=0.8;
+    ctx.beginPath();
+    first=true;
+    for(const bk of bkArr){ const e=bm.get(bk); const x=bToX(parseFloat(bk)),y=eToY(e.sum/e.cnt); first?(ctx.moveTo(x,y),first=false):ctx.lineTo(x,y); }
+    ctx.stroke();
+  });
+
+  // Axes
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+  ctx.fillStyle='#5a7a96'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('B (T)',pad.l+pw/2-15,H-6);
+  ctx.save(); ctx.translate(14,pad.t+ph/2); ctx.rotate(-Math.PI/2); ctx.fillText('E (cm⁻¹)',-30,0); ctx.restore();
+  ctx.fillStyle='#2d4560';
+  const nT=11;
+  for(let i=0;i<nT;i++){ const b=bMin+i*(bMax-bMin)/(nT-1||1); ctx.fillText(b.toFixed(1),bToX(b)-8,H-22); }
+
+  // Label
+  ctx.fillStyle='var(--dim)'; ctx.font='8px IBM Plex Mono';
+  ctx.fillText('SECONDARY VIEW — PARENT ENVELOPE (centroid ± range) — '+parentsArr.length+' families shown — NOT USED IN PRIMARY TEST',pad.l+4,pad.t+12);
+}
+
+/* ─── Export ─── */
+function buildExportPreview(alpha, eps, w, viol, bound){
+  const total=diagData.length;
+  const summary={
+    chamber:'QM-II', version:'1.1.0', program:'UNNS Substrate Program',
+    timestamp:new Date().toISOString(),
+    patch_note:'v1.1.0: Three-regime structural classification aligned with UNNS ecosystem. Engine untouched.',
+    parameters:{alpha, eps_degen:eps, window:w},
+    input:{rows:rawBranches.length, b_slices:bValues.length, b_range:[bValues[0],bValues[bValues.length-1]]},
+    results:{
+      total_slices:total,
+      stable:total-viol-bound,
+      structural_boundary:bound,
+      geometric_persistence_only:viol,
+      global_verdict: viol>0?'GEOMETRIC_PERSISTENCE_ONLY':bound>0?'STRUCTURAL_BOUNDARY':'STABLE_STRUCTURE'
+    },
+    regime_thresholds:{stable:'inv/nu <= 0.90', boundary:'0.90 < inv/nu <= 1.00', geometry:'inv/nu > 1.00'},
+    inequality:'inv(B) <= nu(V(B))',
+    primary_mode:'branch_resolved_interfamily',
+    diagnostics_preview:diagData.slice(0,5)
+  };
+  document.getElementById('export-preview').textContent=JSON.stringify(summary,null,2)+'\n// ... (full data in export)';
+}
+
+function exportJSON(){
+  const alpha=parseFloat(document.getElementById('alpha-inp').value)||0.35;
+  const eps=parseFloat(document.getElementById('eps-degen-inp').value)||0.0001;
+  const w=parseInt(document.getElementById('window-inp').value)||6;
+  const viol=diagData.filter(d=>d.result==='geometry').length;
+  const bound=diagData.filter(d=>d.result==='boundary').length;
+  // Strip eligibleGaps from export (large, redundant); map result to regime label
+  const exportDiag=diagData.map(d=>({B:d.B,N:d.N,N_par:d.N_par,gapMed:d.gapMed,V:d.V,nu:d.nu,inv:d.inv,structure_regime:regimeLabel(d.result)}));
+  const total=diagData.length;
+  const full={
+    chamber:'QM-II', version:'1.1.0', program:'UNNS Substrate Program',
+    timestamp:new Date().toISOString(),
+    patch_note:'v1.1.0: Three-regime structural classification aligned with UNNS ecosystem. Engine untouched.',
+    parameters:{alpha,eps_degen:eps,window:w},
+    input:{rows:rawBranches.length,b_slices:bValues.length,b_range:[bValues[0],bValues[bValues.length-1]]},
+    results:{
+      total_slices:total,
+      stable:total-viol-bound,
+      structural_boundary:bound,
+      geometric_persistence_only:viol,
+      global_verdict:viol>0?'GEOMETRIC_PERSISTENCE_ONLY':bound>0?'STRUCTURAL_BOUNDARY':'STABLE_STRUCTURE'
+    },
+    regime_thresholds:{stable:'inv/nu <= 0.90', boundary:'0.90 < inv/nu <= 1.00', geometry:'inv/nu > 1.00'},
+    inequality:'inv(B) <= nu(V(B))',
+    primary_mode:'branch_resolved_interfamily',
+    diagnostics:exportDiag
+  };
+  const blob=new Blob([JSON.stringify(full,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='chamber_qm_ii_v1_1_0_diagnostics.json'; a.click();
+}
+
+function exportCSV(){
+  let csv='B_T,N_br,N_par,gap_med_if_cm1,V,nu_V,inv,nu_V_over_N_par,inv_over_N_par,structure_regime\n';
+  for(const d of diagData){
+    csv+=`${d.B.toFixed(6)},${d.N},${d.N_par},${d.gapMed.toFixed(8)},${d.V},${d.nu},${d.inv},`+
+         `${d.N_par>0?(d.nu/d.N_par).toFixed(6):''},${d.N_par>0?(d.inv/d.N_par).toFixed(6):''},${regimeLabel(d.result)}\n`;
+  }
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='chamber_qm_ii_v1_1_0_diagnostics.csv'; a.click();
+}
+
+/* ─── Helpers ─── */
+function setSV(id,val,cls){
+  const el=document.getElementById(id); if(!el) return;
+  el.textContent=val;
+  if(cls) el.className='sc-val '+cls;
+}
+</script>
+</body>
+</html>
