@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber κ₀ (Selection Saturation)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .panel-title.collapsible { cursor: pointer; user-select: none; position: relative; padding-right: 30px; }
+    .panel-title.collapsible:hover { color: #5aafff; }
+    .panel-title.collapsible::after { 
+      content: '▼'; 
+      position: absolute; 
+      right: 0; 
+      transition: transform 0.3s; 
+      font-size: 0.8em;
+    }
+    .panel-title.collapsible.collapsed::after { transform: rotate(-90deg); }
+    .panel-content { max-height: 10000px; overflow: hidden; transition: max-height 0.3s ease-out, opacity 0.3s ease-out; opacity: 1; }
+    .panel-content.collapsed { max-height: 0; opacity: 0; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .button-secondary { background: #ff4a9e; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+    .data-table th { text-align: left; padding: 8px; color: #4a9eff; border-bottom: 1px solid #2a2a2a; }
+    .data-table td { padding: 6px 8px; border-bottom: 1px solid #1a1a1a; }
+    .data-table tr:hover { background: #1a1a1a; }
+    .highlight { color: #4aff4a; font-weight: bold; }
+    .warning { color: #ffa54a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER κ₀: SELECTION SATURATION</h1>
+      <div class="subtitle">Minimal τ-Simulation | Double-Well Ring Lattice | Internal Selector Necessity | <span style="color: #4aff4a;">κ₁-Compatible v0.1.1</span></div>
+    </header>
+    
+    <div class="panel">
+      <div class="panel-title">🎯 Experimental Protocol</div>
+      <div style="line-height: 1.6; color: #aaa; margin-bottom: 15px;">
+        <p><strong>Objective:</strong> Demonstrate that τ-relaxation alone cannot uniquely determine final state. Multiple stable outcomes persist despite increased precision, requiring an internal selector κₙ.</p>
+        <p style="margin-top: 8px;"><strong>System:</strong> N nodes in a ring, each with state xᵢ ∈ ℝ. Energy U(x) = Σᵢ[(xᵢ²−1)² + λ(xᵢ−xᵢ₊₁)²]</p>
+        <p style="margin-top: 8px;"><strong>Key Metric:</strong> Wall count W = number of sign changes around ring. Selection saturation = Var(W) plateaus > 0 as precision increases.</p>
+      </div>
+      
+      <div class="controls">
+        <div class="control-group">
+          <label>Ring Size N</label>
+          <select id="ringSize">
+            <option value="32">32 nodes (fast)</option>
+            <option value="64" selected>64 nodes (standard)</option>
+            <option value="128">128 nodes (high-res)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Coupling λ <span id="lambdaValue">0.5</span></label>
+          <input type="range" id="lambda" min="0.1" max="2.0" step="0.1" value="0.5">
+        </div>
+        <div class="control-group">
+          <label>Step Size η <span id="etaValue">0.05</span></label>
+          <input type="range" id="eta" min="0.001" max="0.2" step="0.001" value="0.05">
+        </div>
+        <div class="control-group">
+          <label>Noise ε <span id="epsilonValue">0.01</span></label>
+          <input type="range" id="epsilon" min="0" max="0.1" step="0.001" value="0.01">
+        </div>
+        <div class="control-group">
+          <label>Iterations T</label>
+          <input type="number" id="iterations" value="500" min="100" max="5000">
+        </div>
+        <div class="control-group">
+          <label>Realizations R</label>
+          <input type="number" id="realizations" value="20" min="5" max="100">
+        </div>
+      </div>
+      
+      <button id="runSingle" class="button-secondary">▶ Single Run</button>
+      <button id="runEnsemble" class="button-primary">▶ Run Ensemble</button>
+      <button id="runSaturation" class="button-primary">📊 Saturation Sweep</button>
+      <button id="stopRun" disabled>⏸ Stop</button>
+      <button id="exportData" disabled>💾 Export Data</button>
+      
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container" style="aspect-ratio: 2/1;">
+          <canvas id="canvasRing"></canvas>
+          <div class="canvas-label">Ring State Evolution</div>
+        </div>
+        <div class="canvas-container" style="aspect-ratio: 2/1;">
+          <canvas id="canvasEnergy"></canvas>
+          <div class="canvas-label">Energy & Invariants</div>
+        </div>
+      </div>
+      <div class="visualization" style="margin-top: 20px;">
+        <div class="canvas-container" style="aspect-ratio: 1.5/1;">
+          <canvas id="canvasHistogram"></canvas>
+          <div class="canvas-label">Wall Count Distribution</div>
+        </div>
+        <div class="canvas-container" style="aspect-ratio: 1.5/1;">
+          <canvas id="canvasSaturation"></canvas>
+          <div class="canvas-label">Saturation Curve: Var(W) vs Precision</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Current Run Metrics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Wall Count W</div><div class="metric-value" id="metricWalls">—</div></div>
+        <div class="metric"><div class="metric-label">Energy U</div><div class="metric-value" id="metricEnergy">—</div></div>
+        <div class="metric"><div class="metric-label">Mean ⟨x⟩</div><div class="metric-value" id="metricMean">—</div></div>
+        <div class="metric"><div class="metric-label">Variance σ²</div><div class="metric-value" id="metricVar">—</div></div>
+        <div class="metric"><div class="metric-label">Smoothness</div><div class="metric-value" id="metricSmooth">—</div></div>
+        <div class="metric"><div class="metric-label">Iteration</div><div class="metric-value" id="metricIter">—</div></div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Ensemble Statistics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Realizations R</div><div class="metric-value" id="ensembleR">—</div></div>
+        <div class="metric"><div class="metric-label">Mean Wall Count ⟨W⟩</div><div class="metric-value" id="ensembleMeanW">—</div></div>
+        <div class="metric"><div class="metric-label">Var(W)</div><div class="metric-value" id="ensembleVarW">—</div></div>
+        <div class="metric"><div class="metric-label">Unique Sectors</div><div class="metric-value" id="ensembleSectors">—</div></div>
+        <div class="metric"><div class="metric-label">Saturation?</div><div class="metric-value" id="ensembleSat">—</div></div>
+      </div>
+      
+      <table class="data-table" id="ensembleTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Run</th>
+            <th>Wall Count W</th>
+            <th>Energy U</th>
+            <th>Mean ⟨x⟩</th>
+            <th>Sector</th>
+          </tr>
+        </thead>
+        <tbody id="ensembleTableBody"></tbody>
+      </table>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title collapsible collapsed" id="theoryToggle">📚 Theory & Implementation</div>
+      <div class="panel-content collapsed" id="theoryContent" style="line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">κₙ as Internal τ-Engine Selector</h3>
+        
+        <p><strong>Reframed Operator Stack:</strong></p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          Φ → Ψ → τ → <span style="color: #ff4a9e;">κ (internal)</span> → τ (re-closure)
+        </p>
+        
+        <p><strong>Key Insight:</strong> κₙ is NOT "between τ and observables." κₙ is an <em>internal selector</em> that resolves competing τ-stable attractors when τ-flow alone cannot pick a unique continuation.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Energy Functional</h3>
+        <p>Each node i has state xᵢ ∈ ℝ. Total energy:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; margin: 10px 0;">
+          U(x) = Σᵢ[(xᵢ² − 1)² + λ(xᵢ − xᵢ₊₁)²]
+        </p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>(xᵢ² − 1)²</strong>: Double-well potential favoring xᵢ ≈ ±1</li>
+          <li><strong>λ(xᵢ − xᵢ₊₁)²</strong>: Coupling penalizing sharp domain walls</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">τ-Relaxation Dynamics</h3>
+        <p>Gradient descent with stochastic perturbation:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; margin: 10px 0;">
+          xᵢ ← xᵢ − η·∂U/∂xᵢ + ε·ξᵢ
+        </p>
+        <p>where ξᵢ ~ N(0,1) and update order randomized each step.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Topological Sectors & Wall Count</h3>
+        <p>A <em>domain wall</em> occurs when sign(xᵢ) ≠ sign(xᵢ₊₁). Wall count:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; margin: 10px 0;">
+          W = |{i : sign(xᵢ) ≠ sign(xᵢ₊₁)}|
+        </p>
+        <p>Possible sectors: W ∈ {0, 2, 4, 6, ...} (must be even on a ring).</p>
+        
+        <div style="background: #1a2a3a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4aff4a;">Selection Saturation Criterion:</strong></p>
+          <p style="margin: 0;">System exhibits saturation if Var(W) across realizations does NOT vanish when:</p>
+          <ul style="margin: 8px 0 0 20px;">
+            <li>Iterations T → large</li>
+            <li>Step size η → small</li>
+            <li>Noise ε → 0 (down to discretization floor)</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">κₙ Selector Functionals</h3>
+        <p>Each κₙ implements a different selection rule over competing sectors:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9em;">
+          <tr style="border-bottom: 1px solid #2a2a2a;">
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Selector</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Criterion J</th>
+            <th style="text-align: left; padding: 8px; color: #4a9eff;">Meaning</th>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">κ₁</td>
+            <td style="padding: 8px; font-family: monospace;">min U(s)</td>
+            <td style="padding: 8px;">Minimal energy</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">κ₂</td>
+            <td style="padding: 8px; font-family: monospace;">min |⟨x⟩|</td>
+            <td style="padding: 8px;">Maximal symmetry</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">κ₃</td>
+            <td style="padding: 8px; font-family: monospace;">min W</td>
+            <td style="padding: 8px;">Topology simplification</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1a1a1a;">
+            <td style="padding: 8px;">κ₄</td>
+            <td style="padding: 8px; font-family: monospace;">min Σ(xᵢ−xᵢ₊₁)²</td>
+            <td style="padding: 8px;">Smoothness maximization</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px;">κ₅</td>
+            <td style="padding: 8px; font-family: monospace;">max basin</td>
+            <td style="padding: 8px;">Robustness under perturbation</td>
+          </tr>
+        </table>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Experimental Workflow</h3>
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Single Run:</strong> Observe one relaxation trajectory → final sector</li>
+          <li><strong>Ensemble:</strong> R realizations with different random seeds → measure Var(W)</li>
+          <li><strong>Saturation Sweep:</strong> Vary η or ε, plot Var(W) vs precision</li>
+          <li><strong>Demonstrate:</strong> Var(W) plateaus > 0 → κ selector necessary</li>
+        </ol>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Expected Outcomes:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>Low coupling λ → W = 0 dominates (all +1 or all −1)</li>
+            <li>Intermediate λ ≈ 0.5 → multiple sectors W ∈ {0, 2, 4}</li>
+            <li>High coupling λ > 1 → W = 2 dominates (single domain wall pair)</li>
+            <li>Var(W) should saturate around 2-4 for intermediate λ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+console.log('═══════════════════════════════════════════════════════');
+console.log('UNNS Laboratory | Chamber κ₀ | v0.1.0');
+console.log('Selection Saturation Demonstration');
+console.log('═══════════════════════════════════════════════════════');
+
+// ========================================
+// RING LATTICE τ-SIMULATOR
+// ========================================
+
+class RingTauSimulator {
+  constructor(config = {}) {
+    this.N = config.N || 64;
+    this.lambda = config.lambda || 0.5;
+    this.eta = config.eta || 0.05;
+    this.epsilon = config.epsilon || 0.01;
+    this.seed = config.seed || Date.now();
+    
+    this.x = new Float64Array(this.N);
+    this.rng = this.createSeededRNG(this.seed);
+    
+    this.iteration = 0;
+    this.history = {
+      energy: [],
+      wall_count: [],
+      mean: [],
+      variance: []
+    };
+    
+    this.initialize();
+  }
+  
+  initialize() {
+    // Small random perturbation around 0
+    for (let i = 0; i < this.N; i++) {
+      this.x[i] = (this.rng.random() - 0.5) * 0.2;
+    }
+    this.iteration = 0;
+    this.history = {
+      energy: [],
+      wall_count: [],
+      mean: [],
+      variance: []
+    };
+  }
+  
+  // Compute energy U(x) = Σᵢ[(xᵢ²−1)² + λ(xᵢ−xᵢ₊₁)²]
+  computeEnergy() {
+    let U = 0;
+    for (let i = 0; i < this.N; i++) {
+      const xi = this.x[i];
+      const xj = this.x[(i + 1) % this.N];
+      
+      // Double-well term
+      const well = (xi * xi - 1);
+      U += well * well;
+      
+      // Coupling term
+      const diff = xi - xj;
+      U += this.lambda * diff * diff;
+    }
+    return U;
+  }
+  
+  // Compute gradient ∂U/∂xᵢ
+  computeGradient() {
+    const grad = new Float64Array(this.N);
+    
+    for (let i = 0; i < this.N; i++) {
+      const xi = this.x[i];
+      const x_prev = this.x[(i - 1 + this.N) % this.N];
+      const x_next = this.x[(i + 1) % this.N];
+      
+      // ∂/∂xᵢ [(xᵢ²−1)²] = 4xᵢ(xᵢ²−1)
+      const grad_well = 4 * xi * (xi * xi - 1);
+      
+      // ∂/∂xᵢ [λ(xᵢ−xᵢ₋₁)² + λ(xᵢ−xᵢ₊₁)²]
+      const grad_coupling = 2 * this.lambda * (2 * xi - x_prev - x_next);
+      
+      grad[i] = grad_well + grad_coupling;
+    }
+    
+    return grad;
+  }
+  
+  // Single τ-relaxation step
+  step() {
+    const grad = this.computeGradient();
+    
+    // Create random update order
+    const indices = Array.from({length: this.N}, (_, i) => i);
+    for (let i = this.N - 1; i > 0; i--) {
+      const j = Math.floor(this.rng.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    
+    // Update in random order
+    for (const i of indices) {
+      // Gradient descent
+      this.x[i] -= this.eta * grad[i];
+      
+      // Stochastic noise
+      if (this.epsilon > 0) {
+        this.x[i] += this.epsilon * this.rng.gaussian();
+      }
+    }
+    
+    this.iteration++;
+    
+    // Record metrics
+    this.history.energy.push(this.computeEnergy());
+    this.history.wall_count.push(this.computeWallCount());
+    this.history.mean.push(this.computeMean());
+    this.history.variance.push(this.computeVariance());
+  }
+  
+  // Compute wall count W
+  computeWallCount() {
+    let W = 0;
+    for (let i = 0; i < this.N; i++) {
+      const sign_i = Math.sign(this.x[i]);
+      const sign_j = Math.sign(this.x[(i + 1) % this.N]);
+      if (sign_i !== sign_j) W++;
+    }
+    return W;
+  }
+  
+  // Compute mean ⟨x⟩
+  computeMean() {
+    let sum = 0;
+    for (let i = 0; i < this.N; i++) {
+      sum += this.x[i];
+    }
+    return sum / this.N;
+  }
+  
+  // Compute variance σ²
+  computeVariance() {
+    const mean = this.computeMean();
+    let sum_sq = 0;
+    for (let i = 0; i < this.N; i++) {
+      const diff = this.x[i] - mean;
+      sum_sq += diff * diff;
+    }
+    return sum_sq / this.N;
+  }
+  
+  // Compute smoothness Σ(xᵢ−xᵢ₊₁)²
+  computeSmoothness() {
+    let S = 0;
+    for (let i = 0; i < this.N; i++) {
+      const diff = this.x[i] - this.x[(i + 1) % this.N];
+      S += diff * diff;
+    }
+    return S;
+  }
+  
+  // Get feature vector C(s)
+  getFeatures() {
+    return {
+      mean: this.computeMean(),
+      variance: this.computeVariance(),
+      wall_count: this.computeWallCount(),
+      energy: this.computeEnergy(),
+      smoothness: this.computeSmoothness()
+    };
+  }
+  
+  // Classify sector based on wall count
+  getSector() {
+    const W = this.computeWallCount();
+    if (W === 0) return 'uniform';
+    if (W === 2) return 'single-wall';
+    if (W === 4) return 'double-wall';
+    return `${W}-walls`;
+  }
+  
+  // Seeded RNG
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+  
+  // Get current state
+  getState() {
+    return new Float64Array(this.x);
+  }
+}
+
+// ========================================
+// UI & VISUALIZATION
+// ========================================
+
+let running = false;
+let currentSim = null;
+let ensembleData = [];
+let saturationData = [];
+
+const ui = {
+  runSingle: document.getElementById('runSingle'),
+  runEnsemble: document.getElementById('runEnsemble'),
+  runSaturation: document.getElementById('runSaturation'),
+  stopBtn: document.getElementById('stopRun'),
+  exportBtn: document.getElementById('exportData'),
+  status: document.getElementById('statusDisplay'),
+  progress: document.getElementById('progressFill'),
+  
+  canvasRing: document.getElementById('canvasRing'),
+  canvasEnergy: document.getElementById('canvasEnergy'),
+  canvasHistogram: document.getElementById('canvasHistogram'),
+  canvasSaturation: document.getElementById('canvasSaturation'),
+  
+  metricWalls: document.getElementById('metricWalls'),
+  metricEnergy: document.getElementById('metricEnergy'),
+  metricMean: document.getElementById('metricMean'),
+  metricVar: document.getElementById('metricVar'),
+  metricSmooth: document.getElementById('metricSmooth'),
+  metricIter: document.getElementById('metricIter'),
+  
+  ensembleR: document.getElementById('ensembleR'),
+  ensembleMeanW: document.getElementById('ensembleMeanW'),
+  ensembleVarW: document.getElementById('ensembleVarW'),
+  ensembleSectors: document.getElementById('ensembleSectors'),
+  ensembleSat: document.getElementById('ensembleSat'),
+  ensembleTable: document.getElementById('ensembleTable'),
+  ensembleTableBody: document.getElementById('ensembleTableBody')
+};
+
+// Setup canvases
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasRing, ui.canvasEnergy, ui.canvasHistogram, ui.canvasSaturation].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+// Slider updates
+document.getElementById('lambda').addEventListener('input', (e) => {
+  document.getElementById('lambdaValue').textContent = parseFloat(e.target.value).toFixed(1);
+});
+document.getElementById('eta').addEventListener('input', (e) => {
+  document.getElementById('etaValue').textContent = parseFloat(e.target.value).toFixed(3);
+});
+document.getElementById('epsilon').addEventListener('input', (e) => {
+  document.getElementById('epsilonValue').textContent = parseFloat(e.target.value).toFixed(3);
+});
+
+// Render ring state
+function renderRing(sim) {
+  const canvas = ui.canvasRing;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const N = sim.N;
+  const x = sim.x;
+  const cellWidth = w / N;
+  const maxVal = Math.max(...x.map(Math.abs));
+  
+  // Draw ring as linear strip
+  for (let i = 0; i < N; i++) {
+    const val = x[i];
+    const normalized = (val + maxVal) / (2 * maxVal);
+    
+    // Color: blue for negative, red for positive
+    let color;
+    if (val > 0) {
+      const intensity = Math.min(255, Math.floor(normalized * 255));
+      color = `rgb(${intensity}, 50, 50)`;
+    } else {
+      const intensity = Math.min(255, Math.floor((1 - normalized) * 255));
+      color = `rgb(50, 50, ${intensity})`;
+    }
+    
+    ctx.fillStyle = color;
+    ctx.fillRect(i * cellWidth, h * 0.4, cellWidth, h * 0.2);
+  }
+  
+  // Draw state values as line
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const xPos = (i + 0.5) * cellWidth;
+    const yPos = h * 0.5 - (x[i] / (2 * maxVal)) * h * 0.3;
+    if (i === 0) ctx.moveTo(xPos, yPos);
+    else ctx.lineTo(xPos, yPos);
+  }
+  ctx.stroke();
+  
+  // Draw zero line
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.5);
+  ctx.lineTo(w, h * 0.5);
+  ctx.stroke();
+  
+  // Mark domain walls
+  ctx.fillStyle = '#ff4a9e';
+  for (let i = 0; i < N; i++) {
+    const sign_i = Math.sign(x[i]);
+    const sign_j = Math.sign(x[(i + 1) % N]);
+    if (sign_i !== sign_j) {
+      const xPos = (i + 1) * cellWidth;
+      ctx.fillRect(xPos - 2, h * 0.3, 4, h * 0.4);
+    }
+  }
+}
+
+// Render energy evolution
+function renderEnergy(sim) {
+  const canvas = ui.canvasEnergy;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (sim.history.energy.length < 2) return;
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  // Plot energy
+  const energies = sim.history.energy;
+  const minE = Math.min(...energies);
+  const maxE = Math.max(...energies);
+  const rangeE = maxE - minE || 1;
+  
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < energies.length; i++) {
+    const xPos = padding + (i / (energies.length - 1)) * plotW;
+    const yPos = padding + ((maxE - energies[i]) / rangeE) * plotH;
+    if (i === 0) ctx.moveTo(xPos, yPos);
+    else ctx.lineTo(xPos, yPos);
+  }
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Energy U(x)', padding, padding - 5);
+  ctx.fillText(`${minE.toFixed(2)}`, 5, h - padding);
+  ctx.fillText(`${maxE.toFixed(2)}`, 5, padding + 12);
+}
+
+// Render wall count histogram
+function renderHistogram(data) {
+  const canvas = ui.canvasHistogram;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (data.length === 0) return;
+  
+  // Count occurrences
+  const counts = {};
+  data.forEach(d => {
+    const W = d.wall_count;
+    counts[W] = (counts[W] || 0) + 1;
+  });
+  
+  const bins = Object.keys(counts).map(Number).sort((a, b) => a - b);
+  const maxCount = Math.max(...Object.values(counts));
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  const barWidth = plotW / (bins.length + 1);
+  
+  // Draw bars
+  bins.forEach((W, i) => {
+    const count = counts[W];
+    const barH = (count / maxCount) * plotH;
+    const xPos = padding + (i + 0.5) * barWidth;
+    const yPos = h - padding - barH;
+    
+    ctx.fillStyle = '#4a9eff';
+    ctx.fillRect(xPos, yPos, barWidth * 0.8, barH);
+    
+    // Label
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText(`W=${W}`, xPos + barWidth * 0.4, h - padding + 15);
+    ctx.fillText(`${count}`, xPos + barWidth * 0.4, yPos - 5);
+  });
+  
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.textAlign = 'left';
+  ctx.fillText('Wall Count Distribution', padding, padding - 5);
+}
+
+// Render saturation curve
+function renderSaturation(data) {
+  const canvas = ui.canvasSaturation;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (data.length < 2) return;
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  const eta_values = data.map(d => d.eta);
+  const varW_values = data.map(d => d.varW);
+  
+  const minEta = Math.min(...eta_values);
+  const maxEta = Math.max(...eta_values);
+  const minVarW = 0;
+  const maxVarW = Math.max(...varW_values);
+  const rangeVarW = maxVarW - minVarW || 1;
+  
+  // Plot line
+  ctx.strokeStyle = '#ff4a9e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const xPos = padding + ((eta_values[i] - minEta) / (maxEta - minEta)) * plotW;
+    const yPos = padding + ((maxVarW - varW_values[i]) / rangeVarW) * plotH;
+    if (i === 0) ctx.moveTo(xPos, yPos);
+    else ctx.lineTo(xPos, yPos);
+  }
+  ctx.stroke();
+  
+  // Points
+  ctx.fillStyle = '#ff4a9e';
+  for (let i = 0; i < data.length; i++) {
+    const xPos = padding + ((eta_values[i] - minEta) / (maxEta - minEta)) * plotW;
+    const yPos = padding + ((maxVarW - varW_values[i]) / rangeVarW) * plotH;
+    ctx.beginPath();
+    ctx.arc(xPos, yPos, 4, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  
+  // Labels
+  ctx.fillStyle = '#ff4a9e';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Var(W) vs Step Size η', padding, padding - 5);
+  ctx.fillText(`η=${minEta.toFixed(3)}`, padding, h - padding + 15);
+  ctx.fillText(`η=${maxEta.toFixed(3)}`, w - padding - 50, h - padding + 15);
+}
+
+// Update metrics display
+function updateMetrics(sim) {
+  const features = sim.getFeatures();
+  ui.metricWalls.textContent = features.wall_count;
+  ui.metricEnergy.textContent = features.energy.toFixed(4);
+  ui.metricMean.textContent = features.mean.toFixed(4);
+  ui.metricVar.textContent = features.variance.toFixed(4);
+  ui.metricSmooth.textContent = features.smoothness.toFixed(4);
+  ui.metricIter.textContent = sim.iteration;
+}
+
+// Run single simulation
+ui.runSingle.addEventListener('click', async () => {
+  console.log('🚀 Running single simulation');
+  running = true;
+  ui.runSingle.disabled = true;
+  ui.stopBtn.disabled = false;
+  
+  const config = {
+    N: parseInt(document.getElementById('ringSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    eta: parseFloat(document.getElementById('eta').value),
+    epsilon: parseFloat(document.getElementById('epsilon').value),
+    seed: Date.now()
+  };
+  
+  const iterations = parseInt(document.getElementById('iterations').value);
+  
+  currentSim = new RingTauSimulator(config);
+  
+  ui.status.textContent = 'Running single simulation...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let i = 0; i < iterations && running; i++) {
+    currentSim.step();
+    
+    if (i % 10 === 0 || i === iterations - 1) {
+      renderRing(currentSim);
+      renderEnergy(currentSim);
+      updateMetrics(currentSim);
+      ui.progress.style.width = `${((i + 1) / iterations) * 100}%`;
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  const sector = currentSim.getSector();
+  ui.status.textContent = `Complete! Converged to: ${sector} (W=${currentSim.computeWallCount()})`;
+  ui.status.className = 'status complete';
+  
+  ui.runSingle.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+  
+  console.log(`✅ Final state: ${sector}, W=${currentSim.computeWallCount()}, U=${currentSim.computeEnergy().toFixed(4)}`);
+});
+
+// Run ensemble
+ui.runEnsemble.addEventListener('click', async () => {
+  console.log('🚀 Running ensemble');
+  running = true;
+  ui.runEnsemble.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  
+  const config = {
+    N: parseInt(document.getElementById('ringSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    eta: parseFloat(document.getElementById('eta').value),
+    epsilon: parseFloat(document.getElementById('epsilon').value)
+  };
+  
+  const iterations = parseInt(document.getElementById('iterations').value);
+  const R = parseInt(document.getElementById('realizations').value);
+  
+  ensembleData = [];
+  
+  ui.status.textContent = `Running ${R} realizations...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let r = 0; r < R && running; r++) {
+    const sim = new RingTauSimulator({...config, seed: Date.now() + r * 1000});
+    
+    for (let i = 0; i < iterations; i++) {
+      sim.step();
+    }
+    
+    const features = sim.getFeatures();
+    ensembleData.push({
+      run: r + 1,
+      wall_count: features.wall_count,
+      energy: features.energy,
+      mean: features.mean,
+      sector: sim.getSector(),
+      config: Array.from(sim.getState())  // κ₁ patch: export state configuration
+    });
+    
+    ui.progress.style.width = `${((r + 1) / R) * 100}%`;
+    
+    if (r % 5 === 0 || r === R - 1) {
+      renderHistogram(ensembleData);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  if (running) {
+    // Compute statistics
+    const wall_counts = ensembleData.map(d => d.wall_count);
+    const meanW = wall_counts.reduce((a, b) => a + b, 0) / wall_counts.length;
+    const varW = wall_counts.reduce((sum, W) => sum + (W - meanW) ** 2, 0) / wall_counts.length;
+    const uniqueSectors = new Set(ensembleData.map(d => d.sector)).size;
+    
+    ui.ensembleR.textContent = R;
+    ui.ensembleMeanW.textContent = meanW.toFixed(2);
+    ui.ensembleVarW.textContent = varW.toFixed(2);
+    ui.ensembleSectors.textContent = uniqueSectors;
+    ui.ensembleSat.textContent = varW > 1.0 ? 'YES' : 'NO';
+    ui.ensembleSat.style.color = varW > 1.0 ? '#4aff4a' : '#ffa54a';
+    
+    // Show table
+    ui.ensembleTable.style.display = 'table';
+    ui.ensembleTableBody.innerHTML = '';
+    ensembleData.forEach(d => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${d.run}</td>
+        <td class="highlight">${d.wall_count}</td>
+        <td>${d.energy.toFixed(4)}</td>
+        <td>${d.mean.toFixed(4)}</td>
+        <td>${d.sector}</td>
+      `;
+      ui.ensembleTableBody.appendChild(row);
+    });
+    
+    ui.status.textContent = `Ensemble complete! ⟨W⟩=${meanW.toFixed(2)}, Var(W)=${varW.toFixed(2)}`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log(`✅ Ensemble: R=${R}, ⟨W⟩=${meanW.toFixed(2)}, Var(W)=${varW.toFixed(2)}, sectors=${uniqueSectors}`);
+  }
+  
+  ui.runEnsemble.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+});
+
+// Run saturation sweep
+ui.runSaturation.addEventListener('click', async () => {
+  console.log('🚀 Running saturation sweep');
+  running = true;
+  ui.runSaturation.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  
+  const baseConfig = {
+    N: parseInt(document.getElementById('ringSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    epsilon: parseFloat(document.getElementById('epsilon').value)
+  };
+  
+  const iterations = parseInt(document.getElementById('iterations').value);
+  const R = 15; // Realizations per eta value
+  
+  // Sweep eta from 0.1 down to 0.005
+  const eta_values = [0.1, 0.08, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008, 0.005];
+  saturationData = [];
+  
+  ui.status.textContent = `Sweeping ${eta_values.length} η values...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let e = 0; e < eta_values.length && running; e++) {
+    const eta = eta_values[e];
+    const wall_counts = [];
+    
+    for (let r = 0; r < R; r++) {
+      const sim = new RingTauSimulator({...baseConfig, eta, seed: Date.now() + r * 1000});
+      
+      for (let i = 0; i < iterations; i++) {
+        sim.step();
+      }
+      
+      wall_counts.push(sim.computeWallCount());
+    }
+    
+    const meanW = wall_counts.reduce((a, b) => a + b, 0) / wall_counts.length;
+    const varW = wall_counts.reduce((sum, W) => sum + (W - meanW) ** 2, 0) / wall_counts.length;
+    
+    saturationData.push({eta, meanW, varW});
+    
+    renderSaturation(saturationData);
+    ui.progress.style.width = `${((e + 1) / eta_values.length) * 100}%`;
+    
+    console.log(`  η=${eta.toFixed(3)}: ⟨W⟩=${meanW.toFixed(2)}, Var(W)=${varW.toFixed(2)}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  if (running) {
+    // Check for saturation
+    const final_varW = saturationData[saturationData.length - 1].varW;
+    const saturates = final_varW > 1.0;
+    
+    ui.status.textContent = `Saturation sweep complete! Final Var(W)=${final_varW.toFixed(2)} → ${saturates ? 'SATURATES' : 'no saturation'}`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log(`✅ Saturation ${saturates ? 'DETECTED' : 'NOT DETECTED'}: final Var(W)=${final_varW.toFixed(2)}`);
+  }
+  
+  ui.runSaturation.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+});
+
+// Stop button
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.status.textContent = 'Stopped by user';
+  console.log('⏸️ Stopped');
+});
+
+// Export data
+ui.exportBtn.addEventListener('click', () => {
+  const exportData = {
+    version: '0.1.1-kappa1-patched',
+    chamber: 'kappa-zero',
+    timestamp: new Date().toISOString(),
+    config: {
+      N: parseInt(document.getElementById('ringSize').value),
+      lambda: parseFloat(document.getElementById('lambda').value),
+      eta: parseFloat(document.getElementById('eta').value),
+      epsilon: parseFloat(document.getElementById('epsilon').value)
+    },
+    ensemble: ensembleData,
+    saturation: saturationData
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kappa-zero_${exportData.timestamp.split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+  console.log('✅ Config arrays included (κ₁-compatible format)');
+});
+
+// Theory & Implementation toggle
+const theoryToggle = document.getElementById('theoryToggle');
+const theoryContent = document.getElementById('theoryContent');
+
+theoryToggle.addEventListener('click', () => {
+  theoryToggle.classList.toggle('collapsed');
+  theoryContent.classList.toggle('collapsed');
+});
+
+console.log('✅ Chamber κ₀ ready!');
+console.log('═══════════════════════════════════════════════════════');
+  </script>
+</body>
+</html>

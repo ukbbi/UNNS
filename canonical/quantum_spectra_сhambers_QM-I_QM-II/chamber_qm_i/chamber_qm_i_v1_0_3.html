@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER QM-I v1.0.3 — Spectral Admissibility Geometry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040810;--bg2:#06090f;--panel:#080e18;--panel2:#0a1220;
+  --border:#111e30;--border2:#0c1828;
+  --accent:#00c8f0;--accent2:#f0a030;--accent3:#e04040;
+  --green:#00dd88;--blue:#4ab0f0;--purple:#9880ff;--gold:#e8c840;
+  --text:#a8bfd0;--text2:#5a7a96;--dim:#2d4560;
+  --pass:#00dd88;--fail:#e04040;--warn:#f0a030;
+  --macro:#e04040;--meso:#f0a030;--micro:#4ab0f0;--vuln:#9880ff;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --display:'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--display);font-size:11px;color:var(--accent);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;border:1px solid;padding:2px 8px;letter-spacing:0.14em;font-weight:600}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.running{color:var(--warn);border-color:var(--warn);animation:blink 1s infinite}
+.htag.done{color:var(--pass);border-color:var(--pass)}
+.htag.err{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.45}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:0.1em}
+
+/* LAYER LABELS */
+.layer-label{font-size:8px;color:var(--dim);letter-spacing:0.3em;font-weight:600;padding:4px 0 9px;border-top:1px solid var(--border2);margin-top:4px;margin-bottom:11px;display:flex;align-items:center;gap:12px}
+.layer-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:15px 18px}
+.ptitle{font-size:8.5px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* UPLOAD ZONES */
+.upload-zone{border:1px dashed var(--dim);padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;min-height:70px;display:flex;flex-direction:column;gap:6px}
+.upload-zone:hover{border-color:var(--accent);background:rgba(0,200,240,0.03)}
+.upload-zone.loaded{border-color:var(--pass);border-style:solid;background:rgba(0,221,136,0.03)}
+.upload-zone.err{border-color:var(--fail);border-style:solid;background:rgba(224,64,64,0.03)}
+.uz-label{font-size:8px;color:var(--text2);letter-spacing:0.2em;font-weight:600}
+.uz-name{font-size:10px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uz-status{font-size:9px;margin-top:2px}
+.uz-status.ok{color:var(--pass)}
+.uz-status.err{color:var(--fail)}
+.uz-status.idle{color:var(--dim)}
+input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* CONTROLS */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.ctrl-sel{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;cursor:pointer}
+.ctrl-sel:focus{border-color:var(--accent)}
+.ctrl-inp{background:var(--panel2);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;width:120px}
+.ctrl-inp:focus{border-color:var(--accent)}
+.ctrl-inp.narrow{width:80px}
+.ctrl-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:0.12em;font-weight:600;transition:background .15s}
+.ctrl-btn:hover{background:rgba(0,200,240,0.08)}
+.ctrl-btn.run{border-color:var(--green);color:var(--green)}
+.ctrl-btn.run:hover{background:rgba(0,221,136,0.08)}
+.ctrl-btn.export{border-color:var(--gold);color:var(--gold)}
+.ctrl-btn.export:hover{background:rgba(232,200,64,0.08)}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--panel2);border:1px solid var(--border2);padding:12px 14px}
+.sc-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600;margin-bottom:4px}
+.sc-val{font-family:var(--display);font-size:20px;color:var(--dim);line-height:1}
+.sc-val.live{color:var(--accent)}
+.sc-val.pass{color:var(--pass)}
+.sc-val.warn{color:var(--warn)}
+.sc-val.fail{color:var(--fail)}
+.sc-unit{font-size:8px;color:var(--text2);margin-top:3px}
+
+/* SCALE LEGEND PILLS */
+.scale-pill{display:inline-block;padding:2px 8px;font-size:8px;font-weight:600;letter-spacing:0.14em;border:1px solid}
+.scale-pill.macro{color:var(--macro);border-color:var(--macro)}
+.scale-pill.meso{color:var(--meso);border-color:var(--meso)}
+.scale-pill.micro{color:var(--micro);border-color:var(--micro)}
+.scale-pill.vuln{color:var(--vuln);border-color:var(--vuln)}
+.scale-pill.degen{color:var(--gold);border-color:var(--gold)}
+
+/* WARNINGS */
+.warn-box{background:rgba(240,160,48,0.06);border:1px solid var(--warn);padding:10px 14px;margin-bottom:10px}
+.warn-line{font-size:9px;color:var(--warn);padding:2px 0}
+.warn-line::before{content:'⚠ ';opacity:0.8}
+.warn-box.info{background:rgba(0,200,240,0.04);border-color:var(--accent)}
+.warn-line.info{color:var(--accent)}
+.warn-line.info::before{content:'ℹ '}
+.warn-line.ok{color:var(--pass)}
+.warn-line.ok::before{content:'✓ '}
+
+/* CANVAS */
+canvas{display:block;background:var(--panel2);border:1px solid var(--border2)}
+
+/* REGIME BLOCKS */
+.regime-row{margin-bottom:8px}
+.regime-bar-wrap{height:28px;background:var(--panel2);border:1px solid var(--border2);position:relative;overflow:hidden;margin-top:4px}
+.regime-seg{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;letter-spacing:0.1em;opacity:0.85;cursor:default}
+.regime-label{font-size:8px;color:var(--text2);letter-spacing:0.12em}
+
+/* ADMISSIBILITY GRAPH */
+#adm-canvas{width:100%;height:340px}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:9px}
+.data-table th{color:var(--accent);letter-spacing:0.12em;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--border2);text-align:left}
+.data-table td{padding:3px 8px;border-bottom:1px solid var(--border2);color:var(--text)}
+.data-table tr:hover td{background:rgba(0,200,240,0.03)}
+.data-table td.macro{color:var(--macro)}
+.data-table td.meso{color:var(--meso)}
+.data-table td.micro{color:var(--micro)}
+.data-table td.vuln{color:var(--vuln)}
+.data-table td.degen{color:var(--gold)}
+.data-table td.mismatch{color:var(--warn)}
+
+/* SCROLLBOX */
+.scrollbox{max-height:280px;overflow-y:auto;border:1px solid var(--border2)}
+.scrollbox::-webkit-scrollbar{width:4px}
+.scrollbox::-webkit-scrollbar-track{background:var(--bg2)}
+.scrollbox::-webkit-scrollbar-thumb{background:var(--dim)}
+
+/* EXPORT AREA */
+.export-pre{background:var(--bg2);border:1px solid var(--border2);padding:10px;font-size:9px;color:var(--text2);max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+
+/* FUTURE HOOK BADGE */
+.future-badge{display:inline-block;font-size:8px;color:var(--dim);border:1px dashed var(--dim);padding:2px 8px;letter-spacing:0.14em}
+
+/* LOG */
+.log-line{font-size:9px;padding:1px 0;color:var(--text2)}
+.log-line.ok{color:var(--pass)}
+.log-line.warn{color:var(--warn)}
+.log-line.err{color:var(--fail)}
+.log-line.info{color:var(--accent)}
+.log-box{background:var(--bg2);border:1px solid var(--border2);padding:8px 10px;max-height:160px;overflow-y:auto}
+
+/* DEGENERATE CLUSTER LIST */
+.degen-item{padding:4px 8px;border-left:2px solid var(--gold);margin-bottom:4px;font-size:9px}
+.degen-item .di-head{color:var(--gold);font-weight:600;letter-spacing:0.1em}
+.degen-item .di-body{color:var(--text2);margin-top:2px}
+
+/* MISMATCH ROW */
+tr.mismatch-row td{background:rgba(240,160,48,0.07)!important}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <span class="hid">CHAMBER QM-I</span>
+  <span class="htitle">Spectral Admissibility Geometry — Hydrogen Energy Levels</span>
+  <span class="htag idle" id="run-tag">IDLE</span>
+  <span class="htag" id="static-tag" style="color:var(--blue);border-color:var(--blue)">STATIC</span>
+  <span class="future-badge" title="QM-II will extend this with parameterized spectra">QM-II HOOK RESERVED</span>
+  <span class="hver">v1.0.3 · UNNS Substrate Program</span>
+</div>
+
+<!-- ─── LAYER 0 · DATA INPUT ─── -->
+<div class="layer-label">LAYER 0 · DATA INPUT</div>
+
+<div class="row3">
+  <div class="panel">
+    <div class="ptitle">DATASET A <span class="psub">SPECTRUM · AUTHORITATIVE</span></div>
+    <div class="upload-zone" id="uz-a">
+      <input type="file" accept=".csv,.json" id="file-a">
+      <div class="uz-label">DATASET A — (XXXX)_spectrum_QM1.csv</div>
+      <div class="uz-name" id="uz-a-name">No file loaded</div>
+      <div class="uz-status idle" id="uz-a-status">schema: index, energy_cm-1</div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">DATASET B <span class="psub">GAP STRUCTURE · VALIDATION AID</span></div>
+    <div class="upload-zone" id="uz-b">
+      <input type="file" accept=".csv,.json" id="file-b">
+      <div class="uz-label">DATASET B — (XXXX)_gap_structure_QM1.csv</div>
+      <div class="uz-name" id="uz-b-name">No file loaded</div>
+      <div class="uz-status idle" id="uz-b-status">schema: index, energy_cm-1, gap_cm-1</div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">DATASET C <span class="psub">PREPROCESSED · VALIDATION AID</span></div>
+    <div class="upload-zone" id="uz-c">
+      <input type="file" accept=".csv,.json" id="file-c">
+      <div class="uz-label">DATASET C — (XXXX)_QM1_preprocessed.csv</div>
+      <div class="uz-name" id="uz-c-name">No file loaded</div>
+      <div class="uz-status idle" id="uz-c-status">schema: index, energy_cm-1, raw_gap_cm-1, normalized_gap, scale</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LAYER 1 · CONTROLS ─── -->
+<div class="layer-label">LAYER 1 · ANALYSIS CONTROLS</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">THRESHOLD &amp; TOLERANCE CONFIGURATION</div>
+  <div class="ctrl-row">
+    <div class="ctrl-group">
+      <div class="ctrl-label">NORMALIZATION <span style="color:var(--pass);font-size:8px">FIXED</span></div>
+      <div style="background:var(--panel2);border:1px solid var(--border);padding:4px 8px;font-size:9px;color:var(--text2);line-height:1.5">
+        range = λ<sub>max</sub> − λ<sub>2</sub><br>
+        <span style="color:var(--dim)">(ground-state gap excluded · clamped ≤ 1)</span>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">GAP VIEW</div>
+      <select class="ctrl-sel" id="ctrl-view">
+        <option value="log">LOG₁₀</option>
+        <option value="linear">LINEAR</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">MACRO THRESHOLD (norm_gap &gt;)</div>
+      <input class="ctrl-inp narrow" id="thr-macro" type="number" step="any" value="0.01">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">MESO UPPER (norm_gap ≤)</div>
+      <input class="ctrl-inp narrow" id="thr-meso-hi" type="number" step="any" value="0.01">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">MESO LOWER (norm_gap ≥)</div>
+      <input class="ctrl-inp narrow" id="thr-meso-lo" type="number" step="any" value="0.00001">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">ε_EXACT (degeneracy)</div>
+      <input class="ctrl-inp narrow" id="eps-exact" type="number" step="any" value="0.0001">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">ε_NEAR (near-degen)</div>
+      <input class="ctrl-inp narrow" id="eps-near" type="number" step="any" value="0.1">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">CLASSIFICATION SOURCE</div>
+      <select class="ctrl-sel" id="ctrl-class-src">
+        <option value="recomputed">RECOMPUTED</option>
+        <option value="uploaded">UPLOADED (Dataset C)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">GAP CONVENTION</div>
+      <select class="ctrl-sel" id="ctrl-gap-conv">
+        <option value="omit">OMIT LAST (n-1 gaps)</option>
+        <option value="null">RETAIN LAST (null gap)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">α REGIME FILTER (macro must be ≥ prev × α)</div>
+      <input class="ctrl-inp narrow" id="alpha-filter" type="number" step="0.01" min="0" max="1" value="0.65"
+        title="Macro gap only creates a new regime if gap ≥ previous_macro_gap × α. Prevents false regime creation in late shells.">
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn run" id="btn-run">▶ RUN ANALYSIS</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LAYER 2 · DIAGNOSTICS SUMMARY ─── -->
+<div class="layer-label">LAYER 2 · STRUCTURAL DIAGNOSTICS</div>
+
+<div class="stat-grid" id="stat-grid">
+  <div class="stat-card"><div class="sc-label">EIGENVALUES</div><div class="sc-val" id="st-n">—</div><div class="sc-unit">total levels</div></div>
+  <div class="stat-card"><div class="sc-label">GAPS COMPUTED</div><div class="sc-val" id="st-gaps">—</div><div class="sc-unit">n−1 consecutive</div></div>
+  <div class="stat-card"><div class="sc-label">MACRO GAPS</div><div class="sc-val" id="st-macro">—</div><div class="sc-unit">regime boundaries</div></div>
+  <div class="stat-card"><div class="sc-label">MESO GAPS</div><div class="sc-val" id="st-meso">—</div><div class="sc-unit">subshell transitions</div></div>
+  <div class="stat-card"><div class="sc-label">MICRO GAPS</div><div class="sc-val" id="st-micro">—</div><div class="sc-unit">fine structure</div></div>
+  <div class="stat-card"><div class="sc-label">REGIMES</div><div class="sc-val" id="st-regimes">—</div><div class="sc-unit">principal shells</div></div>
+  <div class="stat-card"><div class="sc-label">VULN NODES</div><div class="sc-val" id="st-vuln">—</div><div class="sc-unit">adjacent to micro</div></div>
+  <div class="stat-card"><div class="sc-label">ν(V)</div><div class="sc-val" id="st-nu">—</div><div class="sc-unit">max indep set</div></div>
+  <div class="stat-card"><div class="sc-label">EXACT DEGEN</div><div class="sc-val" id="st-degen-exact">—</div><div class="sc-unit">|Δ| ≤ ε_exact</div></div>
+  <div class="stat-card"><div class="sc-label">NEAR-DEGEN</div><div class="sc-val" id="st-degen-near">—</div><div class="sc-unit">|Δ| ≤ ε_near</div></div>
+  <div class="stat-card"><div class="sc-label">SPAN (cm⁻¹)</div><div class="sc-val" id="st-span">—</div><div class="sc-unit">λ_max − λ_min</div></div>
+  <div class="stat-card"><div class="sc-label">LOG₁₀ SPAN</div><div class="sc-val" id="st-logspan">—</div><div class="sc-unit">decades</div></div>
+  <div class="stat-card"><div class="sc-label">PREC TRUNC</div><div class="sc-val" id="st-prectrunc">—</div><div class="sc-unit">const-gap gaps</div></div>
+</div>
+
+<!-- TOLERANCE DISPLAY -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">ACTIVE CONFIGURATION <span class="psub">LOCKED AT RUN TIME · CITE THIS IN MANUSCRIPT</span></div>
+  <div id="config-display" style="font-size:9px;color:var(--text2);line-height:2">Run analysis to display locked configuration.</div>
+</div>
+
+<!-- WARNINGS PANEL -->
+<div id="warnings-wrap"></div>
+
+<!-- ─── LAYER 3 · SPECTRUM & GAP PLOTS ─── -->
+<div class="layer-label">LAYER 3 · SPECTRAL VISUALIZATIONS</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="ptitle">SPECTRAL LADDER <span class="psub">energy vs index</span></div>
+    <canvas id="cv-ladder" height="280" style="width:100%"></canvas>
+  </div>
+  <div class="panel">
+    <div class="ptitle">GAP SIZE DISTRIBUTION <span class="psub">histogram · <span id="gap-view-label">log₁₀</span></span></div>
+    <canvas id="cv-hist" height="280" style="width:100%"></canvas>
+  </div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="ptitle">LOG₁₀ GAP PROFILE <span class="psub">gap magnitude per index</span></div>
+    <canvas id="cv-loggap" height="260" style="width:100%"></canvas>
+  </div>
+  <div class="panel">
+    <div class="ptitle">NORMALIZED GAP PROFILE <span class="psub">classified by scale</span></div>
+    <canvas id="cv-normgap" height="260" style="width:100%"></canvas>
+  </div>
+</div>
+
+<!-- ─── LAYER 4 · ADMISSIBILITY GRAPH ─── -->
+<div class="layer-label">LAYER 4 · ADMISSIBILITY GRAPH</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">
+    ADMISSIBILITY GRAPH G = (λᵢ, gapᵢ) 
+    <span class="psub">NODES: energy levels · EDGES: colored by scale · PURPLE: vulnerability nodes</span>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <span class="scale-pill macro">MACRO</span>
+    <span class="scale-pill meso">MESO</span>
+    <span class="scale-pill micro">MICRO</span>
+    <span class="scale-pill vuln">VULNERABILITY NODE</span>
+    <span class="scale-pill degen">DEGENERATE</span>
+  </div>
+  <canvas id="cv-adm" height="320" style="width:100%"></canvas>
+</div>
+
+<!-- DEGENERACY CLUSTERS -->
+<div class="row2">
+  <div class="panel">
+    <div class="ptitle">DEGENERACY & NEAR-DEGENERACY CLUSTERS</div>
+    <div id="degen-list" style="font-size:9px;color:var(--dim)">No data yet.</div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">VULNERABILITY SET V <span class="psub">ν(V) = max independent set</span></div>
+    <div id="vuln-detail" style="font-size:9px;color:var(--dim)">No data yet.</div>
+  </div>
+</div>
+
+<!-- ─── LAYER 5 · PHASE STRUCTURE ─── -->
+<div class="layer-label">LAYER 5 · PHASE STRUCTURE</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">SPECTRAL REGIME MAP <span class="psub">partitioned by macro gaps</span></div>
+  <div id="regime-map"></div>
+</div>
+
+<div class="row3">
+  <div class="panel">
+    <div class="ptitle">REGIME SUMMARY</div>
+    <div id="regime-summary" style="font-size:9px;color:var(--dim)">No data yet.</div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">CLUSTER DENSITY METRICS</div>
+    <div id="cluster-metrics" style="font-size:9px;color:var(--dim)">No data yet.</div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">STRUCTURAL PHASE PANEL</div>
+    <div id="phase-panel" style="font-size:9px;color:var(--dim)">No data yet.</div>
+  </div>
+</div>
+
+<!-- ─── LAYER 6 · VALIDATION TABLE ─── -->
+<div class="layer-label">LAYER 6 · RECOMPUTED vs UPLOADED VALIDATION</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <div class="ptitle">GAP TABLE — RECOMPUTED vs DATASET B/C <span class="psub">ORANGE = mismatch beyond tolerance · YELLOW = scale class disagrees</span></div>
+  <div class="scrollbox">
+    <table class="data-table" id="gap-table">
+      <thead><tr>
+        <th>idx</th><th>λᵢ (cm⁻¹)</th>
+        <th>gap RECOMP</th><th>gap UPLOAD (B)</th><th>Δgap</th>
+        <th>norm RECOMP</th><th>norm UPLOAD (C)</th>
+        <th>scale RECOMP</th><th>scale UPLOAD (C)</th>
+      </tr></thead>
+      <tbody id="gap-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── LAYER 7 · EXPORT ─── -->
+<div class="layer-label">LAYER 7 · EXPORT</div>
+
+<div class="panel">
+  <div class="ptitle">EXPORT CHAMBER STATE <span class="psub">REPRODUCIBLE RUN · JSON INCLUDES ALL CONFIGURATION</span></div>
+  <div class="ctrl-row" style="margin-bottom:12px">
+    <button class="ctrl-btn export" id="btn-export-json">⬇ EXPORT JSON STATE</button>
+    <button class="ctrl-btn export" id="btn-export-csv">⬇ EXPORT GAP TABLE CSV</button>
+    <button class="ctrl-btn export" id="btn-export-plots">⬇ EXPORT PLOTS PNG</button>
+    <button class="ctrl-btn" id="btn-export-preview" style="border-color:var(--dim);color:var(--dim)">PREVIEW JSON</button>
+  </div>
+  <div id="export-preview" class="export-pre" style="display:none"></div>
+  <div style="margin-top:10px;font-size:8px;color:var(--dim)">
+    Future QM-II compatibility: engine accepts extended schema 
+    <code style="color:var(--text2)">p, lambda1, lambda2, ..., lambdaN</code> — 
+    spectral graph core is preserved; perturbation sweep layer added above.
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="layer-label" style="margin-top:20px">DIAGNOSTIC LOG</div>
+<div class="log-box" id="log-box"></div>
+
+</div><!-- /shell -->
+
+<script>
+// =====================================================================
+// QM-I CHAMBER v1.0.3 — SPECTRAL ADMISSIBILITY GEOMETRY ENGINE
+// UNNS Substrate Program · Static Chamber
+// Future QM-II hook: parameterized input schema p,λ1,λ2,...,λN
+// =====================================================================
+
+const VERSION = 'QM-I v1.0.3';
+const TIMESTAMP_KEY = null; // set at run time
+
+// ─── STATE ────────────────────────────────────────────────────────────
+const S = {
+  dataA: null,   // parsed Dataset A (spectrum) — authoritative
+  dataB: null,   // parsed Dataset B (gap structure)
+  dataC: null,   // parsed Dataset C (preprocessed)
+  spectrum: [],  // sorted eigenvalues [{idx, energy}]
+  gaps: [],      // computed gaps [{idx, energy, gap, normGap, scale}]
+  regimes: [],   // [{id, label, start, end, indices, microClusters}]
+  vulnNodes: [], // node indices in vulnerability set V
+  nuV: 0,        // max independent set size
+  degenGroups: [],// [{type:'exact'|'near', members:[idx,...]}]
+  warnings: [],
+  log: [],
+  config: {},
+  runTimestamp: null,
+  mismatches: [],
+};
+
+// ─── LOGGING ──────────────────────────────────────────────────────────
+function log(msg, cls=''){
+  const d = document.getElementById('log-box');
+  const t = new Date().toISOString().substr(11,12);
+  const line = document.createElement('div');
+  line.className = 'log-line '+(cls||'');
+  line.textContent = `[${t}] ${msg}`;
+  d.appendChild(line);
+  d.scrollTop = d.scrollHeight;
+  S.log.push({t, msg, cls});
+}
+
+// ─── FILE LOADING — STRICT SCHEMA VALIDATION ─────────────────────────
+// Each dataset slot has a hard schema contract.
+// Dataset A: authoritative spectrum — exactly {index, energy_cm-1}
+// Dataset B: gap structure — {index, energy_cm-1, gap_cm-1}
+// Dataset C: preprocessed — {index, energy_cm-1, raw_gap_cm-1, normalized_gap, scale}
+// Loaded files that fail schema are rejected and S[key] is not populated.
+
+function parseCSV(raw){
+  const lines = raw.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) throw new Error('Empty file');
+  const header = lines[0].split(',').map(h=>h.trim());
+  return {
+    header,
+    rows: lines.slice(1).map(l=>{
+      const parts = l.split(',');
+      const obj={};
+      header.forEach((h,i)=>{
+        const v = parts[i]!==undefined ? parts[i].trim() : '';
+        obj[h] = (v!=='' && !isNaN(v)) ? parseFloat(v) : v;
+      });
+      return obj;
+    }).filter(r=>Object.values(r).some(v=>v!==''&&v!==undefined))
+  };
+}
+
+function setUZState(uzId, nameId, statusId, fname, ok, msg){
+  const uz = document.getElementById(uzId);
+  uz.classList.remove('loaded','err');
+  uz.classList.add(ok?'loaded':'err');
+  if(fname) document.getElementById(nameId).textContent = fname;
+  const sEl = document.getElementById(statusId);
+  sEl.className = 'uz-status '+(ok?'ok':'err');
+  sEl.textContent = (ok?'✓ ':'✗ ')+msg;
+}
+
+// DATASET A — strict: exactly {index, energy_cm-1}, no derived columns
+document.getElementById('file-a').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev=>{
+    try{
+      const {header, rows} = parseCSV(ev.target.result);
+      // Reject if contains derived columns
+      const FORBIDDEN_A = ['raw_gap_cm-1','normalized_gap','scale','gap_cm-1'];
+      const hasForbidden = FORBIDDEN_A.filter(c=>header.includes(c));
+      if(hasForbidden.length){
+        throw new Error(
+          `Dataset A must be the authoritative spectrum file (index,energy_cm-1).\n` +
+          `Preprocessed files are not allowed here.\n` +
+          `Forbidden column(s) detected: ${hasForbidden.join(', ')}`
+        );
+      }
+      if(!header.includes('index') || !header.includes('energy_cm-1'))
+        throw new Error('Schema mismatch: Dataset A requires exactly {index, energy_cm-1}');
+      // Validate strictly increasing index and numeric energy
+      let lastIdx = -Infinity;
+      rows.forEach((r,i)=>{
+        if(isNaN(r['energy_cm-1'])) throw new Error(`Non-numeric energy at row ${i+1}`);
+        if(r['index'] <= lastIdx) throw new Error(`Index not strictly increasing at row ${i+1} (idx=${r['index']})`);
+        lastIdx = r['index'];
+      });
+      S.dataA = rows;
+      setUZState('uz-a','uz-a-name','uz-a-status',f.name,true,`${rows.length} levels · schema ✓`);
+      log(`Dataset A loaded: ${f.name} (${rows.length} eigenvalues) — schema validated`,'ok');
+      if(rows.length < 80){
+        log(`Dataset A: only ${rows.length} rows — expected ≥80 for full hydrogen spectrum`,'warn');
+      }
+    }catch(err){
+      S.dataA = null;
+      setUZState('uz-a','uz-a-name','uz-a-status',f.name,false,err.message.split('\n')[0]);
+      log(`Dataset A REJECTED: ${err.message}`,'err');
+    }
+  };
+  rd.readAsText(f);
+});
+
+// DATASET B — strict: {index, energy_cm-1, gap_cm-1}
+document.getElementById('file-b').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev=>{
+    try{
+      const {header, rows} = parseCSV(ev.target.result);
+      const REQUIRED_B = ['index','energy_cm-1','gap_cm-1'];
+      const missing = REQUIRED_B.filter(c=>!header.includes(c));
+      if(missing.length) throw new Error(`Dataset B schema mismatch — missing: ${missing.join(', ')}`);
+      rows.forEach((r,i)=>{
+        if(typeof r['gap_cm-1']==='number' && r['gap_cm-1'] < 0)
+          throw new Error(`Negative gap at row ${i+1}`);
+      });
+      S.dataB = rows;
+      setUZState('uz-b','uz-b-name','uz-b-status',f.name,true,`${rows.length} gap rows · schema ✓`);
+      log(`Dataset B loaded: ${f.name} (${rows.length} rows) — schema validated`,'ok');
+    }catch(err){
+      S.dataB = null;
+      setUZState('uz-b','uz-b-name','uz-b-status',f.name,false,err.message);
+      log(`Dataset B REJECTED: ${err.message}`,'err');
+    }
+  };
+  rd.readAsText(f);
+});
+
+// DATASET C — strict: {index, energy_cm-1, raw_gap_cm-1, normalized_gap, scale}
+document.getElementById('file-c').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev=>{
+    try{
+      const {header, rows} = parseCSV(ev.target.result);
+      const REQUIRED_C = ['index','energy_cm-1','raw_gap_cm-1','normalized_gap','scale'];
+      const missing = REQUIRED_C.filter(c=>!header.includes(c));
+      if(missing.length) throw new Error(`Dataset C schema mismatch — missing: ${missing.join(', ')}`);
+      const VALID_SCALES = new Set(['macro','meso','micro']);
+      rows.forEach((r,i)=>{
+        const sc = typeof r['scale']==='string' ? r['scale'].trim() : String(r['scale']);
+        if(!VALID_SCALES.has(sc)) throw new Error(`Invalid scale value "${sc}" at row ${i+1}`);
+      });
+      S.dataC = rows;
+      setUZState('uz-c','uz-c-name','uz-c-status',f.name,true,`${rows.length} rows · schema ✓`);
+      log(`Dataset C loaded: ${f.name} (${rows.length} rows) — schema validated`,'ok');
+    }catch(err){
+      S.dataC = null;
+      setUZState('uz-c','uz-c-name','uz-c-status',f.name,false,err.message);
+      log(`Dataset C REJECTED: ${err.message}`,'err');
+    }
+  };
+  rd.readAsText(f);
+});
+
+// ─── THRESHOLD HELPERS ────────────────────────────────────────────────
+function getConfig(){
+  return {
+    // Normalization is fixed: range = λ_max − λ_2 (ground-state gap excluded, clamped ≤ 1)
+    normMode    : 'fixed_range',   // not a UI control in v1.0.1
+    gapView     : document.getElementById('ctrl-view').value,
+    thrMacro    : parseFloat(document.getElementById('thr-macro').value)||0.01,
+    thrMesoHi   : parseFloat(document.getElementById('thr-meso-hi').value)||0.01,
+    thrMesoLo   : parseFloat(document.getElementById('thr-meso-lo').value)||1e-5,
+    epsExact    : parseFloat(document.getElementById('eps-exact').value)||1e-4,
+    epsNear     : parseFloat(document.getElementById('eps-near').value)||0.1,
+    classSrc    : document.getElementById('ctrl-class-src').value,
+    gapConv     : document.getElementById('ctrl-gap-conv').value,
+    alphaFilter : parseFloat(document.getElementById('alpha-filter').value)||0.65,
+    exclGround  : 'yes',           // always true in v1.0.1 — fixed policy
+  };
+}
+
+function classifyGap(normGap, cfg){
+  if(normGap > cfg.thrMacro) return 'macro';
+  if(normGap >= cfg.thrMesoLo && normGap <= cfg.thrMesoHi) return 'meso';
+  return 'micro';
+}
+
+// ─── MAIN ENGINE ──────────────────────────────────────────────────────
+document.getElementById('btn-run').addEventListener('click', runAnalysis);
+
+function runAnalysis(){
+  if(!S.dataA){ alert('Load Dataset A (spectrum) first.'); return; }
+  setTag('running','RUNNING');
+  log('──── RUN START ────','info');
+
+  const cfg = getConfig();
+  S.config = {...cfg, version: VERSION, timestamp: new Date().toISOString()};
+  S.runTimestamp = S.config.timestamp;
+  S.warnings = [];
+  S.mismatches = [];
+
+  // 1. SORT SPECTRUM
+  const raw = S.dataA.map(r=>({
+    idx: parseInt(r['index']),
+    energy: parseFloat(r['energy_cm-1'])
+  })).filter(r=>!isNaN(r.energy));
+  raw.sort((a,b)=>a.energy-b.energy);
+  S.spectrum = raw;
+  const N = raw.length;
+  log(`Spectrum: ${N} eigenvalues sorted. Range [${raw[0].energy.toFixed(4)}, ${raw[N-1].energy.toFixed(4)}] cm⁻¹`,'ok');
+
+  // ── RUN GUARD: Dataset A must be present and pass N < 80 check ──────
+  if(N < 80){
+    const guardMsg = `Spectrum appears truncated: ${N} eigenvalues (expected ≥80 for full hydrogen spectrum). ` +
+      `Verify dataset assignment — Dataset A must be hydrogen_spectrum_QM1.csv, not the preprocessed file.`;
+    S.warnings.push({type:'warn', msg:guardMsg});
+    log(`RUN GUARD: ${guardMsg}`,'err');
+    // Block export by setting a guard flag; run continues for diagnostics only
+    S.spectrumTruncated = true;
+  } else {
+    S.spectrumTruncated = false;
+  }
+
+  // 2. RECOMPUTE GAPS — fixed normalization: range = λ_max − λ_2
+  // Rationale: λ₂ is the second-lowest eigenvalue (index 1 in sorted array).
+  // The ground-state gap (λ₂ − λ₁) is a physical outlier ~5× larger than
+  // the next largest gap and would dominate the denominator, collapsing all
+  // micro gaps toward zero. Using λ_max − λ_2 excludes this outlier and
+  // produces a meaningful normalized scale for the full spectral hierarchy.
+  // Normalized gaps are clamped to ≤ 1 to prevent artifacts from any single
+  // anomalously large gap relative to this range.
+  const lambda2 = raw[1] ? raw[1].energy : raw[0].energy;  // second eigenvalue
+  const normRange = raw[N-1].energy - lambda2;              // λ_max − λ_2
+  S.normDenom = normRange;
+  S.normDenomNote = `λ_max − λ_2 = ${raw[N-1].energy.toFixed(4)} − ${lambda2.toFixed(4)} = ${normRange.toFixed(4)} cm⁻¹ [fixed · ground-state gap excluded]`;
+  log(`Normalization: FIXED · range = λ_max − λ₂ = ${normRange.toExponential(4)} cm⁻¹ (λ₂ = ${lambda2.toFixed(4)} cm⁻¹)`);
+  
+  S.gaps = [];
+  for(let i=0;i<N-1;i++){
+    const g = raw[i+1].energy - raw[i].energy;
+    // normalized_gap = gap / (λ_max − λ_2), clamped to [0, 1]
+    const normGap = normRange > 0 ? Math.min(1, g / normRange) : 0;
+    S.gaps.push({
+      idx: raw[i].idx,
+      energy: raw[i].energy,
+      gap: g,
+      normGap,
+      scale: classifyGap(normGap, cfg)
+    });
+  }
+  // Last eigenvalue convention
+  if(cfg.gapConv==='null'){
+    S.gaps.push({idx:raw[N-1].idx, energy:raw[N-1].energy, gap:null, normGap:null, scale:null});
+  }
+
+  log(`Gaps recomputed: ${S.gaps.filter(g=>g.gap!==null).length} entries`);
+
+  // ── PRECISION TRUNCATION DETECTOR ────────────────────────────────────
+  // Detects runs of ≥3 consecutive gaps that are exactly identical at float64
+  // precision (|Δ| ≤ 1e-10 cm⁻¹). This targets two categories:
+  //
+  //   (a) Source truncation tail: high-n levels stored as integers at coarse
+  //       spacing (e.g. 3.0 cm⁻¹ repeated), where 1/n³ decay is lost entirely.
+  //       Expected: ~51 gaps at the high-n end of hydrogen_spectrum_QM1.csv.
+  //
+  //   (b) Near-degenerate multiplets at exact source precision: fine-structure
+  //       triplets where the source CSV records identical values (e.g. 0.003
+  //       cm⁻¹ repeated three times). These are real physical near-degeneracies,
+  //       not computation errors — the source just lacks sub-millidigit resolution.
+  //
+  // Note: gap computation is full float64 (g = raw[i+1].energy − raw[i].energy).
+  // The chamber introduces no rounding. Any identical gaps at this tolerance
+  // are identical in the source data.
+  //
+  // The previous CONST_TOL=0.01 was too loose — it caught any two micro-gap
+  // values within 0.01 cm⁻¹, producing false positives from the fine-structure
+  // multiplet band (gaps 0.003–0.016 cm⁻¹ that differ but are close together).
+  // CONST_TOL=1e-10 catches only truly identical float64 values.
+  S.precisionRuns = [];
+  const CONST_TOL = 1e-10;  // exact float64 equality — no rounding introduced
+  const MIN_RUN = 3;        // minimum consecutive identical-gap count to flag
+  const validGapsForPR = S.gaps.filter(g => g.gap !== null);
+  let runStart = null, runVal = null, runLen = 0;
+  for(let i = 0; i < validGapsForPR.length; i++){
+    const gv = validGapsForPR[i].gap;
+    if(runStart === null){
+      runStart = i; runVal = gv; runLen = 1;
+    } else if(Math.abs(gv - runVal) <= CONST_TOL){
+      runLen++;
+    } else {
+      if(runLen >= MIN_RUN){
+        S.precisionRuns.push({
+          startGapIdx: runStart,
+          endGapIdx: runStart + runLen - 1,
+          gapValue: runVal,
+          count: runLen,
+          startEnergy: validGapsForPR[runStart].energy,
+        });
+      }
+      runStart = i; runVal = gv; runLen = 1;
+    }
+  }
+  if(runLen >= MIN_RUN){
+    S.precisionRuns.push({
+      startGapIdx: runStart,
+      endGapIdx: runStart + runLen - 1,
+      gapValue: runVal,
+      count: runLen,
+      startEnergy: validGapsForPR[runStart].energy,
+    });
+  }
+  if(S.precisionRuns.length > 0){
+    const total = S.precisionRuns.reduce((a, r) => a + r.count, 0);
+    const tailRuns  = S.precisionRuns.filter(r => r.gapValue > 0.5);   // 3.0 cm⁻¹ tail
+    const multiplets= S.precisionRuns.filter(r => r.gapValue <= 0.5);  // fine-structure multiplets
+    let msg = `Precision detector: ${S.precisionRuns.length} identical-gap run(s) · ${total} gaps total. `;
+    if(tailRuns.length)    msg += `High-n truncation tail: ${tailRuns.reduce((a,r)=>a+r.count,0)} gaps at ${tailRuns[0].gapValue.toFixed(3)} cm⁻¹ (source integer rounding; expected 1/n³ decay). `;
+    if(multiplets.length)  msg += `Fine-structure multiplets: ${multiplets.length} triplet(s) at source resolution limit (real near-degeneracies, not computation error). `;
+    msg += 'Gap computation is full float64; no rounding introduced by chamber.';
+    S.warnings.push({type:'warn', msg});
+    S.precisionRuns.forEach(r => {
+      const kind = r.gapValue > 0.5 ? 'TAIL' : 'MULTIPLET';
+      log(`Precision [${kind}]: ${r.count} × gap=${r.gapValue.toFixed(10)} cm⁻¹ starting gap-idx ${r.startGapIdx} (λ=${r.startEnergy.toFixed(3)} cm⁻¹)`,'warn');
+    });
+  } else {
+    log('Precision check: no identical-gap runs detected (full float64 resolution)','ok');
+  }
+
+  // 3. STATIC SPECTRUM WARNING (always present in v1.0.x)
+  S.warnings.push({type:'info', msg:'Static spectrum only — no perturbation parameter present (QM-II reserved)'});
+
+  // 4. VALIDATE AGAINST DATASET B
+  if(S.dataB){
+    let bMismatches=0;
+    S.dataB.forEach(row=>{
+      const idx = parseInt(row['index']);
+      const uploadGap = parseFloat(row['gap_cm-1']);
+      const recompEntry = S.gaps.find(g=>g.idx===idx);
+      if(recompEntry && recompEntry.gap !== null){
+        const diff = Math.abs(recompEntry.gap - uploadGap);
+        if(diff > 1e-6){
+          bMismatches++;
+          S.mismatches.push({idx, type:'gap', recomp:recompEntry.gap, upload:uploadGap, diff});
+        }
+      }
+    });
+    if(bMismatches>0){
+      S.warnings.push({type:'warn', msg:`Dataset B: ${bMismatches} gap value(s) disagree with recomputed (diff > 1e-6 cm⁻¹)`});
+      log(`Dataset B: ${bMismatches} mismatches vs recomputed gaps`,'warn');
+    } else {
+      log('Dataset B: all uploaded gaps match recomputed (within 1e-6)','ok');
+    }
+  }
+
+  // 5. VALIDATE AGAINST DATASET C (scale classification)
+  let cMismatches=0;
+  if(S.dataC){
+    S.dataC.forEach(row=>{
+      const idx = parseInt(row['index']);
+      const uploadScale = (row['scale']||'').trim();
+      const recompEntry = S.gaps.find(g=>g.idx===idx);
+      if(recompEntry && uploadScale && recompEntry.scale !== uploadScale){
+        cMismatches++;
+        S.mismatches.push({idx, type:'scale', recomp:recompEntry.scale, upload:uploadScale});
+      }
+    });
+    if(cMismatches>0){
+      S.warnings.push({type:'warn', msg:`Dataset C: ${cMismatches} scale class(es) disagree with recomputed thresholds`});
+      log(`Dataset C: ${cMismatches} scale class mismatches`,'warn');
+    } else {
+      log('Dataset C: all uploaded scale classes match recomputed','ok');
+    }
+  }
+
+  // 6. MAGNITUDE SPAN CHECK
+  const validGaps = S.gaps.filter(g=>g.gap!==null&&g.gap>0);
+  if(validGaps.length>0){
+    const minG = Math.min(...validGaps.map(g=>g.gap));
+    const maxG = Math.max(...validGaps.map(g=>g.gap));
+    const logSpan = Math.log10(maxG/minG);
+    if(logSpan > 3){
+      S.warnings.push({type:'warn', msg:`Gaps span ${logSpan.toFixed(1)} decades — scale thresholds are highly sensitive; review threshold configuration`});
+      log(`Magnitude span: ${logSpan.toFixed(1)} decades`,'warn');
+    }
+  }
+
+  // 7. THRESHOLD SENSITIVITY WARNING
+  const macroCount = S.gaps.filter(g=>g.scale==='macro').length;
+  const mesoCount  = S.gaps.filter(g=>g.scale==='meso').length;
+  const microCount = S.gaps.filter(g=>g.scale==='micro').length;
+  if(macroCount===0){
+    S.warnings.push({type:'warn', msg:'No macro gaps detected — consider lowering macro threshold'});
+  }
+
+  // 8. DEGENERACY DETECTION
+  S.degenGroups = [];
+  for(let i=0;i<N-1;i++){
+    const delta = Math.abs(raw[i+1].energy - raw[i].energy);
+    if(delta <= cfg.epsExact){
+      // find existing group or create
+      let found = false;
+      for(const g of S.degenGroups){
+        if(g.type==='exact' && g.members.includes(raw[i].idx)){
+          g.members.push(raw[i+1].idx); found=true; break;
+        }
+      }
+      if(!found) S.degenGroups.push({type:'exact', members:[raw[i].idx, raw[i+1].idx], delta});
+    } else if(delta <= cfg.epsNear){
+      let found = false;
+      for(const g of S.degenGroups){
+        if(g.type==='near' && g.members.includes(raw[i].idx)){
+          g.members.push(raw[i+1].idx); found=true; break;
+        }
+      }
+      if(!found) S.degenGroups.push({type:'near', members:[raw[i].idx, raw[i+1].idx], delta});
+    }
+  }
+  // deduplicate members
+  S.degenGroups.forEach(g=>{ g.members=[...new Set(g.members)]; });
+  log(`Degeneracy clusters: ${S.degenGroups.filter(g=>g.type==='exact').length} exact, ${S.degenGroups.filter(g=>g.type==='near').length} near-degen`);
+
+  // 9. REGIME SEGMENTATION (macro gaps only create boundaries, subject to α filter)
+  // α filter: a macro gap creates a new regime only if it exceeds the previous
+  // macro gap × α. This prevents false regime creation in late shells where
+  // the inter-shell spacing shrinks monotonically (E_n ∝ −1/n²).
+  S.regimes = [];
+  let current = {id:1, start:0, indices:[]};
+  current.indices.push(0);
+  let lastMacroGap = null;      // track previous accepted macro gap value
+  let alphaSuppressions = 0;    // count suppressed macro gaps for diagnostics
+  for(let i=0;i<S.gaps.length;i++){
+    const g = S.gaps[i];
+    if(g.gap===null) { current.indices.push(i+1); continue; }
+    if(g.scale==='macro'){
+      // α filter: first macro gap always passes; subsequent must be ≥ lastMacroGap × α
+      const passesAlpha = lastMacroGap === null || g.gap >= lastMacroGap * cfg.alphaFilter;
+      if(passesAlpha){
+        current.end = i;
+        S.regimes.push({...current});
+        current = {id: S.regimes.length+1, start:i+1, indices:[i+1]};
+        lastMacroGap = g.gap;
+      } else {
+        // suppressed: treat as intra-regime gap (no new regime)
+        if(i+1 < N) current.indices.push(i+1);
+        alphaSuppressions++;
+        log(`α-suppressed macro at idx ${g.idx} · gap=${g.gap.toFixed(3)} cm⁻¹ < prev_macro(${lastMacroGap.toFixed(3)}) × α(${cfg.alphaFilter})`,'warn');
+      }
+    } else {
+      if(i+1 < N) current.indices.push(i+1);
+    }
+  }
+  current.end = N-1;
+  S.regimes.push(current);
+  if(alphaSuppressions > 0){
+    S.warnings.push({type:'warn', msg:`α filter (α=${cfg.alphaFilter}) suppressed ${alphaSuppressions} macro gap(s) from creating new regimes — late-shell shrinkage`});
+  }
+  S.alphaSuppressions = alphaSuppressions;
+  // label regimes
+  S.regimes.forEach((r,i)=>{
+    const first = raw[r.start];
+    r.label = `n=${i+1}`;
+    r.startEnergy = first ? first.energy : 0;
+    r.endEnergy = raw[r.end] ? raw[r.end].energy : raw[N-1].energy;
+    r.size = r.end - r.start + 1;
+    // micro clusters within regime
+    r.microClusters = countMicroClusters(r.start, r.end);
+  });
+  log(`Regimes: ${S.regimes.length} principal shells`,'ok');
+
+  // 10. VULNERABILITY NODES
+  // A node is vulnerable if it is adjacent to at least one micro gap
+  const vulnSet = new Set();
+  S.gaps.forEach((g,i)=>{
+    if(g.scale==='micro'){
+      vulnSet.add(i);       // node at index i
+      if(i+1<N) vulnSet.add(i+1); // node at index i+1
+    }
+  });
+  S.vulnNodes = [...vulnSet];
+
+  // 11. nu(V) = maximum independent set of vulnerability nodes
+  // In a path graph, MIS can be computed greedily
+  S.nuV = maxIndependentSetPath([...S.vulnNodes].sort((a,b)=>a-b));
+  log(`Vulnerability set V: ${S.vulnNodes.length} nodes · ν(V) = ${S.nuV}`,'ok');
+
+  // 12. RENDER
+  updateStats(cfg, N);
+  renderWarnings();
+  renderConfigDisplay(cfg);
+  renderGapTable(cfg);
+  renderDegenList();
+  renderVulnDetail();
+  renderRegimeMap(N);
+  renderRegimeSummary();
+  renderClusterMetrics(cfg);
+  renderPhasePanel();
+  drawLadder();
+  drawHistogram(cfg);
+  drawLogGap();
+  drawNormGap(cfg);
+  drawAdmissibility(N);
+
+  setTag('done','DONE');
+  log('──── RUN COMPLETE ────','info');
+}
+
+function countMicroClusters(start, end){
+  let clusters=0, inCluster=false;
+  for(let i=start;i<end&&i<S.gaps.length;i++){
+    if(S.gaps[i].scale==='micro'){
+      if(!inCluster){ clusters++; inCluster=true; }
+    } else { inCluster=false; }
+  }
+  return clusters;
+}
+
+// Greedy MIS on sorted node indices (path-like)
+function maxIndependentSetPath(sorted){
+  let count=0, lastSelected=-2;
+  for(const n of sorted){
+    if(n > lastSelected+1){ count++; lastSelected=n; }
+  }
+  return count;
+}
+
+// ─── STATS UPDATE ─────────────────────────────────────────────────────
+function updateStats(cfg, N){
+  const validGaps = S.gaps.filter(g=>g.gap!==null);
+  const exactCt = S.degenGroups.filter(g=>g.type==='exact').length;
+  const nearCt  = S.degenGroups.filter(g=>g.type==='near').length;
+  const span = S.spectrum[N-1].energy - S.spectrum[0].energy;
+  const logSpan = validGaps.length>0 ? 
+    Math.log10(Math.max(...validGaps.filter(g=>g.gap>0).map(g=>g.gap))/Math.min(...validGaps.filter(g=>g.gap>0).map(g=>g.gap))) : 0;
+
+  const set = (id, val, cls) => {
+    const el = document.getElementById(id);
+    el.textContent = val;
+    if(cls){ el.className = 'sc-val '+cls; }
+  };
+  set('st-n', N, 'live');
+  set('st-gaps', validGaps.length, 'live');
+  set('st-macro', validGaps.filter(g=>g.scale==='macro').length, 'fail');
+  set('st-meso',  validGaps.filter(g=>g.scale==='meso').length, 'warn');
+  set('st-micro', validGaps.filter(g=>g.scale==='micro').length, 'live');
+  set('st-regimes', S.regimes.length, 'pass');
+  set('st-vuln', S.vulnNodes.length, 'warn');
+  set('st-nu', S.nuV, 'pass');
+  set('st-degen-exact', exactCt, exactCt>0?'warn':'pass');
+  set('st-degen-near', nearCt, nearCt>0?'warn':'pass');
+  set('st-span', span.toFixed(1), 'live');
+  set('st-logspan', logSpan.toFixed(2), 'live');
+  const ptTotal = (S.precisionRuns||[]).reduce((a,r)=>a+r.count,0);
+  set('st-prectrunc', ptTotal, ptTotal>0?'warn':'pass');
+}
+
+// ─── CONFIG DISPLAY ───────────────────────────────────────────────────
+function renderConfigDisplay(cfg){
+  const d = document.getElementById('config-display');
+  d.innerHTML = [
+    `<b style="color:var(--pass)">normalization</b>: FIXED · range = λ_max − λ₂ (ground-state gap excluded · clamped ≤ 1)  |  `,
+    `<b style="color:var(--accent)">gap_view</b>: ${cfg.gapView}  |  `,
+    `<b style="color:var(--macro)">thr_macro</b>: ${cfg.thrMacro}  |  `,
+    `<b style="color:var(--meso)">thr_meso_hi</b>: ${cfg.thrMesoHi}  `,
+    `<b style="color:var(--meso)">thr_meso_lo</b>: ${cfg.thrMesoLo}  |  `,
+    `<b style="color:var(--gold)">eps_exact</b>: ${cfg.epsExact}  `,
+    `<b style="color:var(--gold)">eps_near</b>: ${cfg.epsNear}  |  `,
+    `<b style="color:var(--purple)">alpha_filter</b>: ${cfg.alphaFilter}  |  `,
+    `<b style="color:var(--text2)">class_src</b>: ${cfg.classSrc}  `,
+    `<b style="color:var(--text2)">gap_conv</b>: ${cfg.gapConv}  |  `,
+    `<b style="color:var(--dim)">version</b>: ${VERSION}  `,
+    `<b style="color:var(--dim)">timestamp</b>: ${S.runTimestamp}`,
+    S.normDenomNote ? `<br><b style="color:var(--text2)">norm_range</b>: ${S.normDenomNote}` : '',
+    S.spectrumTruncated ? `<br><b style="color:var(--fail)">⚠ TRUNCATED SPECTRUM — export blocked</b>` : '',
+  ].join('');
+}
+
+// ─── WARNINGS RENDER ──────────────────────────────────────────────────
+function renderWarnings(){
+  const wrap = document.getElementById('warnings-wrap');
+  if(!S.warnings.length){ wrap.innerHTML=''; return; }
+  const boxes = {warn:[], info:[], ok:[]};
+  S.warnings.forEach(w=> (boxes[w.type]||boxes.info).push(w.msg));
+  let html = '';
+  if(boxes.warn.length){
+    html += '<div class="warn-box"><div class="ptitle" style="border:0;margin:0 0 5px">WARNINGS</div>';
+    boxes.warn.forEach(m=>{ html+=`<div class="warn-line">${m}</div>`; }); html+='</div>';
+  }
+  if(boxes.info.length){
+    html += '<div class="warn-box info"><div class="ptitle" style="border:0;margin:0 0 5px;color:var(--accent)">NOTICES</div>';
+    boxes.info.forEach(m=>{ html+=`<div class="warn-line info">${m}</div>`; }); html+='</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+// ─── GAP TABLE RENDER ─────────────────────────────────────────────────
+function renderGapTable(cfg){
+  const tbody = document.getElementById('gap-tbody');
+  const rows = [];
+  S.gaps.forEach((g,i) => {
+    if(g.gap===null) return;
+    // uploaded values
+    const bRow = S.dataB ? S.dataB.find(r=>parseInt(r['index'])===g.idx) : null;
+    const cRow = S.dataC ? S.dataC.find(r=>parseInt(r['index'])===g.idx) : null;
+    const uploadGap  = bRow ? parseFloat(bRow['gap_cm-1']) : null;
+    const uploadNorm = cRow ? parseFloat(cRow['normalized_gap']) : null;
+    const uploadScale= cRow ? (cRow['scale']||'').trim() : null;
+    const diffGap = (uploadGap!==null&&!isNaN(uploadGap)) ? Math.abs(g.gap - uploadGap) : null;
+    const isMismatch = diffGap!==null && diffGap > 1e-6;
+    const isScaleMismatch = uploadScale && uploadScale !== g.scale;
+    const rowClass = isMismatch ? 'mismatch-row' : '';
+    rows.push(`<tr class="${rowClass}">
+      <td>${g.idx}</td>
+      <td>${g.energy.toFixed(6)}</td>
+      <td class="${g.scale}">${g.gap.toExponential(5)}</td>
+      <td ${isMismatch?'class="mismatch"':''}>${uploadGap!==null?uploadGap.toExponential(5):'—'}</td>
+      <td ${isMismatch?'class="mismatch"':''}>${diffGap!==null?diffGap.toExponential(2):'—'}</td>
+      <td>${g.normGap.toExponential(3)}</td>
+      <td>${uploadNorm!==null?parseFloat(uploadNorm).toExponential(3):'—'}</td>
+      <td class="${g.scale}">${g.scale}</td>
+      <td ${isScaleMismatch?'class="mismatch"':''}>${uploadScale||'—'}</td>
+    </tr>`);
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+// ─── DEGENERACY LIST ──────────────────────────────────────────────────
+function renderDegenList(){
+  const d = document.getElementById('degen-list');
+  if(!S.degenGroups.length){ d.innerHTML='<span style="color:var(--pass)">No degeneracies detected at current tolerance.</span>'; return; }
+  const html = S.degenGroups.map(g=>{
+    const members = g.members.map(idx=>{
+      const e = S.spectrum.find(s=>s.idx===idx);
+      return e ? `λ${idx}=${e.energy.toFixed(4)}` : `λ${idx}`;
+    }).join(', ');
+    return `<div class="degen-item">
+      <div class="di-head">${g.type.toUpperCase()} · Δ=${g.delta?g.delta.toExponential(3):'—'}</div>
+      <div class="di-body">${members}</div>
+    </div>`;
+  }).join('');
+  d.innerHTML = html;
+}
+
+// ─── VULNERABILITY DETAIL ─────────────────────────────────────────────
+function renderVulnDetail(){
+  const d = document.getElementById('vuln-detail');
+  if(!S.vulnNodes.length){ d.innerHTML='<span style="color:var(--pass)">No vulnerability nodes.</span>'; return; }
+  const nodeList = S.vulnNodes.slice(0,60).map(i=>{
+    const e = S.spectrum[i];
+    return e ? `<span style="color:var(--vuln)">λ${e.idx}</span>` : '';
+  }).join(' ');
+  d.innerHTML = `
+    <div style="margin-bottom:6px;color:var(--text2)">|V| = <span style="color:var(--vuln)">${S.vulnNodes.length}</span> vulnerability nodes</div>
+    <div style="margin-bottom:6px;color:var(--text2)">ν(V) = <span style="color:var(--pass)">${S.nuV}</span> (max independent set — greedy on sorted indices)</div>
+    <div style="line-height:2">${nodeList}${S.vulnNodes.length>60?` <span style="color:var(--dim)">...+${S.vulnNodes.length-60} more</span>`:''}</div>`;
+}
+
+// ─── REGIME MAP ───────────────────────────────────────────────────────
+const REGIME_COLORS = ['#e04040','#f0a030','#00dd88','#00c8f0','#9880ff','#4ab0f0','#e8c840','#e06080','#80d0a0','#c0a0e0'];
+
+function renderRegimeMap(N){
+  const wrap = document.getElementById('regime-map');
+  const maxE = S.spectrum[N-1].energy;
+  const minE = S.spectrum[0].energy;
+  const span = maxE - minE || 1;
+
+  let html = '';
+  S.regimes.forEach((r,i)=>{
+    const left = ((r.startEnergy - minE)/span*100).toFixed(2);
+    const width = ((r.endEnergy - r.startEnergy)/span*100).toFixed(2);
+    const col = REGIME_COLORS[i%REGIME_COLORS.length];
+    html += `<div class="regime-row">
+      <div class="regime-label">${r.label} · [${r.startEnergy.toFixed(2)}, ${r.endEnergy.toFixed(2)}] cm⁻¹ · ${r.size} levels · ${r.microClusters} micro-cluster(s)</div>
+      <div class="regime-bar-wrap">
+        <div class="regime-seg" style="left:${left}%;width:${Math.max(0.5,parseFloat(width))}%;background:${col}22;border-right:2px solid ${col};color:${col}">
+          ${r.label}
+        </div>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function renderRegimeSummary(){
+  const d = document.getElementById('regime-summary');
+  const rows = S.regimes.map(r=>`
+    <div style="padding:4px 0;border-bottom:1px solid var(--border2)">
+      <span style="color:var(--accent)">${r.label}</span>
+      <span style="color:var(--dim)"> · </span>
+      <span style="color:var(--text)">${r.size} levels</span>
+      <span style="color:var(--dim)"> · </span>
+      <span style="color:var(--micro)">${r.microClusters} micro</span>
+    </div>`).join('');
+  d.innerHTML = rows;
+}
+
+function renderClusterMetrics(cfg){
+  const d = document.getElementById('cluster-metrics');
+  const validGaps = S.gaps.filter(g=>g.gap!==null);
+  const microGaps = validGaps.filter(g=>g.scale==='micro');
+  const meanMicro = microGaps.length ? microGaps.reduce((a,g)=>a+g.gap,0)/microGaps.length : 0;
+  const macroGaps = validGaps.filter(g=>g.scale==='macro');
+  const meanMacro = macroGaps.length ? macroGaps.reduce((a,g)=>a+g.gap,0)/macroGaps.length : 0;
+  const totalMicroClusters = S.regimes.reduce((a,r)=>a+r.microClusters,0);
+  const maxCluster = Math.max(...S.regimes.map(r=>r.microClusters));
+  d.innerHTML = `
+    <div class="log-line">cluster_density: <span style="color:var(--micro)">${(microGaps.length/validGaps.length*100).toFixed(1)}%</span> micro</div>
+    <div class="log-line">mean_micro_gap: <span style="color:var(--micro)">${meanMicro.toExponential(3)} cm⁻¹</span></div>
+    <div class="log-line">mean_macro_gap: <span style="color:var(--macro)">${meanMacro.toFixed(2)} cm⁻¹</span></div>
+    <div class="log-line">total_micro_clusters: <span style="color:var(--text)">${totalMicroClusters}</span></div>
+    <div class="log-line">largest_vuln_cluster: <span style="color:var(--vuln)">${maxCluster}</span></div>
+    <div class="log-line" style="margin-top:6px;color:var(--dim);font-size:8px">descriptive only · no statistical inference</div>`;
+}
+
+function renderPhasePanel(){
+  const d = document.getElementById('phase-panel');
+  const macroGaps = S.gaps.filter(g=>g.scale==='macro').length;
+  const microClusters = S.regimes.reduce((a,r)=>a+r.microClusters,0);
+  const maxVulnCluster = S.vulnNodes.length; // simplified
+  d.innerHTML = `
+    <div style="margin-bottom:8px">
+      <div class="sc-label">MACRO REGIMES</div>
+      <div class="sc-val fail" style="font-size:28px">${S.regimes.length}</div>
+      <div class="sc-unit">principal shells (boundaries: ${macroGaps} macro gaps)</div>
+    </div>
+    <div style="margin-bottom:8px">
+      <div class="sc-label">MICRO CLUSTERS</div>
+      <div class="sc-val" style="font-size:28px;color:var(--micro)">${microClusters}</div>
+      <div class="sc-unit">fine structure groups</div>
+    </div>
+    <div style="margin-bottom:8px">
+      <div class="sc-label">VULNERABILITY NODES</div>
+      <div class="sc-val" style="font-size:28px;color:var(--vuln)">${S.vulnNodes.length}</div>
+      <div class="sc-unit">ν(V) = ${S.nuV} (max indep set)</div>
+    </div>`;
+}
+
+// ─── CANVAS HELPERS ───────────────────────────────────────────────────
+function fitCanvas(id){
+  const cv = document.getElementById(id);
+  cv.width = cv.offsetWidth || cv.parentElement.clientWidth || 600;
+  return cv;
+}
+const BG2 = '#0a1220', GRID = '#111e30';
+function clearCanvas(cv,ctx){ ctx.fillStyle=BG2; ctx.fillRect(0,0,cv.width,cv.height); }
+function drawGrid(cv,ctx,lx,rx,ty,by,nx,ny){
+  ctx.strokeStyle=GRID; ctx.lineWidth=0.5;
+  for(let i=0;i<=nx;i++){
+    const x=lx+(rx-lx)*i/nx; ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x,by);ctx.stroke();
+  }
+  for(let i=0;i<=ny;i++){
+    const y=ty+(by-ty)*i/ny; ctx.beginPath();ctx.moveTo(lx,y);ctx.lineTo(rx,y);ctx.stroke();
+  }
+}
+const SCALE_COLORS = {macro:'#e04040',meso:'#f0a030',micro:'#4ab0f0',null:'#2d4560'};
+
+// ─── SPECTRAL LADDER ──────────────────────────────────────────────────
+function drawLadder(){
+  const cv = fitCanvas('cv-ladder');
+  const ctx = cv.getContext('2d');
+  clearCanvas(cv,ctx);
+  if(!S.spectrum.length) return;
+  const N = S.spectrum.length;
+  const pad = {l:50,r:15,t:12,b:30};
+  const W=cv.width-pad.l-pad.r, H=cv.height-pad.t-pad.b;
+  const minE=S.spectrum[0].energy, maxE=S.spectrum[N-1].energy, spanE=maxE-minE||1;
+  drawGrid(cv,ctx,pad.l,pad.l+W,pad.t,pad.t+H,6,8);
+
+  // y axis labels
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const e = minE+spanE*i/4;
+    const y = pad.t + H - H*i/4;
+    ctx.fillText(e.toFixed(0), pad.l-5, y+3);
+    ctx.fillStyle='#2d4560'; ctx.font='7px IBM Plex Mono';
+    ctx.fillText('cm⁻¹', pad.l-5, y+11);
+    ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono';
+  }
+
+  // Draw levels as horizontal lines, colored by gap scale to right
+  S.spectrum.forEach((s,i)=>{
+    const x = pad.l + W*i/(N-1||1);
+    const y = pad.t + H - H*(s.energy-minE)/spanE;
+    const gapEntry = S.gaps.find(g=>g.idx===s.idx);
+    const col = gapEntry ? (SCALE_COLORS[gapEntry.scale]||'#4ab0f0') : '#4ab0f0';
+    const isVuln = S.vulnNodes.includes(i);
+    ctx.strokeStyle = isVuln ? '#9880ff' : col;
+    ctx.lineWidth = isVuln ? 1.5 : 1;
+    ctx.beginPath(); ctx.moveTo(x-3,y); ctx.lineTo(x+3,y); ctx.stroke();
+  });
+
+  // axis labels
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+  ctx.fillText('eigenvalue index →', pad.l+W/2, cv.height-4);
+  ctx.save(); ctx.translate(10, pad.t+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('energy (cm⁻¹)', 0, 0); ctx.restore();
+}
+
+// ─── GAP HISTOGRAM ────────────────────────────────────────────────────
+function drawHistogram(cfg){
+  const cv = fitCanvas('cv-hist');
+  const ctx = cv.getContext('2d');
+  clearCanvas(cv,ctx);
+  const validGaps = S.gaps.filter(g=>g.gap!==null&&g.gap>0);
+  if(!validGaps.length) return;
+  document.getElementById('gap-view-label').textContent = cfg.gapView==='log'?'log₁₀':'linear';
+
+  const vals = validGaps.map(g=>cfg.gapView==='log'?Math.log10(g.gap):g.gap);
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  const nBins=20;
+  const bins=Array.from({length:nBins},(_,i)=>({lo:mn+(mx-mn)*i/nBins,hi:mn+(mx-mn)*(i+1)/nBins,macro:0,meso:0,micro:0}));
+  validGaps.forEach(g=>{
+    const v=cfg.gapView==='log'?Math.log10(g.gap):g.gap;
+    const bi=Math.min(nBins-1,Math.floor((v-mn)/(mx-mn||1)*nBins));
+    if(bi>=0&&bi<nBins) bins[bi][g.scale]=(bins[bi][g.scale]||0)+1;
+  });
+  const maxH=Math.max(...bins.map(b=>b.macro+b.meso+b.micro));
+  const pad={l:40,r:10,t:12,b:40};
+  const W=cv.width-pad.l-pad.r, H=cv.height-pad.t-pad.b;
+  drawGrid(cv,ctx,pad.l,pad.l+W,pad.t,pad.t+H,nBins,5);
+
+  bins.forEach((b,i)=>{
+    const bw=W/nBins-1;
+    const x=pad.l+i*(W/nBins);
+    let yoff=0;
+    [['micro','#4ab0f0'],['meso','#f0a030'],['macro','#e04040']].forEach(([sc,col])=>{
+      const h=H*(b[sc]||0)/(maxH||1);
+      ctx.fillStyle=col+'99';
+      ctx.fillRect(x,pad.t+H-yoff-h,bw,h);
+      yoff+=h;
+    });
+  });
+
+  // x axis
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+  for(let i=0;i<=4;i++){
+    const v=mn+(mx-mn)*i/4;
+    ctx.fillText(v.toFixed(1),pad.l+W*i/4,cv.height-24);
+  }
+  ctx.fillText(cfg.gapView==='log'?'log₁₀(gap)  cm⁻¹':'gap (cm⁻¹)',pad.l+W/2,cv.height-8);
+  ctx.save(); ctx.translate(12,pad.t+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('count',0,0); ctx.restore();
+}
+
+// ─── LOG GAP PROFILE ──────────────────────────────────────────────────
+function drawLogGap(){
+  const cv = fitCanvas('cv-loggap');
+  const ctx = cv.getContext('2d');
+  clearCanvas(cv,ctx);
+  const validGaps = S.gaps.filter(g=>g.gap!==null&&g.gap>0);
+  if(!validGaps.length) return;
+  const pad={l:54,r:15,t:22,b:32};
+  const W=cv.width-pad.l-pad.r, H=cv.height-pad.t-pad.b;
+  const logVals = validGaps.map(g=>Math.log10(g.gap));
+  const mn=Math.min(...logVals), mx=Math.max(...logVals);
+  drawGrid(cv,ctx,pad.l,pad.l+W,pad.t,pad.t+H,8,6);
+
+  // ── Shade precision-truncated regions ──────────────────────────────
+  const N2 = validGaps.length;
+  if(S.precisionRuns && S.precisionRuns.length > 0){
+    S.precisionRuns.forEach(run => {
+      const x1 = pad.l + W * run.startGapIdx / (N2-1||1);
+      const x2 = pad.l + W * run.endGapIdx   / (N2-1||1);
+      ctx.fillStyle = 'rgba(240,160,48,0.08)';
+      ctx.fillRect(x1, pad.t, x2-x1, H);
+      ctx.strokeStyle = '#f0a03044';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x1, pad.t, x2-x1, H);
+      // annotation at top
+      ctx.fillStyle = '#f0a030';
+      ctx.font = '7px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(`PRECISION TRUNCATION`, x1+2, pad.t+10);
+      ctx.fillText(`${run.count}× gap=${run.gapValue.toFixed(1)} cm⁻¹`, x1+2, pad.t+19);
+    });
+  }
+
+  // ── Threshold reference lines in log-gap space ─────────────────────
+  // Convert normalized thresholds to approximate raw-gap log₁₀ values
+  // using the stored normRange for this run
+  const cfg = S.config;
+  const nr = S.normDenom; // normRange = λ_max − λ_2
+  if(nr && nr > 0){
+    const drawThrHL = (normThr, col, lbl) => {
+      const rawGap = normThr * nr;
+      const lv = Math.log10(rawGap);
+      if(lv < mn - 0.2 || lv > mx + 0.2) return;
+      const y = pad.t + H - H*(lv-mn)/(mx-mn||1);
+      ctx.strokeStyle = col; ctx.lineWidth = 0.8;
+      ctx.setLineDash([5,3]);
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+W, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = col; ctx.font = '7px IBM Plex Mono'; ctx.textAlign = 'right';
+      ctx.fillText(lbl, pad.l+W-2, y-2);
+    };
+    drawThrHL(cfg.thrMacro,  '#e04040', 'MACRO ▲');
+    drawThrHL(cfg.thrMesoHi, '#f0a030', 'MESO HI');
+    drawThrHL(cfg.thrMesoLo, '#f0a030', 'MESO LO');
+  }
+
+  // ── y axis labels ───────────────────────────────────────────────────
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const v=mn+(mx-mn)*i/4;
+    ctx.fillText(v.toFixed(1),pad.l-5,pad.t+H-H*i/4+3);
+  }
+
+  // ── Connecting line ─────────────────────────────────────────────────
+  ctx.strokeStyle='#2d4560'; ctx.lineWidth=0.5;
+  ctx.beginPath();
+  validGaps.forEach((g,i)=>{
+    const lv=Math.log10(g.gap);
+    const x=pad.l+W*i/(N2-1||1);
+    const y=pad.t+H-H*(lv-mn)/(mx-mn||1);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // ── Dots colored by scale ───────────────────────────────────────────
+  validGaps.forEach((g,i)=>{
+    const lv=Math.log10(g.gap);
+    const x=pad.l+W*i/(N2-1||1);
+    const y=pad.t+H-H*(lv-mn)/(mx-mn||1);
+    ctx.fillStyle=SCALE_COLORS[g.scale]||'#4ab0f0';
+    ctx.beginPath(); ctx.arc(x,y,1.5,0,Math.PI*2); ctx.fill();
+  });
+
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+  ctx.fillText('gap index →',pad.l+W/2,cv.height-4);
+  ctx.save(); ctx.translate(12,pad.t+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('log₁₀(gap)',0,0); ctx.restore();
+}
+
+// ─── NORMALIZED GAP PROFILE ───────────────────────────────────────────
+function drawNormGap(cfg){
+  const cv = fitCanvas('cv-normgap');
+  const ctx = cv.getContext('2d');
+  clearCanvas(cv,ctx);
+  const validGaps = S.gaps.filter(g=>g.gap!==null&&g.normGap!==null&&g.normGap>0);
+  if(!validGaps.length) return;
+  const pad={l:55,r:15,t:12,b:30};
+  const W=cv.width-pad.l-pad.r, H=cv.height-pad.t-pad.b;
+  const logN = validGaps.map(g=>Math.log10(g.normGap));
+  const mn=Math.min(...logN), mx=Math.max(...logN);
+  drawGrid(cv,ctx,pad.l,pad.l+W,pad.t,pad.t+H,8,6);
+
+  // threshold lines
+  const drawHL = (val, col, lbl) => {
+    const lv = Math.log10(val);
+    if(lv<mn||lv>mx) return;
+    const y = pad.t + H - H*(lv-mn)/(mx-mn||1);
+    ctx.strokeStyle=col; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+W,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=col; ctx.font='7px IBM Plex Mono'; ctx.textAlign='left';
+    ctx.fillText(lbl,pad.l+3,y-2);
+  };
+  drawHL(cfg.thrMacro,'#e04040','MACRO');
+  drawHL(cfg.thrMesoHi,'#f0a030','MESO HI');
+  drawHL(cfg.thrMesoLo,'#f0a030','MESO LO');
+
+  const N2=validGaps.length;
+  validGaps.forEach((g,i)=>{
+    const lv=Math.log10(g.normGap);
+    const x=pad.l+W*i/(N2-1||1);
+    const y=pad.t+H-H*(lv-mn)/(mx-mn||1);
+    ctx.fillStyle=SCALE_COLORS[g.scale]||'#4ab0f0';
+    ctx.beginPath(); ctx.arc(x,y,1.8,0,Math.PI*2); ctx.fill();
+    // vuln node highlight
+    const si = S.spectrum.findIndex(s=>s.idx===g.idx);
+    if(S.vulnNodes.includes(si)){
+      ctx.strokeStyle='#9880ff'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.stroke();
+    }
+  });
+
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+  ctx.fillText('gap index →',pad.l+W/2,cv.height-4);
+  ctx.save(); ctx.translate(12,pad.t+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('log₁₀(norm gap)',0,0); ctx.restore();
+}
+
+// ─── ADMISSIBILITY GRAPH ──────────────────────────────────────────────
+function drawAdmissibility(N){
+  const cv = fitCanvas('cv-adm');
+  const ctx = cv.getContext('2d');
+  clearCanvas(cv,ctx);
+  if(!S.spectrum.length) return;
+
+  // Lay out nodes along a horizontal chain with vertical energy position
+  const pad={l:30,r:30,t:20,b:30};
+  const W=cv.width-pad.l-pad.r, H=cv.height-pad.t-pad.b;
+  const minE=S.spectrum[0].energy, maxE=S.spectrum[N-1].energy, spanE=maxE-minE||1;
+
+  // node positions
+  const nodePos = S.spectrum.map((s,i)=>({
+    x: pad.l + W*i/(N-1||1),
+    y: pad.t + H - H*(s.energy-minE)/spanE,
+    idx: s.idx,
+    si: i,
+  }));
+
+  // draw edges (gaps)
+  S.gaps.forEach((g,i)=>{
+    if(g.gap===null||i+1>=nodePos.length) return;
+    const a=nodePos[i], b=nodePos[i+1];
+    ctx.strokeStyle=(SCALE_COLORS[g.scale]||'#2d4560')+'cc';
+    ctx.lineWidth = g.scale==='macro'?2:g.scale==='meso'?1.2:0.7;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  });
+
+  // draw nodes
+  nodePos.forEach(p=>{
+    const isVuln = S.vulnNodes.includes(p.si);
+    const isDegen = S.degenGroups.some(g=>g.members.includes(p.idx));
+    const r = isVuln ? 4 : isDegen ? 3.5 : 2;
+    ctx.fillStyle = isDegen ? '#e8c840' : isVuln ? '#9880ff' : '#00c8f0';
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fill();
+  });
+
+  // x axis labels (regime n= labels)
+  ctx.fillStyle='#5a7a96'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+  S.regimes.forEach(r=>{
+    const midIdx = Math.floor((r.start+r.end)/2);
+    if(midIdx<nodePos.length){
+      ctx.fillStyle=REGIME_COLORS[(r.id-1)%REGIME_COLORS.length];
+      ctx.fillText(r.label, nodePos[midIdx].x, cv.height-6);
+    }
+  });
+}
+
+// ─── TAG HELPER ───────────────────────────────────────────────────────
+function setTag(cls, text){
+  const el=document.getElementById('run-tag');
+  el.className='htag '+cls;
+  el.textContent=text;
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────
+function buildExportJSON(){
+  const cfg = S.config;
+  return {
+    chamber_version: VERSION,
+    timestamp: S.runTimestamp,
+    uploaded_filenames: {
+      dataset_a: document.getElementById('uz-a-name').textContent,
+      dataset_b: document.getElementById('uz-b-name').textContent,
+      dataset_c: document.getElementById('uz-c-name').textContent,
+    },
+    configuration: cfg,
+    spectrum: {
+      n: S.spectrum.length,
+      sorted_eigenvalues: S.spectrum.map(s=>({idx:s.idx, energy_cm1:s.energy})),
+    },
+    gaps: {
+      convention: cfg.gapConv,
+      normalization_mode: 'fixed_range',
+      normalization_formula: 'gap_i / (lambda_max - lambda_2)',
+      normalization_range_cm1: S.normDenom,
+      normalization_range_note: S.normDenomNote,
+      clamped_at_1: true,
+      entries: S.gaps.filter(g=>g.gap!==null).map(g=>({
+        idx: g.idx, energy_cm1: g.energy, gap_cm1: g.gap,
+        normalized_gap: g.normGap, scale: g.scale,
+      })),
+    },
+    thresholds: {
+      macro_gt: cfg.thrMacro,
+      meso_hi: cfg.thrMesoHi,
+      meso_lo: cfg.thrMesoLo,
+      alpha_regime_filter: cfg.alphaFilter,
+      alpha_suppressions: S.alphaSuppressions || 0,
+    },
+    tolerances: {
+      eps_exact: cfg.epsExact,
+      eps_near: cfg.epsNear,
+    },
+    regime_boundaries: S.regimes.map(r=>({
+      id: r.id, label: r.label,
+      start_idx: r.start, end_idx: r.end,
+      start_energy_cm1: r.startEnergy, end_energy_cm1: r.endEnergy,
+      n_levels: r.size, micro_clusters: r.microClusters,
+    })),
+    vulnerability_nodes: {
+      indices: S.vulnNodes,
+      count: S.vulnNodes.length,
+      nu_V: S.nuV,
+    },
+    degeneracy: {
+      exact_clusters: S.degenGroups.filter(g=>g.type==='exact').map(g=>g.members),
+      near_clusters: S.degenGroups.filter(g=>g.type==='near').map(g=>g.members),
+    },
+    precision_truncation: {
+      detector_tolerance_cm1: 0.01,
+      min_run_length: 3,
+      runs: (S.precisionRuns||[]).map(r=>({
+        start_gap_idx: r.startGapIdx,
+        end_gap_idx: r.endGapIdx,
+        gap_value_cm1: r.gapValue,
+        count: r.count,
+        start_energy_cm1: r.startEnergy,
+      })),
+      total_truncated_gaps: (S.precisionRuns||[]).reduce((a,r)=>a+r.count,0),
+      note: 'Constant-gap runs indicate source data precision truncation. Expected gap ~ 1/n³ decay; flat tail in log-gap plot is a dataset artifact.',
+    },
+    summary_diagnostics: {
+      n_eigenvalues: S.spectrum.length,
+      n_macro_gaps: S.gaps.filter(g=>g.scale==='macro').length,
+      n_meso_gaps: S.gaps.filter(g=>g.scale==='meso').length,
+      n_micro_gaps: S.gaps.filter(g=>g.scale==='micro').length,
+      n_regimes: S.regimes.length,
+      n_vuln_nodes: S.vulnNodes.length,
+      nu_V: S.nuV,
+      n_exact_degen_clusters: S.degenGroups.filter(g=>g.type==='exact').length,
+      n_near_degen_clusters: S.degenGroups.filter(g=>g.type==='near').length,
+      mismatches_b: S.mismatches.filter(m=>m.type==='gap').length,
+      mismatches_c: S.mismatches.filter(m=>m.type==='scale').length,
+      n_precision_truncated_gaps: (S.precisionRuns||[]).reduce((a,r)=>a+r.count,0),
+      precision_truncation_runs: (S.precisionRuns||[]).length,
+    },
+    warnings: S.warnings,
+    // QM-II compatibility hook: future parameterized schema reserved
+    future_qm_ii_hook: {
+      schema: 'p, lambda1, lambda2, ..., lambdaN',
+      note: 'Spectral graph core preserved. Perturbation sweep layer adds above this export schema.',
+    },
+  };
+}
+
+document.getElementById('btn-export-json').addEventListener('click',()=>{
+  if(!S.runTimestamp){ alert('Run analysis first.'); return; }
+  if(S.spectrumTruncated){
+    alert('Export blocked: spectrum appears truncated (< 80 eigenvalues).\nVerify Dataset A is the authoritative spectrum file (hydrogen_spectrum_QM1.csv).');
+    log('Export blocked: truncated spectrum guard active','err'); return;
+  }
+  const payload = buildExportJSON();
+  const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='qm_i_export.json';
+  a.click();
+  log('JSON state exported → qm_i_export.json','ok');
+});
+
+document.getElementById('btn-export-csv').addEventListener('click',()=>{
+  if(!S.gaps.length){ alert('Run analysis first.'); return; }
+  if(S.spectrumTruncated){
+    alert('Export blocked: spectrum appears truncated. Verify Dataset A assignment.');
+    log('Export blocked: truncated spectrum guard active','err'); return;
+  }
+  const rows=['idx,energy_cm-1,gap_cm-1,normalized_gap,scale'];
+  S.gaps.filter(g=>g.gap!==null).forEach(g=>{
+    rows.push(`${g.idx},${g.energy},${g.gap},${g.normGap},${g.scale}`);
+  });
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='qm_i_gap_table.csv';
+  a.click();
+  log('Gap table CSV exported → qm_i_gap_table.csv','ok');
+});
+
+document.getElementById('btn-export-plots').addEventListener('click',()=>{
+  if(S.spectrumTruncated){
+    alert('Export blocked: spectrum appears truncated. Verify Dataset A assignment.');
+    log('Export blocked: truncated spectrum guard active','err'); return;
+  }
+  const plotMap=[
+    ['cv-adm',    'qm_i_cv-adm.png'],
+    ['cv-hist',   'qm_i_cv-hist.png'],
+    ['cv-ladder', 'qm_i_cv-ladder.png'],
+    ['cv-loggap', 'qm_i_cv-loggap.png'],
+    ['cv-normgap','qm_i_cv-normgap.png'],
+  ];
+  plotMap.forEach(([id,fname])=>{
+    const cv=document.getElementById(id);
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download=fname;
+    a.click();
+  });
+  log('Plot PNGs exported → qm_i_cv-{adm,hist,ladder,loggap,normgap}.png','ok');
+});
+
+document.getElementById('btn-export-preview').addEventListener('click',()=>{
+  if(!S.runTimestamp){ alert('Run analysis first.'); return; }
+  const pre=document.getElementById('export-preview');
+  pre.style.display = pre.style.display==='none'?'block':'none';
+  if(pre.style.display==='block'){
+    pre.textContent=JSON.stringify(buildExportJSON(),null,2).substr(0,4000)+'...\n[truncated — use Export JSON for full output]';
+  }
+});
+
+// ─── WINDOW RESIZE ────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  if(S.runTimestamp){
+    const cfg=S.config;
+    drawLadder();
+    drawHistogram(cfg);
+    drawLogGap();
+    drawNormGap(cfg);
+    drawAdmissibility(S.spectrum.length);
+  }
+});
+
+log('Chamber QM-I v1.0.3 initialized · Load datasets and press RUN','info');
+log('Dataset A: authoritative spectrum only — preprocessed files rejected at load','info');
+log('Normalization: FIXED · range = λ_max − λ₂ (ground-state gap excluded · clamped ≤ 1)','info');
+log('Export guard: runs with N < 80 eigenvalues will not produce export artifacts','info');
+log('Future QM-II hook: parameterized schema p,λ1,...,λN reserved','info');
+</script>
+</body>
+</html>

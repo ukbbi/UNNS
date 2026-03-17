@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER CMB-III-GEO v0.2.0 — Geometry Isolation Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #060a0e;
+  --panel:   #0b1219;
+  --panel2:  #0e1622;
+  --border:  #162235;
+  --border2: #0d1928;
+  --accent:  #00c8f0;
+  --accent2: #f0a030;
+  --accent3: #e04040;
+  --green:   #00dd88;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --text:    #aac0d4;
+  --dim:     #3a5568;
+  --pass:    #00dd88;
+  --fail:    #e04040;
+  --warn:    #f0a030;
+  --mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.shell { max-width: 1200px; margin: 0 auto; padding: 22px 18px; }
+
+/* ── Header ── */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hid   { font-size: 10px; color: var(--accent); letter-spacing: 0.25em; font-weight: 600; }
+.htitle{ font-family: var(--sans); font-size: 16px; font-weight: 300; color: var(--text); letter-spacing: 0.04em; }
+.htag  { font-size: 9px; color: var(--green); border: 1px solid var(--green); padding: 1px 7px; letter-spacing: 0.12em; }
+.htag.warn { color: var(--warn); border-color: var(--warn); }
+.hver  { margin-left: auto; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+/* ── Protocol bar ── */
+.proto {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  padding: 9px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 10.5px;
+}
+.pi { display: flex; gap: 7px; }
+.pk { color: var(--dim); }
+.pv { color: var(--text); }
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 14px;
+}
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+/* ── Panel ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.ptitle {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.sep { height: 1px; background: var(--border2); margin: 12px 0; }
+
+/* ── File input ── */
+.fg { margin-bottom: 10px; }
+.flabel { font-size: 9px; color: var(--dim); letter-spacing: 0.12em; display: block; margin-bottom: 4px; }
+.frow { display: flex; align-items: center; gap: 8px; }
+.frow input[type=file] {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+}
+.frow input[type=file]::file-selector-button {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.fstatus { font-size: 9px; min-width: 20px; text-align: right; }
+.fstatus.ok   { color: var(--pass); }
+.fstatus.err  { color: var(--fail); }
+.fstatus.none { color: var(--dim); }
+
+/* ── Buttons ── */
+.btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 6px 14px;
+  border: 1px solid;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.15s;
+}
+.btn-run  { border-color: var(--accent); color: var(--accent); }
+.btn-run:hover  { background: rgba(0,200,240,0.08); }
+.btn-run:disabled { border-color: var(--dim); color: var(--dim); cursor: not-allowed; }
+.btn-clear{ border-color: var(--dim); color: var(--dim); }
+.btn-clear:hover { border-color: var(--text); color: var(--text); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Log ── */
+.log {
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 8px;
+  min-height: 60px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.7;
+}
+.log .info { color: var(--text); }
+.log .warn { color: var(--warn); }
+.log .err  { color: var(--fail); }
+.log .ok   { color: var(--pass); }
+
+/* ── Right column ── */
+.no-data {
+  color: var(--dim);
+  font-size: 11px;
+  padding: 40px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--border2);
+  background: var(--panel);
+}
+
+/* ── Summary grid ── */
+.sg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sc {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 8px 10px;
+}
+.sk { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; }
+.sv { font-size: 15px; color: var(--accent2); font-weight: 500; margin-top: 2px; }
+.sv.pass { color: var(--pass); }
+.sv.fail { color: var(--fail); }
+.sv.info { color: var(--blue); }
+.sv.warn { color: var(--warn); }
+
+/* ── Axis block ── */
+.ax-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ax-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+.ax-label { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 6px; }
+.ax-val   { font-size: 11px; color: var(--text); line-height: 1.8; }
+.ax-dim   { color: var(--dim); }
+
+/* ── Test blocks ── */
+.test-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+@media (max-width: 1000px) { .test-pair { grid-template-columns: 1fr; } }
+
+.test-card {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  padding: 12px 14px;
+}
+.test-card.pass { border-color: rgba(0,221,136,0.35); }
+.test-card.fail { border-color: rgba(224,64,64,0.35); }
+.test-card.pending { border-color: var(--border2); }
+
+.test-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border2);
+}
+.test-id    { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; }
+.test-name  { font-size: 11px; color: var(--text); font-family: var(--sans); font-weight: 300; flex: 1; }
+.test-badge {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 1px 8px;
+  border: 1px solid;
+}
+.test-badge.pass  { color: var(--pass); border-color: var(--pass); }
+.test-badge.fail  { color: var(--fail); border-color: var(--fail); }
+.test-badge.pend  { color: var(--dim);  border-color: var(--dim);  }
+
+.test-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 10.5px;
+  border-bottom: 1px solid var(--border2);
+}
+.test-row:last-child { border-bottom: none; }
+.tr-k { color: var(--dim); }
+.tr-v { color: var(--text); }
+.tr-v.pass { color: var(--pass); }
+.tr-v.fail { color: var(--fail); }
+.tr-v.info { color: var(--blue); }
+.tr-v.warn { color: var(--warn); }
+
+/* ── Baseline theta block ── */
+.theta-hero {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.th-big { font-size: 36px; color: var(--accent2); font-weight: 500; letter-spacing: -0.02em; }
+.th-label { font-size: 9px; color: var(--dim); letter-spacing: 0.15em; }
+.th-ref {
+  font-size: 10px;
+  color: var(--dim);
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+.th-ref .rv  { color: var(--text); }
+.th-ref .rd  { color: var(--accent2); }
+.th-delta {
+  margin-left: auto;
+  text-align: right;
+  font-size: 11px;
+}
+
+/* ── Euler angles display ── */
+.euler-row {
+  display: flex;
+  gap: 20px;
+  padding: 5px 0;
+  font-size: 11px;
+}
+.euler-row .ek { color: var(--dim); min-width: 30px; }
+.euler-row .ev { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="hid">CHAMBER CMB-III-GEO</span>
+  <span class="htitle">Geometry Isolation Layer — ℓ=2/3 Rotation Invariance</span>
+  <span class="htag">PHASE 1 OF 3</span>
+  <span class="htag warn">GEOMETRY ONLY · NO STATISTICS</span>
+  <span class="hver">v0.2.0 · Wigner-D passive ZYZ · STF + AngMom</span>
+</div>
+
+<!-- ── Protocol bar ── -->
+<div class="proto">
+  <div class="pi"><span class="pk">scope</span><span class="pv">u2 + u3 extraction · rotation tests only</span></div>
+  <div class="pi"><span class="pk">u2 method</span><span class="pv">STF tensor · Fibonacci N=2000 · Jacobi eigen</span></div>
+  <div class="pi"><span class="pk">u3 method</span><span class="pv">ang-mom dispersion · Fibonacci N=4096 · max D₃</span></div>
+  <div class="pi"><span class="pk">rotation</span><span class="pv">passive ZYZ · D = e<sup>−imα</sup> d(β) e<sup>−im′γ</sup></span></div>
+  <div class="pi"><span class="pk">convention</span><span class="pv">Condon-Shortley · HEALPix · flat schema supported</span></div>
+  <div class="pi"><span class="pk">test A</span><span class="pv">locked rotation → θ₂₃ invariant</span></div>
+  <div class="pi"><span class="pk">test B</span><span class="pv">relative rotation → θ₂₃ changes</span></div>
+  <div class="pi"><span class="pk">tolerance A</span><span class="pv">Δθ &lt; 2.0° (grid resolution limit)</span></div>
+  <div class="pi"><span class="pk">rng seed</span><span class="pv">0x9E3779B9 (deterministic)</span></div>
+  <div class="pi"><span class="pk">θ₂₃ ref</span><span class="pv">~11.56° (Planck 2018)</span></div>
+</div>
+
+<!-- ── Main layout ── -->
+<div class="layout">
+
+  <!-- ── Left: controls ── -->
+  <div>
+    <div class="panel">
+      <div class="ptitle">DATA INPUT</div>
+
+      <div class="fg">
+        <span class="flabel">a<sub>ℓm</sub> JSON (ℓ=2,3) — flat or nested schema</span>
+        <div class="frow">
+          <input type="file" id="fileAlm" accept=".json">
+          <span class="fstatus none" id="stAlm">—</span>
+        </div>
+        <div style="font-size:9px;color:var(--dim);margin-top:4px;line-height:1.65">
+          Flat: {"2_0":[re,im], "2_1":[re,im], ...}<br>
+          Nested: {"alm":{"2":{"-2":[re,im],...},...}}
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="ptitle">RUN</div>
+      <div class="btns">
+        <button class="btn btn-run" id="btnRun" disabled>▶ RUN CMB-III-GEO</button>
+        <button class="btn btn-clear" id="btnClear">CLEAR</button>
+        <button class="btn btn-clear" id="btnExport" disabled>EXPORT JSON</button>
+      </div>
+
+      <div class="log" id="logArea"><span class="info">ready — load lowell_alm.json then press RUN</span></div>
+    </div>
+
+    <!-- ── Protocol summary ── -->
+    <div class="panel" style="margin-top:12px">
+      <div class="ptitle">PHASE MAP</div>
+      <div style="font-size:10px;line-height:2;color:var(--dim)">
+        <div style="color:var(--accent)">◆ CMB-III-GEO v0.2.0 ← HERE</div>
+        <div style="padding-left:12px">Wigner-D · u2 · u3 · θ₂₃ · rotation tests</div>
+        <div style="margin-top:4px">◇ CMB-III-STAB v0.2.0</div>
+        <div style="padding-left:12px">D_internal · K=32 perturbations · ε=1°</div>
+        <div style="margin-top:4px">◇ CMB-III-FULL v1.0.0</div>
+        <div style="padding-left:12px">φ · S(L) · R(L) · permutation test</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: output ── -->
+  <div id="outArea">
+    <div class="no-data">No results — load lowell_alm.json and press RUN CMB-III-GEO</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════════════
+// [PROTOCOL] Frozen configuration
+// ═══════════════════════════════════════════════════════════════
+const CFG = Object.freeze({
+  fib_N_quad:   2000,
+  fib_N_oct:    4096,
+  plateau_eps:  1e-4,
+  rng_seed:     0x9E3779B9,
+  test_a_tol:   2.0,     // degrees — grid resolution limit
+  test_b_min:   0.5,     // degrees — relative rotation must change by at least this
+  theta23_ref:  11.56,   // Planck 2018 reference
+  theta23_tol:  5.0,     // match tolerance vs reference
+});
+
+// ═══════════════════════════════════════════════════════════════
+// [MATH] Utilities
+// ═══════════════════════════════════════════════════════════════
+
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+}
+function dot3(a, b)     { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+function norm3(v)       { const m = Math.sqrt(v[0]**2+v[1]**2+v[2]**2); return m>1e-15?v.map(x=>x/m):v; }
+function clamp1(x)      { return Math.max(-1, Math.min(1, x)); }
+function angleDeg(a, b) { return Math.acos(clamp1(Math.abs(dot3(a,b)))) * 180 / Math.PI; }
+
+// ── Mulberry32 seeded PRNG ──
+function makePrng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s += 0x6D2B79F5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Generate three Euler angles (α ∈ [0,2π), β ∈ [0,π), γ ∈ [0,2π))
+function randEuler(rng) {
+  return {
+    alpha: rng() * 2 * Math.PI,
+    beta:  rng() * Math.PI,
+    gamma: rng() * 2 * Math.PI,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [ROT-CONVENTION] Passive ZYZ vs active axis directions
+//
+// This chamber uses Wigner-D under PASSIVE ZYZ:
+//   a'_m = Σ_{m'} e^{-imα} d_{m m'}(β) e^{-im'γ} a_{m'}
+// which corresponds to a passive frame rotation R_passive = Rz(α) Ry(β) Rz(γ).
+//
+// When we specify an *axis direction* n(θ,φ) in 3D (active vector),
+// the corresponding SO(3) action on coefficients must use the INVERSE rotation:
+//   R_active = (R_passive)^(-1) = Rz(-γ) Ry(-β) Rz(-α).
+//
+// Therefore: to "align ẑ with n(θ,φ)" using (α,β,γ)=(φ,θ,0),
+// the coefficients must be rotated by the inverse Euler tuple:
+//   (α',β',γ') = (-γ, -β, -α) = (0, -θ, -φ).
+// ═══════════════════════════════════════════════════════════════
+
+function wrapPi(x) {
+  const twopi = 2 * Math.PI;
+  x = x % twopi;
+  return (x <= -Math.PI) ? (x + twopi) : (x > Math.PI ? (x - twopi) : x);
+}
+
+function invertEulerZYZ(alpha, beta, gamma) {
+  // Inverse of Rz(α) Ry(β) Rz(γ) is Rz(-γ) Ry(-β) Rz(-α)
+  return { alpha: wrapPi(-gamma), beta: wrapPi(-beta), gamma: wrapPi(-alpha) };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [IO] ALM parser — Schema A (nested) and Schema B (flat)
+// ═══════════════════════════════════════════════════════════════
+
+function parseAlmJSON(text) {
+  const obj = JSON.parse(text);
+  const result = { ell2: {}, ell3: {}, source: obj.source||"unknown", warnings: [] };
+
+  let raw2 = null, raw3 = null;
+
+  if (obj.alm && typeof obj.alm === "object") {
+    raw2 = obj.alm["2"] || null;
+    raw3 = obj.alm["3"] || null;
+    result.warnings.push("Schema A (nested) detected.");
+  } else {
+    const flat2 = {}, flat3 = {};
+    let f2 = false, f3 = false;
+    for (const key of Object.keys(obj)) {
+      const match = key.match(/^(\d+)_(-?\d+)$/);
+      if (!match) continue;
+      const ell = parseInt(match[1],10), m = parseInt(match[2],10), val = obj[key];
+      if (!Array.isArray(val)||val.length<2) continue;
+      if (ell===2){flat2[String(m)]=val; f2=true;}
+      if (ell===3){flat3[String(m)]=val; f3=true;}
+    }
+    if (!f2) throw new Error("No ℓ=2 coefficients (expected keys like '2_0','2_1',...).");
+    raw2 = flat2; if (f3) raw3 = flat3;
+    result.warnings.push("Schema B (flat 'ell_m') detected.");
+  }
+
+  if (!raw2) throw new Error("Missing ℓ=2 data.");
+  for (let m=-2;m<=2;m++){
+    const v=raw2[String(m)];
+    if (!v||!Array.isArray(v)||v.length<2) throw new Error(`Missing a_{2,${m}}.`);
+    result.ell2[m]=[parseFloat(v[0]),parseFloat(v[1])];
+  }
+
+  if (raw3) {
+    for (let m=-3;m<=3;m++){
+      const v=raw3[String(m)];
+      result.ell3[m]=v&&Array.isArray(v)&&v.length>=2?[parseFloat(v[0]),parseFloat(v[1])]:[0,0];
+    }
+  } else {
+    result.warnings.push("No ℓ=3 data — octopole axis unavailable.");
+  }
+
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [SPHERE] Fibonacci sphere — deterministic
+// ═══════════════════════════════════════════════════════════════
+
+function fibonacciSphere(N) {
+  const pts = [], phi = (1+Math.sqrt(5))/2;
+  for (let i=0;i<N;i++){
+    const theta = Math.acos(1 - 2*(i+0.5)/N);
+    const az    = 2*Math.PI*i/phi;
+    pts.push({theta, phi:az});
+  }
+  return pts;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [HARM] Spherical harmonics — Condon-Shortley / HEALPix convention
+// ═══════════════════════════════════════════════════════════════
+
+function evalY2m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(5/(16*Math.PI))*(3*c*c-1), im:0};
+    case  1:{ const g=-Math.sqrt(15/(8*Math.PI))*s*c;
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(15/(32*Math.PI))*s*s;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+function evalY3m(m, theta, phi) {
+  const c=Math.cos(theta), s=Math.sin(theta);
+  switch(m){
+    case -3:{ const g=Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(-3*phi), im:g*Math.sin(-3*phi)}; }
+    case -2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(-2*phi), im:g*Math.sin(-2*phi)}; }
+    case -1:{ const g=Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(-phi), im:g*Math.sin(-phi)}; }
+    case  0: return {re:Math.sqrt(7/(16*Math.PI))*(5*c*c*c-3*c), im:0};
+    case  1:{ const g=-Math.sqrt(21/(64*Math.PI))*s*(5*c*c-1);
+              return {re:g*Math.cos(phi), im:g*Math.sin(phi)}; }
+    case  2:{ const g=Math.sqrt(105/(32*Math.PI))*s*s*c;
+              return {re:g*Math.cos(2*phi), im:g*Math.sin(2*phi)}; }
+    case  3:{ const g=-Math.sqrt(35/(64*Math.PI))*s*s*s;
+              return {re:g*Math.cos(3*phi), im:g*Math.sin(3*phi)}; }
+    default: return {re:0,im:0};
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [WIGNER] Small-d matrix — Rose (1957) formula
+// ═══════════════════════════════════════════════════════════════
+
+function wignerSmallD(j, m, mp, beta) {
+  const cb=Math.cos(beta/2), sb=Math.sin(beta/2);
+  const smin=Math.max(0,mp-m), smax=Math.min(j+mp,j-m);
+  if (smin>smax) return 0;
+  const sqF=Math.sqrt(factorial(j+m)*factorial(j-m)*factorial(j+mp)*factorial(j-mp));
+  let sum=0;
+  for (let s=smin;s<=smax;s++){
+    const sgn=((m-mp+s)%2===0)?1:-1;
+    const den=factorial(s)*factorial(j+mp-s)*factorial(j-m-s)*factorial(m-mp+s);
+    const pc=2*j+mp-m-2*s, ps=m-mp+2*s;
+    sum+=sgn/den*(pc===0?1:Math.pow(cb,pc))*(ps===0?1:Math.pow(sb,ps));
+  }
+  return sqF*sum;
+}
+
+function buildDmat(j, beta) {
+  const ms=[]; for(let m=-j;m<=j;m++) ms.push(m);
+  return ms.map(m=>ms.map(mp=>wignerSmallD(j,m,mp,beta)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [ROTATE] Passive ZYZ rotation of alm:  a'_m = Σ_m' e^{-imα} d_mm'(β) e^{-im'γ} a_m'
+// ═══════════════════════════════════════════════════════════════
+
+function rotateAlm(alm, ell, alpha, beta, gamma) {
+  const ms=[]; for(let m=-ell;m<=ell;m++) ms.push(m);
+  const dMat=buildDmat(ell, beta);
+  const out={};
+
+  for (let i=0;i<ms.length;i++){
+    const m=ms[i];
+    const ca=Math.cos(-m*alpha), sa=Math.sin(-m*alpha);
+    let re=0, im=0;
+    for (let j2=0;j2<ms.length;j2++){
+      const mp=ms[j2];
+      const amp=alm[mp]||[0,0];
+      const cg=Math.cos(-mp*gamma), sg=Math.sin(-mp*gamma);
+      // alm_rot_mp = (cg + i sg) * amp
+      const ar=cg*amp[0]-sg*amp[1], ai=cg*amp[1]+sg*amp[0];
+      const d=dMat[i][j2];
+      // (ca + i sa) * d * (ar + i ai)
+      re += d*(ca*ar - sa*ai);
+      im += d*(ca*ai + sa*ar);
+    }
+    out[m]=[re,im];
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [U2] STF quadrupole tensor + Jacobi eigen
+// ═══════════════════════════════════════════════════════════════
+
+function buildQ(alm2) {
+  const grid=fibonacciSphere(CFG.fib_N_quad);
+  const Q=[[0,0,0],[0,0,0],[0,0,0]];
+  for (const {theta, phi} of grid){
+    let T2=0;
+    for (let m=-2;m<=2;m++){
+      const a=alm2[m]||[0,0];
+      const Y=evalY2m(m,theta,phi);
+      T2+=a[0]*Y.re-a[1]*Y.im;
+    }
+    const n=[Math.sin(theta)*Math.cos(phi), Math.sin(theta)*Math.sin(phi), Math.cos(theta)];
+    for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]+=T2*n[i]*n[j];
+  }
+  const w=1/CFG.fib_N_quad;
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++) Q[i][j]*=w;
+  const tr3=(Q[0][0]+Q[1][1]+Q[2][2])/3;
+  Q[0][0]-=tr3; Q[1][1]-=tr3; Q[2][2]-=tr3;
+  for (let i=0;i<3;i++) for (let j=i+1;j<3;j++){ const s=(Q[i][j]+Q[j][i])/2; Q[i][j]=Q[j][i]=s; }
+  return Q;
+}
+
+function jacobiEig3(Ain) {
+  let A=Ain.map(r=>r.slice()), V=[[1,0,0],[0,1,0],[0,0,1]];
+  for (let sw=0;sw<60;sw++){
+    if (A[0][1]**2+A[0][2]**2+A[1][2]**2 < 1e-28) break;
+    for (let p=0;p<2;p++){
+      for (let q=p+1;q<3;q++){
+        if (Math.abs(A[p][q])<1e-16) continue;
+        const tau=(A[q][q]-A[p][p])/(2*A[p][q]);
+        const t=tau>=0?1/(tau+Math.sqrt(1+tau*tau)):1/(tau-Math.sqrt(1+tau*tau));
+        const c=1/Math.sqrt(1+t*t), s=t*c;
+        const App=A[p][p],Aqq=A[q][q],Apq=A[p][q];
+        A[p][p]=App-t*Apq; A[q][q]=Aqq+t*Apq; A[p][q]=A[q][p]=0;
+        for (let r=0;r<3;r++){
+          if (r!==p&&r!==q){
+            const arp=A[r][p],arq=A[r][q];
+            A[r][p]=A[p][r]=c*arp-s*arq;
+            A[r][q]=A[q][r]=s*arp+c*arq;
+          }
+          const vrp=V[r][p],vrq=V[r][q];
+          V[r][p]=c*vrp-s*vrq; V[r][q]=s*vrp+c*vrq;
+        }
+      }
+    }
+  }
+  const pairs=[0,1,2].map(i=>({val:A[i][i],vec:V.map(row=>row[i])})).sort((a,b)=>b.val-a.val);
+  return {
+    values: pairs.map(p=>p.val),
+    vectors: pairs.map(p=>norm3(p.vec)),
+  };
+}
+
+function extractU2(alm2) {
+  const Q=buildQ(alm2);
+  const eig=jacobiEig3(Q);
+  const ev0=eig.values[0], ev1=eig.values[1];
+  const scale=Math.abs(ev0)+Math.abs(ev1)+1e-30;
+  if (Math.abs(ev0-ev1)/scale < 1e-6) return {axis:null, status:"degenerate", eigenvalues:eig.values};
+  return {axis:eig.vectors[0], status:"ok", eigenvalues:eig.values};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [U3] Angular momentum dispersion maximizer — grid search
+// ═══════════════════════════════════════════════════════════════
+
+function angMomDisp3(alm3_rot) {
+  let D3=0;
+  for (let m=-3;m<=3;m++){
+    const a=alm3_rot[m]||[0,0];
+    D3+=m*m*(a[0]*a[0]+a[1]*a[1]);
+  }
+  return D3;
+}
+
+function extractU3(alm3) {
+  const grid=fibonacciSphere(CFG.fib_N_oct);
+  let maxD3=-Infinity, bestTheta=0, bestPhi=0;
+  const D3vals=new Float64Array(grid.length);
+
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    // Axis direction n(θ,φ) is an ACTIVE vector, but rotateAlm is PASSIVE ZYZ.
+    // To evaluate dispersion about n consistently, rotate coefficients by the
+    // INVERSE Euler angles of (α,β,γ)=(φ,θ,0), i.e. (0,-θ,-φ).
+    const inv = invertEulerZYZ(phi, theta, 0);
+    const rot = rotateAlm(alm3, 3, inv.alpha, inv.beta, inv.gamma);
+    const D3=angMomDisp3(rot);
+    D3vals[i]=D3;
+    if (D3>maxD3){maxD3=D3; bestTheta=theta; bestPhi=phi;}
+  }
+
+  const best_nx=Math.sin(bestTheta)*Math.cos(bestPhi);
+  const best_ny=Math.sin(bestTheta)*Math.sin(bestPhi);
+  const best_nz=Math.cos(bestTheta);
+  const COS_SEP=Math.cos(20*Math.PI/180);
+  let farD3=-Infinity;
+
+  for (let i=0;i<grid.length;i++){
+    const {theta,phi}=grid[i];
+    const nx=Math.sin(theta)*Math.cos(phi), ny=Math.sin(theta)*Math.sin(phi), nz=Math.cos(theta);
+    if (Math.abs(nx*best_nx+ny*best_ny+nz*best_nz) < COS_SEP && D3vals[i]>farD3) farD3=D3vals[i];
+  }
+
+  const denom=Math.abs(maxD3)+1e-30;
+  const isDegenerate=farD3>-Infinity && (maxD3-farD3) < CFG.plateau_eps*denom;
+
+  const u3=[best_nx, best_ny, best_nz];
+  return {
+    axis: u3,
+    status: isDegenerate ? "degenerate_fallback" : "ok",
+    D3_max: maxD3,
+    gap: maxD3-farD3,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [TESTS] Rotation invariance tests
+// ═══════════════════════════════════════════════════════════════
+
+function runTestA(alm2, alm3, u2_base, u3_base, theta23_base, euler) {
+  // Rotate BOTH ell=2 and ell=3 by the same Euler angles
+  const alm2r=rotateAlm(alm2, 2, euler.alpha, euler.beta, euler.gamma);
+  const alm3r=rotateAlm(alm3, 3, euler.alpha, euler.beta, euler.gamma);
+
+  const r2=extractU2(alm2r);
+  const r3=extractU3(alm3r);
+
+  if (!r2.axis || !r3.axis) return {pass:false, msg:"axis extraction failed after rotation", ...euler, theta23_rot:null, delta:null};
+
+  const theta23_rot=angleDeg(r2.axis, r3.axis);
+  const delta=Math.abs(theta23_rot - theta23_base);
+  const pass=delta < CFG.test_a_tol;
+
+  return {pass, theta23_rot, delta, tol:CFG.test_a_tol, ...euler};
+}
+
+function runTestB(alm2, alm3, u2_base, u3_base, theta23_base, euler) {
+  // Rotate ONLY ell=3 — u2 stays fixed
+  const alm3r=rotateAlm(alm3, 3, euler.alpha, euler.beta, euler.gamma);
+
+  const r3=extractU3(alm3r);
+  if (!r3.axis) return {pass:false, msg:"u3 extraction failed after relative rotation"};
+
+  const theta23_rot=angleDeg(u2_base, r3.axis);
+  const delta=Math.abs(theta23_rot - theta23_base);
+  const pass=delta > CFG.test_b_min;
+
+  return {pass, theta23_rot, delta, min_change:CFG.test_b_min, ...euler};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [MAIN] Full analysis
+// ═══════════════════════════════════════════════════════════════
+
+async function runAnalysis(almObj) {
+  const alm2=almObj.ell2, alm3=almObj.ell3;
+
+  log("Extracting u₂ via STF tensor (N=2000)…", "info");
+  await tick();
+  const r2=extractU2(alm2);
+  if (!r2.axis) throw new Error("Quadrupole axis degenerate — cannot proceed.");
+
+  log("Extracting u₃ via angular momentum dispersion (N=4096)…", "info");
+  await tick();
+  const r3=extractU3(alm3);
+  if (!r3.axis) throw new Error("Octopole axis degenerate — cannot proceed.");
+
+  const theta23=angleDeg(r2.axis, r3.axis);
+  const thetaDelta=Math.abs(theta23 - CFG.theta23_ref);
+
+  log(`θ₂₃ = ${theta23.toFixed(4)}° (ref: ${CFG.theta23_ref}° · Δ = ${thetaDelta.toFixed(3)}°)`, "ok");
+
+  // ── Deterministic Euler angles for tests ──
+  const rng=makePrng(CFG.rng_seed);
+  const eulerA=randEuler(rng);
+  const eulerB=randEuler(rng);
+
+  log("Test A: locked rotation…", "info");
+  await tick();
+  const tA=runTestA(alm2, alm3, r2.axis, r3.axis, theta23, eulerA);
+
+  log("Test B: relative rotation…", "info");
+  await tick();
+  const tB=runTestB(alm2, alm3, r2.axis, r3.axis, theta23, eulerB);
+
+  const bothPass=tA.pass && tB.pass;
+  log(`Tests: A=${tA.pass?"PASS":"FAIL"} · B=${tB.pass?"PASS":"FAIL"} · Overall=${bothPass?"PASS":"FAIL"}`, bothPass?"ok":"err");
+
+  return {
+    alm: almObj,
+    u2: r2,
+    u3: r3,
+    theta23,
+    thetaDelta,
+    testA: tA,
+    testB: tB,
+    bothPass,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [UI] Rendering
+// ═══════════════════════════════════════════════════════════════
+
+function fmt4(x)  { return x==null?"—":x.toFixed(4); }
+function fmt2(x)  { return x==null?"—":x.toFixed(2); }
+function fmtVec(v){ return v==null?"—":`(${v[0].toFixed(5)}, ${v[1].toFixed(5)}, ${v[2].toFixed(5)})`; }
+function fmtAng(r){ return (r*180/Math.PI).toFixed(3)+"°"; }
+
+function renderResults(res) {
+  const {u2, u3, theta23, thetaDelta, testA, testB, bothPass, alm} = res;
+
+  const thetaOk   = thetaDelta < CFG.theta23_tol;
+  const thetaCls  = thetaOk ? "pass" : "warn";
+
+  let html = `
+  <!-- ── Theta hero ── -->
+  <div class="theta-hero">
+    <div>
+      <div class="th-label">θ₂₃  QUADRUPOLE–OCTOPOLE ANGLE</div>
+      <div class="th-big">${fmt4(theta23)}°</div>
+    </div>
+    <div class="th-ref">
+      <div>Reference (Planck 2018) <span class="rd">${CFG.theta23_ref}°</span></div>
+      <div>Δ from reference <span class="rv ${thetaCls}">${fmt4(thetaDelta)}°</span></div>
+      <div>Match status <span class="rv ${thetaCls}">${thetaOk?"WITHIN TOLERANCE":"OUTSIDE TOLERANCE"}</span></div>
+    </div>
+    <div class="th-delta" style="margin-left:auto">
+      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em">GEOMETRY</div>
+      <div style="font-size:18px;color:${bothPass?"var(--pass)":"var(--fail)"};margin-top:2px">${bothPass?"VALIDATED":"FAILED"}</div>
+    </div>
+  </div>
+
+  <!-- ── Summary ── -->
+  <div class="sg">
+    <div class="sc"><div class="sk">θ₂₃</div><div class="sv ${thetaCls}">${fmt4(theta23)}°</div></div>
+    <div class="sc"><div class="sk">u₂ STATUS</div><div class="sv ${u2.status==="ok"?"pass":"warn"}">${u2.status.toUpperCase()}</div></div>
+    <div class="sc"><div class="sk">u₃ STATUS</div><div class="sv ${u3.status==="ok"?"pass":"warn"}">${u3.status.toUpperCase()}</div></div>
+    <div class="sc"><div class="sk">TEST A (LOCKED)</div><div class="sv ${testA.pass?"pass":"fail"}">${testA.pass?"PASS":"FAIL"}</div></div>
+    <div class="sc"><div class="sk">TEST B (RELATIVE)</div><div class="sv ${testB.pass?"pass":"fail"}">${testB.pass?"PASS":"FAIL"}</div></div>
+    <div class="sc"><div class="sk">OVERALL</div><div class="sv ${bothPass?"pass":"fail"}">${bothPass?"PASS":"FAIL"}</div></div>
+  </div>
+
+  <!-- ── Axes ── -->
+  <div class="ax-grid">
+    <div class="ax-card">
+      <div class="ax-label">u₂ — QUADRUPOLE AXIS (STF · Jacobi)</div>
+      <div class="ax-val">
+        <span class="ax-dim">x = </span>${u2.axis[0].toFixed(6)}<br>
+        <span class="ax-dim">y = </span>${u2.axis[1].toFixed(6)}<br>
+        <span class="ax-dim">z = </span>${u2.axis[2].toFixed(6)}<br>
+        <span class="ax-dim">λ₀ = </span>${fmt4(u2.eigenvalues[0])}
+        <span class="ax-dim" style="margin-left:12px">λ₁ = </span>${fmt4(u2.eigenvalues[1])}<br>
+        <span class="ax-dim">gap = </span>${fmt4(Math.abs(u2.eigenvalues[0]-u2.eigenvalues[1]))}
+        &nbsp;·&nbsp; <span style="color:${u2.status==="ok"?"var(--pass)":"var(--warn)"}">status: ${u2.status}</span>
+      </div>
+    </div>
+    <div class="ax-card">
+      <div class="ax-label">u₃ — OCTOPOLE AXIS (AngMom disp · N=4096)</div>
+      <div class="ax-val">
+        <span class="ax-dim">x = </span>${u3.axis[0].toFixed(6)}<br>
+        <span class="ax-dim">y = </span>${u3.axis[1].toFixed(6)}<br>
+        <span class="ax-dim">z = </span>${u3.axis[2].toFixed(6)}<br>
+        <span class="ax-dim">D₃_max = </span>${u3.D3_max.toExponential(4)}<br>
+        <span class="ax-dim">gap/max = </span>${(u3.gap/u3.D3_max).toExponential(3)}
+        &nbsp;·&nbsp; <span style="color:${u3.status==="ok"?"var(--pass)":"var(--warn)"}">status: ${u3.status}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tests ── -->
+  <div class="test-pair">
+
+    <!-- Test A -->
+    <div class="test-card ${testA.pass?"pass":"fail"}">
+      <div class="test-header">
+        <span class="test-id">TEST A</span>
+        <span class="test-name">Locked Rotation Invariance</span>
+        <span class="test-badge ${testA.pass?"pass":"fail"}">${testA.pass?"PASS":"FAIL"}</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+        Both ℓ=2 and ℓ=3 rotated by identical ZYZ angles. θ₂₃ must be invariant within grid resolution.
+      </div>
+      <div class="test-row"><span class="tr-k">α (alpha)</span><span class="tr-v info">${fmtAng(testA.alpha)}</span></div>
+      <div class="test-row"><span class="tr-k">β (beta)</span><span class="tr-v info">${fmtAng(testA.beta)}</span></div>
+      <div class="test-row"><span class="tr-k">γ (gamma)</span><span class="tr-v info">${fmtAng(testA.gamma)}</span></div>
+      <div class="test-row"><span class="tr-k">θ₂₃ (baseline)</span><span class="tr-v">${fmt4(theta23)}°</span></div>
+      <div class="test-row"><span class="tr-k">θ₂₃ (rotated)</span><span class="tr-v">${testA.theta23_rot!=null?fmt4(testA.theta23_rot)+"°":"—"}</span></div>
+      <div class="test-row"><span class="tr-k">|Δθ₂₃|</span>
+        <span class="tr-v ${testA.pass?"pass":"fail"}">${testA.delta!=null?fmt4(testA.delta)+"°":"—"}</span></div>
+      <div class="test-row"><span class="tr-k">tolerance</span><span class="tr-v">&lt; ${CFG.test_a_tol}° (grid resolution)</span></div>
+      <div class="test-row"><span class="tr-k">verdict</span>
+        <span class="tr-v ${testA.pass?"pass":"fail"}">${testA.pass?"INVARIANCE CONFIRMED":"INVARIANCE VIOLATED"}</span></div>
+    </div>
+
+    <!-- Test B -->
+    <div class="test-card ${testB.pass?"pass":"fail"}">
+      <div class="test-header">
+        <span class="test-id">TEST B</span>
+        <span class="test-name">Relative Rotation Sensitivity</span>
+        <span class="test-badge ${testB.pass?"pass":"fail"}">${testB.pass?"PASS":"FAIL"}</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:8px">
+        Only ℓ=3 rotated. u₂ stays fixed. θ₂₃ must change by at least ${CFG.test_b_min}°.
+      </div>
+      <div class="test-row"><span class="tr-k">α (alpha)</span><span class="tr-v info">${fmtAng(testB.alpha)}</span></div>
+      <div class="test-row"><span class="tr-k">β (beta)</span><span class="tr-v info">${fmtAng(testB.beta)}</span></div>
+      <div class="test-row"><span class="tr-k">γ (gamma)</span><span class="tr-v info">${fmtAng(testB.gamma)}</span></div>
+      <div class="test-row"><span class="tr-k">θ₂₃ (baseline)</span><span class="tr-v">${fmt4(theta23)}°</span></div>
+      <div class="test-row"><span class="tr-k">θ₂₃ (after rel. rot.)</span><span class="tr-v">${testB.theta23_rot!=null?fmt4(testB.theta23_rot)+"°":"—"}</span></div>
+      <div class="test-row"><span class="tr-k">|Δθ₂₃|</span>
+        <span class="tr-v ${testB.pass?"pass":"fail"}">${testB.delta!=null?fmt4(testB.delta)+"°":"—"}</span></div>
+      <div class="test-row"><span class="tr-k">min change</span><span class="tr-v">&gt; ${CFG.test_b_min}° (detectability)</span></div>
+      <div class="test-row"><span class="tr-k">verdict</span>
+        <span class="tr-v ${testB.pass?"pass":"fail"}">${testB.pass?"SENSITIVITY CONFIRMED":"SENSITIVITY NOT DETECTED"}</span></div>
+    </div>
+  </div>
+
+  <!-- ── Source info ── -->
+  <div class="panel">
+    <div class="ptitle">DATA PROVENANCE</div>
+    <div style="font-size:10.5px;line-height:1.9;color:var(--text)">
+      <span class="ax-dim">source : </span>${alm.source} &nbsp;·&nbsp;
+      <span class="ax-dim">schema : </span>${alm.warnings[0]||"—"}<br>
+      <span class="ax-dim">ℓ=2 modes : </span>${Object.keys(alm.ell2).length} &nbsp;·&nbsp;
+      <span class="ax-dim">ℓ=3 modes : </span>${Object.keys(alm.ell3).length}<br>
+      ${alm.warnings.slice(1).map(w=>`<span class="ax-dim">warn : </span><span style="color:var(--warn)">${w}</span><br>`).join("")}
+    </div>
+  </div>`;
+
+  document.getElementById("outArea").innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// [GLUE] File I/O, logging, event wiring
+// ═══════════════════════════════════════════════════════════════
+
+function tick() { return new Promise(r=>setTimeout(r,0)); }
+
+function log(msg, cls="") {
+  const la=document.getElementById("logArea");
+  const sp=document.createElement("span");
+  sp.className=cls; sp.textContent=msg;
+  la.appendChild(document.createElement("br"));
+  la.appendChild(sp);
+  la.scrollTop=la.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById("logArea").innerHTML='<span class="info">ready — load lowell_alm.json then press RUN</span>';
+}
+
+let almObj = null;
+let lastResult = null;
+
+document.getElementById("fileAlm").addEventListener("change", async e => {
+  const file=e.target.files[0];
+  const st=document.getElementById("stAlm");
+  if (!file){ st.className="fstatus none"; st.textContent="—"; almObj=null; return; }
+  try {
+    const text=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.onerror=()=>rej(new Error("read fail")); r.readAsText(file); });
+    almObj=parseAlmJSON(text);
+    st.className="fstatus ok"; st.textContent="✓";
+    log(`Loaded: ${file.name} (${almObj.warnings[0]||"?"})`, "ok");
+    if (Object.keys(almObj.ell3).length===0) log("Warning: no ℓ=3 data.", "warn");
+    document.getElementById("btnRun").disabled=false;
+  } catch(err) {
+    st.className="fstatus err"; st.textContent="✗";
+    log("Parse error: "+err.message, "err");
+    almObj=null;
+    document.getElementById("btnRun").disabled=true;
+  }
+});
+
+document.getElementById("btnRun").addEventListener("click", async () => {
+  if (!almObj) return;
+  document.getElementById("btnRun").disabled=true;
+  document.getElementById("outArea").innerHTML='<div class="no-data">Computing — this may take a few seconds (N=4096 grid search)…</div>';
+  try {
+    await tick();
+    const result = await runAnalysis(almObj);
+    lastResult = result;
+    renderResults(result);
+    document.getElementById("btnExport").disabled = false;
+  } catch(err) {
+    document.getElementById("outArea").innerHTML=`<div class="no-data" style="color:var(--fail)">Error: ${err.message}</div>`;
+    log("Error: "+err.message, "err");
+  }
+  document.getElementById("btnRun").disabled=false;
+});
+
+document.getElementById("btnClear").addEventListener("click", ()=>{
+  document.getElementById("fileAlm").value="";
+  document.getElementById("stAlm").className="fstatus none";
+  document.getElementById("stAlm").textContent="—";
+  document.getElementById("outArea").innerHTML='<div class="no-data">No results — load lowell_alm.json and press RUN CMB-III-GEO</div>';
+  document.getElementById("btnRun").disabled=true;
+  almObj=null;
+  lastResult=null;
+  document.getElementById("btnExport").disabled=true;
+  clearLog();
+});
+document.getElementById("btnExport").addEventListener("click", () => {
+  if (!lastResult) return;
+
+  const payload = {
+    chamber: "CMB-III-GEO",
+    version: "0.2.0",
+    protocol: {
+      fib_N_quad: CFG.fib_N_quad,
+      fib_N_oct:  CFG.fib_N_oct,
+      rng_seed:   CFG.rng_seed,
+      test_a_tol: CFG.test_a_tol,
+      test_b_min: CFG.test_b_min,
+      theta23_ref: CFG.theta23_ref
+    },
+    geometry: {
+      u2: {
+        axis:        lastResult.u2.axis,
+        eigenvalues: lastResult.u2.eigenvalues,
+        status:      lastResult.u2.status
+      },
+      u3: {
+        axis:   lastResult.u3.axis,
+        D3_max: lastResult.u3.D3_max,
+        gap:    lastResult.u3.gap,
+        status: lastResult.u3.status
+      },
+      theta23:        lastResult.theta23,
+      delta_from_ref: lastResult.thetaDelta
+    },
+    tests: {
+      locked_rotation:   lastResult.testA,
+      relative_rotation: lastResult.testB,
+      overall_pass:      lastResult.bothPass
+    },
+    provenance: {
+      source:      lastResult.alm.source,
+      schema:      lastResult.alm.warnings[0] || null,
+      ell2_modes:  Object.keys(lastResult.alm.ell2).length,
+      ell3_modes:  Object.keys(lastResult.alm.ell3).length
+    },
+    timestamp_utc: new Date().toISOString()
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(payload, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement("a");
+  a.href     = url;
+  a.download = `cmb-iii-geo_v0.2.0_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>

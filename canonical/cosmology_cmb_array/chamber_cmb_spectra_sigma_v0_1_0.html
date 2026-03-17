@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMB-SPECTRA-Σ · Spectra Signature Layer · v0.1.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0a0c10;
+    --bg2:       #0f1318;
+    --bg3:       #141820;
+    --bg4:       #1a2030;
+    --border:    #222a38;
+    --border2:   #2a3448;
+    --txt:       #c8d4e8;
+    --txt2:      #7a90b0;
+    --txt3:      #4a5a72;
+    --accent:    #3d8ef0;
+    --accent2:   #1a5fc8;
+    --gold:      #e8b84b;
+    --gold2:     #c89830;
+    --green:     #3dc87a;
+    --red:       #e84b4b;
+    --purple:    #9a6ef0;
+    --cyan:      #3dcfe8;
+    --orange:    #e8773d;
+    --pass-bg:   #0d2018;
+    --fail-bg:   #1e0d0d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--txt);
+    font-size: 13px;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #header .title-block { flex: 1; min-width: 0; }
+  #header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #header h1 span.sigma { color: var(--gold); }
+  #header .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--txt3);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+  }
+  #header .badges {
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0;
+  }
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-axis   { border-color: var(--accent2); color: var(--accent); background: rgba(61,142,240,0.08); }
+  .badge-spec   { border-color: var(--gold2);   color: var(--gold);   background: rgba(232,184,75,0.08); }
+  .badge-op     { border-color: var(--border2); color: var(--txt2);   background: rgba(255,255,255,0.02); }
+  .badge-ver    { border-color: var(--border);  color: var(--txt3);   background: transparent; }
+
+  /* ── LAYOUT ── */
+  #main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 0;
+    min-height: calc(100vh - 48px);
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--txt3);
+    text-transform: uppercase;
+    padding: 8px 14px 5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .panel-title .dot-gold { background: var(--gold); }
+  .panel-body { padding: 12px 14px; }
+
+  /* ── LEFT COLUMN ── */
+  #left-col {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(100vh - 48px);
+  }
+
+  /* ── RIGHT COLUMN ── */
+  #right-col {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(100vh - 48px);
+  }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--txt2);
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+  input[type=number], input[type=text], select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--txt);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 5px 8px;
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--accent2); }
+  select option { background: var(--bg3); }
+
+  .upload-area {
+    border: 1px dashed var(--border2);
+    background: var(--bg3);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-area:hover { border-color: var(--accent2); background: var(--bg4); }
+  .upload-area.loaded { border-color: var(--green); border-style: solid; }
+  .upload-area input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    width: 100%; margin: 0; padding: 0; border: none; background: transparent;
+  }
+  .upload-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--txt3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .upload-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--txt2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .upload-status.ok  { color: var(--green); }
+  .upload-status.err { color: var(--red); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .section-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 7px 14px;
+    border-radius: 2px;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent2);
+    color: #fff;
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-primary:disabled { background: var(--bg4); color: var(--txt3); border-color: var(--border); cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--bg3);
+    color: var(--txt2);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg4); color: var(--txt); }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ── PROTOCOL BLOCK ── */
+  .proto-row {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+  }
+  .proto-row:last-child { border-bottom: none; }
+  .proto-key { color: var(--txt3); min-width: 140px; flex-shrink: 0; }
+  .proto-val { color: var(--txt2); word-break: break-all; }
+
+  /* ── LOG ── */
+  #log {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 10px 14px;
+    height: 200px;
+    overflow-y: auto;
+    line-height: 1.6;
+    color: var(--txt2);
+    flex-shrink: 0;
+  }
+  #log .log-info  { color: var(--txt2); }
+  #log .log-ok    { color: var(--green); }
+  #log .log-warn  { color: var(--gold); }
+  #log .log-err   { color: var(--red); }
+  #log .log-head  { color: var(--accent); font-weight: 600; }
+  #log .log-sep   { color: var(--border2); }
+
+  /* ── PROGRESS ── */
+  #progress-bar-wrap {
+    height: 3px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--cyan));
+    width: 0%;
+    transition: width 0.05s linear;
+  }
+
+  /* ── CARDS ROW ── */
+  #cards-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .card {
+    padding: 12px 14px;
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .card:last-child { border-right: none; }
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 5px;
+  }
+  .card-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .card-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--txt3);
+    margin-top: 3px;
+  }
+  .cv-pass    { color: var(--green); }
+  .cv-fail    { color: var(--red); }
+  .cv-neutral { color: var(--txt2); }
+  .cv-gold    { color: var(--gold); }
+  .cv-accent  { color: var(--accent); }
+
+  /* ── RESULTS PANELS ── */
+  #results-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    flex: 1;
+  }
+
+  .res-panel {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+  }
+  .res-panel:nth-child(even) { border-right: none; }
+  .res-panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--txt3);
+    text-transform: uppercase;
+    padding: 7px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .res-panel-body { padding: 10px 14px; overflow-y: auto; flex: 1; max-height: 280px; }
+
+  /* ── SLIDER ── */
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+
+  /* ── TABLES ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+  }
+  .data-table th {
+    text-align: left;
+    color: var(--txt3);
+    font-weight: 400;
+    padding: 3px 8px 3px 0;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 3px 8px 3px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--txt2);
+    vertical-align: top;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table td.num { text-align: right; padding-right: 0; }
+  .data-table td.hi  { color: var(--gold); }
+  .data-table td.ok  { color: var(--green); }
+  .data-table td.err { color: var(--red); }
+
+  /* ── INVARIANT BADGES ── */
+  #inv-status {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg3);
+    flex-shrink: 0;
+  }
+  .inv-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    border: 1px solid;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .inv-ok   { border-color: var(--green);  color: var(--green);  background: rgba(61,200,122,0.06); }
+  .inv-fail { border-color: var(--red);    color: var(--red);    background: rgba(232,75,75,0.06); }
+  .inv-off  { border-color: var(--border); color: var(--txt3);   background: transparent; }
+
+  /* ── RANK DISPLAY ── */
+  .rank-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .rank-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 1px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--txt2);
+  }
+  .rank-chip.inv-pair { background: rgba(232,75,75,0.15); border-color: var(--red); color: var(--red); }
+
+  /* ── SCROLL STYLE ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── MISC ── */
+  .kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+  }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-key { color: var(--txt3); }
+  .kv-val { color: var(--txt2); font-weight: 500; }
+  .kv-val.accent { color: var(--accent); }
+  .kv-val.gold   { color: var(--gold); }
+  .kv-val.green  { color: var(--green); }
+  .kv-val.red    { color: var(--red); }
+
+  .interval-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 1px;
+    background: rgba(61,142,240,0.08);
+    border: 1px solid var(--accent2);
+    color: var(--accent);
+    margin: 2px;
+    display: inline-block;
+  }
+  .strata-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 1px;
+    background: rgba(232,184,75,0.08);
+    border: 1px solid var(--gold2);
+    color: var(--gold);
+    margin: 2px;
+    display: inline-block;
+  }
+
+  .empty-msg {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--txt3);
+    font-style: italic;
+    padding: 10px 0;
+    text-align: center;
+  }
+
+  /* ── GAP BAR CHART ── */
+  .gap-bar-wrap { margin: 4px 0 2px; display: flex; align-items: flex-end; gap: 2px; height: 40px; }
+  .gap-bar {
+    flex: 1;
+    background: var(--accent2);
+    min-height: 1px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .gap-bar.vuln { background: var(--gold2); }
+  .gap-bar:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    color: var(--txt);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .log-title { color: var(--accent); font-weight: 600; font-size: 10px; }
+
+  @media (max-width: 900px) {
+    #main { grid-template-columns: 1fr; }
+    #left-col { max-height: none; border-right: none; }
+    #right-col { max-height: none; }
+    #cards-row { grid-template-columns: 1fr 1fr; }
+    #results-area { grid-template-columns: 1fr; }
+    .res-panel { border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div id="header">
+  <div class="title-block">
+    <h1>CMB-SPECTRA-<span class="sigma">Σ</span> &nbsp;·&nbsp; Spectra Signature Layer &mdash; Operator-Manifold Descent</h1>
+    <div class="subtitle">T<sub>L</sub>: ℓ ≤ L &nbsp;·&nbsp; fixed bins B &nbsp;·&nbsp; Σord + inversion budget ν(V) &nbsp;·&nbsp; falsifier: inv(L) &gt; ν(V(L))</div>
+  </div>
+  <div class="badges">
+    <span class="badge badge-axis">AXIS VI</span>
+    <span class="badge badge-spec">SPECTRA ONLY</span>
+    <span class="badge badge-op">T<sub>L</sub> truncation</span>
+    <span class="badge badge-ver">v0.1.0</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN LAYOUT ═══════════════════ -->
+<div id="main">
+
+  <!-- ─── LEFT COLUMN ─── -->
+  <div id="left-col">
+
+    <!-- DATA INPUT -->
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span>DATA INPUT</div>
+      <div class="panel-body">
+
+        <label>Planck Spectrum JSON <span style="color:var(--red)">*</span></label>
+        <div class="upload-area" id="ua-spec">
+          <input type="file" id="file-spec" accept=".json">
+          <span class="upload-label">minimal · {"ell":[…],"Dl":[…],"channel":"TT"} or table form</span>
+          <span class="upload-status" id="us-spec">— no file loaded —</span>
+        </div>
+
+        <label>Bin Edges JSON <span style="color:var(--red)">*</span> (admissible interface)</label>
+        <div class="upload-area" id="ua-bins">
+          <input type="file" id="file-bins" accept=".json">
+          <span class="upload-label">{"edges":[b0,b1,…,bm]}  — fixed before run</span>
+          <span class="upload-status" id="us-bins">— no file loaded —</span>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Channel</label>
+            <select id="sel-channel">
+              <option value="TT">TT</option>
+              <option value="TE">TE</option>
+              <option value="EE">EE</option>
+            </select>
+          </div>
+          <div>
+            <label>L_min</label>
+            <input type="number" id="inp-lmin" value="30" min="2" max="9999">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>L0 (baseline cutoff)</label>
+            <input type="number" id="inp-l0" value="" placeholder="auto = max ℓ">
+          </div>
+          <div>
+            <label>L_grid mode</label>
+            <select id="sel-lgrid">
+              <option value="every">every</option>
+              <option value="step">step = k</option>
+              <option value="custom">custom list</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="lgrid-step-row" style="display:none">
+          <label>Step size k</label>
+          <input type="number" id="inp-step" value="5" min="1">
+        </div>
+        <div id="lgrid-custom-row" style="display:none">
+          <label>Custom L list (comma-separated)</label>
+          <input type="text" id="inp-custom" placeholder="100,200,500,1000,…">
+        </div>
+
+        <div class="section-sep"></div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btn-run" disabled>▶ RUN Σ</button>
+          <button class="btn btn-secondary" id="btn-clear">CLEAR</button>
+          <button class="btn btn-secondary" id="btn-export" disabled>⬇ EXPORT JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROTOCOL FROZEN -->
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-gold"></span>PROTOCOL (FROZEN)</div>
+      <div class="panel-body">
+        <div class="proto-row"><span class="proto-key">operator</span><span class="proto-val">T<sub>L</sub> (ℓ ≤ L)</span></div>
+        <div class="proto-row"><span class="proto-key">baseline cutoff</span><span class="proto-val" id="pr-l0">—</span></div>
+        <div class="proto-row"><span class="proto-key">eval range</span><span class="proto-val" id="pr-range">—</span></div>
+        <div class="proto-row"><span class="proto-key">bin edges B</span><span class="proto-val" id="pr-bins" style="font-size:9px">—</span></div>
+        <div class="proto-row"><span class="proto-key">feature q<sub>j</sub>(L)</span><span class="proto-val">mean f(ℓ) in bin j under cutoff</span></div>
+        <div class="proto-row"><span class="proto-key">Σord(L)</span><span class="proto-val">π<sub>L</sub> ranking permutation</span></div>
+        <div class="proto-row"><span class="proto-key">σ<sub>P</sub>(L)</span><span class="proto-val">max<sub>j</sub> |q<sub>j</sub>(L) − q<sub>j</sub>(L0)|</span></div>
+        <div class="proto-row"><span class="proto-key">Δ<sub>k</sub></span><span class="proto-val">q<sub>(k)</sub>(L0) − q<sub>(k+1)</sub>(L0) baseline sorted</span></div>
+        <div class="proto-row"><span class="proto-key">V(L)</span><span class="proto-val">{k: Δ<sub>k</sub> ≤ 2σ<sub>P</sub>(L)}</span></div>
+        <div class="proto-row"><span class="proto-key">ν(V(L))</span><span class="proto-val">path matching (no adjacent k)</span></div>
+        <div class="proto-row"><span class="proto-key">inv(L)</span><span class="proto-val">Kendall inversion count vs baseline</span></div>
+        <div class="proto-row"><span class="proto-key">falsifier</span><span class="proto-val" style="color:var(--red)">inv(L) &gt; ν(V(L))</span></div>
+        <div class="proto-row"><span class="proto-key">descent</span><span class="proto-val">Σord constant on interval</span></div>
+        <div class="proto-row"><span class="proto-key">tie_rule</span><span class="proto-val" style="color:var(--gold)">stable_index (frozen)</span></div>
+        <div class="proto-row"><span class="proto-key">rank_scope</span><span class="proto-val" style="color:var(--gold)">common_items_only (frozen)</span></div>
+      </div>
+    </div>
+
+    <!-- INVARIANT STATUS -->
+    <div class="panel" style="border-right:none">
+      <div class="panel-title"><span class="dot"></span>INVARIANT STATUS</div>
+      <div id="inv-status">
+        <span class="inv-badge inv-off" id="inv-interface">INTERFACE —</span>
+        <span class="inv-badge inv-off" id="inv-operator">OPERATOR —</span>
+        <span class="inv-badge inv-off" id="inv-baseline">BASELINE —</span>
+        <span class="inv-badge inv-off" id="inv-falsifier">FALSIFIER —</span>
+        <span class="inv-badge inv-off" id="inv-bindep">BINNING-INDEP OFF</span>
+      </div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <!-- ─── RIGHT COLUMN ─── -->
+  <div id="right-col">
+
+    <!-- LOG + PROGRESS -->
+    <div style="background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0;">
+      <div class="panel-title" style="background:var(--bg2);"><span class="dot"></span>COMPUTATION LOG</div>
+      <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+      <div id="log"><span class="log-info">Ready. Load spectrum JSON + bin edges JSON, then press RUN Σ.</span></div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div id="cards-row">
+      <div class="card">
+        <div class="card-label">Overall</div>
+        <div class="card-value cv-neutral" id="card-overall">—</div>
+        <div class="card-sub" id="card-overall-sub">awaiting run</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Descent Status</div>
+        <div class="card-value cv-neutral" id="card-descent">—</div>
+        <div class="card-sub" id="card-descent-sub">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Boundary Activations</div>
+        <div class="card-value cv-neutral" id="card-ba">—</div>
+        <div class="card-sub" id="card-ba-sub">ν(V(L)) &gt; 0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Primary Falsifier</div>
+        <div class="card-value cv-neutral" id="card-falsifier">—</div>
+        <div class="card-sub" id="card-falsifier-sub">inv(L) &gt; ν(V(L))</div>
+      </div>
+    </div>
+
+    <!-- RESULTS AREA -->
+    <div id="results-area">
+
+      <!-- Σ PANEL -->
+      <div class="res-panel">
+        <div class="res-panel-title">
+          <span>Σ PANEL — CURRENT L</span>
+          <span id="sigpanel-l" style="color:var(--accent);font-size:10px">L = —</span>
+        </div>
+        <div class="res-panel-body">
+          <div id="sig-slider-wrap" style="display:none">
+            <input type="range" id="sig-slider" min="0" max="100" value="100">
+          </div>
+          <div id="sig-content"><div class="empty-msg">Run chamber to populate</div></div>
+        </div>
+      </div>
+
+      <!-- DESCENT & STRATIFICATION -->
+      <div class="res-panel">
+        <div class="res-panel-title">DESCENT &amp; STRATIFICATION</div>
+        <div class="res-panel-body" id="descent-content">
+          <div class="empty-msg">Run chamber to populate</div>
+        </div>
+      </div>
+
+      <!-- BASELINE GAP SPECTRUM -->
+      <div class="res-panel">
+        <div class="res-panel-title">
+          <span>BASELINE GAP SPECTRUM Δ<sub>k</sub></span>
+          <span id="gap-vuln-count" style="color:var(--gold);font-size:9px"></span>
+        </div>
+        <div class="res-panel-body" id="gap-content">
+          <div class="empty-msg">Run chamber to populate</div>
+        </div>
+      </div>
+
+      <!-- RANK COMPARISON -->
+      <div class="res-panel">
+        <div class="res-panel-title">RANK COMPARISON π<sub>L</sub> vs π<sub>L0</sub></div>
+        <div class="res-panel-body" id="rank-content">
+          <div class="empty-msg">Run chamber to populate</div>
+        </div>
+      </div>
+
+    </div><!-- /results-area -->
+
+  </div><!-- /right-col -->
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CMB-SPECTRA-Σ  v0.1.0  —  Core Engine
+//  All math follows Cosmology Signature Specification
+//  Definitions 1-20 exactly.
+// ═══════════════════════════════════════════════════════
+
+'use strict';
+
+// ─── State ───
+let specData   = null;  // {channel, ell:[], f:[]}
+let binsData   = null;  // {edges:[]}
+let runResults = null;  // full results object
+
+// ─── UI refs ───
+const $  = id => document.getElementById(id);
+const log = (msg, cls='log-info') => {
+  const el = $('log');
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+};
+const logSep = () => {
+  const el = $('log');
+  const line = document.createElement('div');
+  line.className = 'log-sep';
+  line.textContent = '─'.repeat(60);
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+};
+const setProgress = pct => { $('progress-bar').style.width = pct + '%'; };
+
+// ─── File upload handlers ───
+$('sel-lgrid').addEventListener('change', () => {
+  $('lgrid-step-row').style.display   = $('sel-lgrid').value === 'step'   ? '' : 'none';
+  $('lgrid-custom-row').style.display = $('sel-lgrid').value === 'custom' ? '' : 'none';
+});
+
+function setupUpload(fileId, areaId, statusId, parser, onSuccess) {
+  const fi = $(fileId), ua = $(areaId), us = $(statusId);
+  fi.addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const text = await f.text();
+      const result = parser(text, f.name);
+      ua.classList.add('loaded');
+      us.className = 'upload-status ok';
+      us.textContent = '✓ ' + f.name;
+      onSuccess(result);
+    } catch(err) {
+      ua.classList.remove('loaded');
+      us.className = 'upload-status err';
+      us.textContent = '✗ ' + err.message;
+    }
+    checkReady();
+  });
+}
+
+// ─── Parser: Spectrum JSON ───
+// Def 1: spectrum object (ell_i, D_i) pairs
+// Def 2: working scalar field f(ell_i) = D_i
+function parseSpectrumJSON(text, name='') {
+  const obj = JSON.parse(text);
+  let ell, f, channel = 'TT';
+
+  if (obj.channel) channel = obj.channel.toUpperCase();
+
+  if (Array.isArray(obj.ell) && Array.isArray(obj.Dl)) {
+    // minimal form
+    ell = obj.ell.map(Number);
+    f   = obj.Dl.map(Number);
+  } else if (Array.isArray(obj.rows)) {
+    // table form
+    ell = obj.rows.map(r => Number(r.ell));
+    f   = obj.rows.map(r => Number(r.Dl));
+    if (!obj.channel && obj.rows[0] && obj.rows[0].channel)
+      channel = obj.rows[0].channel.toUpperCase();
+  } else {
+    throw new Error('Unrecognized spectrum format. Need {ell,Dl} or {rows}.');
+  }
+
+  if (ell.length === 0) throw new Error('Empty spectrum.');
+  if (ell.length !== f.length) throw new Error('ell/Dl length mismatch.');
+
+  return { channel, ell, f, meta: { name, n: ell.length,
+    ellMin: Math.min(...ell), ellMax: Math.max(...ell) } };
+}
+
+// ─── Parser: Bin edges JSON ───
+function parseBinEdgesJSON(text, name='') {
+  const obj = JSON.parse(text);
+  if (!Array.isArray(obj.edges)) throw new Error('Need {"edges":[b0,b1,...]}');
+  const edges = obj.edges.map(Number);
+  if (edges.length < 2) throw new Error('Need at least 2 bin edges (1 bin).');
+  for (let i=1; i<edges.length; i++)
+    if (edges[i] <= edges[i-1]) throw new Error('Bin edges must be strictly ascending.');
+  return { edges, meta: { name, nBins: edges.length - 1 } };
+}
+
+setupUpload('file-spec', 'ua-spec', 'us-spec', parseSpectrumJSON, result => {
+  specData = result;
+  $('sel-channel').value = result.channel;
+  if (!$('inp-l0').value) $('inp-l0').placeholder = 'auto = ' + result.meta.ellMax;
+  log(`Spectrum loaded: channel=${result.channel}, n=${result.meta.n}, ℓ∈[${result.meta.ellMin},${result.meta.ellMax}]`, 'log-ok');
+});
+
+setupUpload('file-bins', 'ua-bins', 'us-bins', parseBinEdgesJSON, result => {
+  binsData = result;
+  const hash = simpleHash(JSON.stringify(result.edges));
+  $('pr-bins').textContent = `[${result.edges.slice(0,4).join(',')}${result.edges.length>4?',...':''}] (${result.meta.nBins} bins, hash=${hash})`;
+  log(`Bin edges loaded: ${result.meta.nBins} bins, edges=[${result.edges.join(',')}]`, 'log-ok');
+});
+
+function checkReady() {
+  $('btn-run').disabled = !(specData && binsData);
+}
+
+function simpleHash(str) {
+  let h = 0;
+  for (let i=0; i<str.length; i++) { h = ((h<<5)-h+str.charCodeAt(i))|0; }
+  return (h>>>0).toString(16).slice(0,8);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CORE MATH  (Definitions 3-19)
+// ═══════════════════════════════════════════════════════
+
+// Def 3: TL acts by restriction to ℓ ≤ L
+function truncateByL(ell, f, L) {
+  const ellL=[], fL=[];
+  for (let i=0;i<ell.length;i++) if (ell[i]<=L) { ellL.push(ell[i]); fL.push(f[i]); }
+  return { ellL, fL };
+}
+
+// Def 5: q_j(L) = bin mean of f under cutoff
+// Returns {J:number[], q:number[], binCounts:number[]}
+// J = 1-indexed bin identifiers for non-empty bins
+function computeBinMeans(ellL, fL, edges) {
+  const m = edges.length - 1;
+  const sums = new Float64Array(m), counts = new Int32Array(m);
+  for (let i=0;i<ellL.length;i++) {
+    const x = ellL[i];
+    // find bin: b_{j-1} <= x < b_j  (1-indexed j)
+    // We use inclusive upper: x in [edges[j], edges[j+1]) actually
+    // Def 5: [b_{j-1}, b_j] — inclusive on both ends
+    for (let j=0;j<m;j++) {
+      if (x >= edges[j] && x <= edges[j+1]) {
+        sums[j] += fL[i];
+        counts[j]++;
+        break;
+      }
+    }
+  }
+  const J=[], q=[], binCounts=[];
+  for (let j=0;j<m;j++) {
+    if (counts[j] > 0) {
+      J.push(j+1);  // 1-indexed
+      q.push(sums[j]/counts[j]);
+      binCounts.push(counts[j]);
+    }
+  }
+  return { J, q, binCounts };
+}
+
+// Def 6: align feature vectors to common bins
+function alignBinsToBaseline(JL, qL, JL0, qL0) {
+  const setL0 = new Set(JL0);
+  const commonJ=[], qL_common=[], qL0_common=[];
+  const mapL0 = {};
+  for (let i=0;i<JL0.length;i++) mapL0[JL0[i]] = qL0[i];
+  for (let i=0;i<JL.length;i++) {
+    if (setL0.has(JL[i])) {
+      commonJ.push(JL[i]);
+      qL_common.push(qL[i]);
+      qL0_common.push(mapL0[JL[i]]);
+    }
+  }
+  return { commonJ, qL_common, qL0_common };
+}
+
+// Def 7, 8: ranking permutation π_L (descending q, stable_index tie-break)
+// Returns pi: array of bin indices (1-indexed J values) in descending q order
+function rankFeatures(J, q) {
+  // tie_rule: stable_index — ties broken by bin index ascending
+  const idx = J.map((_,i) => i);
+  idx.sort((a,b) => {
+    if (q[b] !== q[a]) return q[b] - q[a];  // descending q
+    return J[a] - J[b];  // stable: lower bin index first
+  });
+  const pi = idx.map(i => J[i]);
+  return pi;  // pi[0] = J-index of highest-rank bin, etc.
+}
+
+// Def 9: baseline gaps Δ_k = q_(k)(L0) - q_(k+1)(L0)
+function computeBaselineGaps(qL0_sorted) {
+  // qL0_sorted assumed descending
+  const Delta=[];
+  for (let k=0;k<qL0_sorted.length-1;k++)
+    Delta.push(qL0_sorted[k] - qL0_sorted[k+1]);
+  return Delta;
+}
+
+// Def 10: σP(L) = max_j |q_j(L) - q_j(L0)| on common bins
+function computeSigmaP(qL_common, qL0_common) {
+  let mx = 0;
+  for (let i=0;i<qL_common.length;i++)
+    mx = Math.max(mx, Math.abs(qL_common[i] - qL0_common[i]));
+  return mx;
+}
+
+// Def 11: V(L) = {k: Δ_k ≤ 2σP(L)},  D(L) = |V|/(N0-1)
+function computeVulnerableSet(Delta, sigmaP, N0) {
+  const V=[];
+  const thresh = 2*sigmaP;
+  for (let k=0;k<Delta.length;k++)
+    if (Delta[k] <= thresh) V.push(k+1);  // k is 1-indexed per spec
+  const D = N0 > 1 ? V.length/(N0-1) : 0;
+  return { V, D };
+}
+
+// Def 12: ν(V) = matching number = max independent set on path graph
+// V is subset of {1,...,N0-1}; "no adjacent indices" = no k and k+1 both selected
+function matchingNumberPath(V) {
+  if (V.length === 0) return 0;
+  const sorted = [...V].sort((a,b)=>a-b);
+  // DP: dp[i] = max set size using elements sorted[0..i]
+  const n = sorted.length;
+  const dp = new Int32Array(n);
+  dp[0] = 1;
+  if (n === 1) return 1;
+  dp[1] = (sorted[1] - sorted[0] === 1) ? 1 : 2;
+  for (let i=2;i<n;i++) {
+    // can always skip current (take dp[i-1])
+    const take = dp[i-2] + 1;
+    // but can we take current? only if sorted[i] != sorted[i-1]+1 
+    // (if adjacent to previous we may or may not pick current vs previous)
+    // Standard path MIS DP:
+    //   dp[i] = max(dp[i-1],  prev_best + 1) where prev_best = dp last non-adjacent
+    if (sorted[i] - sorted[i-1] !== 1) {
+      // not adjacent to previous: can freely add
+      dp[i] = dp[i-1] + 1;
+    } else {
+      // adjacent to previous: can't take both i and i-1
+      dp[i] = Math.max(dp[i-1], dp[i-2] + 1);
+    }
+  }
+  return dp[n-1];
+}
+
+// Def 13: inv(L) = Kendall inversion distance on aligned item set
+// piL, piL0 are arrays of bin-indices (same set, same length after alignment)
+// An inversion: pair (i,j) where i < j in piL0 ordering, but j before i in piL
+function kendallInversionCount(piL, piL0) {
+  if (piL.length !== piL0.length) return -1;
+  const n = piL.length;
+  // pos_L0[item] = position of item in piL0
+  const posL0 = {};
+  for (let i=0;i<n;i++) posL0[piL0[i]] = i;
+  // pos_L[item] = position of item in piL
+  const posL = {};
+  for (let i=0;i<n;i++) posL[piL[i]] = i;
+
+  // Count pairs (i,j) where posL0[i]<posL0[j] but posL[i]>posL[j]
+  // Enumerate all common items
+  const items = piL0.slice();  // in piL0 order
+  let inv = 0;
+  for (let a=0;a<items.length;a++) {
+    for (let b=a+1;b<items.length;b++) {
+      // a before b in piL0
+      const pa = posL[items[a]], pb = posL[items[b]];
+      if (pa === undefined || pb === undefined) continue;
+      if (pa > pb) inv++;  // b before a in piL → inversion
+    }
+  }
+  return inv;
+}
+
+// Def 17: descent intervals — intervals where Σord is constant
+function computeDescentIntervals(byL) {
+  if (byL.length === 0) return { intervals: [], fullDescends: false };
+  const intervals = [];
+  let start = byL[0].L;
+  let prevHash = piHash(byL[0].pi_L);
+  let prevL = byL[0].L;
+
+  for (let i=1;i<byL.length;i++) {
+    const h = piHash(byL[i].pi_L);
+    if (h !== prevHash) {
+      intervals.push({ L_start: start, L_end: prevL, Sigma_ord_hash: prevHash });
+      start = byL[i].L;
+      prevHash = h;
+    }
+    prevL = byL[i].L;
+  }
+  intervals.push({ L_start: start, L_end: prevL, Sigma_ord_hash: prevHash });
+
+  const fullDescends = intervals.length === 1;
+  return { intervals, fullDescends };
+}
+
+// Def 18: stratification — where V(L) changes
+function computeStrataPoints(byL) {
+  const L_change_V=[], L_change_nu=[];
+  for (let i=1;i<byL.length;i++) {
+    const vPrev = byL[i-1].V.join(','), vCurr = byL[i].V.join(',');
+    if (vPrev !== vCurr) L_change_V.push(byL[i].L);
+    if (byL[i-1].nu !== byL[i].nu) L_change_nu.push(byL[i].L);
+  }
+  return { L_change_V, L_change_nu };
+}
+
+function piHash(pi) {
+  return pi.join(',');
+}
+
+// Def 19: primary falsifier
+function primaryFalsifier(inv, nu) {
+  const pass = inv <= nu;
+  return { pass, reason: pass ? null : `inv(L)=${inv} > ν(V(L))=${nu}` };
+}
+
+// ═══════════════════════════════════════════════════════
+//  RUN PROTOCOL  (Section 3)
+// ═══════════════════════════════════════════════════════
+
+$('btn-run').addEventListener('click', runChamber);
+$('btn-clear').addEventListener('click', clearChamber);
+$('btn-export').addEventListener('click', exportJSON);
+
+async function runChamber() {
+  if (!specData || !binsData) return;
+
+  $('btn-run').disabled = true;
+  $('btn-export').disabled = true;
+  setProgress(0);
+  $('log').innerHTML = '';
+  runResults = null;
+
+  const { ell, f, channel } = specData;
+  const { edges } = binsData;
+
+  const channel_sel = $('sel-channel').value;
+  const L_min = parseInt($('inp-lmin').value) || 30;
+  const L0_user = parseInt($('inp-l0').value) || 0;
+  const L0 = L0_user > 0 ? L0_user : Math.max(...ell);
+  const lgrid_mode = $('sel-lgrid').value;
+  const step = parseInt($('inp-step').value) || 5;
+  const custom_str = $('inp-custom').value;
+
+  log(`═══ CMB-SPECTRA-Σ v0.1.0  ═══`, 'log-head');
+  log(`Detected: channel=${channel}, ℓ∈[${Math.min(...ell)},${Math.max(...ell)}], n=${ell.length}`);
+  log(`Using channel=${channel_sel}, L0=${L0}, L_min=${L_min}`);
+  log(`Bin edges: [${edges.join(',')}] (${edges.length-1} bins)`);
+  logSep();
+
+  // Step 1: Build L grid
+  let L_grid = [];
+  if (lgrid_mode === 'every') {
+    for (let L=L_min; L<=L0; L++) L_grid.push(L);
+  } else if (lgrid_mode === 'step') {
+    for (let L=L_min; L<=L0; L+=step) L_grid.push(L);
+    if (L_grid[L_grid.length-1] !== L0) L_grid.push(L0);
+  } else {
+    // custom
+    L_grid = custom_str.split(',').map(s=>parseInt(s.trim())).filter(x=>!isNaN(x)&&x>=L_min&&x<=L0);
+    L_grid.sort((a,b)=>a-b);
+    if (!L_grid.includes(L0)) L_grid.push(L0);
+  }
+  log(`L grid: mode=${lgrid_mode}, |grid|=${L_grid.length}, range=[${L_grid[0]},${L_grid[L_grid.length-1]}]`);
+
+  // Step 2: Baseline
+  log(`Computing baseline at L0=${L0}...`);
+  const { ellL: ellL0, fL: fL0 } = truncateByL(ell, f, L0);
+  const { J: JL0, q: qL0 } = computeBinMeans(ellL0, fL0, edges);
+
+  if (JL0.length === 0) {
+    log(`ERROR: No bins populated at L0=${L0}. Check bin edges vs spectrum range.`, 'log-err');
+    $('btn-run').disabled = false;
+    return;
+  }
+
+  const N0 = JL0.length;
+  log(`Baseline N0=${N0} populated bins, J=[${JL0.join(',')}]`);
+
+  // Baseline ranking π_L0 (descending q, stable_index)
+  const pi_L0 = rankFeatures(JL0, qL0);
+
+  // Baseline sorted values (descending) for gap computation
+  const qL0_sorted = pi_L0.map(j => qL0[JL0.indexOf(j)]);
+
+  // Baseline gaps Δ_k
+  const Delta = computeBaselineGaps(qL0_sorted);
+  log(`Baseline gaps Δ_k: [${Delta.map(d=>d.toExponential(3)).join(', ')}]`);
+
+  // Protocol display
+  $('pr-l0').textContent = L0;
+  $('pr-range').textContent = `L ∈ [${L_min}, ${L0}]`;
+
+  logSep();
+  log(`Sweeping ${L_grid.length} L values...`);
+
+  // Step 3: Sweep
+  const byL = [];
+  let falsifierHits = 0;
+  let boundaryActivations = 0;
+
+  for (let gi=0; gi<L_grid.length; gi++) {
+    const L = L_grid[gi];
+    setProgress(5 + 85 * gi / L_grid.length);
+
+    // TL restriction
+    const { ellL, fL } = truncateByL(ell, f, L);
+    const { J: JL, q: qL } = computeBinMeans(ellL, fL, edges);
+
+    // Align to baseline (common items)
+    const { commonJ, qL_common, qL0_common } = alignBinsToBaseline(JL, qL, JL0, qL0);
+    const N = commonJ.length;
+
+    // σP(L) — Def 10
+    const sigmaP = computeSigmaP(qL_common, qL0_common);
+
+    // V(L), D(L) — Def 11
+    const { V, D } = computeVulnerableSet(Delta, sigmaP, N0);
+
+    // ν(V(L)) — Def 12
+    const nu = matchingNumberPath(V);
+
+    // π_L on common bins (for inversion count)
+    const pi_L = rankFeatures(commonJ, qL_common);
+    // π_L0 restricted to common bins (same order, filtered)
+    const pi_L0_common = pi_L0.filter(j => commonJ.includes(j));
+
+    // inv(L) — Def 13
+    const inv = kendallInversionCount(pi_L, pi_L0_common);
+
+    // Def 14: adjacent-swap regime
+    const adjSwap = inv <= nu;
+
+    // boundary activation: ν > 0
+    const boundaryAct = nu > 0;
+    if (boundaryAct) boundaryActivations++;
+
+    // Primary falsifier — Def 19
+    const { pass: fpPass } = primaryFalsifier(inv, nu);
+    if (!fpPass) falsifierHits++;
+
+    byL.push({
+      L, bins_present: JL, N, commonJ, q_by_bin: JL.map((j,i)=>({bin:j,q:qL[i]})),
+      pi_L, sigmaP, V, D, nu, inv,
+      adjacent_swap_regime: adjSwap,
+      boundary_activated: boundaryAct,
+      primary_falsifier_pass: fpPass,
+      qL_common, qL0_common,
+      spearman: spearmanRho(pi_L, pi_L0_common),
+      kendall_tau: kendallTau(pi_L, pi_L0_common)
+    });
+  }
+
+  setProgress(95);
+
+  // Step 4: descent intervals, strata points
+  const { intervals, fullDescends } = computeDescentIntervals(byL);
+  const { L_change_V, L_change_nu } = computeStrataPoints(byL);
+
+  log(`Sweep complete. Falsifier hits: ${falsifierHits}/${L_grid.length}, Boundary activations: ${boundaryActivations}`, 'log-ok');
+  log(`Descent intervals: ${intervals.length}, Strata points (V changes): ${L_change_V.length}`, 'log-ok');
+
+  // Verdict
+  const overallPass = falsifierHits === 0;
+  const status = fullDescends ? 'DESCENT CONFIRMED' : 'STRATIFIED';
+
+  log(`Verdict: ${overallPass?'PASS':'FAIL'} · ${status}`, overallPass?'log-ok':'log-err');
+  logSep();
+
+  setProgress(100);
+
+  // Build results object
+  runResults = {
+    chamber: 'CMB-SPECTRA-Σ',
+    version: '0.1.0',
+    created_utc: new Date().toISOString(),
+    inputs: {
+      channel: channel_sel,
+      spectrum_source: { type: 'json_upload', name: specData.meta.name },
+      bin_edges: edges,
+      L_min, L0,
+      L_grid: { mode: lgrid_mode, step, custom: custom_str },
+      tie_rule: 'stable_index',
+      baseline_rank_scope: 'common_items_only'
+    },
+    protocol_frozen: {
+      operator_family: 'T_L: ell <= L',
+      feature_definition: 'q_j(L)=mean f(ell) in bin j under cutoff',
+      sigmaP_definition: 'max_j |q_j(L)-q_j(L0)| on common bins',
+      gap_definition: 'Delta_k = q_(k)(L0)-q_(k+1)(L0) baseline sorted',
+      vulnerable_set_definition: 'V(L)={k: Delta_k <= 2*sigmaP(L)}',
+      matching_number_definition: 'nu(V)=max disjoint subset (no adjacent k)',
+      inversion_definition: 'inv(L)=Kendall inversion count vs baseline',
+      primary_falsifier: 'fail if inv(L) > nu(V(L))',
+      descent_definition: 'Sigma_ord constant on interval'
+    },
+    baseline: {
+      L0, bins_present: JL0, N0,
+      q_L0_by_bin: JL0.map((j,i)=>({bin:j,q:qL0[i]})),
+      q_L0_sorted: qL0_sorted,
+      pi_L0, Delta_k: Delta
+    },
+    results: {
+      by_L: byL.map(r=>({
+        L: r.L,
+        bins_present: r.bins_present,
+        N: r.N,
+        q_by_bin: r.q_by_bin,
+        pi_L: r.pi_L,
+        sigmaP: r.sigmaP,
+        V: r.V,
+        D: r.D,
+        nu: r.nu,
+        inv: r.inv,
+        adjacent_swap_regime: r.adjacent_swap_regime,
+        boundary_activated: r.boundary_activated,
+        primary_falsifier_pass: r.primary_falsifier_pass,
+        bench: { spearman_rho: r.spearman, kendall_tau: r.kendall_tau }
+      })),
+      descent: { descends_on_full_range: fullDescends, intervals },
+      stratification: { L_where_V_changes: L_change_V, L_where_nu_changes: L_change_nu },
+      falsifiers: {
+        primary: {
+          pass: overallPass,
+          first_fail_L: falsifierHits > 0 ? byL.find(r=>!r.primary_falsifier_pass)?.L : null
+        },
+        binning_independence: { status: 'OFF', pass: null, summary: null }
+      }
+    },
+    verdict: {
+      overall_pass: overallPass,
+      status,
+      notes: [
+        overallPass
+          ? 'Primary falsifier not triggered: inv(L) ≤ ν(V(L)) for all L'
+          : `Primary falsifier triggered at ${falsifierHits} L value(s). First fail: L=${runResults?.results?.falsifiers?.primary?.first_fail_L}`,
+        boundaryActivations > 0
+          ? `Boundary activation detected at ${boundaryActivations} L values where V(L) nonempty`
+          : 'No boundary activations: V(L) empty throughout'
+      ]
+    }
+  };
+  // fix note after object exists
+  if (!overallPass) {
+    runResults.verdict.notes[0] = `Primary falsifier triggered at ${falsifierHits} L value(s). First fail: L=${runResults.results.falsifiers.primary.first_fail_L}`;
+  }
+
+  // ── Update UI ──
+  updateCards(overallPass, status, boundaryActivations, falsifierHits);
+  updateInvariants(true, true, true, overallPass);
+  buildSigPanel(byL, Delta, JL0, qL0_sorted, N0);
+  buildDescentPanel(intervals, L_change_V, L_change_nu);
+  buildGapPanel(Delta, N0, null);
+  buildRankPanel(byL[byL.length-1], null);
+
+  $('btn-run').disabled = false;
+  $('btn-export').disabled = false;
+}
+
+// ─── Benchmark stats (Def 15 — non-theorem-grade) ───
+function spearmanRho(piL, piL0) {
+  const n = piL.length;
+  if (n < 2) return 1;
+  const rankL = {}, rankL0 = {};
+  piL.forEach((x,i)  => rankL[x]  = i+1);
+  piL0.forEach((x,i) => rankL0[x] = i+1);
+  const items = piL0;
+  let d2 = 0;
+  for (const it of items) {
+    const d = (rankL[it]||0) - (rankL0[it]||0);
+    d2 += d*d;
+  }
+  return 1 - 6*d2/(n*(n*n-1));
+}
+
+function kendallTau(piL, piL0) {
+  const n = piL.length;
+  if (n < 2) return 1;
+  // τ = (concordant - discordant) / (n*(n-1)/2)
+  const posL = {}, posL0 = {};
+  piL.forEach((x,i)  => posL[x]  = i);
+  piL0.forEach((x,i) => posL0[x] = i);
+  const items = piL0;
+  let conc = 0, disc = 0;
+  for (let a=0;a<n;a++) for (let b=a+1;b<n;b++) {
+    const s0 = Math.sign((posL0[items[a]]||0)-(posL0[items[b]]||0));
+    const sL = Math.sign((posL[items[a]]||0)-(posL[items[b]]||0));
+    if (s0*sL > 0) conc++;
+    else if (s0*sL < 0) disc++;
+  }
+  return (conc - disc) / (n*(n-1)/2);
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI UPDATES
+// ═══════════════════════════════════════════════════════
+
+function updateCards(pass, status, boundaryAct, failCount) {
+  const co = $('card-overall');
+  co.textContent = pass ? 'PASS' : 'FAIL';
+  co.className = 'card-value ' + (pass ? 'cv-pass' : 'cv-fail');
+  $('card-overall-sub').textContent = pass ? 'primary falsifier ✓' : `${failCount} falsifier hit(s)`;
+
+  const cd = $('card-descent');
+  const isDesc = status === 'DESCENT CONFIRMED';
+  cd.textContent = isDesc ? 'DESCENT' : 'STRATIFIED';
+  cd.className = 'card-value ' + (isDesc ? 'cv-green cv-accent' : 'cv-gold');
+  $('card-descent-sub').textContent = isDesc ? 'Σord constant on full grid' : 'strata points detected';
+
+  $('card-ba').textContent = boundaryAct;
+  $('card-ba').className = 'card-value ' + (boundaryAct > 0 ? 'cv-gold' : 'cv-neutral');
+  $('card-ba-sub').textContent = 'L values where ν(V)>0';
+
+  const cf = $('card-falsifier');
+  cf.textContent = pass ? 'PASS' : 'FAIL';
+  cf.className = 'card-value ' + (pass ? 'cv-pass' : 'cv-fail');
+  $('card-falsifier-sub').textContent = pass ? 'inv(L)≤ν(V) for all L' : `first fail L=${runResults?.results?.falsifiers?.primary?.first_fail_L}`;
+}
+
+function updateInvariants(iface, op, base, falsifier) {
+  const set = (id, ok, label) => {
+    const el = $(id);
+    el.className = 'inv-badge ' + (ok ? 'inv-ok' : 'inv-fail');
+    el.textContent = label + (ok ? ' ✓' : ' ✗');
+  };
+  set('inv-interface', iface, 'INTERFACE');
+  set('inv-operator', op, 'OPERATOR');
+  set('inv-baseline', base, 'BASELINE');
+  set('inv-falsifier', falsifier, 'FALSIFIER');
+  // binning-indep stays OFF
+}
+
+function buildSigPanel(byL, Delta, JL0, qL0_sorted, N0) {
+  const wrap = $('sig-slider-wrap');
+  const slider = $('sig-slider');
+  wrap.style.display = '';
+  slider.min = 0;
+  slider.max = byL.length - 1;
+  slider.value = byL.length - 1;
+
+  const renderSig = (idx) => {
+    const r = byL[idx];
+    $('sigpanel-l').textContent = `L = ${r.L}`;
+    const c = $('sig-content');
+    const fp = r.primary_falsifier_pass;
+    c.innerHTML = `
+      <div class="kv-row"><span class="kv-key">N(L) common bins</span><span class="kv-val accent">${r.N}</span></div>
+      <div class="kv-row"><span class="kv-key">σP(L)</span><span class="kv-val ${r.sigmaP===0?'green':'gold'}">${r.sigmaP.toExponential(4)}</span></div>
+      <div class="kv-row"><span class="kv-key">|V(L)|</span><span class="kv-val ${r.V.length>0?'gold':'green'}">${r.V.length}</span></div>
+      <div class="kv-row"><span class="kv-key">ν(V(L))</span><span class="kv-val ${r.nu>0?'gold':'green'}">${r.nu}</span></div>
+      <div class="kv-row"><span class="kv-key">inv(L)</span><span class="kv-val ${r.inv>r.nu?'red':r.inv>0?'gold':'green'}">${r.inv}</span></div>
+      <div class="kv-row"><span class="kv-key">D(L) = |V|/(N0-1)</span><span class="kv-val">${r.D.toFixed(4)}</span></div>
+      <div class="kv-row"><span class="kv-key">adjacent-swap regime</span><span class="kv-val ${fp?'green':'red'}">${fp?'YES':'NO'} (inv≤ν: ${fp})</span></div>
+      <div class="kv-row"><span class="kv-key">boundary activated</span><span class="kv-val ${r.boundary_activated?'gold':'green'}">${r.boundary_activated}</span></div>
+      <div class="kv-row"><span class="kv-key">primary falsifier</span><span class="kv-val ${fp?'green':'red'}">${fp?'PASS':'FAIL'}</span></div>
+      <div class="kv-row"><span class="kv-key">Spearman ρ(L)</span><span class="kv-val">${r.spearman.toFixed(4)}</span></div>
+      <div class="kv-row"><span class="kv-key">Kendall τ(L)</span><span class="kv-val">${r.kendall_tau.toFixed(4)}</span></div>
+    `;
+    // Update gap panel vulnerability highlight
+    buildGapPanel(Delta, N0, r.V);
+    // Update rank panel
+    buildRankPanel(r, null);
+  };
+
+  slider.oninput = () => renderSig(parseInt(slider.value));
+  renderSig(byL.length - 1);
+}
+
+function buildDescentPanel(intervals, L_change_V, L_change_nu) {
+  const el = $('descent-content');
+  let html = '';
+
+  html += `<div style="margin-bottom:8px">
+    <div class="upload-label" style="color:var(--txt3);margin-bottom:4px">DESCENT INTERVALS (Σord constant)</div>
+    ${intervals.map(iv => `<span class="interval-chip">[${iv.L_start}, ${iv.L_end}]</span>`).join('')}
+  </div>`;
+
+  html += `<div style="margin-bottom:8px">
+    <div class="upload-label" style="color:var(--txt3);margin-bottom:4px">STRATA POINTS (V(L) changes)</div>
+    ${L_change_V.length > 0
+      ? L_change_V.map(L => `<span class="strata-chip">L=${L}</span>`).join('')
+      : '<span style="color:var(--txt3);font-family:IBM Plex Mono;font-size:10px">none — V(L) constant</span>'}
+  </div>`;
+
+  html += `<div>
+    <div class="upload-label" style="color:var(--txt3);margin-bottom:4px">BOUNDARY ACTIVATION (ν changes)</div>
+    ${L_change_nu.length > 0
+      ? L_change_nu.map(L => `<span class="strata-chip" style="border-color:var(--purple);color:var(--purple)">L=${L}</span>`).join('')
+      : '<span style="color:var(--txt3);font-family:IBM Plex Mono;font-size:10px">none</span>'}
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+function buildGapPanel(Delta, N0, V_current) {
+  const el = $('gap-content');
+  if (!Delta || Delta.length === 0) {
+    el.innerHTML = '<div class="empty-msg">No baseline gaps (N0 < 2)</div>';
+    return;
+  }
+
+  const vulnSet = V_current ? new Set(V_current) : new Set();
+  const maxDelta = Math.max(...Delta);
+  const vulnCount = V_current ? V_current.length : 0;
+  $('gap-vuln-count').textContent = V_current ? `${vulnCount} vulnerable` : '';
+
+  // Bar chart
+  let bars = '<div class="gap-bar-wrap">';
+  Delta.forEach((d, i) => {
+    const k = i+1;
+    const h = maxDelta > 0 ? Math.max(1, Math.round(40*d/maxDelta)) : 1;
+    const isVuln = vulnSet.has(k);
+    bars += `<div class="gap-bar${isVuln?' vuln':''}" style="height:${h}px" data-tip="k=${k} Δ=${d.toExponential(3)}${isVuln?' VULN':''}"></div>`;
+  });
+  bars += '</div>';
+
+  // Table (first 20 gaps)
+  const shown = Math.min(Delta.length, 20);
+  let table = `<table class="data-table"><thead>
+    <tr><th>k</th><th>Δ_k</th><th>status</th></tr></thead><tbody>`;
+  for (let i=0;i<shown;i++) {
+    const k = i+1;
+    const isVuln = vulnSet.has(k);
+    const cls = isVuln ? 'hi' : '';
+    table += `<tr>
+      <td>${k}</td>
+      <td class="num ${cls}">${Delta[i].toExponential(4)}</td>
+      <td class="${isVuln?'hi':''}"><span style="font-size:9px">${isVuln?'VULNERABLE':''}</span></td>
+    </tr>`;
+  }
+  if (Delta.length > 20) table += `<tr><td colspan="3" style="color:var(--txt3);font-size:9px">… ${Delta.length-20} more</td></tr>`;
+  table += '</tbody></table>';
+
+  el.innerHTML = bars + table;
+}
+
+function buildRankPanel(r, _) {
+  const el = $('rank-content');
+  if (!r) { el.innerHTML = '<div class="empty-msg">Run chamber to populate</div>'; return; }
+
+  const pi0 = runResults?.baseline?.pi_L0 || [];
+  const piL = r.pi_L;
+  const piL0_common = pi0.filter(j => r.commonJ.includes(j));
+
+  // Find inversion pairs for highlighting
+  const posL  = {}; piL.forEach((x,i)  => posL[x]  = i);
+  const posL0 = {}; piL0_common.forEach((x,i) => posL0[x] = i);
+
+  const invPairs = new Set();
+  for (let a=0;a<piL0_common.length;a++) {
+    for (let b=a+1;b<piL0_common.length;b++) {
+      const ia = posL[piL0_common[a]], ib = posL[piL0_common[b]];
+      if (ia !== undefined && ib !== undefined && ia > ib) {
+        invPairs.add(piL0_common[a]);
+        invPairs.add(piL0_common[b]);
+      }
+    }
+  }
+
+  let html = `
+    <div class="kv-row" style="margin-bottom:6px">
+      <span class="kv-key">inv(L=${r.L})</span>
+      <span class="kv-val ${r.inv>0?'red':'green'}">${r.inv}</span>
+    </div>
+    <div style="margin-bottom:8px">
+      <div class="upload-label" style="margin-bottom:3px">π_L0 (baseline order, bin indices)</div>
+      <div class="rank-list">
+        ${piL0_common.map(j=>`<span class="rank-chip${invPairs.has(j)?' inv-pair':''}">${j}</span>`).join('')}
+      </div>
+    </div>
+    <div style="margin-bottom:8px">
+      <div class="upload-label" style="margin-bottom:3px">π_L (current order, bin indices)</div>
+      <div class="rank-list">
+        ${piL.map(j=>`<span class="rank-chip${invPairs.has(j)?' inv-pair':''}">${j}</span>`).join('')}
+      </div>
+    </div>`;
+
+  if (r.inv > 0) {
+    html += `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--red);margin-top:4px">
+      ⚠ ${r.inv} inversion(s) — highlighted in red above
+    </div>`;
+  }
+
+  // Benchmark
+  html += `<div class="kv-row" style="margin-top:8px">
+    <span class="kv-key">Spearman ρ</span><span class="kv-val">${r.spearman.toFixed(5)}</span>
+  </div>
+  <div class="kv-row">
+    <span class="kv-key">Kendall τ</span><span class="kv-val">${r.kendall_tau.toFixed(5)}</span>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ─── Clear ───
+function clearChamber() {
+  specData = binsData = runResults = null;
+  $('file-spec').value = $('file-bins').value = '';
+  ['ua-spec','ua-bins'].forEach(id => $(id).classList.remove('loaded'));
+  ['us-spec','us-bins'].forEach(id => {
+    $(id).className = 'upload-status';
+    $(id).textContent = '— no file loaded —';
+  });
+  $('btn-run').disabled = true;
+  $('btn-export').disabled = true;
+  setProgress(0);
+  $('log').innerHTML = '<span class="log-info">Cleared. Load spectrum + bin edges to begin.</span>';
+  ['card-overall','card-descent','card-ba','card-falsifier'].forEach(id => {
+    $(id).textContent = '—'; $(id).className = 'card-value cv-neutral';
+  });
+  ['card-overall-sub','card-descent-sub'].forEach(id => $(id).textContent = '—');
+  $('card-ba-sub').textContent = 'ν(V(L)) > 0';
+  $('card-falsifier-sub').textContent = 'inv(L) > ν(V(L))';
+  $('sig-content').innerHTML = '<div class="empty-msg">Run chamber to populate</div>';
+  $('sig-slider-wrap').style.display = 'none';
+  $('descent-content').innerHTML = '<div class="empty-msg">Run chamber to populate</div>';
+  $('gap-content').innerHTML = '<div class="empty-msg">Run chamber to populate</div>';
+  $('rank-content').innerHTML = '<div class="empty-msg">Run chamber to populate</div>';
+  $('gap-vuln-count').textContent = '';
+  $('sigpanel-l').textContent = 'L = —';
+  $('pr-l0').textContent = $('pr-range').textContent = '—';
+  $('pr-bins').textContent = '—';
+  ['inv-interface','inv-operator','inv-baseline','inv-falsifier'].forEach(id => {
+    $(id).className = 'inv-badge inv-off';
+    $(id).textContent = id.replace('inv-','').toUpperCase() + ' —';
+  });
+}
+
+// ─── Export JSON ───
+function exportJSON() {
+  if (!runResults) return;
+  const ts = new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+  const blob = new Blob([JSON.stringify(runResults, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cmb-spectra-sigma_v0.1.0_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  log(`Exported: cmb-spectra-sigma_v0.1.0_${ts}.json`, 'log-ok');
+}
+</script>
+</body>
+</html>

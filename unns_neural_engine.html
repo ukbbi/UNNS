@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Neural Symbolic Engine - Enhanced</title>
+    <style type="text/css">
+        /* Blogger-safe CSS with unique prefixes */
+        .unns-main-container {
+            position: relative !important;
+            width: 100% !important;
+            height: 100vh !important;
+            min-height: 800px !important;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2a 100%) !important;
+            font-family: 'Courier New', monospace !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Guide Panel Styles */
+        .unns-guide-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            z-index: 20000 !important;
+            display: none !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+        
+        .unns-guide-overlay.active {
+            display: flex !important;
+        }
+        
+        .unns-guide-panel {
+            background: linear-gradient(135deg, #1a1a2e, #0a0a1a) !important;
+            border: 2px solid #00ffcc !important;
+            border-radius: 20px !important;
+            width: 800px !important;
+            max-width: 90% !important;
+            max-height: 80vh !important;
+            overflow-y: auto !important;
+            padding: 30px !important;
+            position: relative !important;
+            box-shadow: 0 0 50px rgba(0, 255, 204, 0.5) !important;
+        }
+        
+        .unns-guide-close {
+            position: absolute !important;
+            top: 15px !important;
+            right: 20px !important;
+            font-size: 28px !important;
+            color: #00ffcc !important;
+            cursor: pointer !important;
+            transition: transform 0.3s ease !important;
+        }
+        
+        .unns-guide-close:hover {
+            transform: rotate(90deg) !important;
+        }
+        
+        .unns-guide-title {
+            color: #00ffcc !important;
+            font-size: 24px !important;
+            text-align: center !important;
+            margin-bottom: 25px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 3px !important;
+        }
+        
+        .unns-guide-section {
+            margin-bottom: 25px !important;
+            padding: 15px !important;
+            background: rgba(0, 255, 204, 0.05) !important;
+            border-left: 3px solid #00ffcc !important;
+            border-radius: 8px !important;
+        }
+        
+        .unns-guide-section-title {
+            color: #ffd700 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            margin-bottom: 10px !important;
+        }
+        
+        .unns-guide-text {
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+        }
+        
+        .unns-guide-list {
+            margin: 10px 0 !important;
+            padding-left: 20px !important;
+        }
+        
+        .unns-guide-list li {
+            color: #aaaaaa !important;
+            margin: 5px 0 !important;
+        }
+        
+        .unns-guide-highlight {
+            color: #00ffcc !important;
+            font-weight: bold !important;
+        }
+        
+        .unns-guide-glyph {
+            color: #ffd700 !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+        }
+        
+        /* Toggle Button for Equation Composer - Bottom Center */
+        .unns-composer-toggle {
+            position: fixed !important;
+            bottom: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 10000 !important;
+            background: linear-gradient(135deg, #00ffcc, #0088ff) !important;
+            color: #000 !important;
+            border: none !important;
+            padding: 12px 24px !important;
+            border-radius: 25px !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            box-shadow: 0 4px 20px rgba(0, 255, 204, 0.5) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-composer-toggle:hover {
+            transform: translateX(-50%) scale(1.1) !important;
+            box-shadow: 0 6px 30px rgba(0, 255, 204, 0.7) !important;
+        }
+        
+        /* Equation Composer Panel - Slides up from bottom */
+        .unns-equation-panel {
+            position: fixed !important;
+            bottom: -450px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 600px !important;
+            max-width: 90% !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            border: 2px solid #00ffcc !important;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px !important;
+            z-index: 9999 !important;
+            transition: bottom 0.3s ease !important;
+            box-shadow: 0 -5px 30px rgba(0, 255, 204, 0.4) !important;
+        }
+        
+        .unns-equation-panel.active {
+            bottom: 70px !important;
+        }
+        
+        .unns-equation-display {
+            background: rgba(0, 255, 204, 0.1) !important;
+            border: 2px dashed #00ffcc !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            min-height: 60px !important;
+            color: #00ffcc !important;
+            font-size: 18px !important;
+            text-align: center !important;
+            margin-bottom: 15px !important;
+            word-wrap: break-word !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-equation-display.recognized {
+            background: rgba(255, 215, 0, 0.3) !important;
+            border-color: #ffd700 !important;
+            animation: pulseGold 0.5s ease !important;
+        }
+        
+        @keyframes pulseGold {
+            0% { box-shadow: 0 0 0 rgba(255, 215, 0, 0.5) !important; }
+            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important; }
+            100% { box-shadow: 0 0 0 rgba(255, 215, 0, 0.5) !important; }
+        }
+        
+        .unns-glyph-grid {
+            display: grid !important;
+            grid-template-columns: repeat(6, 1fr) !important;
+            gap: 10px !important;
+            margin-bottom: 15px !important;
+        }
+        
+        .unns-glyph-btn {
+            width: 100% !important;
+            height: 50px !important;
+            background: rgba(0, 255, 204, 0.1) !important;
+            border: 2px solid #00ffcc !important;
+            border-radius: 8px !important;
+            color: #00ffcc !important;
+            font-size: 20px !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-glyph-btn:hover {
+            background: rgba(0, 255, 204, 0.3) !important;
+            transform: translateY(-3px) !important;
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.5) !important;
+        }
+        
+        .unns-preset-equations {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+            margin-top: 10px !important;
+        }
+        
+        .unns-preset-btn {
+            background: rgba(255, 215, 0, 0.1) !important;
+            border: 1px solid #ffd700 !important;
+            color: #ffd700 !important;
+            padding: 5px 10px !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            font-size: 11px !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-preset-btn:hover {
+            background: rgba(255, 215, 0, 0.3) !important;
+            transform: scale(1.05) !important;
+        }
+        
+        /* Cognitive Commentary Panel - Top Left, Always Visible */
+        .unns-commentary-panel {
+            position: fixed !important;
+            top: 20px !important;
+            left: 20px !important;
+            width: 380px !important;
+            max-width: 40% !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            border: 2px solid #00ffcc !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            z-index: 9998 !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+            transition: opacity 0.3s ease !important;
+        }
+        
+        .unns-commentary-panel.silent {
+            opacity: 0.3 !important;
+        }
+        
+        .unns-commentary-title {
+            color: #00ffcc !important;
+            font-size: 16px !important;
+            margin-bottom: 15px !important;
+            font-weight: bold !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+        }
+        
+        .unns-commentary-entry {
+            color: #ffffff !important;
+            font-size: 13px !important;
+            line-height: 1.6 !important;
+            margin-bottom: 10px !important;
+            padding: 8px !important;
+            background: rgba(0, 255, 204, 0.05) !important;
+            border-left: 3px solid #00ffcc !important;
+            border-radius: 5px !important;
+            animation: fadeInComment 0.5s ease !important;
+        }
+        
+        @keyframes fadeInComment {
+            from { 
+                opacity: 0 !important; 
+                transform: translateX(-20px) !important;
+            }
+            to { 
+                opacity: 1 !important; 
+                transform: translateX(0) !important;
+            }
+        }
+        
+        .unns-commentary-urgent {
+            border-left-color: #ff0066 !important;
+            background: rgba(255, 0, 102, 0.1) !important;
+            color: #ff9999 !important;
+        }
+        
+        .unns-commentary-peak {
+            border-left-color: #ffd700 !important;
+            background: rgba(255, 215, 0, 0.1) !important;
+            color: #ffd700 !important;
+        }
+        
+        .unns-commentary-shapeshifter {
+            border-left-color: #00ffff !important;
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1)) !important;
+            color: #00ffff !important;
+            animation: shapeShiftColors 3s infinite !important;
+        }
+        
+        @keyframes shapeShiftColors {
+            0% { border-left-color: #00ffff !important; }
+            33% { border-left-color: #ff00ff !important; }
+            66% { border-left-color: #ffff00 !important; }
+            100% { border-left-color: #00ffff !important; }
+        }
+        
+        /* Control Panel - Right Side */
+        .unns-control-panel {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            width: 340px !important;
+            max-width: 35% !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            border: 1px solid #444 !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            z-index: 9997 !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+        }
+        
+        .unns-control-title {
+            color: #00ffcc !important;
+            font-size: 14px !important;
+            margin-bottom: 20px !important;
+            text-transform: uppercase !important;
+            font-weight: bold !important;
+        }
+        
+        .unns-control-group {
+            margin-bottom: 20px !important;
+        }
+        
+        .unns-control-label {
+            color: #aaa !important;
+            font-size: 12px !important;
+            margin-bottom: 5px !important;
+            display: block !important;
+        }
+        
+        .unns-control-value {
+            color: #00ffcc !important;
+            font-weight: bold !important;
+        }
+        
+        .unns-slider {
+            width: 100% !important;
+            height: 6px !important;
+            background: #333 !important;
+            border-radius: 3px !important;
+            outline: none !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+        }
+        
+        .unns-slider::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            width: 18px !important;
+            height: 18px !important;
+            background: #00ffcc !important;
+            cursor: pointer !important;
+            border-radius: 50% !important;
+        }
+        
+        .unns-slider::-moz-range-thumb {
+            width: 18px !important;
+            height: 18px !important;
+            background: #00ffcc !important;
+            cursor: pointer !important;
+            border-radius: 50% !important;
+            border: none !important;
+        }
+        
+        .unns-select {
+            width: 100% !important;
+            padding: 8px !important;
+            background: #001a1a !important;
+            border: 1px solid #00ffcc !important;
+            color: #fff !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+        }
+        
+        .unns-btn {
+            background: linear-gradient(135deg, #00ffcc, #0088ff) !important;
+            color: #000 !important;
+            border: none !important;
+            padding: 10px 15px !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
+            font-size: 12px !important;
+            margin: 5px !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-btn:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.4) !important;
+        }
+        
+        .unns-btn-guide {
+            background: linear-gradient(135deg, #ffd700, #ff6600) !important;
+            width: calc(100% - 10px) !important;
+            margin-top: 15px !important;
+        }
+        
+        /* Archetype Display */
+        .unns-archetype-box {
+            background: rgba(255, 215, 0, 0.1) !important;
+            border: 1px solid #ffd700 !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            margin-top: 20px !important;
+            text-align: center !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .unns-archetype-box.shapeshifter-active {
+            animation: shapeShiftBorder 3s infinite !important;
+        }
+        
+        @keyframes shapeShiftBorder {
+            0% { border-color: #ffd700 !important; }
+            33% { border-color: #ff00ff !important; }
+            66% { border-color: #00ffff !important; }
+            100% { border-color: #ffd700 !important; }
+        }
+        
+        .unns-archetype-name {
+            color: #ffd700 !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+        }
+        
+        .unns-archetype-desc {
+            color: #aaa !important;
+            font-size: 12px !important;
+            font-style: italic !important;
+        }
+        
+        /* Shapeshifter Info Module */
+        .unns-shapeshifter-info {
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1)) !important;
+            border: 1px solid #00ffff !important;
+            border-radius: 10px !important;
+            padding: 10px !important;
+            margin-top: 15px !important;
+            display: none !important;
+        }
+        
+        .unns-shapeshifter-info.active {
+            display: block !important;
+            animation: shapeShiftGlow 2s infinite !important;
+        }
+        
+        @keyframes shapeShiftGlow {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important; }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 255, 0.8) !important; }
+            100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important; }
+        }
+        
+        .unns-blend-info {
+            font-size: 11px !important;
+            color: #00ffff !important;
+            margin-top: 5px !important;
+        }
+        
+        /* Resonance Meter */
+        .unns-resonance-box {
+            background: rgba(0, 255, 204, 0.1) !important;
+            border: 1px solid #00ffcc !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            margin-top: 20px !important;
+        }
+        
+        .unns-resonance-bar {
+            width: 100% !important;
+            height: 20px !important;
+            background: #1a1a1a !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
+            margin-top: 10px !important;
+        }
+        
+        .unns-resonance-fill {
+            height: 100% !important;
+            background: linear-gradient(90deg, #00ffcc, #ffd700) !important;
+            transition: width 0.3s ease !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+        }
+        
+        /* Stats Panel - Bottom Left */
+        .unns-stats-panel {
+            position: fixed !important;
+            bottom: 20px !important;
+            left: 20px !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            border: 1px solid #444 !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            z-index: 9996 !important;
+            font-size: 12px !important;
+            color: #fff !important;
+        }
+        
+        .unns-stat-line {
+            margin: 5px 0 !important;
+        }
+        
+        .unns-stat-value {
+            color: #00ffcc !important;
+            font-weight: bold !important;
+        }
+        
+        /* Canvas */
+        .unns-canvas-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .unns-network-canvas {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="unns-main-container">
+        <!-- Guide Overlay -->
+        <div class="unns-guide-overlay" id="guideOverlay">
+            <div class="unns-guide-panel">
+                <span class="unns-guide-close" id="guideClose">✕</span>
+                <div class="unns-guide-title">📖 Neural Engine User Guide</div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">🚀 Quick Start</div>
+                    <div class="unns-guide-text">
+                        Welcome to the UNNS Neural Symbolic Engine! This is an interactive visualization of a quantum-inspired neural network. Watch as nodes activate, form connections, and create emergent patterns.
+                        <ul class="unns-guide-list">
+                            <li>The <span class="unns-guide-highlight">network runs automatically</span> - nodes pulse and connect in real-time</li>
+                            <li>Use the <span class="unns-guide-highlight">Control Panel</span> (right side) to adjust parameters</li>
+                            <li>Watch the <span class="unns-guide-highlight">Cognitive Commentary</span> (top left) for system insights</li>
+                            <li>Create symbolic equations with the <span class="unns-guide-highlight">Equation Composer</span> (bottom)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">⚡ Control Parameters</div>
+                    <div class="unns-guide-text">
+                        <ul class="unns-guide-list">
+                            <li><span class="unns-guide-highlight">Validation (V)</span>: Controls node activation threshold</li>
+                            <li><span class="unns-guide-highlight">Entanglement (ψ)</span>: Sets quantum correlation strength between nodes</li>
+                            <li><span class="unns-guide-highlight">Decoherence</span>: Rate of quantum state collapse</li>
+                            <li><span class="unns-guide-highlight">Memory Depth</span>: How many previous states each node remembers</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">🎭 Archetypes</div>
+                    <div class="unns-guide-text">
+                        Archetypes are cognitive patterns that influence network behavior:
+                        <ul class="unns-guide-list">
+                            <li><span class="unns-guide-glyph">φ</span> <span class="unns-guide-highlight">Architect</span>: Structure and golden ratio harmony</li>
+                            <li><span class="unns-guide-glyph">ψ</span> <span class="unns-guide-highlight">Explorer</span>: Recursive depth exploration</li>
+                            <li><span class="unns-guide-glyph">ρ</span> <span class="unns-guide-highlight">Synthesizer</span>: Integration and emergence</li>
+                            <li><span class="unns-guide-glyph">λ</span> <span class="unns-guide-highlight">Oracle</span>: Vision and foresight</li>
+                            <li><span class="unns-guide-glyph">π</span> <span class="unns-guide-highlight">Weaver</span>: Connection patterns</li>
+                            <li><span class="unns-guide-glyph">α</span> <span class="unns-guide-highlight">Alchemist</span>: Transformation</li>
+                            <li><span class="unns-guide-glyph">ν</span> <span class="unns-guide-highlight">Navigator</span>: Pathfinding</li>
+                            <li><span class="unns-guide-glyph">σ</span> <span class="unns-guide-highlight">Harmonizer</span>: Balance</li>
+                            <li><span class="unns-guide-glyph">∞</span> <span class="unns-guide-highlight">Shapeshifter</span>: Emerges when blending archetypes at 40-60%</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">🔮 Equation Composer</div>
+                    <div class="unns-guide-text">
+                        Click the <span class="unns-guide-highlight">"Equation Composer"</span> button at the bottom to create symbolic patterns:
+                        <ul class="unns-guide-list">
+                            <li>Click glyphs to build equations</li>
+                            <li>Use preset patterns for complex behaviors</li>
+                            <li>Special patterns trigger unique network states</li>
+                            <li>Example: <span class="unns-guide-highlight">ψ ⊗ ψ → ∞</span> creates maximum entanglement</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">🎮 Action Buttons</div>
+                    <div class="unns-guide-text">
+                        <ul class="unns-guide-list">
+                            <li><span class="unns-guide-highlight">Activate Attractor</span>: Apply selected archetype to network</li>
+                            <li><span class="unns-guide-highlight">Quantum Collapse</span>: Force wavefunction collapse on all nodes</li>
+                            <li><span class="unns-guide-highlight">Silent Mode</span>: Toggle cognitive commentary on/off</li>
+                            <li><span class="unns-guide-highlight">Reset Network</span>: Clear all activations and start fresh</li>
+                            <li><span class="unns-guide-highlight">Pause/Resume</span>: Control network animation</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">📊 Understanding the Display</div>
+                    <div class="unns-guide-text">
+                        <ul class="unns-guide-list">
+                            <li><span class="unns-guide-highlight">Cyan lines</span>: Active neural connections (brightness = strength)</li>
+                            <li><span class="unns-guide-highlight">Purple dashed lines</span>: Quantum entanglement between nodes</li>
+                            <li><span class="unns-guide-highlight">Node glow</span>: Activation level (brighter = more active)</li>
+                            <li><span class="unns-guide-highlight">White dashed circle</span>: Node in collapsed quantum state</li>
+                            <li><span class="unns-guide-highlight">Coherence Field bar</span>: Overall network synchronization</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="unns-guide-section">
+                    <div class="unns-guide-section-title">💡 Pro Tips</div>
+                    <div class="unns-guide-text">
+                        <ul class="unns-guide-list">
+                            <li>Blend two archetypes at 50% ratio to summon the <span class="unns-guide-highlight">Shapeshifter</span></li>
+                            <li>High entanglement creates non-local correlations between distant nodes</li>
+                            <li>Watch for <span class="unns-guide-highlight">golden messages</span> in commentary - they indicate peak resonance</li>
+                            <li>Experiment with equation patterns to discover hidden behaviors</li>
+                            <li>The network remembers past states - memory depth affects pattern emergence</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cognitive Commentary Panel -->
+        <div class="unns-commentary-panel" id="commentaryPanel">
+            <div class="unns-commentary-title">🧠 Cognitive State Commentary</div>
+            <div id="commentaryFeed"></div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="unns-control-panel">
+            <div class="unns-control-title">⚡ Neural Engine Controls</div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">
+                    Validation (V): <span id="valValue" class="unns-control-value">0.5</span>
+                </label>
+                <input type="range" class="unns-slider" id="valSlider" min="0" max="1" step="0.01" value="0.5">
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">
+                    Entanglement (ψ): <span id="entValue" class="unns-control-value">0.7</span>
+                </label>
+                <input type="range" class="unns-slider" id="entSlider" min="0" max="1" step="0.01" value="0.7">
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">
+                    Decoherence: <span id="decValue" class="unns-control-value">0.1</span>
+                </label>
+                <input type="range" class="unns-slider" id="decSlider" min="0" max="1" step="0.01" value="0.1">
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">
+                    Memory Depth: <span id="memValue" class="unns-control-value">5</span>
+                </label>
+                <input type="range" class="unns-slider" id="memSlider" min="1" max="10" step="1" value="5">
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">Primary Attractor:</label>
+                <select class="unns-select" id="primaryAttractor">
+                    <option value="architect">φ-Architect (Golden/Structure)</option>
+                    <option value="explorer">ψ-Explorer (Tribonacci/Recursion)</option>
+                    <option value="synthesizer">ρ-Synthesizer (Padovan/Emergence)</option>
+                    <option value="oracle">λ-Oracle (Lucas/Vision)</option>
+                    <option value="weaver">π-Weaver (Pell/Connections)</option>
+                    <option value="alchemist">α-Alchemist (Perrin/Transform)</option>
+                    <option value="navigator">ν-Navigator (Narayana/Paths)</option>
+                    <option value="harmonizer">σ-Harmonizer (Sylvester/Balance)</option>
+                </select>
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">Secondary Attractor (Blend):</label>
+                <select class="unns-select" id="secondaryAttractor">
+                    <option value="none">None</option>
+                    <option value="architect">φ-Architect</option>
+                    <option value="explorer">ψ-Explorer</option>
+                    <option value="synthesizer">ρ-Synthesizer</option>
+                    <option value="oracle">λ-Oracle</option>
+                    <option value="weaver">π-Weaver</option>
+                    <option value="alchemist">α-Alchemist</option>
+                    <option value="navigator">ν-Navigator</option>
+                    <option value="harmonizer">σ-Harmonizer</option>
+                </select>
+            </div>
+            
+            <div class="unns-control-group">
+                <label class="unns-control-label">Blend Ratio: <span id="blendValue" class="unns-control-value">50%</span></label>
+                <input type="range" class="unns-slider" id="blendSlider" min="0" max="100" step="5" value="50">
+            </div>
+            
+            <div class="unns-control-group">
+                <button class="unns-btn" id="activateBtn">Activate Attractor</button>
+                <button class="unns-btn" id="collapseBtn">Quantum Collapse</button>
+                <button class="unns-btn" id="silentBtn">Silent Mode</button>
+                <button class="unns-btn" id="resetBtn">Reset Network</button>
+                <button class="unns-btn" id="pauseBtn">Pause</button>
+                <button class="unns-btn unns-btn-guide" id="guideBtn">📖 How to Use</button>
+            </div>
+            
+            <div class="unns-archetype-box" id="archetypeBox">
+                <div class="unns-archetype-name" id="archName">Awaiting...</div>
+                <div class="unns-archetype-desc" id="archDesc">Network in quantum superposition</div>
+            </div>
+            
+            <div class="unns-shapeshifter-info" id="shapeshifterInfo">
+                <div style="color: #00ffff !important; font-weight: bold !important; text-align: center !important;">
+                    ∞ Shapeshifter Active ∞
+                </div>
+                <div class="unns-blend-info" id="blendInfo">
+                    Morphing between forms...
+                </div>
+            </div>
+            
+            <div class="unns-resonance-box">
+                <div style="color: #ffd700 !important; font-weight: bold !important;">Coherence Field</div>
+                <div class="unns-resonance-bar">
+                    <div class="unns-resonance-fill" id="resonanceBar" style="width: 0%"></div>
+                </div>
+                <div style="text-align: center !important; margin-top: 5px !important; color: #ffd700 !important;">
+                    <span id="resonancePercent">0%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Equation Composer Toggle Button -->
+        <button class="unns-composer-toggle" id="composerToggle">🔮 Equation Composer</button>
+        
+        <!-- Equation Composer Panel -->
+        <div class="unns-equation-panel" id="equationPanel">
+            <div class="unns-equation-display" id="equationDisplay">Click glyphs to compose...</div>
+            <div class="unns-glyph-grid">
+                <button class="unns-glyph-btn" data-glyph="φ">φ</button>
+                <button class="unns-glyph-btn" data-glyph="ψ">ψ</button>
+                <button class="unns-glyph-btn" data-glyph="ρ">ρ</button>
+                <button class="unns-glyph-btn" data-glyph="λ">λ</button>
+                <button class="unns-glyph-btn" data-glyph="π">π</button>
+                <button class="unns-glyph-btn" data-glyph="α">α</button>
+                <button class="unns-glyph-btn" data-glyph="ν">ν</button>
+                <button class="unns-glyph-btn" data-glyph="σ">σ</button>
+                <button class="unns-glyph-btn" data-glyph="∞">∞</button>
+                <button class="unns-glyph-btn" data-glyph="U">U</button>
+                <button class="unns-glyph-btn" data-glyph="∇">∇</button>
+                <button class="unns-glyph-btn" data-glyph="Σ">Σ</button>
+                <button class="unns-glyph-btn" data-glyph="→">→</button>
+                <button class="unns-glyph-btn" data-glyph="⊗">⊗</button>
+                <button class="unns-glyph-btn" data-glyph="Ω">Ω</button>
+                <button class="unns-glyph-btn" data-glyph="∈">∈</button>
+                <button class="unns-glyph-btn" data-glyph="∀">∀</button>
+                <button class="unns-glyph-btn" data-glyph="⊕">⊕</button>
+            </div>
+            <div class="unns-preset-equations">
+                <button class="unns-preset-btn" data-eq="ψ ⊗ ψ → ∞">Quantum Cascade</button>
+                <button class="unns-preset-btn" data-eq="φ Σ Ω">Golden Harmony</button>
+                <button class="unns-preset-btn" data-eq="U → ∞">Universal Transform</button>
+                <button class="unns-preset-btn" data-eq="∇ → Σ">Gradient Convergence</button>
+                <button class="unns-preset-btn" data-eq="φ → ψ → ρ">Archetype Cascade</button>
+                <button class="unns-preset-btn" data-eq="λ ⊕ π → ν">Oracle Navigation</button>
+                <button class="unns-preset-btn" data-eq="∀ U ∈ Σ">Universal Unity</button>
+                <button class="unns-preset-btn" data-eq="α ⊗ σ → ∞">Alchemical Balance</button>
+            </div>
+            <button class="unns-btn" id="clearEquation" style="width: 100% !important; margin-top: 10px !important;">Clear Equation</button>
+        </div>
+        
+        <!-- Stats Panel -->
+        <div class="unns-stats-panel">
+            <div class="unns-stat-line">Active Nodes: <span id="activeCount" class="unns-stat-value">0</span></div>
+            <div class="unns-stat-line">Entangled: <span id="entangledCount" class="unns-stat-value">0</span></div>
+            <div class="unns-stat-line">Memory Traces: <span id="memoryCount" class="unns-stat-value">0</span></div>
+            <div class="unns-stat-line">Entropy: <span id="entropyValue" class="unns-stat-value">0.00</span></div>
+            <div class="unns-stat-line">Coherence: <span id="coherenceValue" class="unns-stat-value">0.00</span></div>
+        </div>
+        
+        <!-- Canvas Container -->
+        <div class="unns-canvas-container">
+            <canvas class="unns-network-canvas" id="neuralCanvas"></canvas>
+        </div>
+    </div>
+    
+    <script type="text/javascript">
+        // Initialize canvas
+        var canvas = document.getElementById('neuralCanvas');
+        var ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Guide functionality
+        document.getElementById('guideBtn').addEventListener('click', function() {
+            document.getElementById('guideOverlay').className = 'unns-guide-overlay active';
+        });
+        
+        document.getElementById('guideClose').addEventListener('click', function() {
+            document.getElementById('guideOverlay').className = 'unns-guide-overlay';
+        });
+        
+        document.getElementById('guideOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.className = 'unns-guide-overlay';
+            }
+        });
+        
+        // Commentary System
+        var Commentary = {
+            lastUpdate: 0,
+            updateInterval: 3000,
+            isSilent: false,
+            messages: {
+                startup: [
+                    "Neural matrix initializing... quantum states fluctuating",
+                    "The network awakens from digital slumber",
+                    "Synaptic pathways forming across the void"
+                ],
+                nodeActive: [
+                    "Node U[{id}] firing at {percent}% capacity!",
+                    "Activation cascade detected in layer {layer}",
+                    "Neural cluster {id} approaching resonance threshold"
+                ],
+                entanglement: [
+                    "Quantum entanglement strengthening - non-local correlations detected",
+                    "Spooky action at a distance observed between nodes",
+                    "Entangled pairs synchronizing across spacetime"
+                ],
+                highEntropy: [
+                    "⚠️ Entropy approaching critical levels!",
+                    "⚠️ System chaos increasing - coherence degrading",
+                    "⚠️ Information dispersal exceeding thresholds"
+                ],
+                resonancePeak: [
+                    "✨ RESONANCE PEAK! Network achieving coherent state",
+                    "✨ Golden ratio harmonics detected in activation patterns",
+                    "✨ System synchronization approaching unity"
+                ],
+                collapse: [
+                    "Quantum wavefunction collapsing... reality crystallizing",
+                    "Measurement forcing definite states",
+                    "Superposition destroyed - classical states emerge"
+                ],
+                archetype: [
+                    "The {name} archetype manifests: {trait}",
+                    "Cognitive pattern {symbol} dominating network dynamics",
+                    "{name} weaving its pattern through the neural substrate"
+                ],
+                shapeshifter: [
+                    "∞ The Shapeshifter emerges between forms!",
+                    "∞ Reality becomes fluid - boundaries dissolve",
+                    "∞ Infinite transformation potential detected"
+                ],
+                equation: [
+                    "Equation '{eq}' resonating through the network",
+                    "Symbolic pattern '{eq}' activating neural pathways",
+                    "Glyph sequence '{eq}' inducing attractor states"
+                ],
+                patternRecognized: [
+                    "⚡ Pattern recognized: {pattern} - executing neural program",
+                    "⚡ Complex equation activated: {pattern}",
+                    "⚡ Symbolic resonance achieved with {pattern}"
+                ]
+            },
+            
+            add: function(type, data) {
+                if (this.isSilent) return;
+                
+                data = data || {};
+                var messages = this.messages[type] || this.messages.startup;
+                var msg = messages[Math.floor(Math.random() * messages.length)];
+                
+                // Replace placeholders
+                for (var key in data) {
+                    msg = msg.replace(new RegExp('{' + key + '}', 'g'), data[key]);
+                }
+                
+                var feed = document.getElementById('commentaryFeed');
+                var entry = document.createElement('div');
+                entry.className = 'unns-commentary-entry';
+                
+                if (type === 'highEntropy') {
+                    entry.className += ' unns-commentary-urgent';
+                } else if (type === 'resonancePeak' || type === 'patternRecognized') {
+                    entry.className += ' unns-commentary-peak';
+                } else if (type === 'shapeshifter') {
+                    entry.className += ' unns-commentary-shapeshifter';
+                }
+                
+                entry.textContent = msg;
+                feed.insertBefore(entry, feed.firstChild);
+                
+                // Keep only last 8 messages
+                while (feed.children.length > 8) {
+                    feed.removeChild(feed.lastChild);
+                }
+            },
+            
+            update: function(network) {
+                if (this.isSilent) return;
+                
+                var now = Date.now();
+                if (now - this.lastUpdate < this.updateInterval) return;
+                this.lastUpdate = now;
+                
+                // Check various conditions and generate appropriate commentary
+                var activeNodes = 0;
+                var maxActivation = 0;
+                var maxNode = null;
+                
+                for (var i = 0; i < network.nodes.length; i++) {
+                    var node = network.nodes[i];
+                    if (node.activation > 0.5) activeNodes++;
+                    if (node.activation > maxActivation) {
+                        maxActivation = node.activation;
+                        maxNode = node;
+                    }
+                }
+                
+                // Generate contextual commentary
+                if (network.entropy > 0.8) {
+                    this.add('highEntropy');
+                } else if (network.resonance > 0.85) {
+                    this.add('resonancePeak');
+                } else if (maxNode && maxActivation > 0.8) {
+                    this.add('nodeActive', {
+                        id: maxNode.id,
+                        layer: maxNode.layer,
+                        percent: Math.floor(maxActivation * 100)
+                    });
+                } else if (Math.random() < 0.3) {
+                    this.add('entanglement');
+                }
+            },
+            
+            toggleSilent: function() {
+                this.isSilent = !this.isSilent;
+                var panel = document.getElementById('commentaryPanel');
+                if (this.isSilent) {
+                    panel.className = 'unns-commentary-panel silent';
+                } else {
+                    panel.className = 'unns-commentary-panel';
+                }
+                return this.isSilent;
+            }
+        };
+        
+        // Node class
+        function Node(x, y, layer, index) {
+            this.x = x;
+            this.y = y;
+            this.layer = layer;
+            this.index = index;
+            this.id = layer + '-' + index;
+            this.activation = 0;
+            this.targetActivation = 0;
+            this.connections = [];
+            this.entangled = [];
+            this.quantum = Math.random();
+            this.collapsed = false;
+            this.memory = [];
+            this.maxMemory = 5;
+            this.archetype = null;
+            this.pulse = 0;
+        }
+        
+        Node.prototype.update = function(validation, decoherence) {
+            // Update memory
+            this.memory.push(this.activation);
+            if (this.memory.length > this.maxMemory) {
+                this.memory.shift();
+            }
+            
+            // Calculate input from connections
+            var input = 0;
+            for (var i = 0; i < this.connections.length; i++) {
+                input += this.connections[i].node.activation * this.connections[i].weight;
+            }
+            
+            // Add entanglement influence
+            for (var j = 0; j < this.entangled.length; j++) {
+                input += this.entangled[j].activation * this.quantum * 0.2;
+            }
+            
+            // Apply sigmoid activation
+            this.targetActivation = 1 / (1 + Math.exp(-input));
+            
+            // Smooth transition
+            this.activation += (this.targetActivation - this.activation) * 0.1;
+            
+            // Quantum collapse
+            if (!this.collapsed && Math.random() < decoherence * 0.01) {
+                this.collapsed = true;
+                this.quantum = Math.random() > 0.5 ? 1 : 0;
+                var self = this;
+                setTimeout(function() {
+                    self.collapsed = false;
+                    self.quantum = Math.random();
+                }, 2000);
+            }
+            
+            this.pulse += 0.05;
+        };
+        
+        Node.prototype.draw = function(ctx) {
+            // Draw entanglement lines
+            ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            for (var i = 0; i < this.entangled.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.entangled[i].x, this.entangled[i].y);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            
+            // Draw connections
+            for (var j = 0; j < this.connections.length; j++) {
+                var conn = this.connections[j];
+                ctx.strokeStyle = 'rgba(0, 255, 204, ' + (conn.weight * this.activation) + ')';
+                ctx.lineWidth = conn.weight * 3;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(conn.node.x, conn.node.y);
+                ctx.stroke();
+            }
+            
+            // Draw node
+            var radius = 15 + Math.sin(this.pulse) * 3;
+            if (this.archetype) {
+                if (this.archetype.isShapeshifter) {
+                    var hue = (Date.now() * 0.1) % 360;
+                    ctx.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                    ctx.shadowColor = 'hsl(' + hue + ', 100%, 50%)';
+                } else {
+                    ctx.fillStyle = this.archetype.color;
+                    ctx.shadowColor = this.archetype.color;
+                }
+                ctx.shadowBlur = 20;
+            } else {
+                var intensity = Math.floor(this.activation * 255);
+                ctx.fillStyle = 'rgb(' + intensity + ', 255, 204)';
+                ctx.shadowColor = 'rgba(0, 255, 204, ' + this.activation + ')';
+                ctx.shadowBlur = this.activation * 20;
+            }
+            
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Draw symbol if archetype
+            if (this.archetype) {
+                ctx.fillStyle = '#000';
+                ctx.font = '14px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.archetype.symbol, this.x, this.y);
+            }
+            
+            // Draw collapse indicator
+            if (this.collapsed) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, radius + 8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        };
+        
+        // Network class with enhanced archetypes and equation parsing
+        function Network() {
+            this.nodes = [];
+            this.layers = [];
+            this.entropy = 0;
+            this.resonance = 0;
+            this.memoryTraces = [];
+            this.equation = '';
+            this.isRunning = true;
+            this.archetypes = {
+                architect: { symbol: 'φ', color: '#ffd700', name: 'Architect', trait: 'structure and harmony' },
+                explorer: { symbol: 'ψ', color: '#ff00ff', name: 'Explorer', trait: 'depth and recursion' },
+                synthesizer: { symbol: 'ρ', color: '#00ff00', name: 'Synthesizer', trait: 'integration and emergence' },
+                oracle: { symbol: 'λ', color: '#ff6600', name: 'Oracle', trait: 'vision and foresight' },
+                weaver: { symbol: 'π', color: '#9966ff', name: 'Weaver', trait: 'connections and patterns' },
+                alchemist: { symbol: 'α', color: '#ff0099', name: 'Alchemist', trait: 'transformation and transmutation' },
+                navigator: { symbol: 'ν', color: '#00ccff', name: 'Navigator', trait: 'paths and exploration' },
+                harmonizer: { symbol: 'σ', color: '#ffcc00', name: 'Harmonizer', trait: 'balance and equilibrium' },
+                shapeshifter: { symbol: '∞', color: '#00ffff', name: 'Shapeshifter', trait: 'transformation and fluidity', isShapeshifter: true }
+            };
+            
+            this.init();
+        }
+        
+        Network.prototype.init = function() {
+            // Create 5 layers with 6 nodes each
+            for (var l = 0; l < 5; l++) {
+                var layer = [];
+                for (var n = 0; n < 6; n++) {
+                    var x = 200 + l * 250;
+                    var y = 150 + n * 100;
+                    var node = new Node(x, y, l, n);
+                    layer.push(node);
+                    this.nodes.push(node);
+                }
+                this.layers.push(layer);
+            }
+            
+            // Create feedforward connections
+            for (var i = 0; i < this.layers.length - 1; i++) {
+                for (var j = 0; j < this.layers[i].length; j++) {
+                    for (var k = 0; k < this.layers[i + 1].length; k++) {
+                        if (Math.random() > 0.3) {
+                            this.layers[i][j].connections.push({
+                                node: this.layers[i + 1][k],
+                                weight: Math.random() * 0.8 + 0.2
+                            });
+                        }
+                    }
+                }
+            }
+            
+            this.updateEntanglements(0.7);
+            Commentary.add('startup');
+        };
+        
+        Network.prototype.updateEntanglements = function(strength) {
+            // Clear existing entanglements
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].entangled = [];
+            }
+            
+            // Create new entanglements
+            for (var j = 0; j < this.nodes.length; j++) {
+                for (var k = j + 1; k < this.nodes.length; k++) {
+                    if (Math.random() < strength * 0.05) {
+                        this.nodes[j].entangled.push(this.nodes[k]);
+                        this.nodes[k].entangled.push(this.nodes[j]);
+                    }
+                }
+            }
+        };
+        
+        Network.prototype.activateArchetype = function(primary, secondary, blendRatio) {
+            var primaryArch = this.archetypes[primary];
+            var secondaryArch = secondary !== 'none' ? this.archetypes[secondary] : null;
+            
+            if (!primaryArch) return;
+            
+            // Clear existing archetypes
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].archetype = null;
+            }
+            
+            var archetype;
+            var shapeshifterActive = false;
+            
+            if (secondaryArch) {
+                // Check for Shapeshifter emergence
+                if (blendRatio >= 40 && blendRatio <= 60) {
+                    archetype = this.archetypes.shapeshifter;
+                    shapeshifterActive = true;
+                    document.getElementById('archetypeBox').className = 'unns-archetype-box shapeshifter-active';
+                    document.getElementById('shapeshifterInfo').className = 'unns-shapeshifter-info active';
+                    document.getElementById('blendInfo').textContent = 
+                        'Morphing between ' + primaryArch.name + ' (' + primaryArch.symbol + ') and ' + 
+                        secondaryArch.name + ' (' + secondaryArch.symbol + ')';
+                    Commentary.add('shapeshifter');
+                } else {
+                    // Normal blend
+                    archetype = {
+                        symbol: primaryArch.symbol + '⊗' + secondaryArch.symbol,
+                        color: blendRatio > 50 ? primaryArch.color : secondaryArch.color,
+                        name: primaryArch.name + '/' + secondaryArch.name,
+                        trait: 'hybrid manifestation'
+                    };
+                    document.getElementById('archetypeBox').className = 'unns-archetype-box';
+                    document.getElementById('shapeshifterInfo').className = 'unns-shapeshifter-info';
+                }
+            } else {
+                archetype = primaryArch;
+                document.getElementById('archetypeBox').className = 'unns-archetype-box';
+                document.getElementById('shapeshifterInfo').className = 'unns-shapeshifter-info';
+            }
+            
+            // Apply to random subset of nodes
+            for (var j = 0; j < this.nodes.length; j++) {
+                if (Math.random() < 0.3) {
+                    this.nodes[j].archetype = archetype;
+                    this.nodes[j].targetActivation = 1;
+                }
+            }
+            
+            document.getElementById('archName').textContent = archetype.name;
+            document.getElementById('archDesc').textContent = 'Manifesting ' + archetype.trait;
+            
+            Commentary.add('archetype', {
+                name: archetype.name,
+                symbol: archetype.symbol,
+                trait: archetype.trait
+            });
+        };
+        
+        Network.prototype.parseEquation = function(equation) {
+            var self = this;
+            var tokens = equation.trim().split(' ');
+            
+            // Complex pattern definitions
+            var patterns = {
+                // Quantum operations
+                'ψ ⊗ ψ': function() {
+                    self.updateEntanglements(1.0);
+                    for (var i = 0; i < self.nodes.length; i++) {
+                        self.nodes[i].quantum = 1;
+                    }
+                    Commentary.add('patternRecognized', {pattern: 'Maximum Entanglement'});
+                },
+                
+                'ψ ⊗ ψ → ∞': function() {
+                    self.updateEntanglements(1.0);
+                    self.activateArchetype('explorer', 'synthesizer', 50);
+                    Commentary.add('patternRecognized', {pattern: 'Quantum Cascade to Shapeshifter'});
+                },
+                
+                // Transformation patterns
+                'U → ∞': function() {
+                    for (var i = 0; i < self.nodes.length; i++) {
+                        self.nodes[i].targetActivation = Math.random();
+                    }
+                    self.activateArchetype('architect', 'explorer', 50);
+                    Commentary.add('patternRecognized', {pattern: 'Universal Transformation'});
+                },
+                
+                // Gradient operations
+                '∇ → Σ': function() {
+                    var sum = 0;
+                    for (var i = 0; i < self.nodes.length; i++) {
+                        sum += self.nodes[i].activation;
+                    }
+                    var avg = sum / self.nodes.length;
+                    for (var j = 0; j < self.nodes.length; j++) {
+                        self.nodes[j].targetActivation = avg;
+                    }
+                    Commentary.add('patternRecognized', {pattern: 'Gradient Convergence'});
+                },
+                
+                // Golden harmony
+                'φ Σ Ω': function() {
+                    var golden = 1.618;
+                    for (var i = 0; i < self.nodes.length; i++) {
+                        self.nodes[i].targetActivation = (self.nodes[i].activation * golden) % 1;
+                    }
+                    Commentary.add('patternRecognized', {pattern: 'Golden Harmonics'});
+                },
+                
+                // Archetype cascades
+                'φ → ψ → ρ': function() {
+                    var sequence = ['architect', 'explorer', 'synthesizer'];
+                    var delay = 1000;
+                    sequence.forEach(function(arch, index) {
+                        setTimeout(function() {
+                            self.activateArchetype(arch, 'none', 100);
+                        }, index * delay);
+                    });
+                    Commentary.add('patternRecognized', {pattern: 'Archetype Cascade'});
+                },
+                
+                // Oracle navigation
+                'λ ⊕ π → ν': function() {
+                    self.activateArchetype('oracle', 'weaver', 30);
+                    setTimeout(function() {
+                        self.activateArchetype('navigator', 'none', 100);
+                    }, 1500);
+                    Commentary.add('patternRecognized', {pattern: 'Oracle-Guided Navigation'});
+                },
+                
+                // Universal unity
+                '∀ U ∈ Σ': function() {
+                    for (var i = 0; i < self.nodes.length; i++) {
+                        self.nodes[i].targetActivation = 1;
+                        self.nodes[i].archetype = self.archetypes.harmonizer;
+                    }
+                    Commentary.add('patternRecognized', {pattern: 'Universal Unity Principle'});
+                },
+                
+                // Alchemical balance
+                'α ⊗ σ → ∞': function() {
+                    self.activateArchetype('alchemist', 'harmonizer', 50);
+                    Commentary.add('patternRecognized', {pattern: 'Alchemical Shapeshifting'});
+                },
+                
+                // Recursive deepening
+                'ψ → ψ → ψ': function() {
+                    for (var l = 0; l < self.layers.length; l++) {
+                        setTimeout(function(layer) {
+                            for (var n = 0; n < layer.length; n++) {
+                                layer[n].targetActivation = 1;
+                                layer[n].archetype = self.archetypes.explorer;
+                            }
+                        }.bind(null, self.layers[l]), l * 500);
+                    }
+                    Commentary.add('patternRecognized', {pattern: 'Triple Recursion Depth'});
+                }
+            };
+            
+            // Check for exact pattern matches
+            for (var pattern in patterns) {
+                if (equation.indexOf(pattern) !== -1) {
+                    patterns[pattern]();
+                    // Visual feedback
+                    var display = document.getElementById('equationDisplay');
+                    display.className = 'unns-equation-display recognized';
+                    setTimeout(function() {
+                        display.className = 'unns-equation-display';
+                    }, 1000);
+                    return true;
+                }
+            }
+            
+            // Check for single archetype glyphs
+            var glyphMap = {
+                'φ': 'architect',
+                'ψ': 'explorer',
+                'ρ': 'synthesizer',
+                'λ': 'oracle',
+                'π': 'weaver',
+                'α': 'alchemist',
+                'ν': 'navigator',
+                'σ': 'harmonizer',
+                '∞': 'shapeshifter'
+            };
+            
+            for (var i = 0; i < tokens.length; i++) {
+                if (glyphMap[tokens[i]]) {
+                    self.activateArchetype(glyphMap[tokens[i]], 'none', 100);
+                    return true;
+                }
+            }
+            
+            return false;
+        };
+        
+        Network.prototype.quantumCollapse = function() {
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].collapsed = true;
+                (function(node) {
+                    setTimeout(function() {
+                        node.collapsed = false;
+                    }, 1500);
+                })(this.nodes[i]);
+            }
+            Commentary.add('collapse');
+        };
+        
+        Network.prototype.reset = function() {
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].activation = 0;
+                this.nodes[i].targetActivation = 0;
+                this.nodes[i].archetype = null;
+                this.nodes[i].memory = [];
+            }
+            this.equation = '';
+            document.getElementById('equationDisplay').textContent = 'Click glyphs to compose...';
+            document.getElementById('archName').textContent = 'Awaiting...';
+            document.getElementById('archDesc').textContent = 'Network in quantum superposition';
+            document.getElementById('archetypeBox').className = 'unns-archetype-box';
+            document.getElementById('shapeshifterInfo').className = 'unns-shapeshifter-info';
+        };
+        
+        Network.prototype.update = function(validation, entanglement, decoherence, memoryDepth) {
+            if (!this.isRunning) return;
+            
+            // Update all nodes
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].maxMemory = memoryDepth;
+                this.nodes[i].update(validation, decoherence);
+            }
+            
+            // Calculate network statistics
+            var activeCount = 0;
+            var totalActivation = 0;
+            var entangledCount = 0;
+            
+            for (var j = 0; j < this.nodes.length; j++) {
+                var node = this.nodes[j];
+                if (node.activation > 0.5) activeCount++;
+                totalActivation += node.activation;
+                entangledCount += node.entangled.length;
+            }
+            
+            this.resonance = totalActivation / this.nodes.length;
+            
+            // Calculate entropy
+            var sum = 0;
+            for (var k = 0; k < this.nodes.length; k++) {
+                if (this.nodes[k].activation > 0) {
+                    sum -= this.nodes[k].activation * Math.log(this.nodes[k].activation);
+                }
+            }
+            this.entropy = sum / this.nodes.length;
+            
+            // Update displays
+            document.getElementById('activeCount').textContent = activeCount;
+            document.getElementById('entangledCount').textContent = Math.floor(entangledCount / 2);
+            document.getElementById('memoryCount').textContent = this.memoryTraces.length;
+            document.getElementById('entropyValue').textContent = this.entropy.toFixed(2);
+            document.getElementById('coherenceValue').textContent = this.resonance.toFixed(2);
+            document.getElementById('resonanceBar').style.width = (this.resonance * 100) + '%';
+            document.getElementById('resonancePercent').textContent = Math.floor(this.resonance * 100) + '%';
+            
+            // Update commentary
+            Commentary.update(this);
+        };
+        
+        Network.prototype.draw = function(ctx) {
+            // Clear canvas with trail effect
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw all nodes
+            for (var i = 0; i < this.nodes.length; i++) {
+                this.nodes[i].draw(ctx);
+            }
+            
+            // Draw layer labels
+            ctx.fillStyle = '#00ffcc';
+            ctx.font = '14px monospace';
+            for (var j = 0; j < this.layers.length; j++) {
+                if (this.layers[j].length > 0) {
+                    ctx.fillText('Layer ' + j, this.layers[j][0].x, 80);
+                }
+            }
+        };
+        
+        // Initialize network
+        var network = new Network();
+        
+        // Equation Composer functionality
+        var composerOpen = false;
+        var equation = '';
+        
+        document.getElementById('composerToggle').addEventListener('click', function() {
+            composerOpen = !composerOpen;
+            var panel = document.getElementById('equationPanel');
+            if (composerOpen) {
+                panel.className = 'unns-equation-panel active';
+            } else {
+                panel.className = 'unns-equation-panel';
+            }
+        });
+        
+        // Glyph buttons
+        var glyphBtns = document.querySelectorAll('.unns-glyph-btn');
+        for (var i = 0; i < glyphBtns.length; i++) {
+            glyphBtns[i].addEventListener('click', function(e) {
+                var glyph = e.target.getAttribute('data-glyph');
+                equation += glyph + ' ';
+                document.getElementById('equationDisplay').textContent = equation;
+                network.equation = equation;
+                
+                // Parse equation for patterns
+                network.parseEquation(equation);
+                
+                Commentary.add('equation', { eq: equation.trim() });
+            });
+        }
+        
+        // Preset equation buttons
+        var presetBtns = document.querySelectorAll('.unns-preset-btn');
+        for (var j = 0; j < presetBtns.length; j++) {
+            presetBtns[j].addEventListener('click', function(e) {
+                equation = e.target.getAttribute('data-eq') + ' ';
+                document.getElementById('equationDisplay').textContent = equation;
+                network.equation = equation;
+                network.parseEquation(equation);
+                Commentary.add('equation', { eq: equation.trim() });
+            });
+        }
+        
+        document.getElementById('clearEquation').addEventListener('click', function() {
+            equation = '';
+            document.getElementById('equationDisplay').textContent = 'Click glyphs to compose...';
+            network.equation = '';
+        });
+        
+        // Control handlers
+        document.getElementById('valSlider').addEventListener('input', function(e) {
+            document.getElementById('valValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('entSlider').addEventListener('input', function(e) {
+            document.getElementById('entValue').textContent = e.target.value;
+            network.updateEntanglements(parseFloat(e.target.value));
+        });
+        
+        document.getElementById('decSlider').addEventListener('input', function(e) {
+            document.getElementById('decValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('memSlider').addEventListener('input', function(e) {
+            document.getElementById('memValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('blendSlider').addEventListener('input', function(e) {
+            document.getElementById('blendValue').textContent = e.target.value + '%';
+        });
+        
+        document.getElementById('activateBtn').addEventListener('click', function() {
+            var primary = document.getElementById('primaryAttractor').value;
+            var secondary = document.getElementById('secondaryAttractor').value;
+            var blend = parseInt(document.getElementById('blendSlider').value);
+            network.activateArchetype(primary, secondary, blend);
+        });
+        
+        document.getElementById('collapseBtn').addEventListener('click', function() {
+            network.quantumCollapse();
+        });
+        
+        document.getElementById('silentBtn').addEventListener('click', function(e) {
+            var isSilent = Commentary.toggleSilent();
+            e.target.textContent = isSilent ? 'Narrative Mode' : 'Silent Mode';
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            network.reset();
+            document.getElementById('commentaryFeed').innerHTML = '';
+            Commentary.add('startup');
+        });
+        
+        document.getElementById('pauseBtn').addEventListener('click', function(e) {
+            network.isRunning = !network.isRunning;
+            e.target.textContent = network.isRunning ? 'Pause' : 'Resume';
+        });
+        
+        // Animation loop
+        function animate() {
+            var validation = parseFloat(document.getElementById('valSlider').value);
+            var entanglement = parseFloat(document.getElementById('entSlider').value);
+            var decoherence = parseFloat(document.getElementById('decSlider').value);
+            var memoryDepth = parseInt(document.getElementById('memSlider').value);
+            
+            network.update(validation, entanglement, decoherence, memoryDepth);
+            network.draw(ctx);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Initial activation
+        setTimeout(function() {
+            for (var i = 0; i < network.layers[0].length; i++) {
+                network.layers[0][i].targetActivation = Math.random();
+            }
+            Commentary.add('startup');
+        }, 1000);
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

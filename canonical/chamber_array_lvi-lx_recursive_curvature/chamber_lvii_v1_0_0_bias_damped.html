@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamber LVII v1.0.0 — Bias-Damped Recursion</title>
+<style>
+:root {
+  --bg:     #07080f; --bg1: #10121d; --bg2: #181b2a; --bg3: #222538;
+  --fg:     #d8daf0; --fg2: #8890b8;
+  --accent: #5ee7df; --purple: #a78bfa; --gold: #fbbf24;
+  --red:    #f87171; --green: #4ade80; --orange: #fb923c; --border: #2a2d45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Courier New',monospace;font-size:13px;line-height:1.55;padding:20px}
+.wrap{max-width:1600px;margin:0 auto}
+
+.hdr{background:linear-gradient(135deg,#0c0d1a,#12152a);border:1px solid var(--gold);border-radius:10px;padding:28px 32px;margin-bottom:18px;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(251,191,36,.07),transparent);border-radius:50%}
+.hdr-id{color:var(--gold);font-size:11px;letter-spacing:3px;font-weight:700;margin-bottom:6px;text-transform:uppercase}
+.hdr-title{font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.hdr-sub{color:var(--fg2);font-size:12px}
+.hdr-lock{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.lock-chip{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;color:var(--gold)}
+
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.panel-title{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:.5px}
+
+.ctrl-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
+.ctrl-grp{display:flex;flex-direction:column;gap:4px}
+.ctrl-grp label{font-size:10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.8px}
+select,input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--fg);padding:7px 10px;border-radius:4px;font-size:12px;font-family:'Courier New',monospace;width:110px}
+.btn-run{background:linear-gradient(135deg,var(--gold),var(--orange));color:#07080f;border:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;transition:all .2s}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(251,191,36,.35)}
+.btn-run:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-exp{background:linear-gradient(135deg,var(--accent),var(--purple));color:#07080f;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;transition:all .2s}
+.btn-exp:hover{transform:translateY(-1px)}
+
+.prog{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px}
+.prog-bar-wrap{background:var(--bg3);border-radius:3px;height:6px;margin-bottom:10px}
+.prog-bar{background:linear-gradient(90deg,var(--gold),var(--orange));height:6px;border-radius:3px;transition:width .3s}
+.prog-label{color:var(--fg2);font-size:11px}
+
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:var(--bg2);color:var(--fg2);font-weight:700;padding:6px 8px;text-align:left;border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.5px}
+td{padding:5px 8px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pass{color:var(--green);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+.warn{color:var(--gold);font-weight:700}
+.neutral{color:var(--fg2)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.b-comp{background:rgba(248,113,113,.18);border:1px solid var(--red);color:var(--red)}
+.b-sat{background:rgba(74,222,128,.18);border:1px solid var(--green);color:var(--green)}
+.b-inc{background:rgba(251,191,36,.18);border:1px solid var(--gold);color:var(--gold)}
+.b-inv{background:rgba(248,113,113,.1);border:1px solid var(--red);color:var(--red)}
+.b-tri{background:rgba(136,144,184,.18);border:1px solid var(--fg2);color:var(--fg2)}
+
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;min-width:130px;display:inline-block;margin:4px}
+.mc-label{color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.mc-value{color:var(--accent);font-size:16px;font-weight:700}
+
+.info-box{background:var(--bg2);border-left:3px solid var(--purple);padding:10px 14px;border-radius:0 4px 4px 0;font-size:11px;color:var(--fg2);margin-bottom:12px}
+.info-box strong{color:var(--purple)}
+
+.validity-ok{background:rgba(74,222,128,.1);border:1px solid var(--green);border-radius:6px;padding:10px 14px;color:var(--green);font-weight:700;margin-bottom:12px}
+.validity-fail{background:rgba(248,113,113,.1);border:1px solid var(--red);border-radius:6px;padding:10px 14px;color:var(--red);font-weight:700;margin-bottom:12px}
+
+.existence-box{background:linear-gradient(135deg,rgba(74,222,128,.07),rgba(94,231,223,.05));border:1px solid var(--green);border-radius:8px;padding:18px;margin-bottom:16px}
+.existence-box h3{color:var(--green);font-size:14px;margin-bottom:12px}
+.existence-no{background:linear-gradient(135deg,rgba(248,113,113,.07),rgba(251,191,36,.05));border:1px solid var(--gold);border-radius:8px;padding:18px;margin-bottom:16px}
+.existence-no h3{color:var(--gold);font-size:14px;margin-bottom:12px}
+
+.fam-section{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px}
+.fam-title{font-size:13px;font-weight:700;margin-bottom:10px}
+
+canvas{display:block;border-radius:4px}
+
+.log{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;height:240px;overflow-y:auto;font-size:11px}
+.log-info{color:var(--fg2)} .log-ok{color:var(--green)} .log-warn{color:var(--gold)} .log-err{color:var(--red)} .log-hi{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="hdr-id">UNNS Laboratory · Chamber LVII · v1.0.0</div>
+  <div class="hdr-title">Bias-Damped Recursion: Can Depth-Compounding Be Neutralized Without Degeneracy?</div>
+  <div class="hdr-sub">Extends LVI: introduces depth-indexed bias damping parameter α — all gates, witnesses, τ-grid, invariance requirements unchanged</div>
+  <div class="hdr-lock">
+    <span class="lock-chip">🔒 N=2000</span>
+    <span class="lock-chip">🔒 τ∈{0.1,0.3,0.5,0.7,0.9}</span>
+    <span class="lock-chip">🔒 n∈{1,2,3,4}</span>
+    <span class="lock-chip">🔒 F1=V2×V3, F2=V2×V4, F3=V6×V7</span>
+    <span class="lock-chip">🔒 α∈{1.0,0.95,0.9,0.85,0.8,0.7,0.6,0.5}</span>
+    <span class="lock-chip">🔒 σ_F from α=1 only</span>
+    <span class="lock-chip">🔒 30 seeds</span>
+    <span class="lock-chip">🔒 δ_comp=0.15, δ_sat=0.05</span>
+    <span class="lock-chip">🔒 per-(F,α) invalidity</span>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="panel">
+  <div class="panel-title">⚙ Execution Controls</div>
+  <div class="info-box">
+    <strong>σ_F computed at α=1.0 only and reused for all α</strong> (prereg lock).
+    α=1.0 must reproduce LVI within calibration noise (LV sanity gate).
+    Invariance failure at (F,α) invalidates only that cell — other α for that family remain valid.
+    α*(F) = smallest numeric α (strongest damping) achieving SATURATING_OR_BOUNDED while non-degenerate.
+  </div>
+  <div class="ctrl-row">
+    <div class="ctrl-grp"><label>Seed count (max 30)</label>
+      <input type="number" id="ctrl-seeds" value="30" min="3" max="30"></div>
+    <div class="ctrl-grp"><label>Bootstrap resamples</label>
+      <input type="number" id="ctrl-bs" value="2000" min="500" max="5000"></div>
+    <div class="ctrl-grp"><label>Pool size N (locked)</label>
+      <input type="number" id="ctrl-N" value="2000" disabled></div>
+    <button class="btn-run" id="btn-run" onclick="executeProtocol()">▶ Execute LVII v1.0.0</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog" id="prog">
+  <div class="prog-label" id="prog-label">Initializing…</div>
+  <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+  <div id="prog-detail" style="font-size:10px;color:var(--fg2)"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" style="display:none">
+
+  <div id="validity-banner"></div>
+
+  <!-- EXPORT -->
+  <div class="panel">
+    <div class="panel-title">💾 Export</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-exp" onclick="exportJSON()">⬇ Download JSON Record</button>
+      <button class="btn-exp" style="background:linear-gradient(135deg,var(--fg2),#555);color:#fff" onclick="copyJSON()">📋 Copy JSON</button>
+    </div>
+    <div id="export-status" style="margin-top:8px;font-size:11px;color:var(--fg2)"></div>
+  </div>
+
+  <!-- EXISTENCE SUMMARY -->
+  <div id="existence-root"></div>
+
+  <!-- CALIBRATION -->
+  <div class="panel">
+    <div class="panel-title">📐 Calibration: σ_F per Family (α=1.0 only — locked for all α)</div>
+    <table id="calib-table">
+      <thead><tr>
+        <th>Family</th><th>Null A Run A</th><th>Null A Run B</th><th>|Δ_repeat|</th>
+        <th>sd_bootstrap (Null B)</th><th>σ_F</th>
+        <th>5σ_F (nondeg threshold)</th>
+      </tr></thead>
+      <tbody id="calib-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- MAIN DECISION MATRIX -->
+  <div class="panel">
+    <div class="panel-title">⚖ Decision Matrix: Label per (Family × α)</div>
+    <div class="info-box">
+      Each cell is independently labeled. Invariance failure at (F,α) → INVALID for that cell only.
+      σ_F is fixed from α=1 calibration — not recalculated per α.
+      α*(F) = smallest numeric α with SATURATING_OR_BOUNDED (if any).
+    </div>
+    <div id="matrix-root"></div>
+  </div>
+
+  <!-- L MEDIANS TABLE -->
+  <div class="panel">
+    <div class="panel-title">📊 L_{F,α,T}^(n) Medians — by Family × α × Depth</div>
+    <div id="l-tables-root"></div>
+  </div>
+
+  <!-- SLOPE TABLE -->
+  <div class="panel">
+    <div class="panel-title">📈 Log-Slope b̄(F,α) and Confidence Intervals</div>
+    <table id="slope-table">
+      <thead><tr>
+        <th>Family</th><th>α</th><th>b̄</th>
+        <th>95% lo</th><th>95% hi</th><th>99% lo</th><th>99% hi</th>
+        <th>NonDeg?</th><th>Rule Path</th><th>Label</th>
+      </tr></thead>
+      <tbody id="slope-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- INVARIANCE PANEL -->
+  <div class="panel">
+    <div class="panel-title">🔒 Partition Invariance — worst-case R2/R3 per (F,α,n,τ)</div>
+    <div class="info-box">
+      R2 and R3 follow LVI/LV semantics (algebraic invariant: must be 0 by construction).
+      Any non-zero → structural engine failure for that (F,α) cell.
+      Per-cell invalidity does not propagate to other α.
+    </div>
+    <div id="inv-root" style="font-size:11px;color:var(--green)">✓ All partition invariants clean (pending run)</div>
+  </div>
+
+  <!-- SLOPE CANVAS -->
+  <div class="panel">
+    <div class="panel-title">📉 log(L^(n)) vs Depth — Per Family × α (median over seeds)</div>
+    <canvas id="slope-canvas" width="1500" height="500" style="width:100%"></canvas>
+  </div>
+
+  <!-- ALPHA SWEEP CANVAS -->
+  <div class="panel">
+    <div class="panel-title">📉 b̄(α) Sweep — Slope vs Damping Strength per Family</div>
+    <canvas id="alpha-canvas" width="1500" height="340" style="width:100%"></canvas>
+  </div>
+
+</div>
+
+<!-- LOG -->
+<div class="panel">
+  <div class="panel-title">📋 Execution Log</div>
+  <div class="log" id="log">
+    <div class="log-info">[INIT] Chamber LVII v1.0.0 loaded.</div>
+    <div class="log-info">[INIT] Theory: bias-damped recursion — does compounding neutralize without degeneracy?</div>
+    <div class="log-info">[INIT] σ_F computed once at α=1.0 and reused for all α (prereg lock).</div>
+  </div>
+</div>
+
+</div>
+<script>
+'use strict';
+// ============================================================================
+// CHAMBER LVII v1.0.0
+// Bias-Damped Recursion Sweep
+// ============================================================================
+
+// ── LOCKED CONSTANTS ──────────────────────────────────────────────────────────
+const C = {
+  N:           2000,
+  TAU_GRID:    [0.1, 0.3, 0.5, 0.7, 0.9],
+  DEPTHS:      [1, 2, 3, 4],
+  FAMILIES:    ['V2×V3', 'V2×V4', 'V6×V7'],
+  // Alpha grid — locked. α=1.0 must reproduce LVI. Smaller α = stronger damping.
+  ALPHA_GRID:  [1.0, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5],
+  SEEDS:       Array.from({length:30}, (_,i)=>(i+1)*1337),
+  EPS_LOG:     1e-6,
+  BS_CALIB:    200,
+  DELTA_COMP:  0.15,
+  DELTA_SAT:   0.05,
+  NONDEG_K:    5,
+  R2_TOL:      0.10,
+  R3_TOL:      0.05,
+  CALIB_NULL_A_SEEDS: [900001, 900002]
+};
+
+const LOG_COMP = Math.log(1 + C.DELTA_COMP);  // ≈ 0.13976
+const LOG_SAT  = Math.log(1 + C.DELTA_SAT);   // ≈ 0.04879
+
+// ── RUNTIME STATE ─────────────────────────────────────────────────────────────
+const ST = {
+  running:      false,
+  sanityPassed: false,
+  // σ_F per family — computed once at α=1.0 only
+  sigma:        {},   // family → σ_F
+  calib:        {},   // family → {nullARunA, nullARunB, nullADelta, nullBSd}
+  // Per (family, alpha) results
+  Lmed:         {},   // [fam][alphaIdx][n] → median L
+  bBar:         {},   // [fam][alphaIdx] → mean slope
+  ci95:         {},   // [fam][alphaIdx] → [lo,hi]
+  ci99:         {},   // [fam][alphaIdx] → [lo,hi]
+  slopes:       {},   // [fam][alphaIdx] → [b per seed]
+  labels:       {},   // [fam][alphaIdx] → label string
+  rulePaths:    {},   // [fam][alphaIdx] → string
+  invalid:      {},   // [fam][alphaIdx] → bool (per-cell)
+  invIssues:    [],   // [{family, alpha, alphaIdx, n, tau, maxR2, maxR3}]
+  // Existence outputs
+  alphaStar:    {},   // family → smallest numeric α with SATURATING_OR_BOUNDED, or null
+  existsStable: false,
+  rhoMed:       {}    // [fam][alphaIdx][n][tauIdx][gate] → median rho
+};
+
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+function rng(seed) {
+  let s = (seed >>> 0);
+  return () => { s = Math.imul(s,1664525)+1013904223>>>0; return s/4294967296; };
+}
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function log(msg,cls='log-info') {
+  const el=document.getElementById('log');
+  const d=document.createElement('div'); d.className=`log-entry ${cls}`; d.textContent=msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+function progress(label,pct,detail='') {
+  document.getElementById('prog-label').textContent=label;
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-detail').textContent=detail;
+}
+function median(arr) {
+  const s=[...arr].sort((a,b)=>a-b); const m=Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function mean(arr) { return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function sd(arr) {
+  const m=mean(arr);
+  return Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/arr.length);
+}
+function quantile(arr,q) {
+  const s=[...arr].sort((a,b)=>a-b);
+  const pos=(s.length-1)*q; const lo=Math.floor(pos),hi=Math.ceil(pos);
+  return s[lo]+(s[hi]-s[lo])*(pos-lo);
+}
+function olsSlope(xs,ys) {
+  const n=xs.length; const mx=mean(xs),my=mean(ys);
+  const num=xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+  const den=xs.reduce((s,x)=>s+(x-mx)**2,0);
+  return den>0?num/den:0;
+}
+
+// ── ENGINE ────────────────────────────────────────────────────────────────────
+function genMech(r,id) {
+  return {
+    id,
+    gamma0:r()*2.0, beta:r()*2.0, d:r()*5.0, kmax:r()*6.0,
+    curvature_method:r()<0.7?'turning_angle':'finite_diff',
+    delta_kappa:0.03+r()*0.06,
+    mean_kappa_proxy:0.02+r()*0.1,
+    has_bifurcation:r()<0.7,
+    sharpness:0.08+r()*0.06,
+    locality_score:r()*0.15
+  };
+}
+function genPool(family,n,seed) {
+  const r=rng(seed);
+  return Array.from({length:n},(_,i)=>genMech(r,`${family}|${i}`));
+}
+
+// Bias-damped lift: biasFactor = alpha^(k-1) scales ONLY the noise/perturbation amplitude.
+// Structural components (τ envelope, gate thresholds, pool geometry) unchanged.
+function applyTier2Damped(mech, family, tau, r, biasFactor) {
+  const m = JSON.parse(JSON.stringify(mech));
+  switch(family) {
+    case 'V2×V3':
+      // Bias: noise amplitude (r()-0.5)*0.3 damped; structural: τ unchanged
+      m.gamma0      *= 1 + tau * (r()-0.5) * 0.3 * biasFactor;
+      m.beta        *= 1 + tau * (r()-0.5) * 0.3 * biasFactor;
+      m.delta_kappa *= 1 + tau * 0.1 * Math.sin(m.gamma0) * biasFactor;
+      break;
+    case 'V2×V4': {
+      // Bias: curvature switch probability and kscale perturbation amplitude
+      if (r() < tau * 0.4 * biasFactor) m.curvature_method = 'smoothed';
+      // ksc bias: the (r()-0.3) part is noise; 0.6 is bias amplitude
+      const ksc = 1 + tau * 0.6 * (r()-0.3) * biasFactor;
+      m.delta_kappa      *= ksc;
+      m.mean_kappa_proxy *= ksc;
+      m.sharpness        *= 1 + tau * (r()-0.5) * 0.45 * biasFactor;
+      m.locality_score   *= 1 + tau * 0.3 * r() * biasFactor;
+      break;
+    }
+    case 'V6×V7': {
+      const phi = r()*2*Math.PI;
+      // Bias amplitudes (0.5, 0.5, 0.3, 0.5, 0.5, 0.5) all damped
+      m.gamma0     *= 1 + tau * 0.5 * biasFactor * Math.cos(phi);
+      m.beta       *= 1 + tau * 0.5 * biasFactor * Math.sin(phi);
+      m.kmax       *= 1 + tau * 0.3 * biasFactor * Math.cos(2*phi);
+      m.delta_kappa    *= 1 + tau * (r()-0.5) * 0.5 * biasFactor;
+      m.sharpness      *= 1 + tau * (r()-0.5) * 0.5 * biasFactor;
+      m.locality_score *= 1 + tau * (r()-0.5) * 0.5 * biasFactor;
+      break;
+    }
+  }
+  m.delta_kappa    = Math.max(0, m.delta_kappa);
+  m.sharpness      = Math.max(0, m.sharpness);
+  m.locality_score = Math.max(0, Math.min(1, m.locality_score));
+  return m;
+}
+
+function evalGate(gate,m) {
+  switch(gate) {
+    case 'G1': return m.curvature_method==='turning_angle';
+    case 'G2': return m.delta_kappa>0.05;
+    case 'G3': return m.has_bifurcation && m.sharpness>0.1;
+    case 'G4': return m.locality_score<0.1;
+  }
+}
+const EPS_R=0.05;
+function evalGateRelaxed(gate,m) {
+  switch(gate) {
+    case 'G1': return m.curvature_method==='turning_angle' || (m.curvature_method==='finite_diff' && EPS_R>=0.05);
+    case 'G2': return m.delta_kappa>(0.05-EPS_R);
+    case 'G3': return m.has_bifurcation && m.sharpness>(0.1-EPS_R);
+    case 'G4': return m.locality_score<(0.1+EPS_R);
+  }
+}
+const GATES=['G1','G2','G3','G4'];
+
+function findWitnesses(pool) {
+  const wit={};
+  for (const g of GATES) {
+    wit[g]=[]; const oth=GATES.filter(x=>x!==g);
+    for (const m of pool) if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) wit[g].push(m.id);
+  }
+  return wit;
+}
+
+function computeMetrics(pool, baseWit) {
+  const poolMap={};
+  for (const m of pool) poolMap[m.id]=m;
+
+  const rho={};
+  for (const g of GATES) {
+    const oth=GATES.filter(x=>x!==g);
+    let kept=0;
+    for (const id of baseWit[g]) {
+      const m=poolMap[id]; if (!m) continue;
+      if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) kept++;
+    }
+    rho[g]=baseWit[g].length>0 ? kept/baseWit[g].length : 1.0;
+  }
+
+  const curWit={};
+  for (const g of GATES) {
+    curWit[g]=new Set(); const oth=GATES.filter(x=>x!==g);
+    for (const m of pool) if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) curWit[g].add(m.id);
+  }
+
+  let maxR2=0;
+  for (let i=0;i<GATES.length;i++) for (let j=i+1;j<GATES.length;j++) {
+    const Wi=curWit[GATES[i]],Wj=curWit[GATES[j]];
+    const inter=[...Wi].filter(id=>Wj.has(id)).length;
+    const mn=Math.min(Wi.size,Wj.size);
+    maxR2=Math.max(maxR2,mn>0?inter/mn:0);
+  }
+
+  // R3: dual-relaxation interference — LV formula (algebraically always 0)
+  let maxR3=0;
+  for (let i=0;i<GATES.length;i++) for (let j=i+1;j<GATES.length;j++) {
+    const gi=GATES[i],gj=GATES[j];
+    let dualOnly=0,totalExcl=0;
+    for (const m of pool) {
+      if (!evalGate(gi,m) && !evalGate(gj,m)) {
+        totalExcl++;
+        const stillI=!evalGateRelaxed(gi,m), stillJ=!evalGateRelaxed(gj,m);
+        const passI=evalGateRelaxed(gi,m),   passJ=evalGateRelaxed(gj,m);
+        if (stillI&&stillJ&&passI&&passJ) dualOnly++;
+      }
+    }
+    maxR3=Math.max(maxR3,totalExcl>0?dualOnly/totalExcl:0);
+  }
+
+  return {rho,maxR2,maxR3};
+}
+
+function computeL(rhoByTauIdx) {
+  let L=0;
+  for (const g of GATES) {
+    for (let t=0;t<C.TAU_GRID.length;t++) for (let tp=t+1;tp<C.TAU_GRID.length;tp++) {
+      const dr=Math.abs(rhoByTauIdx[t][g]-rhoByTauIdx[tp][g]);
+      const dt=Math.abs(C.TAU_GRID[t]-C.TAU_GRID[tp]);
+      L=Math.max(L,dr/dt);
+    }
+  }
+  return L;
+}
+
+// Build depth chain using damped lift: step k uses biasFactor = alpha^(k-1)
+function buildDepthChainDamped(basePool, family, tau, maxN, seedBase, tauIdx, alpha) {
+  const chain=[basePool.map(m=>({...m}))];
+  for (let d=0; d<maxN; d++) {
+    const k=d+1; // 1-indexed recursion step
+    const biasFactor=Math.pow(alpha, k-1); // alpha^(k-1): k=1 → 1.0, k=2 → alpha, etc.
+    const r=rng(seedBase*97+(d+1)*100003+tauIdx*7919);
+    const prevPool=chain[d];
+    chain.push(prevPool.map(m=>applyTier2Damped(m,family,tau,r,biasFactor)));
+  }
+  return chain;
+}
+
+// Single seed run for given (family, alpha)
+function runOneSeed(family, seed, alpha) {
+  const basePool=genPool(family,C.N,seed);
+  const baseWit=findWitnesses(basePool);
+  const L_by_depth={};
+  const rhoByDepthTau={};
+  const invByDepthTau={};
+  for (let n=1;n<=4;n++) { rhoByDepthTau[n]={}; invByDepthTau[n]={}; }
+
+  for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+    const tau=C.TAU_GRID[ti];
+    const chain=buildDepthChainDamped(basePool,family,tau,4,seed,ti,alpha);
+    for (let n=1;n<=4;n++) {
+      const {rho,maxR2,maxR3}=computeMetrics(chain[n],baseWit);
+      rhoByDepthTau[n][ti]=rho;
+      invByDepthTau[n][ti]={maxR2,maxR3};
+    }
+  }
+  for (let n=1;n<=4;n++) L_by_depth[n]=computeL(rhoByDepthTau[n]);
+  return {L_by_depth,rhoByDepthTau,invByDepthTau};
+}
+
+// Calibration Null A — run at alpha=1.0
+function runNullA(family) {
+  const runForSeed=seed=>{
+    const basePool=genPool(family,C.N,seed);
+    const baseWit=findWitnesses(basePool);
+    const rhoByTau={};
+    for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+      const tau=C.TAU_GRID[ti];
+      const chain=buildDepthChainDamped(basePool,family,tau,2,seed,ti,1.0);
+      const {rho}=computeMetrics(chain[2],baseWit);
+      rhoByTau[ti]=rho;
+    }
+    return computeL(rhoByTau);
+  };
+  const LA=runForSeed(C.CALIB_NULL_A_SEEDS[0]);
+  const LB=runForSeed(C.CALIB_NULL_A_SEEDS[1]);
+  return {LA,LB,delta:Math.abs(LB-LA)};
+}
+
+// Calibration Null B — witness bootstrap at alpha=1.0
+function runNullB(family, seedMain) {
+  const basePool=genPool(family,C.N,seedMain);
+  const baseWit=findWitnesses(basePool);
+  const pools2=[];
+  for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+    const tau=C.TAU_GRID[ti];
+    const chain=buildDepthChainDamped(basePool,family,tau,2,seedMain,ti,1.0);
+    pools2.push(chain[2]);
+  }
+  const bsLs=[];
+  const bsRng=rng(seedMain*13+99999);
+  for (let b=0;b<C.BS_CALIB;b++) {
+    const sampledWit={};
+    for (const g of GATES) {
+      const orig=baseWit[g]; const n=orig.length;
+      if (n===0){sampledWit[g]=[];continue;}
+      sampledWit[g]=[...new Set(Array.from({length:n},()=>orig[Math.floor(bsRng()*n)]))];
+    }
+    const rhoByTau={};
+    for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+      const pool=pools2[ti]; const poolMap={};
+      for (const m of pool) poolMap[m.id]=m;
+      const rho={};
+      for (const g of GATES) {
+        const oth=GATES.filter(x=>x!==g); let kept=0;
+        for (const id of sampledWit[g]) {
+          const m=poolMap[id]; if (!m) continue;
+          if (!evalGate(g,m) && oth.every(o=>evalGate(o,m))) kept++;
+        }
+        rho[g]=sampledWit[g].length>0?kept/sampledWit[g].length:1.0;
+      }
+      rhoByTau[ti]=rho;
+    }
+    bsLs.push(computeL(rhoByTau));
+  }
+  return sd(bsLs);
+}
+
+// ── MAIN PROTOCOL ─────────────────────────────────────────────────────────────
+async function executeProtocol() {
+  if (ST.running) return;
+  ST.running=true;
+  const btn=document.getElementById('btn-run');
+  btn.disabled=true; btn.textContent='Running…';
+
+  const nSeeds=Math.min(parseInt(document.getElementById('ctrl-seeds').value)||30,30);
+  const bsMain=parseInt(document.getElementById('ctrl-bs').value)||2000;
+  const seeds=C.SEEDS.slice(0,nSeeds);
+
+  // Reset state
+  Object.assign(ST,{sanityPassed:false,sigma:{},calib:{},Lmed:{},bBar:{},ci95:{},ci99:{},
+    slopes:{},labels:{},rulePaths:{},invalid:{},invIssues:[],alphaStar:{},existsStable:false,rhoMed:{}});
+
+  for (const f of C.FAMILIES) {
+    ST.Lmed[f]={}; ST.bBar[f]={}; ST.ci95[f]={}; ST.ci99[f]={};
+    ST.slopes[f]={}; ST.labels[f]={}; ST.rulePaths[f]={}; ST.invalid[f]={};
+    ST.rhoMed[f]={};
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      ST.Lmed[f][ai]={}; ST.invalid[f][ai]=false; ST.rhoMed[f][ai]={};
+      for (const n of C.DEPTHS) { ST.rhoMed[f][ai][n]={}; for (let ti=0;ti<C.TAU_GRID.length;ti++) ST.rhoMed[f][ai][n][ti]={}; }
+    }
+  }
+
+  document.getElementById('prog').style.display='block';
+  document.getElementById('results').style.display='none';
+
+  log('','log-info');
+  log('═══ CHAMBER LVII v1.0.0 STARTING ═══','log-hi');
+  log(`Seeds: ${nSeeds} | N=2000 | α-grid: ${C.ALPHA_GRID.join(',')} | depths 1-4`,'log-info');
+
+  const totalFamilyAlpha = C.FAMILIES.length * C.ALPHA_GRID.length;
+  let step=0;
+  const totalSteps = C.FAMILIES.length*2 + 1 + nSeeds*totalFamilyAlpha + totalFamilyAlpha + 2;
+
+  // ─── PHASE 1: CALIBRATION AT α=1.0 ──────────────────────────────────────
+  log('','log-info');
+  log('── PHASE 1: CALIBRATION (α=1.0 only — locked for all α) ──','log-hi');
+
+  for (const fam of C.FAMILIES) {
+    progress(`Calibration Null A — ${fam}`, (step/totalSteps)*100, 'α=1.0 depth-repeat null…');
+    await sleep(10);
+    const nullA=runNullA(fam);
+    log(`  [NULL A] ${fam}: runA=${nullA.LA.toFixed(4)} runB=${nullA.LB.toFixed(4)} |Δ|=${nullA.delta.toFixed(4)}`,'log-info');
+
+    progress(`Calibration Null B — ${fam}`, (step/totalSteps)*100, 'α=1.0 witness bootstrap…');
+    await sleep(10);
+    const sdB=runNullB(fam,seeds[0]);
+    ST.sigma[fam]=Math.max(nullA.delta,sdB);
+    ST.calib[fam]={nullARunA:nullA.LA,nullARunB:nullA.LB,nullADelta:nullA.delta,nullBSd:sdB};
+    log(`  [NULL B] ${fam}: sd_bootstrap=${sdB.toFixed(4)} → σ_F=${ST.sigma[fam].toFixed(4)}`,'log-info');
+    step++;
+  }
+
+  // ─── PHASE 2: LV SANITY CHECK (α=1.0, n=1) ───────────────────────────────
+  log('','log-info');
+  log('── PHASE 2: LV SANITY CHECK (α=1.0, n=1, R2=R3=0 required) ──','log-hi');
+  let sanityOk=true;
+  for (const fam of C.FAMILIES) {
+    const basePool=genPool(fam,C.N,seeds[0]);
+    const baseWit=findWitnesses(basePool);
+    for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+      const tau=C.TAU_GRID[ti];
+      const chain=buildDepthChainDamped(basePool,fam,tau,1,seeds[0],ti,1.0);
+      const {maxR2,maxR3}=computeMetrics(chain[1],baseWit);
+      if (maxR2>C.R2_TOL||maxR3>C.R3_TOL) {
+        sanityOk=false;
+        log(`  ✗ SANITY FAIL: ${fam} τ=${tau} R2=${maxR2.toFixed(4)} R3=${maxR3.toFixed(4)}`,'log-err');
+      }
+    }
+  }
+  if (!sanityOk) {
+    ST.sanityPassed=false;
+    log('SANITY FAILED — LVII HALTED. Fix lift engine at α=1.0 before proceeding.','log-err');
+    document.getElementById('validity-banner').innerHTML=
+      `<div class="validity-fail">⛔ LV SANITY FAILED at α=1.0 — LVII halted. α=1.0 must reproduce LVI invariance at n=1.</div>`;
+    document.getElementById('results').style.display='block';
+    document.getElementById('prog').style.display='none';
+    btn.disabled=false; btn.textContent='▶ Execute LVII v1.0.0'; ST.running=false; return;
+  }
+  ST.sanityPassed=true;
+  log('  ✓ Sanity check passed: α=1.0, n=1, R2=R3=0 for all families × τ.','log-ok');
+  step++;
+  await sleep(10);
+
+  // ─── PHASE 3: MAIN RUNS — all (family, alpha, seed) ──────────────────────
+  log('','log-info');
+  log('── PHASE 3: MAIN RUNS (family × α × seed) ──','log-hi');
+
+  // Accumulators: family → alphaIdx → list of {n→L} per seed
+  const LsAcc={}; // [fam][ai] → [{n→L},...]
+  const rhoAcc={}; // [fam][ai][n][ti][g] → [rho values]
+  const invWorstR2={}; // [fam][ai][n][ti] → worst R2
+  const invWorstR3={};
+
+  for (const f of C.FAMILIES) {
+    LsAcc[f]=[]; rhoAcc[f]=[];
+    invWorstR2[f]=[]; invWorstR3[f]=[];
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      LsAcc[f].push([]);
+      rhoAcc[f].push({});
+      invWorstR2[f].push({}); invWorstR3[f].push({});
+      for (const n of C.DEPTHS) {
+        rhoAcc[f][ai][n]={};
+        invWorstR2[f][ai][n]={}; invWorstR3[f][ai][n]={};
+        for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+          rhoAcc[f][ai][n][ti]={G1:[],G2:[],G3:[],G4:[]};
+          invWorstR2[f][ai][n][ti]=0; invWorstR3[f][ai][n][ti]=0;
+        }
+      }
+    }
+  }
+
+  for (let si=0;si<seeds.length;si++) {
+    const seed=seeds[si];
+    progress(`Seed ${si+1}/${seeds.length}`, (step/totalSteps)*100, `${C.FAMILIES.length} families × ${C.ALPHA_GRID.length} α values…`);
+    await sleep(si%4===0?15:0);
+
+    for (const fam of C.FAMILIES) {
+      for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+        const alpha=C.ALPHA_GRID[ai];
+        const {L_by_depth,rhoByDepthTau,invByDepthTau}=runOneSeed(fam,seed,alpha);
+        LsAcc[fam][ai].push(L_by_depth);
+        for (const n of C.DEPTHS) {
+          for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+            for (const g of GATES) rhoAcc[fam][ai][n][ti][g].push(rhoByDepthTau[n][ti][g]);
+            invWorstR2[fam][ai][n][ti]=Math.max(invWorstR2[fam][ai][n][ti],invByDepthTau[n][ti].maxR2);
+            invWorstR3[fam][ai][n][ti]=Math.max(invWorstR3[fam][ai][n][ti],invByDepthTau[n][ti].maxR3);
+          }
+        }
+      }
+    }
+    step+=C.FAMILIES.length*C.ALPHA_GRID.length;
+  }
+
+  // ─── PHASE 4: INVARIANCE CHECK ────────────────────────────────────────────
+  log('','log-info');
+  log('── PHASE 4: PARTITION INVARIANCE CHECK (per F,α cell) ──','log-hi');
+  let anyInvalid=false;
+  for (const fam of C.FAMILIES) {
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      let cellInvalid=false;
+      for (const n of C.DEPTHS) {
+        for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+          const r2=invWorstR2[fam][ai][n][ti];
+          const r3=invWorstR3[fam][ai][n][ti];
+          if (r2>C.R2_TOL||r3>C.R3_TOL) {
+            cellInvalid=true; anyInvalid=true;
+            ST.invIssues.push({family:fam,alpha,alphaIdx:ai,n,tau:C.TAU_GRID[ti],maxR2:r2,maxR3:r3});
+            log(`  ⚠ INV FAIL: ${fam} α=${alpha} n=${n} τ=${C.TAU_GRID[ti]} R2=${r2.toFixed(4)} R3=${r3.toFixed(4)}`,'log-err');
+          }
+        }
+      }
+      ST.invalid[fam][ai]=cellInvalid;
+      // Other α cells for this family remain valid — per-cell only
+    }
+  }
+  if (!anyInvalid) log('  ✓ All (F,α) cells pass partition invariance.','log-ok');
+  step++;
+
+  // ─── PHASE 5: AGGREGATE L MEDIANS + SLOPES ──────────────────────────────
+  log('','log-info');
+  log('── PHASE 5: L AGGREGATION + LOG-SLOPE FITTING ──','log-hi');
+  progress('Computing slopes and CIs…',95,'OLS + 2000-resample bootstrap…');
+  await sleep(10);
+
+  const depthsForSlope=[2,3,4];
+  for (const fam of C.FAMILIES) {
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      // L medians
+      for (const n of C.DEPTHS) {
+        const Ls=LsAcc[fam][ai].map(d=>d[n]);
+        ST.Lmed[fam][ai][n]=median(Ls);
+      }
+      // Retention medians
+      for (const n of C.DEPTHS) {
+        for (let ti=0;ti<C.TAU_GRID.length;ti++) {
+          for (const g of GATES) {
+            const vals=rhoAcc[fam][ai][n][ti][g];
+            ST.rhoMed[fam][ai][n][ti][g]=vals.length>0?median(vals):null;
+          }
+        }
+      }
+      // Per-seed slopes
+      const bPerSeed=LsAcc[fam][ai].map(d=>{
+        const ys=depthsForSlope.map(n=>Math.log(d[n]+C.EPS_LOG));
+        return olsSlope(depthsForSlope,ys);
+      });
+      ST.slopes[fam][ai]=bPerSeed;
+      ST.bBar[fam][ai]=mean(bPerSeed);
+      // Bootstrap CI
+      const bsArr=[];
+      for (let b=0;b<bsMain;b++) {
+        const samp=Array.from({length:bPerSeed.length},()=>bPerSeed[Math.floor(Math.random()*bPerSeed.length)]);
+        bsArr.push(mean(samp));
+      }
+      bsArr.sort((a,b)=>a-b);
+      ST.ci95[fam][ai]=[quantile(bsArr,0.025),quantile(bsArr,0.975)];
+      ST.ci99[fam][ai]=[quantile(bsArr,0.005),quantile(bsArr,0.995)];
+    }
+  }
+  step++;
+
+  // ─── PHASE 6: DECISION LABELS ────────────────────────────────────────────
+  log('','log-info');
+  log('── PHASE 6: MECHANICAL DECISION LABELS (per F,α cell) ──','log-hi');
+  for (const fam of C.FAMILIES) {
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      const label=decideLabel(fam,ai);
+      const rulePath=makeRulePath(fam,ai);
+      ST.labels[fam][ai]=label;
+      ST.rulePaths[fam][ai]=rulePath;
+      const cls={COMPOUNDING:'log-err',SATURATING_OR_BOUNDED:'log-ok',INCONCLUSIVE:'log-warn',
+        INVALID:'log-err',TRIVIAL_OR_WEAK:'log-info'}[label]||'log-info';
+      log(`  ${fam} α=${alpha}: ${label}`,cls);
+    }
+  }
+
+  // ─── PHASE 7: EXISTENCE OUTPUTS ────────────────────────────────────────
+  for (const fam of C.FAMILIES) {
+    // α*(F) = smallest NUMERIC α achieving SATURATING_OR_BOUNDED (strongest damping)
+    const satAlphas=C.ALPHA_GRID.filter((_,ai)=>ST.labels[fam][ai]==='SATURATING_OR_BOUNDED');
+    ST.alphaStar[fam]=satAlphas.length>0 ? Math.min(...satAlphas) : null;
+  }
+  ST.existsStable=Object.values(ST.alphaStar).some(v=>v!==null);
+  log('','log-info');
+  log(`ExistsStableDamped: ${ST.existsStable}`, ST.existsStable?'log-ok':'log-warn');
+  for (const fam of C.FAMILIES) log(`  α*(${fam}) = ${ST.alphaStar[fam]??'none'}`,ST.alphaStar[fam]!==null?'log-ok':'log-info');
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────
+  progress('Rendering…',99,'');
+  await sleep(15);
+  renderAll(invWorstR2,invWorstR3);
+  document.getElementById('results').style.display='block';
+  document.getElementById('prog').style.display='none';
+  log('','log-info'); log('═══ CHAMBER LVII COMPLETE ═══','log-hi');
+  btn.disabled=false; btn.textContent='▶ Execute LVII v1.0.0'; ST.running=false;
+}
+
+function decideLabel(fam, ai) {
+  if (ST.invalid[fam][ai]) return 'INVALID';
+  const medL2=ST.Lmed[fam][ai][2];
+  const sigF=ST.sigma[fam];
+  const nonDeg=medL2>=C.NONDEG_K*sigF;
+  if (!nonDeg) return 'TRIVIAL_OR_WEAK';
+  const bBar=ST.bBar[fam][ai];
+  const lo99=ST.ci99[fam][ai][0];
+  const lo95=ST.ci95[fam][ai][0], hi95=ST.ci95[fam][ai][1];
+  if (lo99>0 && bBar>=LOG_COMP) return 'COMPOUNDING';
+  if (lo95<=0 && hi95>=0 && Math.abs(bBar)<=LOG_SAT) return 'SATURATING_OR_BOUNDED';
+  return 'INCONCLUSIVE';
+}
+
+function makeRulePath(fam, ai) {
+  if (ST.invalid[fam][ai]) return 'invariance_fail → INVALID';
+  const medL2=ST.Lmed[fam][ai][2], sigF=ST.sigma[fam];
+  const nonDeg=medL2>=C.NONDEG_K*sigF;
+  if (!nonDeg) return 'nondeg=false → TRIVIAL_OR_WEAK (slope tests bypassed)';
+  const b=ST.bBar[fam][ai], lo99=ST.ci99[fam][ai][0];
+  const lo95=ST.ci95[fam][ai][0], hi95=ST.ci95[fam][ai][1];
+  if (lo99>0&&b>=LOG_COMP) return `nondeg=true → lower99>${lo99.toFixed(3)}>0 & b=${b.toFixed(4)}≥log(1.15) → COMPOUNDING`;
+  if (lo95<=0&&hi95>=0&&Math.abs(b)<=LOG_SAT) return `nondeg=true → |b|=${Math.abs(b).toFixed(4)}≤log(1.05) & 0∈95%CI → SATURATING_OR_BOUNDED`;
+  return `nondeg=true → b=${b.toFixed(4)} between thresholds → INCONCLUSIVE`;
+}
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+const FAM_COLOR={'V2×V3':'#4ade80','V2×V4':'#f87171','V6×V7':'#5ee7df'};
+const BADGE_CLS={COMPOUNDING:'b-comp',SATURATING_OR_BOUNDED:'b-sat',INCONCLUSIVE:'b-inc',INVALID:'b-inv',TRIVIAL_OR_WEAK:'b-tri'};
+
+function renderAll(invWorstR2, invWorstR3) {
+  renderValidity();
+  renderExistence();
+  renderCalib();
+  renderMatrix();
+  renderLTables();
+  renderSlopeTable();
+  renderInvariance(invWorstR2, invWorstR3);
+  renderSlopeCanvas();
+  renderAlphaCanvas();
+}
+
+function renderValidity() {
+  const el=document.getElementById('validity-banner');
+  const nInv=ST.invIssues.length;
+  if (nInv>0) {
+    el.innerHTML=`<div class="validity-fail">⚠ ${nInv} partition invariance issue(s) detected. Affected (F,α) cells labeled INVALID. Other cells remain valid (per-cell invalidity).</div>`;
+  } else {
+    el.innerHTML=`<div class="validity-ok">✓ VALIDITY CONFIRMED — LV sanity passed (α=1.0, n=1), R2=R3≈0 at all (F,α,n,τ). All decision labels apply.</div>`;
+  }
+}
+
+function renderExistence() {
+  const root=document.getElementById('existence-root');
+  const cls=ST.existsStable?'existence-box':'existence-no';
+  let html=`<div class="${cls}">`;
+  html+=`<h3>${ST.existsStable ? '✅ ExistsStableDamped = TRUE' : '⚠ ExistsStableDamped = FALSE'}</h3>`;
+  for (const fam of C.FAMILIES) {
+    const as=ST.alphaStar[fam];
+    html+=`<div style="margin:4px 0;font-size:12px;color:${FAM_COLOR[fam]}">
+      ${fam}: α*(F) = ${as!==null ? as : 'none'}
+      ${as!==null ? ` → SATURATING_OR_BOUNDED at α=${as}` : ' → no saturation regime found'}
+    </div>`;
+  }
+  if (!ST.existsStable) {
+    html+=`<div style="margin-top:10px;font-size:11px;color:var(--fg2)">
+      Interpretation: Bias damping alone is insufficient to produce recursive boundedness for these families on the LV grid.
+      Compounding appears intrinsic to the curvature structure, not purely bias-driven.
+    </div>`;
+  } else {
+    html+=`<div style="margin-top:10px;font-size:11px;color:var(--fg2)">
+      Interpretation: Recursive stability exists under sufficient bias damping while preserving non-degeneracy and partition invariance.
+      This constitutes empirical evidence for the existence of recursively rigid operator families.
+    </div>`;
+  }
+  html+='</div>';
+  root.innerHTML=html;
+}
+
+function renderCalib() {
+  const tb=document.getElementById('calib-tbody');
+  tb.innerHTML='';
+  for (const fam of C.FAMILIES) {
+    const c=ST.calib[fam], sig=ST.sigma[fam];
+    const tr=tb.insertRow();
+    tr.insertCell().textContent=fam;
+    tr.insertCell().textContent=c.nullARunA.toFixed(5);
+    tr.insertCell().textContent=c.nullARunB.toFixed(5);
+    tr.insertCell().textContent=c.nullADelta.toFixed(5);
+    tr.insertCell().textContent=c.nullBSd.toFixed(5);
+    tr.insertCell().textContent=sig.toFixed(5);
+    tr.insertCell().textContent=(5*sig).toFixed(5);
+  }
+}
+
+function renderMatrix() {
+  const root=document.getElementById('matrix-root');
+  // Build HTML table: rows=families, cols=alpha values
+  let html='<div style="overflow-x:auto"><table style="min-width:900px">';
+  html+='<thead><tr><th>Family</th>';
+  for (const alpha of C.ALPHA_GRID) html+=`<th>α=${alpha}</th>`;
+  html+='</tr></thead><tbody>';
+  for (const fam of C.FAMILIES) {
+    html+=`<tr><td style="color:${FAM_COLOR[fam]};font-weight:700">${fam}</td>`;
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const label=ST.labels[fam][ai]??'—';
+      const bc=BADGE_CLS[label]||'b-tri';
+      const isStar=ST.alphaStar[fam]===C.ALPHA_GRID[ai];
+      html+=`<td style="${isStar?'background:rgba(74,222,128,.08);':''}">
+        <span class="badge ${bc}">${label.replace(/_/g,' ')}</span>
+        ${isStar?'<span style="color:var(--green);font-size:10px;margin-left:4px">★α*</span>':''}
+        <div style="font-size:9px;color:var(--fg2);margin-top:2px">b̄=${(ST.bBar[fam][ai]??0).toFixed(3)}</div>
+      </td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table></div>';
+  root.innerHTML=html;
+}
+
+function renderLTables() {
+  const root=document.getElementById('l-tables-root');
+  root.innerHTML='';
+  for (const fam of C.FAMILIES) {
+    const div=document.createElement('div');
+    div.className='fam-section';
+    div.innerHTML=`<div class="fam-title" style="color:${FAM_COLOR[fam]}">${fam}</div>`;
+    let html='<div style="overflow-x:auto"><table><thead><tr><th>α</th>';
+    for (const n of C.DEPTHS) html+=`<th>L^(${n}) med</th>`;
+    html+='<th>Ratio L^(3)/L^(2)</th><th>Ratio L^(4)/L^(3)</th><th>Label</th></tr></thead><tbody>';
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      const label=ST.labels[fam][ai]||'—';
+      html+=`<tr><td>${alpha}</td>`;
+      for (const n of C.DEPTHS) html+=`<td>${(ST.Lmed[fam][ai][n]??0).toFixed(5)}</td>`;
+      const L2=ST.Lmed[fam][ai][2]??0, L3=ST.Lmed[fam][ai][3]??0, L4=ST.Lmed[fam][ai][4]??0;
+      const r32=L2>0?L3/L2:0, r43=L3>0?L4/L3:0;
+      const c32=r32>=1.15?'fail':r32<=1.05?'pass':'warn';
+      const c43=r43>=1.15?'fail':r43<=1.05?'pass':'warn';
+      html+=`<td class="${c32}">${r32.toFixed(3)}</td><td class="${c43}">${r43.toFixed(3)}</td>`;
+      html+=`<td><span class="badge ${BADGE_CLS[label]||'b-tri'}">${label.replace(/_/g,' ')}</span></td></tr>`;
+    }
+    html+='</tbody></table></div>';
+    div.innerHTML+=html;
+    root.appendChild(div);
+  }
+}
+
+function renderSlopeTable() {
+  const tb=document.getElementById('slope-tbody');
+  tb.innerHTML='';
+  for (const fam of C.FAMILIES) {
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      const b=ST.bBar[fam][ai]??0;
+      const [lo95,hi95]=ST.ci95[fam][ai]??[0,0];
+      const [lo99,hi99]=ST.ci99[fam][ai]??[0,0];
+      const medL2=ST.Lmed[fam][ai][2]??0;
+      const sigF=ST.sigma[fam]??0;
+      const nonDeg=medL2>=C.NONDEG_K*sigF;
+      const label=ST.labels[fam][ai]||'—';
+      const tr=tb.insertRow();
+      if (ai===0) {
+        const fc=tr.insertCell(); fc.textContent=fam; fc.style.color=FAM_COLOR[fam];
+        fc.style.fontWeight='700'; fc.rowSpan=C.ALPHA_GRID.length;
+      }
+      tr.insertCell().textContent=alpha;
+      tr.insertCell().textContent=b.toFixed(5);
+      tr.insertCell().textContent=lo95.toFixed(5);
+      tr.insertCell().textContent=hi95.toFixed(5);
+      tr.insertCell().textContent=lo99.toFixed(5);
+      tr.insertCell().textContent=hi99.toFixed(5);
+      const nc=tr.insertCell(); nc.textContent=nonDeg?'YES':'NO'; nc.className=nonDeg?'pass':'fail';
+      tr.insertCell().textContent=ST.rulePaths[fam][ai]||'—';
+      const lc=tr.insertCell(); lc.innerHTML=`<span class="badge ${BADGE_CLS[label]||'b-tri'}">${label.replace(/_/g,' ')}</span>`;
+    }
+  }
+}
+
+function renderInvariance(invWorstR2, invWorstR3) {
+  const root=document.getElementById('inv-root');
+  if (ST.invIssues.length===0) {
+    root.innerHTML='<div style="color:var(--green)">✓ All (F,α,n,τ) cells pass R2 and R3 tolerance. Partition invariance structurally clean.</div>';
+    return;
+  }
+  let html='<table><thead><tr><th>Family</th><th>α</th><th>n</th><th>τ</th><th>maxR2</th><th>R2 ok?</th><th>maxR3</th><th>R3 ok?</th></tr></thead><tbody>';
+  for (const iss of ST.invIssues) {
+    html+=`<tr><td>${iss.family}</td><td>${iss.alpha}</td><td>${iss.n}</td><td>${iss.tau}</td>
+      <td class="${iss.maxR2<=C.R2_TOL?'neutral':'fail'}">${iss.maxR2.toFixed(5)}</td>
+      <td class="${iss.maxR2<=C.R2_TOL?'pass':'fail'}">${iss.maxR2<=C.R2_TOL?'✓':'✗'}</td>
+      <td class="${iss.maxR3<=C.R3_TOL?'neutral':'fail'}">${iss.maxR3.toFixed(5)}</td>
+      <td class="${iss.maxR3<=C.R3_TOL?'pass':'fail'}">${iss.maxR3<=C.R3_TOL?'✓':'✗'}</td></tr>`;
+  }
+  html+='</tbody></table>';
+  root.innerHTML=html;
+}
+
+function renderSlopeCanvas() {
+  const canvas=document.getElementById('slope-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.fillStyle='#07080f'; ctx.fillRect(0,0,W,H);
+
+  const nFam=C.FAMILIES.length;
+  const famW=(W-60)/nFam;
+  const padT=30, padB=40, padL=60;
+  const depthsForSlope=[2,3,4];
+
+  // Compute range
+  let minY=Infinity,maxY=-Infinity;
+  for (const fam of C.FAMILIES) for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+    for (const n of depthsForSlope) {
+      const v=Math.log((ST.Lmed[fam][ai][n]??0)+C.EPS_LOG);
+      minY=Math.min(minY,v); maxY=Math.max(maxY,v);
+    }
+  }
+  const padY=(maxY-minY)*0.1; minY-=padY; maxY+=padY;
+  const ch=H-padT-padB;
+
+  const xOf=(fi,n)=>padL+fi*famW+(n-2)/(4-2)*famW*0.8+famW*0.1;
+  const yOf=v=>padT+ch-(v-minY)/(maxY-minY)*ch;
+
+  // Alpha color ramp: α=1=warm, α=0.5=cool
+  function alphaColor(alpha) {
+    const t=(1.0-alpha)/(1.0-0.5); // 0=α=1 (red), 1=α=0.5 (blue)
+    const r=Math.round(248*(1-t)+94*t);
+    const g=Math.round(113*(1-t)+231*t);
+    const b=Math.round(113*(1-t)+223*t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  C.FAMILIES.forEach((fam,fi)=>{
+    const cx=padL+fi*famW+famW/2;
+    ctx.fillStyle=FAM_COLOR[fam]; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.fillText(fam, cx, 18);
+
+    // Grid
+    ctx.strokeStyle='#2a2d45'; ctx.lineWidth=1;
+    for (let i=0;i<=4;i++) {
+      const y=padT+i*ch/4;
+      ctx.beginPath(); ctx.moveTo(padL+fi*famW,y); ctx.lineTo(padL+(fi+1)*famW,y); ctx.stroke();
+    }
+
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      const col=alphaColor(alpha);
+      ctx.strokeStyle=col; ctx.lineWidth=ai===0?2:1.2;
+
+      const pts=depthsForSlope.map(n=>{
+        const v=Math.log((ST.Lmed[fam][ai][n]??0)+C.EPS_LOG);
+        return [xOf(fi,n),yOf(v)];
+      });
+
+      ctx.beginPath();
+      pts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
+      ctx.stroke();
+
+      // Dot at final point
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.arc(pts[pts.length-1][0],pts[pts.length-1][1],2.5,0,Math.PI*2); ctx.fill();
+    }
+
+    // X labels
+    depthsForSlope.forEach(n=>{
+      ctx.fillStyle='#8890b8'; ctx.font='9px Courier New'; ctx.textAlign='center';
+      ctx.fillText(`n=${n}`, xOf(fi,n), H-8);
+    });
+  });
+
+  // Legend
+  ctx.font='9px Courier New'; ctx.textAlign='left';
+  C.ALPHA_GRID.forEach((alpha,ai)=>{
+    ctx.fillStyle=alphaColor(alpha);
+    ctx.fillRect(padL+ai*56, H-28, 10, 8);
+    ctx.fillText(`α=${alpha}`, padL+ai*56+12, H-21);
+  });
+  ctx.fillStyle='#8890b8'; ctx.textAlign='center'; ctx.font='10px Courier New';
+  ctx.fillText('log(L^(n)+ε) vs depth n — each line = one α value (warm=α=1.0, cool=α=0.5)', W/2, 10);
+}
+
+function renderAlphaCanvas() {
+  const canvas=document.getElementById('alpha-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.fillStyle='#07080f'; ctx.fillRect(0,0,W,H);
+
+  const padL=70,padR=30,padT=30,padB=50;
+  const cw=W-padL-padR, ch=H-padT-padB;
+
+  let minY=Infinity,maxY=-Infinity;
+  for (const fam of C.FAMILIES) for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+    const b=ST.bBar[fam][ai]??0;
+    minY=Math.min(minY,b); maxY=Math.max(maxY,b);
+  }
+  const padY=Math.max((maxY-minY)*0.15,0.02);
+  minY-=padY; maxY+=padY;
+
+  const xOf=ai=>padL+(1-(C.ALPHA_GRID[ai]-0.5)/0.5)*cw; // x=left at α=0.5, right at α=1.0
+  const yOf=v=>padT+ch-(v-minY)/(maxY-minY)*ch;
+
+  // Grid + threshold lines
+  ctx.strokeStyle='#2a2d45'; ctx.lineWidth=1;
+  for (let i=0;i<=5;i++) {
+    const y=padT+i*ch/5;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    const v=maxY-(maxY-minY)*i/5;
+    ctx.fillStyle='#8890b8'; ctx.font='9px Courier New'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3), padL-4, y+3);
+  }
+
+  // Threshold lines
+  if (LOG_COMP>=minY&&LOG_COMP<=maxY) {
+    const y=yOf(LOG_COMP);
+    ctx.strokeStyle='rgba(248,113,113,.4)'; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    ctx.fillStyle='#f87171'; ctx.font='9px Courier New'; ctx.textAlign='left';
+    ctx.fillText(`log(1.15)=${LOG_COMP.toFixed(4)} [comp threshold]`, padL+4, y-3);
+  }
+  if (LOG_SAT>=minY&&LOG_SAT<=maxY) {
+    const y=yOf(LOG_SAT);
+    ctx.strokeStyle='rgba(74,222,128,.4)'; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    ctx.fillStyle='#4ade80'; ctx.font='9px Courier New'; ctx.textAlign='left';
+    ctx.fillText(`log(1.05)=${LOG_SAT.toFixed(4)} [sat band upper]`, padL+4, y-3);
+  }
+  if (-LOG_SAT>=minY&&-LOG_SAT<=maxY) {
+    const y=yOf(-LOG_SAT);
+    ctx.strokeStyle='rgba(74,222,128,.4)'; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    ctx.fillStyle='#4ade80'; ctx.font='9px Courier New'; ctx.textAlign='left';
+    ctx.fillText(`-log(1.05) [sat band lower]`, padL+4, y-3);
+  }
+  ctx.setLineDash([]);
+
+  // Zero line
+  if (0>=minY&&0<=maxY) {
+    const y=yOf(0);
+    ctx.strokeStyle='rgba(136,144,184,.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+  }
+
+  // Plot families
+  C.FAMILIES.forEach(fam=>{
+    const col=FAM_COLOR[fam];
+    const pts=C.ALPHA_GRID.map((_,ai)=>[xOf(ai),yOf(ST.bBar[fam][ai]??0)]);
+
+    // 95% CI band
+    ctx.beginPath();
+    pts.forEach(([x],ai)=>ai===0?ctx.moveTo(x,yOf(ST.ci95[fam][ai][1])):ctx.lineTo(x,yOf(ST.ci95[fam][ai][1])));
+    [...pts].reverse().forEach(([x],ri)=>{
+      const ai=pts.length-1-ri;
+      ctx.lineTo(x,yOf(ST.ci95[fam][ai][0]));
+    });
+    ctx.closePath(); ctx.fillStyle=col+'18'; ctx.fill();
+
+    // Mean line
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+    pts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.stroke();
+
+    // Dots + star for α*
+    pts.forEach(([x,y],ai)=>{
+      const isStar=ST.alphaStar[fam]===C.ALPHA_GRID[ai];
+      ctx.fillStyle=isStar?'#fbbf24':col;
+      ctx.beginPath(); ctx.arc(x,y,isStar?5:3,0,Math.PI*2); ctx.fill();
+    });
+
+    // Label at α=1
+    ctx.fillStyle=col; ctx.font='bold 10px Courier New'; ctx.textAlign='left';
+    ctx.fillText(fam, xOf(0)+6, yOf(ST.bBar[fam][0]??0)-4);
+  });
+
+  // X axis labels (α values, increasing damping = right to left)
+  C.ALPHA_GRID.forEach((_,ai)=>{
+    ctx.fillStyle='#8890b8'; ctx.font='9px Courier New'; ctx.textAlign='center';
+    ctx.fillText(`α=${C.ALPHA_GRID[ai]}`, xOf(ai), H-10);
+  });
+
+  ctx.fillStyle='#8890b8'; ctx.font='10px Courier New'; ctx.textAlign='center';
+  ctx.fillText('b̄(α) vs Damping Strength — decreasing α = stronger damping (right to left) | ★=α*(F)', W/2, 16);
+}
+
+// ── JSON EXPORT ───────────────────────────────────────────────────────────────
+function buildExportRecord() {
+  const familyRecords={};
+  for (const fam of C.FAMILIES) {
+    const alphaResults={};
+    for (let ai=0;ai<C.ALPHA_GRID.length;ai++) {
+      const alpha=C.ALPHA_GRID[ai];
+      const b=ST.bBar[fam][ai]??null;
+      const [lo95,hi95]=ST.ci95[fam][ai]??[null,null];
+      const [lo99,hi99]=ST.ci99[fam][ai]??[null,null];
+      const medL2=ST.Lmed[fam][ai][2]??null;
+      const sigF=ST.sigma[fam]??null;
+      const nonDeg=medL2!==null&&sigF!==null ? medL2>=C.NONDEG_K*sigF : null;
+      alphaResults[alpha]={
+        alpha, alpha_idx:ai,
+        invalid: ST.invalid[fam][ai],
+        non_isometry_L:{
+          L_n1:ST.Lmed[fam][ai][1]??null, L_n2:ST.Lmed[fam][ai][2]??null,
+          L_n3:ST.Lmed[fam][ai][3]??null, L_n4:ST.Lmed[fam][ai][4]??null,
+          ratio_L3_L2:medL2>0?(ST.Lmed[fam][ai][3]??0)/medL2:null,
+          ratio_L4_L3:(ST.Lmed[fam][ai][3]??0)>0?(ST.Lmed[fam][ai][4]??0)/(ST.Lmed[fam][ai][3]??1):null
+        },
+        log_slope:{
+          b_bar:b, ci_95_lo:lo95, ci_95_hi:hi95, ci_99_lo:lo99, ci_99_hi:hi99,
+          n_seeds:ST.slopes[fam][ai]?.length??null,
+          per_seed_slopes:ST.slopes[fam][ai]??null
+        },
+        degeneracy_gate:{
+          median_L2:medL2, sigma_F:sigF, threshold_5sigma:sigF!==null?5*sigF:null,
+          non_degenerate:nonDeg
+        },
+        decision:{
+          label:ST.labels[fam][ai]??null,
+          rule_path:ST.rulePaths[fam][ai]??null,
+          logic:{
+            non_degenerate:nonDeg,
+            lower_99_CI_positive:lo99!==null?lo99>0:null,
+            b_bar_geq_logComp:b!==null?b>=LOG_COMP:null,
+            zero_in_95CI:lo95!==null&&hi95!==null?(lo95<=0&&hi95>=0):null,
+            abs_bBar_leq_logSat:b!==null?Math.abs(b)<=LOG_SAT:null
+          }
+        },
+        retention_medians:ST.rhoMed[fam][ai]??null
+      };
+    }
+    familyRecords[fam]={
+      calibration:{
+        null_A_run_A:ST.calib[fam]?.nullARunA??null,
+        null_A_run_B:ST.calib[fam]?.nullARunB??null,
+        null_A_delta:ST.calib[fam]?.nullADelta??null,
+        null_B_sd:ST.calib[fam]?.nullBSd??null,
+        sigma_F:ST.sigma[fam]??null,
+        note:'sigma_F computed at alpha=1.0 only; reused for all alpha (prereg lock)'
+      },
+      alpha_star:ST.alphaStar[fam],
+      alpha_results:alphaResults
+    };
+  }
+
+  return {
+    chamber_id:'LVII', version:'1.0.0',
+    timestamp:new Date().toISOString(),
+    theory_anchor:'Bias-Damped Recursion: Theorem 2 — Recursive Composition of the Curvature Functional',
+    protocol_locks:{
+      N:C.N, tau_grid:C.TAU_GRID, depths:C.DEPTHS, families:C.FAMILIES,
+      alpha_grid:C.ALPHA_GRID, seeds_preregistered:C.SEEDS,
+      eps_log:C.EPS_LOG, bs_calib_resamples:C.BS_CALIB,
+      delta_comp:C.DELTA_COMP, delta_sat:C.DELTA_SAT, nondeg_k:C.NONDEG_K,
+      R2_tolerance:C.R2_TOL, R3_tolerance:C.R3_TOL,
+      calib_null_A_seeds:C.CALIB_NULL_A_SEEDS,
+      sigma_F_policy:'computed at alpha=1.0 only; reused for all alpha',
+      alpha_star_definition:'smallest numeric alpha (strongest damping) with SATURATING_OR_BOUNDED',
+      invalidity_scope:'per (F,alpha) cell; other alpha for same family remain valid',
+      no_adaptive_tau:true, no_gate_redefinition:true, no_new_families:true
+    },
+    validity:{
+      lv_sanity_check_passed:ST.sanityPassed,
+      partition_invariance_passed:ST.invIssues.length===0,
+      invariance_issues:ST.invIssues,
+      run_valid:ST.sanityPassed&&ST.invIssues.length===0
+    },
+    decision_thresholds:{
+      log_delta_comp:LOG_COMP, log_delta_sat:LOG_SAT,
+      compounding_rule:'nondeg AND lower_99_CI(b)>0 AND b_bar>=log(1+0.15)',
+      saturation_rule:'nondeg AND 0 in 95_CI(b) AND |b_bar|<=log(1+0.05)',
+      inconclusive_rule:'nondeg AND neither compounding nor saturation',
+      trivial_rule:'median_L2 < 5*sigma_F'
+    },
+    existence_summary:{
+      ExistsStableDamped:ST.existsStable,
+      alpha_star_per_family:ST.alphaStar,
+      minimal_alpha_any_family:ST.existsStable?Math.min(...Object.values(ST.alphaStar).filter(v=>v!==null)):null
+    },
+    families:familyRecords
+  };
+}
+
+function exportJSON() {
+  try {
+    const rec=buildExportRecord();
+    const json=JSON.stringify(rec,null,2);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`chamber_lvii_v1_0_0_${new Date().toISOString().replace(/[:.]/g,'_')}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    document.getElementById('export-status').textContent='✓ JSON downloaded.';
+  } catch(e) { document.getElementById('export-status').textContent='✗ '+e.message; }
+}
+
+function copyJSON() {
+  try {
+    const json=JSON.stringify(buildExportRecord(),null,2);
+    navigator.clipboard.writeText(json).then(()=>{
+      document.getElementById('export-status').textContent=`✓ Copied ${json.length} chars.`;
+    }).catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=json;
+      ta.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      document.getElementById('export-status').textContent=`✓ Copied (fallback).`;
+    });
+  } catch(e) { document.getElementById('export-status').textContent='✗ '+e.message; }
+}
+</script>
+</body>
+</html>

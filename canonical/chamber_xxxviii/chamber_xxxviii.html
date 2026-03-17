@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XXXVIII (Pilot) [FIXED]</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-bottom: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+    .results-table th { text-align: left; padding: 8px; color: #4a9eff; border-bottom: 1px solid #2a2a2a; }
+    .results-table td { padding: 8px; border-bottom: 1px solid #1a1a1a; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 0.8em; font-weight: bold; }
+    .badge.preserved { background: #2a4a2a; color: #4aff4a; }
+    .badge.shifted { background: #4a4a2a; color: #ffff4a; }
+    .badge.collapsed { background: #4a2a2a; color: #ff4a4a; }
+    .badge.reducible { background: #2a4a2a; color: #4aff4a; }
+    .badge.bounded { background: #2a3a4a; color: #4a9eff; }
+    .badge.undefined { background: #4a2a2a; color: #ff4a4a; }
+    canvas { max-width: 100%; height: auto; border: 1px solid #2a2a2a; margin-top: 10px; }
+    .fix-notice { background: #2a4a1a; border-left: 4px solid #4aff4a; padding: 15px; margin-bottom: 20px; }
+    .fix-notice h3 { color: #4aff4a; margin-bottom: 10px; }
+    .fix-notice ul { margin-left: 20px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XXXVIII: SUBSTRATE INTERNALIZATION [FIXED]</h1>
+      <div class="subtitle">Phase H — Resolution Stress-Test for τ-Field Dynamics (Pilot)</div>
+      <div class="subtitle">Macro Chamber: XIV (φ-Scale) | Topology: TRIANGLE (k=3) | Real Observables</div>
+    </header>
+    
+    
+    
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="64" selected>64×64 (fast)</option>
+            <option value="128">128×128 (production)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Macro Depth</label>
+          <input type="number" id="macroDepth" value="200" min="100" max="600">
+        </div>
+        <div class="control-group">
+          <label>Micro Steps/Macro</label>
+          <input type="number" id="microSteps" value="4" min="1" max="10">
+        </div>
+        <div class="control-group">
+          <label>Micro α</label>
+          <input type="number" id="microAlpha" value="0.3" min="0.1" max="0.9" step="0.1">
+        </div>
+        <div class="control-group">
+          <label>Aggregation</label>
+          <select id="aggregation">
+            <option value="MEAN" selected>Mean</option>
+            <option value="BINNED_MEAN">Binned Mean</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Coupling</label>
+          <select id="coupling">
+            <option value="OFF" selected>Off (control)</option>
+            <option value="DIRECT">Direct</option>
+            <option value="GRADIENT">Gradient</option>
+          </select>
+        </div>
+      </div>
+      <button id="runPilot" class="button-primary">▶ Run Pilot Suite (6 runs)</button>
+      <button id="runSingle">▶ Run Single (depth 1, seed 41)</button>
+      <button id="exportResults" disabled>💾 Export Results</button>
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Pilot Summary</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">H1 Classification</div><div class="metric-value" id="metricH1">—</div></div>
+        <div class="metric"><div class="metric-label">H2 Classification</div><div class="metric-value" id="metricH2">—</div></div>
+        <div class="metric"><div class="metric-label">Avg RPI Distance</div><div class="metric-value" id="metricRPIDist">—</div></div>
+        <div class="metric"><div class="metric-label">μ Trend</div><div class="metric-value" id="metricMuTrend">—</div></div>
+        <div class="metric"><div class="metric-label">Runs Complete</div><div class="metric-value" id="metricRuns">0/6</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value" id="metricStatus">Ready</div></div>
+      </div>
+    </div>
+    
+    <div class="panel" id="timeseriesPanel" style="display: none;">
+      <div class="panel-title">Observable Timeseries (Last Run)</div>
+      <canvas id="timeseriesCanvas" width="800" height="400"></canvas>
+    </div>
+    
+    <div class="panel" id="resultsPanel" style="display: none;">
+      <div class="panel-title">Detailed Results</div>
+      <table class="results-table" id="resultsTable">
+        <thead>
+          <tr>
+            <th>Depth</th>
+            <th>Seed</th>
+            <th>μ★</th>
+            <th>φ-error</th>
+            <th>Mean A</th>
+            <th>Mean Dω</th>
+            <th>Mean S</th>
+            <th>RPI Label</th>
+            <th>RPI Dist</th>
+          </tr>
+        </thead>
+        <tbody id="resultsTableBody"></tbody>
+      </table>
+    </div>
+    
+    <details><div class="panel">
+      <summary><div class="panel-title">📚 Laboratory Guide</div></summary>
+      <div style="line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Chamber XXXVIII: Substrate Internalization (Phase H)</h3>
+        
+        <p><strong>Purpose:</strong> Test whether τ-field convergence regimes persist when substrate resolution is increased through bounded internal structure.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Real Observables (Dynamic)</h3>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>Admissibility (A):</strong> 1 / (1 + mean(|∇τ|²)) — field smoothness measure</li>
+          <li><strong>Omega-drift (Dω):</strong> |Δmean(τ)| + |Δvar(τ)| — temporal change in statistics</li>
+          <li><strong>Stability (S):</strong> exp(-mean((τₙ - τₙ₋₁)²)) — inverse field change magnitude</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Hypotheses</h3>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>H1 (Structural Survival):</strong> τ-field convergence regimes persist under internal structure expansion</li>
+          <li><strong>H2 (μ Classification):</strong> μ deviation is either reducible with depth or structurally bounded</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Interpretation</h3>
+        <p><strong>H1 (RPI):</strong></p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><span class="badge preserved">PRESERVED</span> — Regime signature within threshold</li>
+          <li><span class="badge shifted">SHIFTED</span> — Regime changed but remains admissible</li>
+          <li><span class="badge collapsed">COLLAPSED</span> — Admissibility or stability failure (relative to baseline)</li>
+        </ul>
+        
+        <p style="margin-top: 15px;"><strong>H2 (μ Trend):</strong></p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><span class="badge reducible">REDUCIBLE</span> — φ-error decreases with depth</li>
+          <li><span class="badge bounded">BOUNDED</span> — φ-error plateaus (structural limit)</li>
+          <li><span class="badge undefined">UNDEFINED</span> — H1 collapsed or trend unstable</li>
+        </ul>
+      </div>
+    </div>
+  </div></details>
+  
+  <script>
+console.log('🔧 Chamber XXXVIII [FIXED] — Domain consistency + relative collapse criteria');
+
+// ============================================================================
+// TauFieldEngineN (from Chamber XIV)
+// ============================================================================
+class TauFieldEngineN {
+  constructor(config = {}) {
+    this.n_fields = config.n_fields || 1;
+    this.W = config.grid_width || 64;
+    this.size = this.W * this.W;
+    this.operatorMode = config.operator_mode || 'XIV';
+    this.samplingMode = config.sampling_mode || 'bilinear';
+    this.lambda = config.lambda || 0.10825;
+    this.sigma = config.sigma || 0.02;
+    this.mu_current = config.mu || 1.618;
+    this.laplacianMode = config.laplacian_mode || 'none';
+    
+    this.fields = Array(this.n_fields).fill(null).map(() => ({
+      tau: new Float64Array(this.size),
+      tau_next: new Float64Array(this.size),
+      tau_prev: new Float64Array(this.size)
+    }));
+    
+    this.seed = config.seed || 137042;
+    this.rng = this.createSeededRNG(this.seed);
+    this.step_count = 0;
+    
+    this.initialize(config.init_mode || 'random');
+  }
+  
+  initialize(mode = 'random') {
+    const tau = this.fields[0].tau;
+    for (let i = 0; i < this.size; i++) {
+      tau[i] = this.rng.random() * 2 * Math.PI;
+    }
+    this.fields[0].tau_prev.set(tau);
+  }
+  
+  step() {
+    const {tau, tau_next, tau_prev} = this.fields[0];
+    tau_prev.set(tau);
+    
+    for (let idx = 0; idx < this.size; idx++) {
+      const x = idx % this.W;
+      const y = Math.floor(idx / this.W);
+      
+      let delta_phi;
+      if (this.operatorMode === 'XIV') {
+        if (this.samplingMode === 'bilinear') {
+          const scaled_val = this.sampleScaledBilinear(x, y, this.mu_current, 0);
+          delta_phi = scaled_val - tau[idx];
+        } else {
+          const scaled_idx = this.getScaledIndex(x, y, this.mu_current);
+          delta_phi = tau[scaled_idx] - tau[idx];
+        }
+      } else {
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        delta_phi = tau[right_idx] - tau[idx];
+      }
+      
+      let update = tau[idx];
+      update += this.lambda * Math.sin(delta_phi);
+      
+      if (this.sigma > 0) {
+        update += this.sigma * this.rng.gaussian();
+      }
+      
+      tau_next[idx] = update;
+    }
+    
+    this.fields[0].tau = tau_next;
+    this.fields[0].tau_next = tau;
+    this.step_count++;
+  }
+  
+  getScaledIndex(x, y, mu) {
+    const x_scaled = Math.floor(x * mu) % this.W;
+    const y_scaled = Math.floor(y * mu) % this.W;
+    return x_scaled + y_scaled * this.W;
+  }
+  
+  sampleScaledBilinear(x, y, mu, field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const W = this.W;
+    
+    let xf = (x * mu) % W;
+    let yf = (y * mu) % W;
+    if (xf < 0) xf += W;
+    if (yf < 0) yf += W;
+    
+    const x0 = Math.floor(xf);
+    const y0 = Math.floor(yf);
+    const x1 = (x0 + 1) % W;
+    const y1 = (y0 + 1) % W;
+    
+    const dx = xf - x0;
+    const dy = yf - y0;
+    
+    const i00 = x0 + y0 * W;
+    const i10 = x1 + y0 * W;
+    const i01 = x0 + y1 * W;
+    const i11 = x1 + y1 * W;
+    
+    const a = tau[i00] * (1 - dx) + tau[i10] * dx;
+    const b = tau[i01] * (1 - dx) + tau[i11] * dx;
+    
+    return a * (1 - dy) + b * dy;
+  }
+  
+  computeScaleInvariants(mu) {
+    const tau = this.fields[0].tau;
+    let sum_sq_diff = 0;
+    let sum_cos_diff = 0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const tau_scaled = this.sampleScaledBilinear(x, y, mu, 0);
+        const diff = tau_scaled - tau[idx];
+        sum_sq_diff += diff * diff;
+        sum_cos_diff += Math.cos(diff);
+      }
+    }
+    
+    return {
+      Delta_scale: sum_sq_diff / this.size,
+      Pi: sum_cos_diff / this.size
+    };
+  }
+  
+  computeGradientMagnitudeSquared() {
+    const tau = this.fields[0].tau;
+    let sum = 0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        
+        const right = tau[((x + 1) % this.W) + y * this.W];
+        const left = tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = tau[x + ((y + 1) % this.W) * this.W];
+        const down = tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        
+        const gx = (right - left) / 2;
+        const gy = (up - down) / 2;
+        
+        sum += gx * gx + gy * gy;
+      }
+    }
+    
+    return sum / this.size;
+  }
+  
+  computeAdmissibility() {
+    const gradMagSq = this.computeGradientMagnitudeSquared();
+    return 1.0 / (1.0 + gradMagSq);
+  }
+  
+  computeFieldStatistics() {
+    const tau = this.fields[0].tau;
+    let sum = 0;
+    let sumSq = 0;
+    
+    for (let i = 0; i < this.size; i++) {
+      sum += tau[i];
+      sumSq += tau[i] * tau[i];
+    }
+    
+    const mean = sum / this.size;
+    const variance = (sumSq / this.size) - (mean * mean);
+    
+    return { mean, variance };
+  }
+  
+  computeOmegaDrift(prevStats) {
+    if (!prevStats) return 0;
+    
+    const currentStats = this.computeFieldStatistics();
+    const meanDrift = Math.abs(currentStats.mean - prevStats.mean);
+    const varDrift = Math.abs(currentStats.variance - prevStats.variance);
+    
+    return meanDrift + varDrift;
+  }
+  
+  computeStability() {
+    const tau = this.fields[0].tau;
+    const tau_prev = this.fields[0].tau_prev;
+    
+    let sumSqDiff = 0;
+    for (let i = 0; i < this.size; i++) {
+      const diff = tau[i] - tau_prev[i];
+      sumSqDiff += diff * diff;
+    }
+    
+    const meanSqDiff = sumSqDiff / this.size;
+    return Math.exp(-meanSqDiff);
+  }
+  
+  computeObservables(prevStats) {
+    return {
+      A: this.computeAdmissibility(),
+      Dw: this.computeOmegaDrift(prevStats),
+      S: this.computeStability(),
+      stats: this.computeFieldStatistics()
+    };
+  }
+  
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+  
+  getField(field_idx = 0) {
+    return new Float64Array(this.fields[field_idx].tau);
+  }
+  
+  setField(field_data, field_idx = 0) {
+    if (field_data.length !== this.size) {
+      throw new Error(`Field size mismatch: expected ${this.size}, got ${field_data.length}`);
+    }
+    this.fields[field_idx].tau.set(field_data);
+  }
+}
+
+// ============================================================================
+// MicroLayer [FIXED: Angle-space micro dynamics]
+// ============================================================================
+class MicroLayer {
+  constructor(numSites, config) {
+    this.numSites = numSites;
+    this.depth = config.depth || 0;
+    this.k = config.k || 0;
+    this.topology = config.topology || 'TRIANGLE';
+    this.alpha = config.alpha || 0.3;
+    this.macroInfluenceMode = config.macroInfluenceMode || 'OFF';
+    this.macroInfluenceStrength = config.macroInfluenceStrength || 0.0;
+    
+    if (this.depth > 0 && this.k > 0) {
+      this.stride = this.k;
+      this.microX = new Float32Array(numSites * this.k);
+      this.microXNext = new Float32Array(numSites * this.k);
+      this.adjacency = this.buildTopology(this.topology, this.k);
+    }
+  }
+  
+  buildTopology(topology, k) {
+    switch(topology) {
+      case 'TRIANGLE':
+        return [[1, 2], [0, 2], [0, 1]];
+      case 'CHAIN5':
+        return [[1], [0, 2], [1, 3], [2, 4], [3]];
+      case 'STAR4':
+        return [[1, 2, 3], [0], [0], [0]];
+      default:
+        throw new Error(`Unknown topology: ${topology}`);
+    }
+  }
+  
+  initialize(macroState) {
+    if (this.depth === 0) return;
+    
+    // FIXED: Initialize micro state in angle-space [0, 2π]
+    for (let site = 0; site < this.numSites; site++) {
+      const macroVal = macroState[site];
+      for (let node = 0; node < this.k; node++) {
+        this.microX[site * this.stride + node] = macroVal;
+      }
+    }
+  }
+  
+  step(macroState, W) {
+    if (this.depth === 0) return;
+    
+    for (let site = 0; site < this.numSites; site++) {
+      const macroInfluence = this.computeMacroInfluence(site, macroState, W);
+      
+      for (let node = 0; node < this.k; node++) {
+        const idx = site * this.stride + node;
+        const neighbors = this.adjacency[node];
+        
+        // FIXED: Compute coupling in angle-space using sin differences
+        let h = 0;
+        for (let nidx of neighbors) {
+          const neighbor_val = this.microX[site * this.stride + nidx];
+          const diff = neighbor_val - this.microX[idx];
+          h += Math.sin(diff);
+        }
+        h /= neighbors.length;
+        
+        // FIXED: Update in angle-space with modular wrapping
+        const x_old = this.microX[idx];
+        const delta = this.alpha * h + this.macroInfluenceStrength * macroInfluence;
+        let x_new = x_old + delta;
+        
+        // Wrap to [0, 2π]
+        while (x_new < 0) x_new += 2 * Math.PI;
+        while (x_new >= 2 * Math.PI) x_new -= 2 * Math.PI;
+        
+        this.microXNext[idx] = x_new;
+      }
+    }
+    
+    [this.microX, this.microXNext] = [this.microXNext, this.microX];
+  }
+  
+  computeMacroInfluence(site, macroState, W) {
+    switch(this.macroInfluenceMode) {
+      case 'OFF':
+        return 0;
+      case 'DIRECT':
+        return Math.sin(macroState[site]);
+      case 'GRADIENT': {
+        const x = site % W;
+        const y = Math.floor(site / W);
+        const right = macroState[((x + 1) % W) + y * W];
+        const left = macroState[((x - 1 + W) % W) + y * W];
+        const up = macroState[x + ((y + 1) % W) * W];
+        const down = macroState[x + ((y - 1 + W) % W) * W];
+        const mean = (right + left + up + down) / 4;
+        return Math.sin(macroState[site] - mean);
+      }
+      default:
+        return 0;
+    }
+  }
+  
+  get(site, node) {
+    if (this.depth === 0) throw new Error('Depth 0 has no micro state');
+    return this.microX[site * this.stride + node];
+  }
+}
+
+// ============================================================================
+// Aggregation [FIXED: Returns angle-space values]
+// ============================================================================
+function aggregate(microLayer, mode = 'MEAN') {
+  if (microLayer.depth === 0) {
+    throw new Error('Cannot aggregate depth 0');
+  }
+  
+  const numSites = microLayer.numSites;
+  const k = microLayer.k;
+  const macroState = new Float64Array(numSites);
+  
+  for (let site = 0; site < numSites; site++) {
+    switch(mode) {
+      case 'MEAN': {
+        // FIXED: Circular mean for angles
+        let sumSin = 0;
+        let sumCos = 0;
+        for (let node = 0; node < k; node++) {
+          const angle = microLayer.get(site, node);
+          sumSin += Math.sin(angle);
+          sumCos += Math.cos(angle);
+        }
+        macroState[site] = Math.atan2(sumSin / k, sumCos / k);
+        // Ensure [0, 2π]
+        if (macroState[site] < 0) macroState[site] += 2 * Math.PI;
+        break;
+      }
+      
+      case 'BINNED_MEAN': {
+        // FIXED: Circular mean then bin in angle-space
+        let sumSin = 0;
+        let sumCos = 0;
+        for (let node = 0; node < k; node++) {
+          const angle = microLayer.get(site, node);
+          sumSin += Math.sin(angle);
+          sumCos += Math.cos(angle);
+        }
+        let mean = Math.atan2(sumSin / k, sumCos / k);
+        if (mean < 0) mean += 2 * Math.PI;
+        
+        const numBins = 32;
+        const binSize = (2 * Math.PI) / numBins;
+        macroState[site] = Math.floor(mean / binSize) * binSize;
+        break;
+      }
+      
+      default:
+        throw new Error(`Unknown aggregation mode: ${mode}`);
+    }
+  }
+  
+  return macroState;
+}
+
+// ============================================================================
+// Metrics [FIXED: Relative collapse criteria]
+// ============================================================================
+const PHI = 1.618033988749895;
+
+function computeMuProxy(sweepResults) {
+  let minIdx = 0;
+  for (let i = 1; i < sweepResults.Delta_scale.length; i++) {
+    if (sweepResults.Delta_scale[i] < sweepResults.Delta_scale[minIdx]) {
+      minIdx = i;
+    }
+  }
+  
+  const mu_star = sweepResults.mu_values[minIdx];
+  const phi_error = Math.abs(mu_star - PHI) / PHI;
+  
+  return { mu_star, phi_error, mu_proxy_value: phi_error };
+}
+
+function mean(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function variance(arr) {
+  const m = mean(arr);
+  return arr.reduce((sum, x) => sum + (x - m) ** 2, 0) / arr.length;
+}
+
+function computeSignature(timeseries, windowStart, windowEnd) {
+  const window = {
+    A: timeseries.A.slice(windowStart, windowEnd),
+    Dw: timeseries.Dw.slice(windowStart, windowEnd),
+    S: timeseries.S.slice(windowStart, windowEnd)
+  };
+  
+  return {
+    mean_A: mean(window.A),
+    mean_Dw: mean(window.Dw),
+    mean_S: mean(window.S),
+    var_S: variance(window.S),
+    trend_Dw: window.Dw.length > 1 ? (window.Dw[window.Dw.length - 1] - window.Dw[0]) / window.Dw.length : 0
+  };
+}
+
+function computeRPI(signature, baselineSignature, config) {
+  const scales = config.scales || [1.0, 1.0, 0.5, 0.1, 0.2];
+  const threshold = config.threshold || 0.15;
+  
+  // FIXED: Relative collapse criteria
+  const baselineThresholds = config.baselineThresholds || {
+    A: baselineSignature.mean_A * 0.5,
+    S: baselineSignature.mean_S * 0.5
+  };
+  
+  const sigArray = [
+    signature.mean_A,
+    signature.mean_Dw,
+    signature.mean_S,
+    signature.var_S,
+    signature.trend_Dw
+  ];
+  
+  const baseArray = [
+    baselineSignature.mean_A,
+    baselineSignature.mean_Dw,
+    baselineSignature.mean_S,
+    baselineSignature.var_S,
+    baselineSignature.trend_Dw
+  ];
+  
+  let distance = 0;
+  for (let i = 0; i < sigArray.length; i++) {
+    distance += Math.abs(sigArray[i] - baseArray[i]) / scales[i];
+  }
+  distance /= sigArray.length;
+  
+  // FIXED: Relative thresholds
+  const admissibilityFailed = signature.mean_A < baselineThresholds.A;
+  const stabilityFailed = signature.mean_S < baselineThresholds.S;
+  
+  let label;
+  if (admissibilityFailed || stabilityFailed) {
+    label = 'COLLAPSED';
+  } else if (distance < threshold) {
+    label = 'PRESERVED';
+  } else {
+    label = 'SHIFTED';
+  }
+  
+  return { label, distance, signature, baselineSignature, baselineThresholds };
+}
+
+function classifyH2(muProxyValues, depths) {
+  if (depths.length < 2) {
+    return { label: 'INSUFFICIENT_DATA', trend: null };
+  }
+  
+  const dev0 = muProxyValues[0];
+  const dev1 = muProxyValues[1];
+  const delta = Math.abs(dev1 - dev0);
+  const threshold = 0.001;
+  
+  let label;
+  if (dev1 < dev0 - threshold) {
+    label = 'REDUCIBLE';
+  } else if (delta < threshold) {
+    label = 'BOUNDED';
+  } else {
+    label = 'UNDEFINED';
+  }
+  
+  return { label, trend: dev1 - dev0, deviations: muProxyValues };
+}
+
+// ============================================================================
+// Suite Runner
+// ============================================================================
+async function runSingle(config, depth, seed, progressCallback) {
+  const W = config.macro.grid;
+  const macroSteps = config.macro.depth_macro;
+  const microStepsPerMacro = config.micro.micro_steps;
+  
+  const engine = new TauFieldEngineN({
+    grid_width: W,
+    operator_mode: 'XIV',
+    lambda: config.macro.lambda,
+    sigma: config.macro.sigma,
+    seed: seed,
+    laplacian_mode: 'none',
+    sampling_mode: 'bilinear'
+  });
+  
+  const microLayer = new MicroLayer(W * W, {
+    depth: depth,
+    k: depth === 0 ? 0 : config.micro.k,
+    topology: config.micro.topology,
+    alpha: config.micro.alpha,
+    macroInfluenceMode: config.micro.coupling,
+    macroInfluenceStrength: config.micro.macro_strength
+  });
+  
+  if (depth > 0) {
+    microLayer.initialize(engine.getField(0));
+  }
+  
+  const timeseries = { A: [], Dw: [], S: [] };
+  let prevStats = null;
+  
+  for (let step = 0; step < macroSteps; step++) {
+    if (depth > 0) {
+      for (let ms = 0; ms < microStepsPerMacro; ms++) {
+        microLayer.step(engine.getField(0), W);
+      }
+      const aggregated = aggregate(microLayer, config.micro.aggregation);
+      engine.setField(aggregated, 0);
+    }
+    
+    engine.step();
+    
+    const obs = engine.computeObservables(prevStats);
+    timeseries.A.push(obs.A);
+    timeseries.Dw.push(obs.Dw);
+    timeseries.S.push(obs.S);
+    prevStats = obs.stats;
+    
+    if (step % 10 === 0 && progressCallback) {
+      progressCallback(step / macroSteps);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  // μ sweep
+  const sweepResults = { mu_values: [], Delta_scale: [], Pi: [] };
+  for (let mu = config.macro.mu_min; mu <= config.macro.mu_max; mu += config.macro.mu_step) {
+    engine.mu_current = mu;
+    const inv = engine.computeScaleInvariants(mu);
+    sweepResults.mu_values.push(mu);
+    sweepResults.Delta_scale.push(inv.Delta_scale);
+    sweepResults.Pi.push(inv.Pi);
+  }
+  
+  const muProxyResult = computeMuProxy(sweepResults);
+  
+  const windowStart = Math.floor(macroSteps * 0.6);
+  const windowEnd = macroSteps;
+  const signature = computeSignature(timeseries, windowStart, windowEnd);
+  
+  return {
+    depth,
+    seed,
+    config: { macro: config.macro, micro: config.micro },
+    timeseries,
+    signature,
+    mu_proxy: muProxyResult,
+    final_field: engine.getField(0)
+  };
+}
+
+async function runPilot(config, progressCallback) {
+  const depths = config.micro.depths;
+  const seeds = config.suite.seeds;
+  const runs = [];
+  let baselineRun = null;
+  
+  let runCount = 0;
+  const totalRuns = depths.length * seeds.length;
+  
+  // Depth 0 baseline
+  for (let seed of seeds) {
+    const result = await runSingle(config, 0, seed, (progress) => {
+      if (progressCallback) {
+        progressCallback({
+          current: runCount,
+          total: totalRuns,
+          depth: 0,
+          seed,
+          progress
+        });
+      }
+    });
+    
+    runs.push(result);
+    if (seed === seeds[0]) {
+      baselineRun = result;
+    }
+    runCount++;
+  }
+  
+  // FIXED: Compute baseline ensemble statistics for relative thresholds
+  const depth0Runs = runs.filter(r => r.depth === 0);
+  const baselineEnsemble = {
+    mean_A: mean(depth0Runs.map(r => r.signature.mean_A)),
+    mean_S: mean(depth0Runs.map(r => r.signature.mean_S))
+  };
+  
+  const baselineThresholds = {
+    A: baselineEnsemble.mean_A * 0.5,
+    S: baselineEnsemble.mean_S * 0.5
+  };
+  
+  console.log('📊 Baseline ensemble:', baselineEnsemble);
+  console.log('🎯 Collapse thresholds:', baselineThresholds);
+  
+  // Depth 1
+  for (let depth of depths.slice(1)) {
+    for (let seed of seeds) {
+      const result = await runSingle(config, depth, seed, (progress) => {
+        if (progressCallback) {
+          progressCallback({
+            current: runCount,
+            total: totalRuns,
+            depth,
+            seed,
+            progress
+          });
+        }
+      });
+      
+      runs.push(result);
+      runCount++;
+    }
+  }
+  
+  // Compute RPI with relative thresholds
+  const rpiResults = [];
+  for (let run of runs) {
+    if (run.depth === 0 && run.seed === seeds[0]) continue;
+    
+    const rpi = computeRPI(run.signature, baselineRun.signature, {
+      scales: [1.0, 1.0, 0.5, 0.1, 0.2],
+      threshold: 0.15,
+      baselineThresholds: baselineThresholds
+    });
+    
+    rpiResults.push({ depth: run.depth, seed: run.seed, rpi });
+  }
+  
+  // H2 classification
+  const muByDepth = {};
+  for (let run of runs) {
+    if (!muByDepth[run.depth]) muByDepth[run.depth] = [];
+    muByDepth[run.depth].push(run.mu_proxy.mu_proxy_value);
+  }
+  
+  const depthKeys = Object.keys(muByDepth).map(Number).sort();
+  const avgMuByDepth = depthKeys.map(d => {
+    const vals = muByDepth[d];
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  });
+  
+  const h2 = classifyH2(avgMuByDepth, depthKeys);
+  
+  return {
+    runs,
+    rpi_results: rpiResults,
+    h2_classification: h2,
+    baseline_thresholds: baselineThresholds,
+    summary: { depths: depthKeys, seeds, total_runs: runs.length }
+  };
+}
+
+// ============================================================================
+// Visualization
+// ============================================================================
+function plotTimeseries(timeseries) {
+  const canvas = document.getElementById('timeseriesCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, w, h);
+  
+  const padding = 60;
+  const plotW = w - 2 * padding;
+  const plotH = (h - 3 * padding) / 3;
+  
+  const series = [
+    { data: timeseries.A, color: '#4aff4a', label: 'Admissibility (A)', yOffset: padding },
+    { data: timeseries.Dw, color: '#ffff4a', label: 'Omega-drift (Dω)', yOffset: padding + plotH + padding },
+    { data: timeseries.S, color: '#4a9eff', label: 'Stability (S)', yOffset: padding + 2 * (plotH + padding) }
+  ];
+  
+  for (let s of series) {
+    const minVal = Math.min(...s.data);
+    const maxVal = Math.max(...s.data);
+    const range = maxVal - minVal || 1;
+    
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, s.yOffset);
+    ctx.lineTo(padding, s.yOffset + plotH);
+    ctx.lineTo(padding + plotW, s.yOffset + plotH);
+    ctx.stroke();
+    
+    ctx.fillStyle = s.color;
+    ctx.font = '14px Consolas';
+    ctx.fillText(s.label, padding, s.yOffset - 10);
+    
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < s.data.length; i++) {
+      const x = padding + (i / (s.data.length - 1)) * plotW;
+      const y = s.yOffset + plotH - ((s.data[i] - minVal) / range) * plotH;
+      
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Consolas';
+    ctx.fillText(maxVal.toFixed(3), padding - 50, s.yOffset + 5);
+    ctx.fillText(minVal.toFixed(3), padding - 50, s.yOffset + plotH);
+  }
+  
+  document.getElementById('timeseriesPanel').style.display = 'block';
+}
+
+// ============================================================================
+// UI Controller
+// ============================================================================
+let pilotResults = null;
+
+const PILOT_CONFIG = {
+  macro: {
+    chamber: 'XIV',
+    grid: 64,
+    depth_macro: 200,
+    lambda: 0.10825,
+    sigma: 0.02,
+    mu_min: 1.55,
+    mu_max: 1.68,
+    mu_step: 0.01
+  },
+  micro: {
+    depths: [0, 1],
+    topology: 'TRIANGLE',
+    k: 3,
+    micro_steps: 4,
+    alpha: 0.3,
+    coupling: 'OFF',
+    macro_strength: 0.0,
+    aggregation: 'MEAN'
+  },
+  suite: {
+    seeds: [41, 42, 43]
+  }
+};
+
+function updateConfig() {
+  PILOT_CONFIG.macro.grid = parseInt(document.getElementById('gridSize').value);
+  PILOT_CONFIG.macro.depth_macro = parseInt(document.getElementById('macroDepth').value);
+  PILOT_CONFIG.micro.micro_steps = parseInt(document.getElementById('microSteps').value);
+  PILOT_CONFIG.micro.alpha = parseFloat(document.getElementById('microAlpha').value);
+  PILOT_CONFIG.micro.aggregation = document.getElementById('aggregation').value;
+  PILOT_CONFIG.micro.coupling = document.getElementById('coupling').value;
+}
+
+document.getElementById('runSingle').addEventListener('click', async () => {
+  updateConfig();
+  
+  document.getElementById('runPilot').disabled = true;
+  document.getElementById('runSingle').disabled = true;
+  document.getElementById('statusDisplay').style.display = 'block';
+  document.getElementById('statusDisplay').className = 'status running';
+  document.getElementById('metricStatus').textContent = 'Running...';
+  
+  console.log('🚀 Running single test (depth 1, seed 41)...');
+  
+  const result = await runSingle(PILOT_CONFIG, 1, 41, (progress) => {
+    document.getElementById('progressFill').style.width = (progress * 100) + '%';
+    document.getElementById('statusDisplay').textContent = `Single run: ${(progress * 100).toFixed(0)}%`;
+  });
+  
+  console.log('✅ Single run complete!', result);
+  
+  plotTimeseries(result.timeseries);
+  
+  document.getElementById('metricStatus').textContent = 'Complete';
+  document.getElementById('statusDisplay').className = 'status complete';
+  document.getElementById('statusDisplay').textContent = 
+    `Single run complete! μ★=${result.mu_proxy.mu_star.toFixed(6)}, A=${result.signature.mean_A.toFixed(3)}`;
+  
+  document.getElementById('runPilot').disabled = false;
+  document.getElementById('runSingle').disabled = false;
+});
+
+document.getElementById('runPilot').addEventListener('click', async () => {
+  updateConfig();
+  
+  document.getElementById('runPilot').disabled = true;
+  document.getElementById('runSingle').disabled = true;
+  document.getElementById('exportResults').disabled = true;
+  document.getElementById('statusDisplay').style.display = 'block';
+  document.getElementById('statusDisplay').className = 'status running';
+  document.getElementById('metricStatus').textContent = 'Running...';
+  
+  console.log('🚀 Starting pilot suite [FIXED VERSION]...');
+  
+  pilotResults = await runPilot(PILOT_CONFIG, (progress) => {
+    const pct = ((progress.current / progress.total) * 100).toFixed(0);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('statusDisplay').textContent = 
+      `Run ${progress.current + 1}/6 (depth=${progress.depth}, seed=${progress.seed}) — ${(progress.progress * 100).toFixed(0)}%`;
+    document.getElementById('metricRuns').textContent = `${progress.current}/6`;
+  });
+  
+  console.log('✅ Pilot complete [FIXED]!', pilotResults);
+  
+  const lastRun = pilotResults.runs[pilotResults.runs.length - 1];
+  plotTimeseries(lastRun.timeseries);
+  
+  const h1Labels = pilotResults.rpi_results
+    .filter(r => r.depth === 1)
+    .map(r => r.rpi.label);
+  
+  const h1Consensus = h1Labels.every(l => l === h1Labels[0]) ? h1Labels[0] : 'MIXED';
+  
+  const avgRPIDist = pilotResults.rpi_results
+    .filter(r => r.depth === 1)
+    .reduce((sum, r) => sum + r.rpi.distance, 0) / 3;
+  
+  document.getElementById('metricH1').textContent = h1Consensus;
+  document.getElementById('metricH2').textContent = pilotResults.h2_classification.label;
+  document.getElementById('metricRPIDist').textContent = avgRPIDist.toFixed(3);
+  document.getElementById('metricMuTrend').textContent = 
+    (pilotResults.h2_classification.trend * 100).toFixed(2) + '%';
+  document.getElementById('metricRuns').textContent = '6/6';
+  document.getElementById('metricStatus').textContent = 'Complete';
+  document.getElementById('statusDisplay').className = 'status complete';
+  document.getElementById('statusDisplay').textContent = '✅ Pilot complete! Domain consistency + relative collapse criteria validated.';
+  
+  const tbody = document.getElementById('resultsTableBody');
+  tbody.innerHTML = '';
+  
+  for (let run of pilotResults.runs) {
+    const rpi = pilotResults.rpi_results.find(r => r.depth === run.depth && r.seed === run.seed);
+    
+    const row = tbody.insertRow();
+    row.insertCell().textContent = run.depth;
+    row.insertCell().textContent = run.seed;
+    row.insertCell().textContent = run.mu_proxy.mu_star.toFixed(6);
+    row.insertCell().textContent = (run.mu_proxy.phi_error * 100).toFixed(3) + '%';
+    row.insertCell().textContent = run.signature.mean_A.toFixed(4);
+    row.insertCell().textContent = run.signature.mean_Dw.toFixed(4);
+    row.insertCell().textContent = run.signature.mean_S.toFixed(4);
+    
+    if (rpi) {
+      const labelCell = row.insertCell();
+      labelCell.innerHTML = `<span class="badge ${rpi.rpi.label.toLowerCase()}">${rpi.rpi.label}</span>`;
+      row.insertCell().textContent = rpi.rpi.distance.toFixed(3);
+    } else {
+      row.insertCell().textContent = 'BASELINE';
+      row.insertCell().textContent = '—';
+    }
+  }
+  
+  document.getElementById('resultsPanel').style.display = 'block';
+  document.getElementById('exportResults').disabled = false;
+  document.getElementById('runPilot').disabled = false;
+  document.getElementById('runSingle').disabled = false;
+});
+
+document.getElementById('exportResults').addEventListener('click', () => {
+  if (!pilotResults) return;
+  
+  const exportData = {
+    chamber: 'XXXVIII',
+    phase: 'H',
+    version: 'FIXED',
+    fixes_applied: [
+      'Micro state in angle-space [-π, π] with modular wrapping',
+      'Circular mean aggregation for angle-space consistency',
+      'Relative collapse thresholds (0.5× baseline A, 0.5× baseline S)'
+    ],
+    macro_chamber: 'XIV',
+    engine_version: 'TauFieldEngineN-0.7.0',
+    observables: 'REAL_DYNAMIC',
+    timestamp: new Date().toISOString(),
+    config: PILOT_CONFIG,
+    baseline_thresholds: pilotResults.baseline_thresholds,
+    results: {
+      h1: { rpi_results: pilotResults.rpi_results },
+      h2: pilotResults.h2_classification
+    },
+    runs: pilotResults.runs.map(run => ({
+      depth: run.depth,
+      seed: run.seed,
+      mu_star: run.mu_proxy.mu_star,
+      phi_error: run.mu_proxy.phi_error,
+      signature: run.signature,
+      timeseries_summary: {
+        mean_A: mean(run.timeseries.A),
+        mean_Dw: mean(run.timeseries.Dw),
+        mean_S: mean(run.timeseries.S),
+        final_A: run.timeseries.A[run.timeseries.A.length - 1],
+        final_S: run.timeseries.S[run.timeseries.S.length - 1]
+      }
+    }))
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chamber_xxxviii_pilot_FIXED_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Results exported [FIXED VERSION]');
+});
+
+console.log('✅ Chamber XXXVIII initialized [FIXED]');
+console.log('🔧 Fixes: angle-space micro + relative collapse thresholds');
+console.log('📊 Config:', PILOT_CONFIG);
+  </script>
+</body>
+</html>

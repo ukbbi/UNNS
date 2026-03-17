@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Many-Faces Theorem - Complete Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5em;
+        }
+        
+        .controls {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 120px;
+        }
+        
+        label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+        
+        select, input[type="range"], input[type="number"], button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+        }
+        
+        select:hover, button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        button.active {
+            background: rgba(100,255,200,0.3);
+        }
+        
+        .visualizations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .viz-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .viz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+        
+        .viz-card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        canvas {
+            width: 100%;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        #threejs-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .value-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            max-width: 900px;
+            margin: 50px auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-modal {
+            font-size: 30px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: white;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .theorem-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .theorem-section h3 {
+            margin-bottom: 15px;
+            color: #90EE90;
+        }
+        
+        .theorem-section h4 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #ADD8E6;
+        }
+        
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .math {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            margin: 10px 0;
+        }
+        
+        code {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .animating {
+            animation: pulse 2s infinite;
+        }
+        
+        .custom-sequence-input {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .custom-sequence-input.active {
+            display: block;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .input-row input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 UNNS Many-Faces Theorem - Complete Visualization Suite</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="sequence">Sequence Type</label>
+                <select id="sequence">
+                    <option value="fibonacci">Fibonacci</option>
+                    <option value="lucas">Lucas</option>
+                    <option value="pell">Pell</option>
+                    <option value="jacobsthal">Jacobsthal</option>
+                    <option value="tribonacci">Tribonacci</option>
+                    <option value="tetranacci">Tetranacci</option>
+                    <option value="padovan">Padovan</option>
+                    <option value="perrin">Perrin</option>
+                    <option value="narayana">Narayana</option>
+                    <option value="catalan">Catalan</option>
+                    <option value="mersenne">Mersenne</option>
+                    <option value="fermat">Fermat</option>
+                    <option value="custom">Custom Linear</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="terms">Number of Terms</label>
+                <input type="range" id="terms" min="5" max="100" value="25">
+                <span id="termsValue">25</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="modulus">Modular Domain (m)</label>
+                <input type="range" id="modulus" min="2" max="15" value="7">
+                <span id="modulusValue">7</span>
+            </div>
+            
+            <button id="animate">🎬 Animate</button>
+            <button id="export-json">📥 Export JSON</button>
+            <button id="export-csv">📊 Export CSV</button>
+            <button id="show-guide">📖 Guide</button>
+            <button id="reset">🔄 Reset</button>
+        </div>
+        
+        <div class="custom-sequence-input" id="customInput">
+            <h4>Define Custom Linear Recurrence</h4>
+            <div class="input-row">
+                <label>Seeds (comma-separated):</label>
+                <input type="text" id="customSeeds" placeholder="0,1" value="0,1">
+            </div>
+            <div class="input-row">
+                <label>Coefficients (newest to oldest):</label>
+                <input type="text" id="customCoeffs" placeholder="1,1" value="1,1">
+            </div>
+            <button id="applyCustom">Apply Custom Sequence</button>
+        </div>
+        
+        <div class="visualizations">
+            <div class="viz-card">
+                <h3>📊 Linear Recurrence Values</h3>
+                <canvas id="sequenceCanvas" width="400" height="300"></canvas>
+                <div class="info">
+                    <div>Current sequence: <span id="seqName"></span></div>
+                    <div>Recurrence: <span id="recurrence"></span></div>
+                    <div class="value-display" id="values"></div>
+                </div>
+            </div>
+            
+            <div class="viz-card">
+                <h3>🌀 2D Geometric Spiral</h3>
+                <canvas id="spiralCanvas" width="400" height="400"></canvas>
+                <div class="info">
+                    <div>Dominant root: <span id="dominantRoot"></span></div>
+                    <div>Convergence ratio: <span id="ratioConvergence"></span></div>
+                </div>
+            </div>
+            
+            <div class="viz-card">
+                <h3>🎨 Modular Domain Partition</h3>
+                <canvas id="modularCanvas" width="400" height="300"></canvas>
+                <div class="info">
+                    <div>Modulus m = <span id="modDisplay"></span></div>
+                    <div>Residue distribution: <span id="residueClasses"></span></div>
+                </div>
+            </div>
+            
+            <div class="viz-card">
+                <h3>📈 Ratio Convergence</h3>
+                <canvas id="ratioCanvas" width="400" height="300"></canvas>
+                <div class="info">
+                    <div>Converging to: <span id="limitValue"></span></div>
+                    <div>Current error: <span id="errorValue"></span></div>
+                </div>
+            </div>
+            
+            <div class="viz-card full-width">
+                <h3>🎭 3D Helical Visualization</h3>
+                <div id="threejs-container"></div>
+                <div class="info">
+                    <div>Mouse: Rotate | Scroll: Zoom | Right-click: Pan</div>
+                    <div>Showing spiral embedding in 3D space with radial growth following sequence values</div>
+                </div>
+            <div class="theorem-section">
+                <h3>💡 Pro Tips & Shortcuts</h3>
+                <h4>Advanced Usage:</h4>
+                <ul>
+                    <li><strong>Compare Sequences:</strong> Export multiple sequences as JSON, then compare in Python</li>
+                    <li><strong>Find Patterns:</strong> Try the same modulus across different sequences</li>
+                    <li><strong>Performance:</strong> For large terms (>50), some sequences may slow down due to exponential growth</li>
+                    <li><strong>Custom Exploration:</strong> Try negative coefficients for oscillating sequences</li>
+                    <li><strong>3D Navigation:</strong> Move mouse slowly for smooth rotation, quick moves for spin</li>
+                </ul>
+                
+                <h4>Common Questions:</h4>
+                <ul>
+                    <li><strong>Q: Why do some bars disappear?</strong> A: Values too large cause overflow - normal for exponential sequences</li>
+                    <li><strong>Q: What's the best modulus to use?</strong> A: Try primes (5,7,11,13) for interesting patterns</li>
+                    <li><strong>Q: Can I save the visualizations?</strong> A: Right-click any canvas to save as image</li>
+                    <li><strong>Q: How accurate are the calculations?</strong> A: JavaScript uses 64-bit floats, accurate to ~15 digits</li>
+                </ul>
+                
+                <h4>Educational Activities:</h4>
+                <ol>
+                    <li>Predict the dominant root before checking</li>
+                    <li>Find sequences with the same dominant root</li>
+                    <li>Discover which sequences have uniform modular distribution</li>
+                    <li>Create a custom sequence that converges to exactly 2</li>
+                    <li>Export data and verify Binet's formula in Python</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Guide Modal -->
+    <div id="guideModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📚 UNNS Many-Faces Theorem Guide</h2>
+                <button class="close-modal" onclick="closeGuide()">&times;</button>
+            </div>
+            
+            <div class="theorem-section">
+                <h3>The Many-Faces Theorem</h3>
+                <div class="math">
+                    <p><strong>Theorem 1 (UNNS Many-Faces):</strong> Let U = (S, C, G, {μ_D}) be a UNNS system. Then:</p>
+                    <ol>
+                        <li><strong>Linear recurrence embedding:</strong> Any linear recurrence a_n = c₁a_{n-1} + ... + c_ra_{n-r} can be embedded.</li>
+                        <li><strong>Dominant-root attractor:</strong> If the characteristic polynomial has unique dominant root r_d, then lim(s_{n+1}/s_n) = r_d.</li>
+                        <li><strong>Modular domain partition:</strong> Residues mod m partition nests into m evolving domains.</li>
+                        <li><strong>Cross-domain homomorphism:</strong> Constructive mappings exist between domain encodings.</li>
+                        <li><strong>Computational completeness:</strong> With appropriate combinators, UNNS can simulate Turing machines.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="theorem-section">
+                <h3>Proof Sketch: Fibonacci Embedding</h3>
+                <h4>Construction:</h4>
+                <pre>
+UNNS System U = (S, C, G, μ_Z) where:
+- S = ℤ (nests as integers)
+- G = {0, 1} (seeds)
+- C = {★} where ★(x,y) = x + y
+- μ_Z: S → ℤ is identity
+
+Sequence generation:
+s₀ = 0, s₁ = 1
+s_{n+1} = ★(s_{n-1}, s_n) = s_{n-1} + s_n
+                </pre>
+                
+                <h4>Inductive Proof:</h4>
+                <pre>
+Base: s₀ = 0 = F₀, s₁ = 1 = F₁ ✓
+
+Inductive step: Assume μ_Z(s_k) = F_k for k ≤ n
+Then: μ_Z(s_{n+1}) = μ_Z(★(s_{n-1}, s_n))
+                    = μ_Z(s_{n-1} + s_n)
+                    = F_{n-1} + F_n
+                    = F_{n+1} ✓
+
+Convergence: By Binet's formula,
+F_n = (φⁿ - ψⁿ)/√5 where φ = (1+√5)/2
+
+Therefore: lim(F_{n+1}/F_n) = φ (golden ratio)
+                </pre>
+            </div>
+            
+            <div class="theorem-section">
+                <h3>Python Verification Script</h3>
+                <pre>
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+def verify_unns_convergence(sequence_data):
+    """Verify UNNS convergence properties"""
+    values = sequence_data['values']
+    dominant = sequence_data['dominant_root']
+    
+    # Calculate ratios
+    ratios = [values[i]/values[i-1] 
+              for i in range(1, len(values)) 
+              if values[i-1] != 0]
+    
+    # Calculate convergence errors
+    errors = [abs(r - dominant) for r in ratios]
+    
+    # Fit exponential decay to error
+    x = np.arange(len(errors))
+    
+    def exp_decay(x, a, b):
+        return a * np.exp(-b * x)
+    
+    try:
+        popt, _ = curve_fit(exp_decay, x[5:], errors[5:])
+        print(f"Error decay rate: {popt[1]:.4f}")
+    except:
+        print("Could not fit exponential decay")
+    
+    # Visualization
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # Sequence values
+    axes[0,0].semilogy(values[:50], 'b-', marker='o', markersize=3)
+    axes[0,0].set_title('Sequence Values (log scale)')
+    axes[0,0].set_xlabel('n')
+    axes[0,0].set_ylabel('Value')
+    axes[0,0].grid(True, alpha=0.3)
+    
+    # Ratio convergence
+    axes[0,1].plot(ratios, 'g-', label='Ratios')
+    axes[0,1].axhline(y=dominant, color='r', 
+                       linestyle='--', label=f'Dominant root: {dominant:.6f}')
+    axes[0,1].set_title('Ratio Convergence')
+    axes[0,1].set_xlabel('n')
+    axes[0,1].set_ylabel('s(n+1)/s(n)')
+    axes[0,1].legend()
+    axes[0,1].grid(True, alpha=0.3)
+    
+    # Error decay
+    axes[1,0].semilogy(errors, 'r-', label='Actual error')
+    if 'popt' in locals():
+        axes[1,0].semilogy(x, exp_decay(x, *popt), 
+                          'b--', label='Exponential fit')
+    axes[1,0].set_title('Convergence Error')
+    axes[1,0].set_xlabel('n')
+    axes[1,0].set_ylabel('|ratio - dominant root|')
+    axes[1,0].legend()
+    axes[1,0].grid(True, alpha=0.3)
+    
+    # Modular partition (example with m=7)
+    m = 7
+    residues = [v % m for v in values[:100]]
+    axes[1,1].hist(residues, bins=m, alpha=0.7, 
+                   color='purple', edgecolor='black')
+    axes[1,1].set_title(f'Modular Partition (mod {m})')
+    axes[1,1].set_xlabel('Residue class')
+    axes[1,1].set_ylabel('Frequency')
+    axes[1,1].set_xticks(range(m))
+    axes[1,1].grid(True, alpha=0.3)
+    
+    plt.suptitle(f"{sequence_data['sequence']} - UNNS Properties Verification")
+    plt.tight_layout()
+    plt.show()
+    
+    return {
+        'final_ratio': ratios[-1] if ratios else 0,
+        'final_error': errors[-1] if errors else 0,
+        'convergence_rate': popt[1] if 'popt' in locals() else None
+    }
+
+# Usage:
+# Load exported JSON data from the visualization
+with open('unns_fibonacci_50.json', 'r') as f:
+    data = json.load(f)
+    results = verify_unns_convergence(data)
+    print(f"Final convergence error: {results['final_error']:.2e}")
+                </pre>
+            </div>
+            
+            <div class="theorem-section">
+                <h3>Key Insights</h3>
+                <ul>
+                    <li><strong>Universality:</strong> UNNS provides a unified framework for diverse mathematical sequences</li>
+                    <li><strong>Attractors:</strong> Dominant eigenvalues naturally emerge as geometric attractors</li>
+                    <li><strong>Modularity:</strong> Residue classes create finite-state subsystems within infinite sequences</li>
+                    <li><strong>Cross-domain mapping:</strong> The same sequence has multiple valid representations</li>
+                    <li><strong>Computational power:</strong> With proper combinators, UNNS achieves Turing completeness</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete sequence generators with ALL sequences
+        const sequences = {
+            fibonacci: {
+                name: "Fibonacci",
+                recurrence: "F(n) = F(n-1) + F(n-2)",
+                seeds: [0, 1],
+                dominant: (1 + Math.sqrt(5)) / 2,
+                generate: function(n) {
+                    const seq = [0, 1];
+                    for (let i = 2; i < n; i++) {
+                        seq.push(seq[i-1] + seq[i-2]);
+                    }
+                    return seq;
+                }
+            },
+            lucas: {
+                name: "Lucas",
+                recurrence: "L(n) = L(n-1) + L(n-2)",
+                seeds: [2, 1],
+                dominant: (1 + Math.sqrt(5)) / 2,
+                generate: function(n) {
+                    const seq = [2, 1];
+                    for (let i = 2; i < n; i++) {
+                        seq.push(seq[i-1] + seq[i-2]);
+                    }
+                    return seq;
+                }
+            },
+            pell: {
+                name: "Pell",
+                recurrence: "P(n) = 2P(n-1) + P(n-2)",
+                seeds: [0, 1],
+                dominant: 1 + Math.sqrt(2),
+                generate: function(n) {
+                    const seq = [0, 1];
+                    for (let i = 2; i < n; i++) {
+                        seq.push(2 * seq[i-1] + seq[i-2]);
+                    }
+                    return seq;
+                }
+            },
+            jacobsthal: {
+                name: "Jacobsthal",
+                recurrence: "J(n) = J(n-1) + 2J(n-2)",
+                seeds: [0, 1],
+                dominant: 2,
+                generate: function(n) {
+                    const seq = [0, 1];
+                    for (let i = 2; i < n; i++) {
+                        seq.push(seq[i-1] + 2 * seq[i-2]);
+                    }
+                    return seq;
+                }
+            },
+            tribonacci: {
+                name: "Tribonacci",
+                recurrence: "T(n) = T(n-1) + T(n-2) + T(n-3)",
+                seeds: [0, 0, 1],
+                dominant: 1.83928675521,
+                generate: function(n) {
+                    const seq = [0, 0, 1];
+                    for (let i = 3; i < n; i++) {
+                        seq.push(seq[i-1] + seq[i-2] + seq[i-3]);
+                    }
+                    return seq;
+                }
+            },
+            tetranacci: {
+                name: "Tetranacci",
+                recurrence: "T(n) = T(n-1) + T(n-2) + T(n-3) + T(n-4)",
+                seeds: [0, 0, 0, 1],
+                dominant: 1.92756197548,
+                generate: function(n) {
+                    const seq = [0, 0, 0, 1];
+                    for (let i = 4; i < n; i++) {
+                        seq.push(seq[i-1] + seq[i-2] + seq[i-3] + seq[i-4]);
+                    }
+                    return seq;
+                }
+            },
+            padovan: {
+                name: "Padovan",
+                recurrence: "P(n) = P(n-2) + P(n-3)",
+                seeds: [1, 1, 1],
+                dominant: 1.3247179572,
+                generate: function(n) {
+                    const seq = [1, 1, 1];
+                    for (let i = 3; i < n; i++) {
+                        seq.push(seq[i-2] + seq[i-3]);
+                    }
+                    return seq;
+                }
+            },
+            perrin: {
+                name: "Perrin",
+                recurrence: "P(n) = P(n-2) + P(n-3)",
+                seeds: [3, 0, 2],
+                dominant: 1.3247179572,
+                generate: function(n) {
+                    const seq = [3, 0, 2];
+                    for (let i = 3; i < n; i++) {
+                        seq.push(seq[i-2] + seq[i-3]);
+                    }
+                    return seq;
+                }
+            },
+            narayana: {
+                name: "Narayana",
+                recurrence: "N(n) = N(n-1) + N(n-3)",
+                seeds: [1, 1, 1],
+                dominant: 1.46557123188,
+                generate: function(n) {
+                    const seq = [1, 1, 1];
+                    for (let i = 3; i < n; i++) {
+                        seq.push(seq[i-1] + seq[i-3]);
+                    }
+                    return seq;
+                }
+            },
+            catalan: {
+                name: "Catalan",
+                recurrence: "C(n) = (4n-2)/(n+1) * C(n-1)",
+                seeds: [1],
+                dominant: 4,
+                generate: function(n) {
+                    const seq = [1];
+                    for (let i = 1; i < n; i++) {
+                        seq.push(Math.round(seq[i-1] * (4*i - 2) / (i + 1)));
+                    }
+                    return seq;
+                }
+            },
+            mersenne: {
+                name: "Mersenne",
+                recurrence: "M(n) = 2^n - 1",
+                seeds: [0],
+                dominant: 2,
+                generate: function(n) {
+                    const seq = [];
+                    for (let i = 0; i < n; i++) {
+                        seq.push(Math.pow(2, i) - 1);
+                    }
+                    return seq;
+                }
+            },
+            fermat: {
+                name: "Fermat",
+                recurrence: "F(n) = 2^(2^n) + 1",
+                seeds: [3],
+                dominant: 2,
+                generate: function(n) {
+                    const seq = [];
+                    for (let i = 0; i < Math.min(n, 10); i++) { // Limited due to rapid growth
+                        seq.push(Math.pow(2, Math.pow(2, i)) + 1);
+                    }
+                    // Fill rest with approximation to avoid overflow
+                    for (let i = seq.length; i < n; i++) {
+                        seq.push(seq[seq.length-1] * 2);
+                    }
+                    return seq;
+                }
+            },
+            custom: {
+                name: "Custom",
+                recurrence: "User-defined",
+                seeds: [0, 1],
+                dominant: 1.618,
+                coeffs: [1, 1],
+                generate: function(n) {
+                    const seq = [...this.seeds];
+                    const coeffs = this.coeffs;
+                    const order = coeffs.length;
+                    
+                    for (let i = seq.length; i < n; i++) {
+                        let next = 0;
+                        for (let j = 0; j < order; j++) {
+                            if (i - j - 1 >= 0) {
+                                next += coeffs[j] * seq[i - j - 1];
+                            }
+                        }
+                        seq.push(next);
+                    }
+                    return seq;
+                }
+            }
+        };
+
+        let currentSequence = 'fibonacci';
+        let numTerms = 25;
+        let modulus = 7;
+        let animationFrame = 0;
+        let isAnimating = false;
+        let scene3D, camera3D, renderer3D, spiral3D;
+
+        // Canvas contexts
+        const seqCanvas = document.getElementById('sequenceCanvas');
+        const seqCtx = seqCanvas.getContext('2d');
+        const spiralCanvas = document.getElementById('spiralCanvas');
+        const spiralCtx = spiralCanvas.getContext('2d');
+        const modCanvas = document.getElementById('modularCanvas');
+        const modCtx = modCanvas.getContext('2d');
+        const ratioCanvas = document.getElementById('ratioCanvas');
+        const ratioCtx = ratioCanvas.getContext('2d');
+
+        // Initialize Three.js
+        function init3D() {
+            const container = document.getElementById('threejs-container');
+            
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x1a1a2e);
+            
+            camera3D = new THREE.PerspectiveCamera(
+                75, 
+                container.clientWidth / container.clientHeight,
+                0.1, 
+                1000
+            );
+            camera3D.position.set(30, 30, 50);
+            
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer3D.domElement);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene3D.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(10, 10, 10);
+            scene3D.add(directionalLight);
+            
+            // Add axes helper
+            const axesHelper = new THREE.AxesHelper(20);
+            scene3D.add(axesHelper);
+            
+            // Add grid
+            const gridHelper = new THREE.GridHelper(50, 10, 0x444444, 0x222222);
+            scene3D.add(gridHelper);
+            
+            // Simple orbit controls
+            let mouseX = 0, mouseY = 0;
+            let targetX = 0, targetY = 0;
+            
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                mouseX = (e.clientX - rect.left) / rect.width * 2 - 1;
+                mouseY = -(e.clientY - rect.top) / rect.height * 2 + 1;
+            });
+            
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+                
+                targetX = mouseX * Math.PI;
+                targetY = mouseY * Math.PI / 2;
+                
+                camera3D.position.x = 50 * Math.cos(targetX);
+                camera3D.position.z = 50 * Math.sin(targetX);
+                camera3D.position.y = 30 + 20 * Math.sin(targetY);
+                camera3D.lookAt(scene3D.position);
+                
+                if (spiral3D) {
+                    spiral3D.rotation.y += 0.005;
+                }
+                
+                renderer3D.render(scene3D, camera3D);
+            }
+            animate3D();
+        }
+
+        function update3DSpiral(seq) {
+            // Remove old spiral
+            if (spiral3D) {
+                scene3D.remove(spiral3D);
+            }
+            
+            // Create spiral geometry
+            const points = [];
+            const colors = [];
+            const maxVal = Math.max(...seq.slice(0, Math.min(numTerms, 50)));
+            const scale = 20 / maxVal;
+            
+            for (let i = 0; i < Math.min(numTerms, 50); i++) {
+                const r = seq[i] * scale;
+                const theta = i * 0.3;
+                const height = i * 0.5;
+                
+                points.push(new THREE.Vector3(
+                    r * Math.cos(theta),
+                    height,
+                    r * Math.sin(theta)
+                ));
+                
+                const color = new THREE.Color();
+                color.setHSL(i / numTerms, 0.7, 0.5);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            // Create line geometry
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                linewidth: 2
+            });
+            
+            spiral3D = new THREE.Line(geometry, material);
+            scene3D.add(spiral3D);
+            
+            // Add spheres at points
+            points.forEach((point, i) => {
+                const sphereGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+                const sphereMaterial = new THREE.MeshPhongMaterial({
+                    color: new THREE.Color().setHSL(i / numTerms, 0.7, 0.6)
+                });
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.position.copy(point);
+                spiral3D.add(sphere);
+            });
+        }
+
+        function drawSequence(seq) {
+            seqCtx.clearRect(0, 0, seqCanvas.width, seqCanvas.height);
+            
+            const displayTerms = Math.min(numTerms, 50);
+            const maxVal = Math.max(...seq.slice(0, displayTerms));
+            const barWidth = seqCanvas.width / displayTerms;
+            
+            seq.slice(0, displayTerms).forEach((val, i) => {
+                const height = (val / maxVal) * (seqCanvas.height - 40);
+                const hue = (i / displayTerms) * 240;
+                
+                seqCtx.fillStyle = `hsla(${hue}, 70%, 60%, 0.8)`;
+                seqCtx.fillRect(i * barWidth + 2, seqCanvas.height - height - 20, barWidth - 4, height);
+                
+                if (displayTerms <= 20) {
+                    seqCtx.fillStyle = 'white';
+                    seqCtx.font = '10px Arial';
+                    seqCtx.textAlign = 'center';
+                    const displayVal = val > 1000000 ? val.toExponential(0) : val;
+                    seqCtx.fillText(displayVal, i * barWidth + barWidth/2, seqCanvas.height - 5);
+                }
+            });
+        }
+
+        function drawSpiral(seq) {
+            spiralCtx.clearRect(0, 0, spiralCanvas.width, spiralCanvas.height);
+            spiralCtx.save();
+            spiralCtx.translate(spiralCanvas.width/2, spiralCanvas.height/2);
+            
+            const maxVal = Math.max(...seq.slice(0, Math.min(numTerms, 30)));
+            const scale = 120 / maxVal;
+            
+            spiralCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            spiralCtx.lineWidth = 2;
+            spiralCtx.beginPath();
+            
+            for (let i = 1; i < Math.min(numTerms, 30); i++) {
+                const r = seq[i] * scale;
+                const theta = i * 0.5;
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                
+                if (i === 1) spiralCtx.moveTo(x, y);
+                else spiralCtx.lineTo(x, y);
+                
+                spiralCtx.fillStyle = `hsla(${(i/numTerms)*360}, 70%, 60%, 0.8)`;
+                spiralCtx.beginPath();
+                spiralCtx.arc(x, y, 4, 0, Math.PI * 2);
+                spiralCtx.fill();
+            }
+            
+            spiralCtx.stroke();
+            spiralCtx.restore();
+        }
+
+        function drawModular(seq) {
+            modCtx.clearRect(0, 0, modCanvas.width, modCanvas.height);
+            
+            const residues = new Array(modulus).fill(0);
+            seq.slice(0, Math.min(numTerms, 100)).forEach(val => {
+                residues[val % modulus]++;
+            });
+            
+            const maxCount = Math.max(...residues);
+            const barWidth = modCanvas.width / modulus;
+            
+            residues.forEach((count, i) => {
+                const height = (count / maxCount) * (modCanvas.height - 40);
+                const hue = (i / modulus) * 360;
+                
+                modCtx.fillStyle = `hsla(${hue}, 70%, 60%, 0.8)`;
+                modCtx.fillRect(i * barWidth + 5, modCanvas.height - height - 20, barWidth - 10, height);
+                
+                modCtx.fillStyle = 'white';
+                modCtx.font = '12px Arial';
+                modCtx.textAlign = 'center';
+                modCtx.fillText(`mod ${i}`, i * barWidth + barWidth/2, modCanvas.height - 5);
+                modCtx.fillText(count, i * barWidth + barWidth/2, modCanvas.height - height - 25);
+            });
+        }
+
+        function drawRatios(seq) {
+            ratioCtx.clearRect(0, 0, ratioCanvas.width, ratioCanvas.height);
+            
+            const ratios = [];
+            for (let i = 1; i < Math.min(numTerms, 50); i++) {
+                if (seq[i-1] !== 0) {
+                    ratios.push(seq[i] / seq[i-1]);
+                }
+            }
+            
+            if (ratios.length === 0) return;
+            
+            const dominant = sequences[currentSequence].dominant;
+            const minRatio = Math.min(...ratios);
+            const maxRatio = Math.max(...ratios);
+            const range = maxRatio - minRatio || 1;
+            const pointSpacing = ratioCanvas.width / ratios.length;
+            
+            // Draw dominant root line
+            ratioCtx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+            ratioCtx.lineWidth = 2;
+            ratioCtx.setLineDash([5, 5]);
+            ratioCtx.beginPath();
+            const y = ratioCanvas.height - ((dominant - minRatio) / range) * (ratioCanvas.height - 40) - 20;
+            ratioCtx.moveTo(0, y);
+            ratioCtx.lineTo(ratioCanvas.width, y);
+            ratioCtx.stroke();
+            ratioCtx.setLineDash([]);
+            
+            // Draw ratio curve
+            ratioCtx.strokeStyle = 'rgba(100, 255, 200, 0.8)';
+            ratioCtx.lineWidth = 2;
+            ratioCtx.beginPath();
+            
+            ratios.forEach((ratio, i) => {
+                const x = i * pointSpacing + pointSpacing/2;
+                const y = ratioCanvas.height - ((ratio - minRatio) / range) * (ratioCanvas.height - 40) - 20;
+                
+                if (i === 0) ratioCtx.moveTo(x, y);
+                else ratioCtx.lineTo(x, y);
+                
+                ratioCtx.fillStyle = `hsla(${120 + (i/ratios.length)*60}, 70%, 60%, 0.8)`;
+                ratioCtx.beginPath();
+                ratioCtx.arc(x, y, 3, 0, Math.PI * 2);
+                ratioCtx.fill();
+            });
+            
+            ratioCtx.stroke();
+        }
+
+        function updateVisualization() {
+            const seq = sequences[currentSequence].generate(numTerms + 10);
+            
+            // Update info displays
+            document.getElementById('seqName').textContent = sequences[currentSequence].name;
+            document.getElementById('recurrence').textContent = sequences[currentSequence].recurrence;
+            document.getElementById('values').textContent = seq.slice(0, Math.min(numTerms, 15)).join(', ') + 
+                                                           (numTerms > 15 ? '...' : '');
+            
+            document.getElementById('dominantRoot').textContent = sequences[currentSequence].dominant.toFixed(6);
+            document.getElementById('modDisplay').textContent = modulus;
+            
+            const ratios = [];
+            for (let i = 1; i < Math.min(numTerms, 30); i++) {
+                if (seq[i-1] !== 0) ratios.push(seq[i] / seq[i-1]);
+            }
+            
+            if (ratios.length > 0) {
+                const lastRatio = ratios[ratios.length - 1];
+                document.getElementById('ratioConvergence').textContent = lastRatio.toFixed(6);
+                document.getElementById('limitValue').textContent = sequences[currentSequence].dominant.toFixed(6);
+                document.getElementById('errorValue').textContent = 
+                    Math.abs(lastRatio - sequences[currentSequence].dominant).toExponential(2);
+            }
+            
+            // Residue distribution
+            const residues = new Array(modulus).fill(0);
+            seq.slice(0, Math.min(numTerms, 100)).forEach(val => {
+                residues[val % modulus]++;
+            });
+            document.getElementById('residueClasses').textContent = 
+                residues.map((count, i) => `${i}:${count}`).join(', ');
+            
+            // Draw all visualizations
+            drawSequence(seq);
+            drawSpiral(seq);
+            drawModular(seq);
+            drawRatios(seq);
+            update3DSpiral(seq);
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+            
+            animationFrame++;
+            numTerms = 5 + (animationFrame % 95);
+            document.getElementById('terms').value = numTerms;
+            document.getElementById('termsValue').textContent = numTerms;
+            
+            updateVisualization();
+            requestAnimationFrame(animate);
+        }
+
+        function exportJSON() {
+            const seq = sequences[currentSequence].generate(numTerms);
+            const data = {
+                sequence: currentSequence,
+                name: sequences[currentSequence].name,
+                recurrence: sequences[currentSequence].recurrence,
+                values: seq,
+                dominant_root: sequences[currentSequence].dominant,
+                modulus: modulus,
+                num_terms: numTerms,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `unns_${currentSequence}_${numTerms}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportCSV() {
+            const seq = sequences[currentSequence].generate(numTerms);
+            let csv = 'Index,Value,Ratio,Modulo_' + modulus + '\n';
+            
+            seq.forEach((val, i) => {
+                const ratio = i > 0 && seq[i-1] !== 0 ? (val / seq[i-1]).toFixed(6) : '';
+                csv += `${i},${val},${ratio},${val % modulus}\n`;
+            });
+            
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `unns_${currentSequence}_${numTerms}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function closeGuide() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Event listeners
+        document.getElementById('sequence').addEventListener('change', (e) => {
+            currentSequence = e.target.value;
+            const customInput = document.getElementById('customInput');
+            if (currentSequence === 'custom') {
+                customInput.classList.add('active');
+            } else {
+                customInput.classList.remove('active');
+            }
+            updateVisualization();
+        });
+
+        document.getElementById('terms').addEventListener('input', (e) => {
+            numTerms = parseInt(e.target.value);
+            document.getElementById('termsValue').textContent = numTerms;
+            updateVisualization();
+        });
+
+        document.getElementById('modulus').addEventListener('input', (e) => {
+            modulus = parseInt(e.target.value);
+            document.getElementById('modulusValue').textContent = modulus;
+            updateVisualization();
+        });
+
+        document.getElementById('animate').addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            document.getElementById('animate').textContent = isAnimating ? '⏸ Pause' : '🎬 Animate';
+            if (isAnimating) {
+                document.getElementById('animate').classList.add('animating');
+                animate();
+            } else {
+                document.getElementById('animate').classList.remove('animating');
+            }
+        });
+
+        document.getElementById('applyCustom').addEventListener('click', () => {
+            const seedsInput = document.getElementById('customSeeds').value;
+            const coeffsInput = document.getElementById('customCoeffs').value;
+            
+            try {
+                const seeds = seedsInput.split(',').map(s => parseFloat(s.trim()));
+                const coeffs = coeffsInput.split(',').map(c => parseFloat(c.trim()));
+                
+                sequences.custom.seeds = seeds;
+                sequences.custom.coeffs = coeffs;
+                
+                // Calculate approximate dominant root (largest eigenvalue of companion matrix)
+                // This is a simplification - actual computation would need eigenvalue solver
+                sequences.custom.dominant = coeffs.reduce((a, b) => a + b, 0);
+                
+                updateVisualization();
+            } catch (e) {
+                alert('Invalid input format. Please use comma-separated numbers.');
+            }
+        });
+
+        document.getElementById('export-json').addEventListener('click', exportJSON);
+        document.getElementById('export-csv').addEventListener('click', exportCSV);
+        
+        document.getElementById('show-guide').addEventListener('click', () => {
+            document.getElementById('guideModal').style.display = 'block';
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            isAnimating = false;
+            animationFrame = 0;
+            numTerms = 25;
+            modulus = 7;
+            currentSequence = 'fibonacci';
+            document.getElementById('sequence').value = 'fibonacci';
+            document.getElementById('terms').value = 25;
+            document.getElementById('termsValue').textContent = 25;
+            document.getElementById('modulus').value = 7;
+            document.getElementById('modulusValue').textContent = 7;
+            document.getElementById('animate').textContent = '🎬 Animate';
+            document.getElementById('animate').classList.remove('animating');
+            document.getElementById('customInput').classList.remove('active');
+            updateVisualization();
+        });
+
+        // Initialize
+        init3D();
+        updateVisualization();
+    </script>
+</body>
+</html>

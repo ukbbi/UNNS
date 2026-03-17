@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNNS Native Engine</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a0b2e 100%);
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.header h1 {
+    font-size: 2.5em;
+    background: linear-gradient(45deg, #00ff88, #00bbff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
+
+.tab-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.tab-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+}
+
+.content-area {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.main-panel {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.constants-panel {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+.constants-panel h3 {
+    color: #00ff88;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.constant-item {
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 3px solid #00ff88;
+}
+
+.constant-label {
+    font-size: 0.9em;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.constant-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.input-group input, .input-group select {
+    width: 100%;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.btn-primary {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+}
+
+.output-area {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    min-height: 200px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.sequence-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1em;
+    line-height: 1.8;
+    color: #00ff88;
+    word-wrap: break-word;
+}
+
+.canvas-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+canvas {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    background: rgba(0,0,0,0.3);
+    max-width: 100%;
+}
+
+.stability-gauge {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+}
+
+.gauge-bar {
+    width: 100%;
+    height: 30px;
+    background: linear-gradient(90deg, 
+        #00ff00 0%, 
+        #ffff00 50%, 
+        #ff0000 100%);
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.gauge-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 40px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(255,255,255,0.8);
+    transition: left 0.5s ease;
+}
+
+.matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.matrix-cell {
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    color: #fff;
+    text-align: center;
+}
+
+.graph-container {
+    position: relative;
+    height: 400px;
+    margin-top: 20px;
+}
+
+.preset-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.preset-btn {
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+@media (max-width: 768px) {
+    .content-area {
+        grid-template-columns: 1fr;
+    }
+    
+    .constants-panel {
+        position: static;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🌌 UNNS Native Engine</h1>
+        <p>The Realm Where Foundational Logic Meets Recursive Cognition</p>
+    </div>
+
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="showTab('generator')">🔢 Nest Generator</button>
+        <button class="tab-btn" onclick="showTab('propagation')">📈 Propagation Simulator</button>
+        <button class="tab-btn" onclick="showTab('matrix')">🧮 Matrix Operations</button>
+        <button class="tab-btn" onclick="showTab('traversal')">🕸️ Graph Traversal</button>
+    </div>
+
+    <div class="content-area">
+        <div class="main-panel">
+            <!-- Nest Generator Tab -->
+            <div id="generator" class="tab-content active">
+                <h2>Recursive Nest Generator</h2>
+                
+                <div class="preset-selector">
+                    <button class="preset-btn" onclick="loadPreset('fibonacci')">Fibonacci</button>
+                    <button class="preset-btn" onclick="loadPreset('tribonacci')">Tribonacci</button>
+                    <button class="preset-btn" onclick="loadPreset('pell')">Pell</button>
+                    <button class="preset-btn" onclick="loadPreset('padovan')">Padovan</button>
+                    <button class="preset-btn" onclick="loadPreset('lucas')">Lucas</button>
+                </div>
+
+                <div class="input-group">
+                    <label>Recurrence Coefficients (comma separated):</label>
+                    <input id="coeffs" type="text" value="1,1" placeholder="e.g., 1,1 for Fibonacci">
+                </div>
+
+                <div class="input-group">
+                    <label>Initial Seeds (comma separated):</label>
+                    <input id="seeds" type="text" value="0,1" placeholder="e.g., 0,1">
+                </div>
+
+                <div class="input-group">
+                    <label>Number of Terms:</label>
+                    <input id="terms" type="number" value="20" min="5" max="100">
+                </div>
+
+                <button class="btn-primary" onclick="generateSequence()">Generate Nest</button>
+                <button class="btn-primary" onclick="visualizeSpiral()">Visualize Spiral</button>
+
+                <div class="output-area">
+                    <div id="sequenceOutput" class="sequence-display"></div>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="spiralCanvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+
+            <!-- Propagation Simulator Tab -->
+            <div id="propagation" class="tab-content">
+                <h2>Propagation vs Collapse Simulator</h2>
+                
+                <div class="input-group">
+                    <label>Stability Coefficient α:</label>
+                    <input id="stability" type="range" min="-2" max="2" step="0.1" value="1" 
+                           oninput="updateStability(this.value)">
+                    <span id="stabilityValue">1.0</span>
+                </div>
+
+                <div class="input-group">
+                    <label>Propagation Speed:</label>
+                    <select id="speed">
+                        <option value="100">Fast</option>
+                        <option value="500" selected>Normal</option>
+                        <option value="1000">Slow</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="startPropagation()">Start Propagation</button>
+                <button class="btn-primary" onclick="stopPropagation()">Stop</button>
+
+                <div class="stability-gauge">
+                    <h4>UPI Stability Meter</h4>
+                    <div class="gauge-bar">
+                        <div class="gauge-indicator" id="upiIndicator" style="left: 50%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span style="color: #00ff00;">Stable</span>
+                        <span style="color: #ffff00;">Threshold</span>
+                        <span style="color: #ff0000;">Collapse</span>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="propagationCanvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+
+            <!-- Matrix Operations Tab -->
+            <div id="matrix" class="tab-content">
+                <h2>UNNS-Modulated Matrix Operations</h2>
+                
+                <h3>Matrix A</h3>
+                <div class="matrix-grid">
+                    <input type="number" class="matrix-cell" id="a00" value="1">
+                    <input type="number" class="matrix-cell" id="a01" value="2">
+                    <input type="number" class="matrix-cell" id="a10" value="3">
+                    <input type="number" class="matrix-cell" id="a11" value="4">
+                </div>
+
+                <h3>Matrix B</h3>
+                <div class="matrix-grid">
+                    <input type="number" class="matrix-cell" id="b00" value="5">
+                    <input type="number" class="matrix-cell" id="b01" value="6">
+                    <input type="number" class="matrix-cell" id="b10" value="7">
+                    <input type="number" class="matrix-cell" id="b11" value="8">
+                </div>
+
+                <div class="input-group">
+                    <label>UNNS Weights (comma separated):</label>
+                    <input id="matrixWeights" type="text" value="1,1,2,3" placeholder="4 weights for 2x2 matrix">
+                </div>
+
+                <button class="btn-primary" onclick="performMatrixAdd()">UNNS Addition</button>
+                <button class="btn-primary" onclick="performMatrixMul()">UNNS Multiplication</button>
+
+                <div class="output-area">
+                    <div id="matrixOutput"></div>
+                </div>
+            </div>
+
+            <!-- Graph Traversal Tab -->
+            <div id="traversal" class="tab-content">
+                <h2>Recursive Traversal Engine</h2>
+                
+                <div class="input-group">
+                    <label>Graph Structure:</label>
+                    <select id="graphType" onchange="updateGraphStructure()">
+                        <option value="linear">Linear Chain</option>
+                        <option value="binary">Binary Tree</option>
+                        <option value="lattice">2D Lattice</option>
+                        <option value="complete">Complete Graph</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Edge Coefficients:</label>
+                    <input id="edgeCoeffs" type="text" value="1,1" placeholder="Coefficients for edge weights">
+                </div>
+
+                <button class="btn-primary" onclick="startTraversal()">Start Traversal</button>
+                <button class="btn-primary" onclick="resetTraversal()">Reset</button>
+
+                <div class="graph-container">
+                    <canvas id="graphCanvas" width="600" height="400"></canvas>
+                </div>
+
+                <div class="output-area">
+                    <div id="traversalOutput"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="constants-panel">
+            <h3>📊 Constants Dashboard</h3>
+            
+            <div class="constant-item">
+                <div class="constant-label">Limit Ratio (φ)</div>
+                <div class="constant-value" id="limitRatio">—</div>
+            </div>
+            
+            <div class="constant-item">
+                <div class="constant-label">Nest Depth (D)</div>
+                <div class="constant-value" id="nestDepth">—</div>
+            </div>
+            
+            <div class="constant-item">
+                <div class="constant-label">UPI Value</div>
+                <div class="constant-value" id="upiValue">—</div>
+            </div>
+            
+            <div class="constant-item">
+                <div class="constant-label">Embedding Ring</div>
+                <div class="constant-value" id="embeddingRing">—</div>
+            </div>
+            
+            <div class="constant-item">
+                <div class="constant-label">Convergence Rate</div>
+                <div class="constant-value" id="convergenceRate">—</div>
+            </div>
+            
+            <div class="constant-item">
+                <div class="constant-label">Spectral Radius</div>
+                <div class="constant-value" id="spectralRadius">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global state
+let currentSequence = [];
+let propagationAnimation = null;
+let traversalAnimation = null;
+
+// Tab switching
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName).classList.add('active');
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+
+// Preset configurations
+const presets = {
+    fibonacci: { coeffs: '1,1', seeds: '0,1', name: 'Fibonacci' },
+    tribonacci: { coeffs: '1,1,1', seeds: '0,0,1', name: 'Tribonacci' },
+    pell: { coeffs: '2,1', seeds: '0,1', name: 'Pell' },
+    padovan: { coeffs: '0,1,1', seeds: '1,1,1', name: 'Padovan' },
+    lucas: { coeffs: '1,1', seeds: '2,1', name: 'Lucas' }
+};
+
+function loadPreset(presetName) {
+    const preset = presets[presetName];
+    document.getElementById('coeffs').value = preset.coeffs;
+    document.getElementById('seeds').value = preset.seeds;
+    generateSequence();
+}
+
+// Main sequence generator
+function generateSequence() {
+    const coeffsStr = document.getElementById('coeffs').value;
+    const seedsStr = document.getElementById('seeds').value;
+    const numTerms = parseInt(document.getElementById('terms').value);
+    
+    const coeffs = coeffsStr.split(',').map(n => parseFloat(n.trim()));
+    const seeds = seedsStr.split(',').map(n => parseFloat(n.trim()));
+    
+    // Generate sequence
+    currentSequence = [...seeds];
+    
+    for (let i = seeds.length; i < numTerms; i++) {
+        let nextTerm = 0;
+        for (let j = 0; j < coeffs.length && j < i; j++) {
+            nextTerm += coeffs[j] * currentSequence[i - j - 1];
+        }
+        currentSequence.push(nextTerm);
+    }
+    
+    // Display sequence
+    const output = document.getElementById('sequenceOutput');
+    output.innerHTML = `
+        <h4>Generated Sequence (${numTerms} terms):</h4>
+        <div style="margin-top: 10px;">
+            ${currentSequence.map((val, i) => 
+                `<span style="color: ${getTermColor(i)}">u[${i}] = ${formatNumber(val)}</span>`
+            ).join(', ')}
+        </div>
+    `;
+    
+    // Update constants
+    updateConstants(coeffs, currentSequence);
+    
+    // Auto-visualize
+    visualizeSpiral();
+}
+
+function getTermColor(index) {
+    const hue = (index * 30) % 360;
+    return `hsl(${hue}, 70%, 60%)`;
+}
+
+function formatNumber(num) {
+    if (Math.abs(num) < 1e-10) return '0';
+    if (Math.abs(num) > 1e6) return num.toExponential(2);
+    if (Number.isInteger(num)) return num.toString();
+    return num.toFixed(4);
+}
+
+// Constants calculation
+function updateConstants(coeffs, sequence) {
+    // Limit ratio
+    const ratios = [];
+    for (let i = 1; i < sequence.length - 1; i++) {
+        if (sequence[i] !== 0) {
+            ratios.push(sequence[i + 1] / sequence[i]);
+        }
+    }
+    const limitRatio = ratios.length > 0 ? ratios[ratios.length - 1] : 0;
+    
+    // Nest depth (order of recurrence)
+    const nestDepth = coeffs.length;
+    
+    // UPI value (simplified calculation)
+    const upi = Math.abs(limitRatio - Math.E) / Math.PI;
+    
+    // Embedding ring determination
+    let embeddingRing = 'ℤ';
+    if (Math.abs(limitRatio - 1.618) < 0.01) embeddingRing = 'ℤ[φ]';
+    else if (Math.abs(limitRatio - 1.839) < 0.01) embeddingRing = 'ℤ[ω]';
+    else if (Math.abs(limitRatio - Math.sqrt(2)) < 0.01) embeddingRing = 'ℤ[√2]';
+    
+    // Convergence rate
+    const convergenceRate = ratios.length > 2 ? 
+        Math.abs(ratios[ratios.length - 1] - ratios[ratios.length - 2]) : 0;
+    
+    // Spectral radius (dominant eigenvalue approximation)
+    const spectralRadius = Math.abs(limitRatio);
+    
+    // Update dashboard
+    document.getElementById('limitRatio').textContent = limitRatio.toFixed(6);
+    document.getElementById('nestDepth').textContent = nestDepth;
+    document.getElementById('upiValue').textContent = upi.toFixed(4);
+    document.getElementById('embeddingRing').textContent = embeddingRing;
+    document.getElementById('convergenceRate').textContent = convergenceRate.toExponential(2);
+    document.getElementById('spectralRadius').textContent = spectralRadius.toFixed(4);
+}
+
+// Spiral visualization
+function visualizeSpiral() {
+    const canvas = document.getElementById('spiralCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw background grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= canvas.width; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+    }
+    for (let i = 0; i <= canvas.height; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+    }
+    
+    // Draw spiral
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const maxRadius = Math.min(centerX, centerY) - 20;
+    
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    
+    for (let i = 0; i < currentSequence.length; i++) {
+        const angle = i * Math.PI / 4;
+        const radius = (Math.log(Math.abs(currentSequence[i]) + 1) / Math.log(Math.abs(currentSequence[currentSequence.length - 1]) + 1)) * maxRadius;
+        
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+        
+        // Draw points
+        ctx.fillStyle = getTermColor(i);
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.stroke();
+}
+
+// Propagation simulator
+function updateStability(value) {
+    document.getElementById('stabilityValue').textContent = parseFloat(value).toFixed(1);
+}
+
+function startPropagation() {
+    if (propagationAnimation) {
+        cancelAnimationFrame(propagationAnimation);
+    }
+    
+    const canvas = document.getElementById('propagationCanvas');
+    const ctx = canvas.getContext('2d');
+    const stability = parseFloat(document.getElementById('stability').value);
+    const speed = parseInt(document.getElementById('speed').value);
+    
+    let frame = 0;
+    const points = [];
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Generate new point
+        if (frame % 5 === 0) {
+            const x = (frame / 5) * 10;
+            const y = canvas.height / 2 + Math.sin(x * 0.1) * 50 * stability;
+            points.push({ x, y, stability });
+        }
+        
+        // Draw propagation wave
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        points.forEach((point, i) => {
+            if (i === 0) {
+                ctx.moveTo(point.x, point.y);
+            } else {
+                ctx.lineTo(point.x, point.y);
+            }
+        });
+        ctx.stroke();
+        
+        // Update UPI indicator
+        const upiPosition = Math.max(0, Math.min(100, (stability + 2) * 25));
+        document.getElementById('upiIndicator').style.left = upiPosition + '%';
+        
+        // Keep only visible points
+        if (points.length > 0 && points[0].x < -10) {
+            points.shift();
+        }
+        
+        frame++;
+        
+        if (points.length < 100) {
+            propagationAnimation = requestAnimationFrame(animate);
+        }
+    }
+    
+    animate();
+}
+
+function stopPropagation() {
+    if (propagationAnimation) {
+        cancelAnimationFrame(propagationAnimation);
+        propagationAnimation = null;
+    }
+}
+
+// Matrix operations
+function performMatrixAdd() {
+    const A = [
+        [parseFloat(document.getElementById('a00').value), parseFloat(document.getElementById('a01').value)],
+        [parseFloat(document.getElementById('a10').value), parseFloat(document.getElementById('a11').value)]
+    ];
+    
+    const B = [
+        [parseFloat(document.getElementById('b00').value), parseFloat(document.getElementById('b01').value)],
+        [parseFloat(document.getElementById('b10').value), parseFloat(document.getElementById('b11').value)]
+    ];
+    
+    const weights = document.getElementById('matrixWeights').value.split(',').map(n => parseFloat(n.trim()));
+    
+    const result = [];
+    let idx = 0;
+    for (let i = 0; i < 2; i++) {
+        result[i] = [];
+        for (let j = 0; j < 2; j++) {
+            const weight = weights[idx] || 1;
+            result[i][j] = (A[i][j] + B[i][j]) * weight;
+            idx++;
+        }
+    }
+    
+    displayMatrix(result, 'UNNS-Weighted Addition Result');
+}
+
+function performMatrixMul() {
+    const A = [
+        [parseFloat(document.getElementById('a00').value), parseFloat(document.getElementById('a01').value)],
+        [parseFloat(document.getElementById('a10').value), parseFloat(document.getElementById('a11').value)]
+    ];
+    
+    const B = [
+        [parseFloat(document.getElementById('b00').value), parseFloat(document.getElementById('b01').value)],
+        [parseFloat(document.getElementById('b10').value), parseFloat(document.getElementById('b11').value)]
+    ];
+    
+    const weights = document.getElementById('matrixWeights').value.split(',').map(n => parseFloat(n.trim()));
+    
+    const result = [];
+    for (let i = 0; i < 2; i++) {
+        result[i] = [];
+        for (let j = 0; j < 2; j++) {
+            let sum = 0;
+            for (let k = 0; k < 2; k++) {
+                const weight = weights[k] || 1;
+                sum += A[i][k] * B[k][j] * weight;
+            }
+            result[i][j] = sum;
+        }
+    }
+    
+    displayMatrix(result, 'UNNS-Weighted Multiplication Result');
+}
+
+function displayMatrix(matrix, title) {
+    const output = document.getElementById('matrixOutput');
+    output.innerHTML = `
+        <h4>${title}:</h4>
+        <div style="display: inline-block; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 1.2em;">
+            <div>[${formatNumber(matrix[0][0])}, ${formatNumber(matrix[0][1])}]</div>
+            <div>[${formatNumber(matrix[1][0])}, ${formatNumber(matrix[1][1])}]</div>
+        </div>
+    `;
+}
+
+// Graph traversal
+function updateGraphStructure() {
+    const graphType = document.getElementById('graphType').value;
+    const output = document.getElementById('traversalOutput');
+    output.innerHTML = `<p>Selected: ${graphType} structure</p>`;
+}
+
+function startTraversal() {
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const graphType = document.getElementById('graphType').value;
+    const coeffs = document.getElementById('edgeCoeffs').value.split(',').map(n => parseFloat(n.trim()));
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw graph based on type
+    const nodes = generateGraphNodes(graphType);
+    const edges = generateGraphEdges(graphType, nodes);
+    
+    // Draw edges
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    edges.forEach(edge => {
+        ctx.beginPath();
+        ctx.moveTo(edge.from.x, edge.from.y);
+        ctx.lineTo(edge.to.x, edge.to.y);
+        ctx.stroke();
+        
+        // Draw edge weight
+        const midX = (edge.from.x + edge.to.x) / 2;
+        const midY = (edge.from.y + edge.to.y) / 2;
+        ctx.fillStyle = '#888';
+        ctx.font = '10px Arial';
+        ctx.fillText(coeffs[edge.weight % coeffs.length].toString(), midX, midY);
+    });
+    
+    // Draw nodes
+    nodes.forEach((node, i) => {
+        ctx.fillStyle = getTermColor(i);
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.value.toString(), node.x, node.y + 4);
+    });
+    
+    // Animate traversal
+    animateTraversal(nodes, edges, coeffs);
+}
+
+function generateGraphNodes(type) {
+    const nodes = [];
+    const canvas = document.getElementById('graphCanvas');
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    switch(type) {
+        case 'linear':
+            for (let i = 0; i < 8; i++) {
+                nodes.push({
+                    x: 50 + i * 70,
+                    y: h / 2,
+                    value: i
+                });
+            }
+            break;
+        case 'binary':
+            // Binary tree positions
+            nodes.push({ x: w/2, y: 50, value: 0 });
+            nodes.push({ x: w/3, y: 120, value: 1 });
+            nodes.push({ x: 2*w/3, y: 120, value: 1 });
+            nodes.push({ x: w/6, y: 200, value: 2 });
+            nodes.push({ x: 2*w/6, y: 200, value: 3 });
+            nodes.push({ x: 4*w/6, y: 200, value: 5 });
+            nodes.push({ x: 5*w/6, y: 200, value: 8 });
+            break;
+        case 'lattice':
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    nodes.push({
+                        x: 150 + j * 100,
+                        y: 100 + i * 100,
+                        value: i * 3 + j
+                    });
+                }
+            }
+            break;
+        case 'complete':
+            const n = 6;
+            for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
+                nodes.push({
+                    x: w/2 + 120 * Math.cos(angle),
+                    y: h/2 + 120 * Math.sin(angle),
+                    value: i
+                });
+            }
+            break;
+    }
+    
+    return nodes;
+}
+
+function generateGraphEdges(type, nodes) {
+    const edges = [];
+    
+    switch(type) {
+        case 'linear':
+            for (let i = 0; i < nodes.length - 1; i++) {
+                edges.push({
+                    from: nodes[i],
+                    to: nodes[i + 1],
+                    weight: i
+                });
+            }
+            break;
+        case 'binary':
+            edges.push({ from: nodes[0], to: nodes[1], weight: 0 });
+            edges.push({ from: nodes[0], to: nodes[2], weight: 1 });
+            edges.push({ from: nodes[1], to: nodes[3], weight: 0 });
+            edges.push({ from: nodes[1], to: nodes[4], weight: 1 });
+            edges.push({ from: nodes[2], to: nodes[5], weight: 0 });
+            edges.push({ from: nodes[2], to: nodes[6], weight: 1 });
+            break;
+        case 'lattice':
+            // Horizontal edges
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 2; j++) {
+                    edges.push({
+                        from: nodes[i * 3 + j],
+                        to: nodes[i * 3 + j + 1],
+                        weight: i * 2 + j
+                    });
+                }
+            }
+            // Vertical edges
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 3; j++) {
+                    edges.push({
+                        from: nodes[i * 3 + j],
+                        to: nodes[(i + 1) * 3 + j],
+                        weight: i * 3 + j
+                    });
+                }
+            }
+            break;
+        case 'complete':
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    edges.push({
+                        from: nodes[i],
+                        to: nodes[j],
+                        weight: i + j
+                    });
+                }
+            }
+            break;
+    }
+    
+    return edges;
+}
+
+function animateTraversal(nodes, edges, coeffs) {
+    let currentIndex = 0;
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('traversalOutput');
+    const traversalPath = [];
+    
+    function step() {
+        if (currentIndex >= nodes.length) {
+            output.innerHTML += '<p>Traversal complete!</p>';
+            return;
+        }
+        
+        // Highlight current node
+        const node = nodes[currentIndex];
+        ctx.fillStyle = '#ff00ff';
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Calculate traversal value using UNNS coefficients
+        let value = node.value;
+        if (currentIndex > 0) {
+            for (let i = 0; i < Math.min(coeffs.length, traversalPath.length); i++) {
+                value += coeffs[i] * traversalPath[traversalPath.length - 1 - i];
+            }
+        }
+        traversalPath.push(value);
+        
+        output.innerHTML = `
+            <p>Step ${currentIndex + 1}: Node value = ${value.toFixed(2)}</p>
+            <p>Path: ${traversalPath.join(' → ')}</p>
+        `;
+        
+        currentIndex++;
+        
+        if (traversalAnimation) {
+            cancelAnimationFrame(traversalAnimation);
+        }
+        traversalAnimation = setTimeout(step, 1000);
+    }
+    
+    step();
+}
+
+function resetTraversal() {
+    if (traversalAnimation) {
+        clearTimeout(traversalAnimation);
+        traversalAnimation = null;
+    }
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('traversalOutput').innerHTML = '';
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+    generateSequence();
+});
+</script>
+</body>
+</html>

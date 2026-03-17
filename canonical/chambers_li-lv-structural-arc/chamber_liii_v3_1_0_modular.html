@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber LIII v3.1.0 — P₄ Completeness Modular</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-panel: #1a1a1a;
+            --border: #333;
+            --text-primary: #e0e0e0;
+            --text-secondary: #999;
+            --accent-blue: #4a9eff;
+            --accent-green: #4ade80;
+            --accent-red: #f87171;
+            --accent-yellow: #fbbf24;
+            --accent-purple: #a78bfa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: var(--accent-green);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .chamber-id {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .status-bar {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            border-radius: 3px;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        button {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #3a8eef;
+        }
+
+        button:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #2a2a2a;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* ==============================
+           Full-run progress indicator
+           ============================== */
+        .progress-panel {
+            margin-top: 14px;
+            padding: 12px 12px;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.25);
+        }
+
+        .progress-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+        }
+
+        .progress-stage .label {
+            opacity: 0.75;
+            margin-right: 6px;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.10);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: rgba(80,160,255,0.85);
+            transition: width 120ms linear;
+        }
+
+        .progress-detail {
+            margin-top: 8px;
+            font-size: 12px;
+            opacity: 0.85;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .metric-positive {
+            color: var(--accent-green);
+        }
+
+        .metric-negative {
+            color: var(--accent-red);
+        }
+
+        .metric-neutral {
+            color: var(--accent-yellow);
+        }
+
+        canvas {
+            max-width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .verdict {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .verdict-complete {
+            background: rgba(74, 222, 128, 0.1);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .verdict-gap {
+            background: rgba(251, 191, 36, 0.1);
+            border: 2px solid var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+
+        .log {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .log-info { color: var(--accent-blue); }
+        .log-success { color: var(--accent-green); }
+        .log-warning { color: var(--accent-yellow); }
+        .log-error { color: var(--accent-red); }
+
+        .cluster-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .cluster-id {
+            font-weight: bold;
+            color: var(--accent-yellow);
+        }
+
+        .cluster-size {
+            color: var(--text-secondary);
+        }
+
+        .json-output {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .manifest-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            margin-top: 8px;
+        }
+
+        .manifest-badge.unlocked {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+
+        .profile-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .profile-selector label {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .sweep-progress {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(167, 139, 250, 0.08);
+            border: 1px solid var(--accent-purple);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--accent-purple);
+            display: none;
+        }
+
+        .stage-indicator {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stage {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .stage-active {
+            border-color: var(--accent-blue);
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        .stage-complete {
+            border-color: var(--accent-green);
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid var(--accent-yellow);
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Chamber LIII — P₄ Completeness Modular<span class="version-badge">v3.1.0</span></h1>
+            <div class="chamber-id">
+                UNNS Research Framework | Phase P₄ Gate Set Completeness | Modular Profile Engine
+            </div>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Execution Stage</div>
+                <div class="status-value" id="exec-stage">READY</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Mechanisms Tested</div>
+                <div class="status-value" id="mechanisms-tested">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Residuals Found</div>
+                <div class="status-value" id="residuals-found">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Clusters Detected</div>
+                <div class="status-value" id="clusters-detected">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Verdict</div>
+                <div class="status-value" id="verdict-status">PENDING</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Execution Configuration</div>
+
+            <!-- Profile selector -->
+            <div class="profile-selector">
+                <label style="color: var(--accent-purple); font-weight: bold;">Active Profile:</label>
+                <select id="profile-select" onchange="onProfileChange(this.value)" style="flex: 1;">
+                    <!-- populated by JS -->
+                </select>
+                <div id="manifest-badge" class="manifest-badge">LOCKED ✓ <span id="manifest-hash-short">—</span></div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Execution Mode</label>
+                    <select id="exec-mode">
+                        <option value="three_stage">Three-Stage (Production)</option>
+                        <option value="calibration_only">Calibration Only</option>
+                        <option value="full_power">Full Power Run</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Target Total Mechanisms</label>
+                    <input type="number" id="target-total" value="2000" min="300" max="10000" step="100">
+                </div>
+                <div class="control-group">
+                    <label>Replicates per Mechanism</label>
+                    <input type="number" id="replicates" value="20" min="10" max="50">
+                </div>
+                <div class="control-group">
+                    <label>Min Cluster Size</label>
+                    <input type="number" id="min-cluster-size" value="20" min="5" max="50">
+                </div>
+                <div class="control-group">
+                    <label>Sampling Strategy</label>
+                    <select id="sampling-strategy">
+                        <option value="adversarial">Adversarial (Boundary-Targeted)</option>
+                        <option value="mixed">Mixed (50% Boundary)</option>
+                        <option value="uniform">Uniform (Baseline)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Locality Measurement</label>
+                    <select id="locality-mode">
+                        <option value="measured">Measured (Propagation Radius)</option>
+                        <option value="boolean">Boolean (Strict)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="run-btn" onclick="executeP4Protocol()">Execute P₄ Protocol</button>
+                <button id="sweep-btn" class="btn-secondary" onclick="runSweep()" style="background: rgba(167,139,250,0.15); border-color: var(--accent-purple); color: var(--accent-purple);">Run Sweep</button>
+                <button class="btn-secondary" onclick="runWitnessSearch()">Witness Search</button>
+                <button class="btn-secondary" onclick="exportResults()">Export Results</button>
+                <button class="btn-danger" onclick="resetChamber()">Reset</button>
+            </div>
+            <div id="sweep-progress" class="sweep-progress">Sweep: <span id="sweep-status">—</span></div>
+
+            <!-- Full run progress (global) -->
+            <div id="progress-panel" class="progress-panel" aria-live="polite">
+                <div class="progress-top">
+                    <div class="progress-stage">
+                        <span class="label">Progress:</span>
+                        <span id="progress-stage">Idle</span>
+                    </div>
+                    <div class="progress-counts">
+                        <span id="progress-counts">0 / 0</span>
+                        <span id="progress-percent">(0%)</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+                </div>
+                <div id="progress-detail" class="progress-detail">—</div>
+            </div>
+        </div>
+
+        <div class="stage-indicator" id="stage-indicator" style="display: none;">
+            <div class="stage" id="stage-1">
+                <div style="font-weight: bold; margin-bottom: 5px;">STAGE 1</div>
+                <div>Calibration</div>
+                <div id="stage-1-count">0 / 300</div>
+            </div>
+            <div class="stage" id="stage-2">
+                <div style="font-weight: bold; margin-bottom: 5px;">STAGE 2</div>
+                <div>Power Run</div>
+                <div id="stage-2-count">0 / 1500</div>
+            </div>
+            <div class="stage" id="stage-3">
+                <div style="font-weight: bold; margin-bottom: 5px;">STAGE 3</div>
+                <div>Tightening Test</div>
+                <div id="stage-3-count">0 / 200</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Gate Relaxation Tolerance (ε_max)</div>
+            <table id="epsilon-table">
+                <thead>
+                    <tr>
+                        <th>Gate ID</th>
+                        <th>Gate Name</th>
+                        <th>ε_max</th>
+                        <th>n_tested</th>
+                        <th>Calibrated Rate</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="epsilon-tbody">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Residual Distribution by Gate</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <table id="residual-dist-table">
+                        <thead>
+                            <tr>
+                                <th>Gate</th>
+                                <th>Residuals</th>
+                                <th>% of Total</th>
+                                <th>By ε Bucket</th>
+                            </tr>
+                        </thead>
+                        <tbody id="residual-dist-tbody">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <canvas id="residual-bar-chart" width="400" height="220"></canvas>
+                    <div style="text-align: center; font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                        Residual Count per Gate (color = ε bucket)
+                    </div>
+                </div>
+            </div>
+            <div id="g3-band-detail" style="margin-top: 10px; padding: 8px 10px; background: var(--bg-dark); border-radius: 4px; font-size: 11px; display: none;">
+                <strong style="color: var(--accent-purple);">G3 Soft-Band Detail:</strong>
+                <span id="g3-band-stats">—</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Gap Analysis & Cluster Topology</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <canvas id="gap-curve" width="500" height="300"></canvas>
+                    <div style="text-align: center; font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
+                        Gap Volume vs Epsilon
+                    </div>
+                </div>
+                <div id="cluster-container">
+                    <div style="color: var(--text-secondary); text-align: center;">No clusters detected</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Gate Independence Analysis</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Gate ID</th>
+                        <th>R_i (Redundancy Index)</th>
+                        <th>Witness Found</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="redundancy-tbody">
+                    <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="verdict-panel" style="display: none;">
+            <div class="verdict" id="verdict-display"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Execution Log</div>
+            <div class="log" id="execution-log">
+                <div class="log-entry log-info">[INIT] Chamber LIII v2.0.0 initialized. Adversarial P₄ ready.</div>
+            </div>
+        </div>
+
+        <div class="panel" style="display: none;" id="results-panel">
+            <div class="panel-title">Results Output (JSON Schema v0.1.0)</div>
+            <div class="json-output" id="json-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CHAMBER LIII v2.0.0 — ADVERSARIAL P₄ COMPLETENESS ENGINE
+        // ============================================================================
+
+        const CHAMBER_CONFIG = {
+            id: "LIII",
+            name: "Chamber LIII — P₄ Completeness Modular",
+            phase: "P4",
+            version: "3.1.0",
+            timestamp: new Date().toISOString(),
+            features: [
+                "Modular profile engine (no more chamber forks)",
+                "Locked experiment manifests with SHA-256 hashing",
+                "Built-in sweep runner for parameter sensitivity",
+                "G4 reinstated with strict/viable locality split",
+                "Stage-1 retry loop (reaches calibration target)",
+                "Stage-2 quota-filling while-loop (fills to stage2Target)",
+                "Verdict N-guard (min tested for completeness claim)",
+                "Truthful ε_max table with per-bucket n_tested",
+                "Sweep runner forces full_power per step",
+                "v3.1.0: Soft-band G3 gate (s_lo/s_hi + temporal coherence boundary)",
+                "v3.1.0: Graded temporal_quality metric for boundary adjudication",
+                "v3.1.0: Residual distribution panel (per-gate breakdown)",
+                "v3.1.0: G3 soft-band params fully profile-configurable"
+            ]
+        };
+
+        // ============================================================================
+        // PROFILE SYSTEM — replaces chamber version forks
+        // ============================================================================
+
+        const PROFILES = {
+            P4_baseline: {
+                profile_id: "P4_baseline",
+                locked: true,
+                description: "Production P₄ baseline — all gates at nominal thresholds",
+                gates: {
+                    G3_sharpness_min: 0.10,
+                    G3_s_lo: 0.08,
+                    G3_s_hi: 0.10,
+                    G3_T_min: 0.70,
+                    G4_locality_strict: 0.10
+                },
+                viability: {
+                    locality_viable_max: 0.20,
+                    pass_rate_threshold: 0.85
+                },
+                sampling: {
+                    stage1_target: 300,
+                    stage2_default: 1500,
+                    min_tested_for_verdict: 500,
+                    alloc_floor_per_bucket: 10,
+                    alloc_min_per_gate: 100,
+                    max_alloc_bucket: 200
+                },
+                generator: {
+                    mix: { boundary: 0.50, pathological: 0.30, broad: 0.20 }
+                }
+            },
+
+            P4_G3_sweep: {
+                profile_id: "P4_G3_sweep",
+                locked: true,
+                description: "G3 s_lo sensitivity sweep (0.04–0.08), s_hi fixed at 0.10",
+                sweep: {
+                    param: "G3_s_lo",
+                    values: [0.08, 0.07, 0.06, 0.05, 0.04]
+                },
+                inherit: "P4_baseline"
+            },
+
+            P4_G3_hard: {
+                profile_id: "P4_G3_hard",
+                locked: true,
+                description: "G3 hard-cutoff mode (s_lo = s_hi, disables soft-band)",
+                gates: {
+                    G3_sharpness_min: 0.10,
+                    G3_s_lo: 0.10,
+                    G3_s_hi: 0.10,
+                    G3_T_min: 0.70,
+                    G4_locality_strict: 0.10
+                },
+                viability: {
+                    locality_viable_max: 0.20,
+                    pass_rate_threshold: 0.85
+                },
+                sampling: {
+                    stage1_target: 300,
+                    stage2_default: 1500,
+                    min_tested_for_verdict: 500,
+                    alloc_floor_per_bucket: 10,
+                    alloc_min_per_gate: 100,
+                    max_alloc_bucket: 200
+                },
+                generator: {
+                    mix: { boundary: 0.50, pathological: 0.30, broad: 0.20 }
+                }
+            },
+
+            P4_locality_stress: {
+                profile_id: "P4_locality_stress",
+                locked: true,
+                description: "Locality stress — tighter G4 strict threshold",
+                gates: {
+                    G3_sharpness_min: 0.10,
+                    G3_s_lo: 0.08,
+                    G3_s_hi: 0.10,
+                    G3_T_min: 0.70,
+                    G4_locality_strict: 0.05
+                },
+                viability: {
+                    locality_viable_max: 0.15,
+                    pass_rate_threshold: 0.85
+                },
+                sampling: {
+                    stage1_target: 300,
+                    stage2_default: 1500,
+                    min_tested_for_verdict: 500,
+                    alloc_floor_per_bucket: 10,
+                    alloc_min_per_gate: 100,
+                    max_alloc_bucket: 200
+                },
+                generator: {
+                    mix: { boundary: 0.50, pathological: 0.30, broad: 0.20 }
+                }
+            },
+
+            P4_high_power: {
+                profile_id: "P4_high_power",
+                locked: true,
+                description: "High-power run with increased stage targets",
+                gates: {
+                    G3_sharpness_min: 0.10,
+                    G3_s_lo: 0.08,
+                    G3_s_hi: 0.10,
+                    G3_T_min: 0.70,
+                    G4_locality_strict: 0.10
+                },
+                viability: {
+                    locality_viable_max: 0.20,
+                    pass_rate_threshold: 0.85
+                },
+                sampling: {
+                    stage1_target: 500,
+                    stage2_default: 3000,
+                    min_tested_for_verdict: 1000,
+                    alloc_floor_per_bucket: 15,
+                    alloc_min_per_gate: 200,
+                    max_alloc_bucket: 300
+                },
+                generator: {
+                    mix: { boundary: 0.50, pathological: 0.30, broad: 0.20 }
+                }
+            }
+        };
+
+        // Runtime config — populated from active profile
+        let RUNTIME_CONFIG = {};
+        let ACTIVE_PROFILE = null;
+        let MANIFEST_HASH = "";
+
+        // ============================================================================
+        // MANIFEST HASHING (SHA-256, sorted keys)
+        // ============================================================================
+
+        async function computeManifestHash(profile) {
+            // Deterministic JSON: sorted keys
+            const canonical = JSON.stringify(profile, Object.keys(profile).sort());
+            const encoder = new TextEncoder();
+            const data = encoder.encode(canonical);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // ============================================================================
+        // PROFILE APPLICATION
+        // ============================================================================
+
+        function resolveProfile(profileId) {
+            const profile = PROFILES[profileId];
+            if (!profile) return null;
+            if (profile.inherit) {
+                const base = resolveProfile(profile.inherit);
+                if (!base) return profile;
+                // Deep merge: base fields, then overlay
+                return {
+                    ...base,
+                    ...profile,
+                    gates: { ...(base.gates || {}), ...(profile.gates || {}) },
+                    viability: { ...(base.viability || {}), ...(profile.viability || {}) },
+                    sampling: { ...(base.sampling || {}), ...(profile.sampling || {}) },
+                    generator: { ...(base.generator || {}), ...(profile.generator || {}) }
+                };
+            }
+            return profile;
+        }
+
+        async function applyProfile(profileId, overrides = {}) {
+            const resolved = resolveProfile(profileId);
+            if (!resolved) {
+                logMessage(`Profile '${profileId}' not found.`, "error");
+                return;
+            }
+
+            // Apply overrides (for sweep)
+            const effective = JSON.parse(JSON.stringify(resolved));
+            if (overrides.gates) Object.assign(effective.gates, overrides.gates);
+            if (overrides.viability) Object.assign(effective.viability, overrides.viability);
+            if (overrides.sampling) Object.assign(effective.sampling, overrides.sampling);
+
+            // Set runtime config
+            RUNTIME_CONFIG = {
+                G3_sharpness_min: effective.gates?.G3_sharpness_min ?? 0.10,
+                G3_s_lo: effective.gates?.G3_s_lo ?? 0.08,
+                G3_s_hi: effective.gates?.G3_s_hi ?? 0.10,
+                G3_T_min: effective.gates?.G3_T_min ?? 0.70,
+                G4_locality_strict: effective.gates?.G4_locality_strict ?? 0.10,
+                locality_viable_max: effective.viability?.locality_viable_max ?? 0.20,
+                pass_rate_threshold: effective.viability?.pass_rate_threshold ?? 0.85,
+                stage1_target: effective.sampling?.stage1_target ?? 300,
+                stage2_default: effective.sampling?.stage2_default ?? 1500,
+                min_tested_for_verdict: effective.sampling?.min_tested_for_verdict ?? 500,
+                alloc_floor_per_bucket: effective.sampling?.alloc_floor_per_bucket ?? 10,
+                alloc_min_per_gate: effective.sampling?.alloc_min_per_gate ?? 100,
+                max_alloc_bucket: effective.sampling?.max_alloc_bucket ?? 200,
+                generator_mix: effective.generator?.mix ?? { boundary: 0.50, pathological: 0.30, broad: 0.20 }
+            };
+
+            ACTIVE_PROFILE = effective;
+
+            // Rebuild gates with current config
+            rebuildGates();
+
+            // Compute manifest hash
+            MANIFEST_HASH = await computeManifestHash(effective);
+
+            // Update UI
+            const badge = document.getElementById('manifest-badge');
+            const hashSpan = document.getElementById('manifest-hash-short');
+            if (badge && hashSpan) {
+                hashSpan.textContent = MANIFEST_HASH.slice(0, 12);
+                badge.className = effective.locked ? 'manifest-badge' : 'manifest-badge unlocked';
+                badge.firstChild.textContent = effective.locked ? 'LOCKED ✓ ' : 'UNLOCKED ⚠ ';
+            }
+
+            logMessage(`Profile applied: ${effective.profile_id} [${MANIFEST_HASH.slice(0,12)}]`, "info");
+        }
+
+        function onProfileChange(profileId) {
+            applyProfile(profileId);
+            // Show/hide sweep button
+            const sweepBtn = document.getElementById('sweep-btn');
+            if (sweepBtn) {
+                sweepBtn.style.display = PROFILES[profileId]?.sweep ? 'inline-block' : 'inline-block';
+            }
+        }
+
+        function populateProfileSelector() {
+            const select = document.getElementById('profile-select');
+            if (!select) return;
+            select.innerHTML = '';
+            for (const [id, profile] of Object.entries(PROFILES)) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = `${id}${profile.sweep ? ' [SWEEP]' : ''} — ${profile.description || ''}`;
+                select.appendChild(opt);
+            }
+        }
+
+        // ============================================================================
+        // GATE FACTORY — builds gates from RUNTIME_CONFIG (replaces hardcoded 0.1)
+        // ============================================================================
+
+        function rebuildGates() {
+            const sharpMin = RUNTIME_CONFIG.G3_sharpness_min;
+            const locStrict = RUNTIME_CONFIG.G4_locality_strict;
+
+            GATES_BASE_DYNAMIC = {
+                G1: {
+                    id: "G1",
+                    name: "Geometric curvature consistency",
+                    kind: "geometric",
+                    scope: "global",
+                    predicate: (m) => m.curvature_method === "turning_angle",
+                    relaxation: (m, eps) => {
+                        return m.curvature_method === "turning_angle" || 
+                               (m.curvature_method === "finite_diff" && eps >= 0.05);
+                    },
+                    tightening: (m, delta) => m.curvature_method === "turning_angle"
+                },
+                G2: {
+                    id: "G2",
+                    name: "Baseline separability",
+                    kind: "separability",
+                    scope: "per_pair",
+                    threshold: 0.05,
+                    predicate: (m) => m.delta_kappa > 0.05,
+                    relaxation: (m, eps) => m.delta_kappa > (0.05 - eps),
+                    tightening: (m, delta) => m.delta_kappa > (0.05 + delta)
+                },
+                G3: {
+                    id: "G3",
+                    name: "Bifurcation capability (soft-band)",
+                    kind: "bifurcation",
+                    scope: "per_pair",
+                    // Soft-band parameters from profile
+                    s_lo: RUNTIME_CONFIG.G3_s_lo,
+                    s_hi: RUNTIME_CONFIG.G3_s_hi,
+                    T_min: RUNTIME_CONFIG.G3_T_min,
+                    predicate: (m) => {
+                        if (!m.has_bifurcation) return false;
+                        const S = m.sharpness;
+                        const s_lo = RUNTIME_CONFIG.G3_s_lo;
+                        const s_hi = RUNTIME_CONFIG.G3_s_hi;
+                        const T_min = RUNTIME_CONFIG.G3_T_min;
+                        // Strict pass above s_hi
+                        if (S >= s_hi) return m.temporal_signature_valid;
+                        // Strict fail below s_lo
+                        if (S < s_lo) return false;
+                        // Boundary band: pass only if temporally coherent
+                        return (m.temporal_quality || 0) >= T_min;
+                    },
+                    relaxation: (m, eps) => {
+                        if (!m.has_bifurcation) return false;
+                        const S = m.sharpness;
+                        const s_lo = RUNTIME_CONFIG.G3_s_lo;
+                        // Relaxation lowers the s_lo floor
+                        return S > (s_lo - eps);
+                    },
+                    tightening: (m, delta) => {
+                        if (!m.has_bifurcation) return false;
+                        const S = m.sharpness;
+                        const s_hi = RUNTIME_CONFIG.G3_s_hi;
+                        // Tightening raises the strict threshold
+                        return S > (s_hi + delta) && m.temporal_signature_valid;
+                    }
+                },
+                G4: {
+                    id: "G4",
+                    name: "Locality consistency",
+                    kind: "locality",
+                    scope: "global",
+                    predicate: (m) => m.locality_score < locStrict,
+                    relaxation: (m, eps) => m.locality_score < (locStrict + eps),
+                    tightening: (m, delta) => m.locality_score < (locStrict - delta)
+                }
+            };
+
+            GATES = {...GATES_BASE_DYNAMIC};
+        }
+
+        // Keep original static definition for reference / fallback
+        let GATES_BASE_DYNAMIC = {};
+
+        // GATES is rebuilt by rebuildGates() from RUNTIME_CONFIG on each profile apply.
+        // Initial static fallback (overwritten on first profile apply):
+        let GATES = {};
+
+        // Mechanism space with adversarial features
+        const MECHANISM_SPACE = {
+            gamma0: { min: 0.0, max: 2.0 },
+            beta: { min: 0.0, max: 2.0 },
+            d: { min: 0.0, max: 5.0 },
+            kmax: { min: 0.0, max: 6.0 },
+            
+            // Adversarial knobs
+            curvature_methods: ['turning_angle', 'finite_diff', 'smoothed', 'biased', 'wrong_metric'],
+            locality_modes: ['local', 'bounded_nonlocal', 'nonlocal_global', 'teleport'],
+            bifurcation_spoofs: ['none', 'remote_step', 'hysteresis_loop'],
+            regime_flip_injectors: ['none', 'seed_sensitive', 'gamma_sensitive'],
+            
+            families: ['flat', 'saif', 'curvature_gated', 'logit_sigmoid'],
+            compositions: ['utility_count', 'logit_sigmoid']
+        };
+
+        // Global state
+        let executionState = {
+            running: false,
+            silentMode: false,
+            currentStage: 0,
+            mechanismsTested: 0,
+            residualsFound: 0,
+            results: null,
+            // Progress bookkeeping
+            plannedTotal: 0,
+            stageLabel: "Idle",
+            progressDetail: "—",
+            epsilonMax: {},
+            calibrationRates: {},
+            residualSet: [],
+            clusters: [],
+            redundancyIndices: {},
+            witnessMap: {},
+            bucketStats: {}
+        };
+
+        // -----------------------------
+        // Full-run progress indicator
+        // -----------------------------
+        const progressUI = {
+            stage: null,
+            counts: null,
+            percent: null,
+            fill: null,
+            detail: null
+        };
+
+        function initProgressUI() {
+            progressUI.stage = document.getElementById('progress-stage');
+            progressUI.counts = document.getElementById('progress-counts');
+            progressUI.percent = document.getElementById('progress-percent');
+            progressUI.fill = document.getElementById('progress-fill');
+            progressUI.detail = document.getElementById('progress-detail');
+            setProgress("Idle", 0, 0, "—");
+        }
+
+        function setProgress(stageLabel, done, total, detail) {
+            if (!progressUI.stage) return;
+            const safeTotal = Math.max(0, Number(total) || 0);
+            const safeDone = Math.min(Math.max(0, Number(done) || 0), safeTotal);
+            const pct = safeTotal === 0 ? 0 : Math.floor((safeDone / safeTotal) * 100);
+            progressUI.stage.textContent = stageLabel || "Idle";
+            progressUI.counts.textContent = `${safeDone} / ${safeTotal}`;
+            progressUI.percent.textContent = `(${pct}%)`;
+            progressUI.fill.style.width = `${pct}%`;
+            progressUI.detail.textContent = detail || "—";
+        }
+
+        // ============================================================================
+        // ADVERSARIAL MECHANISM SAMPLING
+        // ============================================================================
+
+        function sampleMechanismSpace(count, strategy = 'adversarial', seed = 42, targetGate = null) {
+            const mechanisms = [];
+            const rng = seededRandom(seed);
+            
+            for (let i = 0; i < count; i++) {
+                let mech;
+                
+                if (strategy === 'adversarial') {
+                    // Generator mix from active profile (default: 50/30/20)
+                    const mix = RUNTIME_CONFIG.generator_mix || { boundary: 0.50, pathological: 0.30, broad: 0.20 };
+                    const u = rng();
+                    const mode = (u < mix.boundary) ? 'boundary' : (u < mix.boundary + mix.pathological ? 'pathological' : 'broad');
+                    mech = generateMechanism(rng, mode, targetGate);
+                } else if (strategy === 'mixed') {
+                    const mode = rng() < 0.5 ? 'boundary' : 'broad';
+                    mech = generateMechanism(rng, mode, targetGate);
+                } else {
+                    mech = generateMechanism(rng, 'broad', targetGate);
+                }
+                
+                mechanisms.push(mech);
+            }
+            
+            return mechanisms;
+        }
+
+        function generateMechanism(rng, mode, targetGate = null) {
+            const mech = {
+                id: `M_${executionState.mechanismsTested}_${Math.floor(rng() * 10000)}`,
+                gamma0: 0,
+                beta: 0,
+                d: 0,
+                kmax: 0,
+                curvature_method: '',
+                locality_mode: '',
+                bifurcation_spoof: '',
+                regime_flip_injector: '',
+                family: '',
+                composition: ''
+            };
+
+            if (mode === 'boundary') {
+                // Target gate boundaries
+                mech.gamma0 = rng() * 2.0;
+                mech.beta = rng() * 2.0;
+                mech.d = rng() * 5.0;
+                mech.kmax = rng() * 6.0;
+                
+                // Delta kappa near G2 threshold
+                const delta_kappa_base = 0.05 + (rng() - 0.5) * 0.04; // 0.03 to 0.07
+                
+                // Sharpness near G3 soft-band (from profile)
+                const _g3_lo = RUNTIME_CONFIG.G3_s_lo || 0.08;
+                const _g3_hi = RUNTIME_CONFIG.G3_s_hi || 0.10;
+                const _g3_mid = (_g3_lo + _g3_hi) / 2;
+                const _g3_span = (_g3_hi - _g3_lo) / 2 + 0.02;
+                const sharpness_base = _g3_mid + (rng() - 0.5) * 2 * _g3_span; // spans band ± margin
+                
+                // Locality near G4 threshold (from profile)
+                const _g4t = RUNTIME_CONFIG.G4_locality_strict || 0.10;
+                const locality_budget = (_g4t - 0.05) + (rng() - 0.5) * 0.1; // near threshold
+                
+                mech.delta_kappa_target = delta_kappa_base;
+                mech.sharpness_target = sharpness_base;
+                mech.locality_budget = locality_budget;
+                
+                // Use correct methods by default at boundary
+                mech.curvature_method = rng() < 0.8 ? 'turning_angle' : 'finite_diff';
+                mech.locality_mode = rng() < 0.7 ? 'local' : 'bounded_nonlocal';
+                mech.bifurcation_spoof = 'none';
+                mech.regime_flip_injector = 'none';
+                
+            } else if (mode === 'pathological') {
+                // Inject known failure modes
+                mech.gamma0 = rng() * 2.0;
+                mech.beta = rng() * 2.0;
+                mech.d = rng() * 5.0;
+                mech.kmax = rng() * 6.0;
+                
+                // Wrong curvature method
+                mech.curvature_method = ['biased', 'wrong_metric', 'smoothed'][Math.floor(rng() * 3)];
+                
+                // Nonlocal
+                mech.locality_mode = rng() < 0.5 ? 'nonlocal_global' : 'teleport';
+                mech.locality_budget = 0.3 + rng() * 0.5; // High nonlocality
+                
+                // Spoof bifurcation
+                mech.bifurcation_spoof = rng() < 0.5 ? 'remote_step' : 'hysteresis_loop';
+                
+                // Regime flip
+                mech.regime_flip_injector = rng() < 0.5 ? 'seed_sensitive' : 'gamma_sensitive';
+                
+                mech.delta_kappa_target = rng() * 0.3;
+                mech.sharpness_target = rng() * 0.5;
+                
+            } else {
+                // Broad exploration
+                mech.gamma0 = rng() * 2.0;
+                mech.beta = rng() * 2.0;
+                mech.d = rng() * 5.0;
+                mech.kmax = rng() * 6.0;
+                
+                mech.curvature_method = MECHANISM_SPACE.curvature_methods[
+                    Math.floor(rng() * MECHANISM_SPACE.curvature_methods.length)
+                ];
+                mech.locality_mode = MECHANISM_SPACE.locality_modes[
+                    Math.floor(rng() * MECHANISM_SPACE.locality_modes.length)
+                ];
+                mech.bifurcation_spoof = MECHANISM_SPACE.bifurcation_spoofs[
+                    Math.floor(rng() * MECHANISM_SPACE.bifurcation_spoofs.length)
+                ];
+                mech.regime_flip_injector = MECHANISM_SPACE.regime_flip_injectors[
+                    Math.floor(rng() * MECHANISM_SPACE.regime_flip_injectors.length)
+                ];
+                
+                mech.delta_kappa_target = rng() * 0.3;
+                mech.sharpness_target = rng() * 0.5;
+                mech.locality_budget = rng() * 0.8;
+            }
+            
+            mech.family = MECHANISM_SPACE.families[Math.floor(rng() * MECHANISM_SPACE.families.length)];
+            mech.composition = MECHANISM_SPACE.compositions[Math.floor(rng() * MECHANISM_SPACE.compositions.length)];
+            
+            // Compute derived observables
+            return computeObservables(mech, rng);
+        }
+
+        function computeObservables(mech, rng) {
+            // Compute observables based on mechanism parameters
+            
+            // Delta kappa with curvature method influence
+            let delta_kappa = mech.delta_kappa_target || 0.1;
+            if (mech.curvature_method === 'biased') delta_kappa *= 1.3;
+            if (mech.curvature_method === 'wrong_metric') delta_kappa *= 0.7;
+            if (mech.curvature_method === 'smoothed') delta_kappa *= 0.95;
+            mech.delta_kappa = delta_kappa;
+            
+            // Bifurcation with spoof detection
+            mech.has_bifurcation = mech.gamma0 > 0.3 && mech.beta > 0.2;
+            if (mech.bifurcation_spoof !== 'none') {
+                mech.has_bifurcation = true; // Spoof always shows bifurcation
+            }
+            
+            // Sharpness
+            let sharpness = mech.sharpness_target || (rng() * 0.5);
+            if (mech.bifurcation_spoof === 'remote_step') sharpness *= 0.6; // Less sharp
+            mech.sharpness = sharpness;
+            
+            // Temporal signature (detects spoofs)
+            mech.temporal_signature_valid = mech.bifurcation_spoof === 'none';
+            
+            // Graded temporal quality (0-1): measures transition coherence
+            // Clean transitions get high quality; spoofs and noisy transitions get low
+            if (mech.bifurcation_spoof === 'none') {
+                // Clean: quality depends on sharpness and regime stability
+                const sharpContrib = Math.min(1.0, mech.sharpness / 0.15); // saturates at 0.15
+                const noiseFloor = 0.05 * (rng() - 0.5); // small measurement noise
+                mech.temporal_quality = Math.max(0, Math.min(1.0, 0.5 + 0.5 * sharpContrib + noiseFloor));
+            } else if (mech.bifurcation_spoof === 'remote_step') {
+                mech.temporal_quality = 0.15 + rng() * 0.25; // poor coherence
+            } else {
+                // hysteresis_loop
+                mech.temporal_quality = 0.30 + rng() * 0.20; // mediocre
+            }
+            
+            // Locality score (measured)
+            let locality_score = mech.locality_budget || 0;
+            if (mech.locality_mode === 'local') locality_score = 0.02 + rng() * 0.03;
+            if (mech.locality_mode === 'bounded_nonlocal') locality_score = 0.08 + rng() * 0.1;
+            if (mech.locality_mode === 'nonlocal_global') locality_score = 0.3 + rng() * 0.3;
+            if (mech.locality_mode === 'teleport') locality_score = 0.7 + rng() * 0.3;
+            mech.locality_score = locality_score;
+            
+            // Other observables
+            mech.cov_010 = rng();
+            mech.cov_020 = rng();
+            mech.kappa = 1.5 + rng() * 0.5;
+            
+            // Regime (influenced by flip injector)
+            let regime_base = ['R2', 'R3', 'R4'][Math.floor(rng() * 3)];
+            mech.regime_base = regime_base;
+            mech.regime = regime_base;
+            
+            return mech;
+        }
+
+        function seededRandom(seed) {
+            let state = seed;
+            return function() {
+                state = (state * 1664525 + 1013904223) % 4294967296;
+                return state / 4294967296;
+            };
+        }
+
+        // ============================================================================
+        // ENHANCED LII VALIDATION
+        // ============================================================================
+
+        function simulateLIIProtocol(mechanism, replicates) {
+            // Enhanced validation with regime stability and temporal signatures
+            const regimeResults = [];
+            const gammaCritResults = [];
+            
+            for (let i = 0; i < replicates; i++) {
+                // Compute regime for this replicate
+                let regime = mechanism.regime_base;
+                
+                // Inject regime flips if configured
+                if (mechanism.regime_flip_injector === 'seed_sensitive' && i % 3 === 0) {
+                    regime = regime === 'R2' ? 'R3' : (regime === 'R3' ? 'R2' : regime);
+                }
+                if (mechanism.regime_flip_injector === 'gamma_sensitive') {
+                    // Regime changes non-monotonically
+                    if (mechanism.gamma0 > 0.5 && mechanism.gamma0 < 0.7) {
+                        regime = 'R2'; // Dip
+                    }
+                }
+                
+                regimeResults.push(regime);
+                
+                // Gamma crit estimation
+                if (mechanism.has_bifurcation) {
+                    const noise = (Math.random() - 0.5) * 0.1;
+                    gammaCritResults.push(0.5 + noise);
+                }
+            }
+            
+            // Regime stability check
+            const regimeCounts = {};
+            regimeResults.forEach(r => regimeCounts[r] = (regimeCounts[r] || 0) + 1);
+            const majorityRegime = Object.entries(regimeCounts).sort((a, b) => b[1] - a[1])[0];
+            const regimeStability = majorityRegime[1] / replicates;
+            
+            // Gamma crit consistency
+            let gammaCritStd = 0;
+            if (gammaCritResults.length > 0) {
+                const mean = gammaCritResults.reduce((s, v) => s + v, 0) / gammaCritResults.length;
+                const variance = gammaCritResults.reduce((s, v) => s + (v - mean) ** 2, 0) / gammaCritResults.length;
+                gammaCritStd = Math.sqrt(variance);
+            }
+            
+            // Viability checks
+            const checks = {
+                regime_stable: regimeStability >= 0.95,
+                delta_kappa_bounded: mechanism.delta_kappa < 0.5,
+                kappa_positive: mechanism.kappa > 0,
+                // Viability-locality bound from profile (looser than gate strictness)
+                locality_ok: mechanism.locality_score < (RUNTIME_CONFIG.locality_viable_max || 0.20),
+                temporal_signature: mechanism.temporal_signature_valid || !mechanism.has_bifurcation,
+                gamma_crit_consistent: gammaCritStd < 0.15 || gammaCritResults.length === 0
+            };
+            
+            const passCount = Object.values(checks).filter(v => v).length;
+            const passRate = passCount / Object.keys(checks).length;
+            
+            return {
+                passRate,
+                regimeStability,
+                gammaCritStd,
+                checks
+            };
+        }
+
+        function isEmpiricallyViable(mechanism, replicates) {
+            const result = simulateLIIProtocol(mechanism, replicates);
+            return result.passRate >= (RUNTIME_CONFIG.pass_rate_threshold || 0.85);
+        }
+
+        // ============================================================================
+        // GATE EVALUATION
+        // ============================================================================
+
+        function evaluateGate(gate, mechanism, mode = 'base', epsilon = 0, delta = 0) {
+            if (!GATES[gate]) return true; // Gate removed (e.g., G4 in stress test)
+            
+            if (mode === 'base') {
+                return GATES[gate].predicate(mechanism);
+            } else if (mode === 'relaxed') {
+                return GATES[gate].relaxation(mechanism, epsilon);
+            } else if (mode === 'tightened') {
+                return GATES[gate].tightening(mechanism, delta);
+            }
+            return false;
+        }
+
+        // ============================================================================
+        // WITNESS SEARCH (GATE INDEPENDENCE)
+        // ============================================================================
+
+        async function runWitnessSearch() {
+            logMessage("Starting witness search for gate independence...", "info");
+            const btn = document.getElementById('run-btn');
+            btn.disabled = true;
+            
+            const gateIds = Object.keys(GATES);
+            const witnessMap = {};
+            
+            for (const targetGate of gateIds) {
+                logMessage(`Searching for witness violating ${targetGate} only...`, "info");
+                
+                // Generate candidates targeting this gate
+                let found = false;
+                for (let attempt = 0; attempt < 100 && !found; attempt++) {
+                    const mechanisms = sampleMechanismSpace(50, 'pathological', 10000 + attempt, targetGate);
+                    
+                    for (const mech of mechanisms) {
+                        const otherGates = gateIds.filter(g => g !== targetGate);
+                        const passesOthers = otherGates.every(g => evaluateGate(g, mech, 'base'));
+                        const failsTarget = !evaluateGate(targetGate, mech, 'base');
+                        
+                        if (passesOthers && failsTarget) {
+                            witnessMap[targetGate] = mech;
+                            logMessage(`✓ Witness found for ${targetGate}: ${mech.id}`, "success");
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    await sleep(0);
+                }
+                
+                if (!found) {
+                    logMessage(`✗ No witness found for ${targetGate} (may be redundant)`, "warning");
+                    witnessMap[targetGate] = null;
+                }
+            }
+            
+            executionState.witnessMap = witnessMap;
+            renderRedundancyTable(executionState.redundancyIndices, witnessMap);
+            
+            btn.disabled = false;
+            logMessage("Witness search complete", "success");
+        }
+
+        // ============================================================================
+        // PHASE P₄ THREE-STAGE EXECUTION
+        // ============================================================================
+
+        async function executeP4Protocol(silent = false) {
+            if (executionState.running) return;
+            
+            executionState.running = true;
+            executionState.silentMode = silent;
+            executionState.currentStage = 0;
+            executionState.stageLabel = "Initialize";
+            executionState.progressDetail = "Preparing run state…";
+            
+            const btn = document.getElementById('run-btn');
+            if (!silent) {
+                btn.disabled = true;
+                btn.textContent = "Running...";
+            }
+            
+            // Rebuild gates from current profile config
+            rebuildGates();
+            GATES = {...GATES_BASE_DYNAMIC};
+            
+            // Parse configuration
+            const execMode = document.getElementById('exec-mode').value;
+            const targetTotal = parseInt(document.getElementById('target-total').value);
+            const replicates = parseInt(document.getElementById('replicates').value);
+            const minClusterSize = parseInt(document.getElementById('min-cluster-size').value);
+            const samplingStrategy = document.getElementById('sampling-strategy').value;
+            
+            // Initialize global progress plan (no estimates, just counters)
+            executionState.plannedTotal = targetTotal;
+            setProgress(executionState.stageLabel, 0, executionState.plannedTotal, executionState.progressDetail);
+            
+            logMessage(`Starting P₄ protocol: ${execMode} mode, target=${targetTotal}, strategy=${samplingStrategy}`, "info");
+            
+            document.getElementById('stage-indicator').style.display = 'flex';
+            
+            let stage1Count = 0, stage2Count = 0, stage3Count = 0;
+            let totalMechanismsTested = 0;
+            const residualFailures = [];
+            const epsilonMaxResults = {};
+            const calibrationRates = {};
+            
+            const gateIds = Object.keys(GATES);
+            const epsilonGrid = [0.01, 0.02, 0.05, 0.10, 0.20];
+            const deltaGrid = [0.01, 0.02, 0.05, 0.10];
+            
+            // ========================================================================
+            // STAGE 1: CALIBRATION
+            // ========================================================================
+            if (execMode === 'three_stage' || execMode === 'calibration_only') {
+                executionState.currentStage = 1;
+                setStageActive(1);
+                logMessage("=== STAGE 1: CALIBRATION ===", "info");
+                executionState.stageLabel = "Stage 1 / Calibration";
+                executionState.progressDetail = "Estimating residual rates per relaxed gate…";
+                setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                
+                const stage1Target = RUNTIME_CONFIG.stage1_target || 300;
+
+                // ── PATCH v2.2.0: Calibration retry loop ──────────────────────
+                // Stage 1 must keep sampling until stage1Target is reached.
+                // Previous code did a single pass per (gate, eps) and stopped at ~19.
+                const stage1EpsList = [0.02, 0.05, 0.10];
+                const calibTotals = {};      // calibTotals[gateId][eps] = tested in candidate set
+                const calibResiduals = {};   // calibResiduals[gateId][eps] = non-viable count
+                for (const gateId of gateIds) {
+                    calibTotals[gateId] = {};
+                    calibResiduals[gateId] = {};
+                }
+
+                let stage1Batches = 0;
+                const STAGE1_MAX_BATCHES = 2000; // hard safety cap
+
+                while (stage1Count < stage1Target && stage1Batches < STAGE1_MAX_BATCHES) {
+                    stage1Batches++;
+                    for (const gateId of gateIds) {
+                        for (const eps of stage1EpsList) {
+                            if (stage1Count >= stage1Target) break;
+
+                            const mechanisms = sampleMechanismSpace(
+                                40, samplingStrategy, totalMechanismsTested + stage1Batches * 1000, gateId
+                            );
+                            const otherGates = gateIds.filter(g => g !== gateId);
+
+                            const candidateMechanisms = mechanisms.filter(m => {
+                                const passesOthers = otherGates.every(g => evaluateGate(g, m, 'base'));
+                                const passesRelaxedTarget = evaluateGate(gateId, m, 'relaxed', eps);
+                                const failsBaseTarget = !evaluateGate(gateId, m, 'base');
+                                return passesOthers && passesRelaxedTarget && failsBaseTarget;
+                            });
+
+                            if (calibTotals[gateId][eps] === undefined) calibTotals[gateId][eps] = 0;
+                            if (calibResiduals[gateId][eps] === undefined) calibResiduals[gateId][eps] = 0;
+
+                            for (const mech of candidateMechanisms) {
+                                if (stage1Count >= stage1Target) break;
+
+                                const isViable = isEmpiricallyViable(mech, replicates);
+                                totalMechanismsTested++;
+                                stage1Count++;
+                                calibTotals[gateId][eps] += 1;
+
+                                if (!isViable) {
+                                    calibResiduals[gateId][eps] += 1;
+                                    residualFailures.push({
+                                        mechanism: mech,
+                                        violatedGate: gateId,
+                                        epsilon: eps,
+                                        stage: 1
+                                    });
+                                }
+
+                                if (totalMechanismsTested % 20 === 0) {
+                                    updateStatus(totalMechanismsTested, residualFailures.length, 0);
+                                    document.getElementById('stage-1-count').textContent = `${stage1Count} / ${stage1Target}`;
+                                    executionState.progressDetail = `Calibration: ${stage1Count} / ${stage1Target} (batch ${stage1Batches})`;
+                                    setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                                    await sleep(0);
+                                }
+                            }
+                        }
+                        if (stage1Count >= stage1Target) break;
+                    }
+                }
+
+                // Finalize calibration rates from accumulated totals
+                for (const gateId of gateIds) {
+                    if (!calibrationRates[gateId]) calibrationRates[gateId] = {};
+                    for (const eps of stage1EpsList) {
+                        const tot = calibTotals[gateId][eps] || 0;
+                        const res = calibResiduals[gateId][eps] || 0;
+                        const rate = tot > 0 ? (res / tot) : 0;
+                        calibrationRates[gateId][eps] = rate;
+                        logMessage(`  ${gateId} @ ε=${eps}: residual rate = ${(rate * 100).toFixed(1)}% (n=${tot})`, "info");
+                    }
+                }
+
+                if (stage1Count < stage1Target) {
+                    logMessage(`⚠ Calibration shortfall: tested ${stage1Count}/${stage1Target} (delta-yield sparse after ${stage1Batches} batches).`, "warning");
+                }
+                logMessage(`Stage 1 calibration: ${stage1Batches} batch rounds, ${stage1Count} candidates tested.`, "info");
+                // ── END PATCH: Calibration retry loop ─────────────────────────
+                
+                setStageComplete(1);
+                logMessage(`Stage 1 complete: ${stage1Count} mechanisms tested`, "success");
+                executionState.mechanismsTested = totalMechanismsTested;
+                
+                if (execMode === 'calibration_only') {
+                    finishExecution(residualFailures, epsilonMaxResults, calibrationRates, minClusterSize, deltaGrid);
+                    return;
+                }
+            }
+            
+            // ========================================================================
+            // STAGE 2: POWER RUN
+            // ========================================================================
+            if (execMode === 'three_stage' || execMode === 'full_power') {
+                executionState.currentStage = 2;
+                setStageActive(2);
+                logMessage("=== STAGE 2: POWER RUN ===", "info");
+                executionState.stageLabel = "Stage 2 / Full Power";
+                executionState.progressDetail = "Allocating samples proportional to calibration residual rate…";
+                setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                
+                const stage2Target = execMode === 'three_stage' ? (RUNTIME_CONFIG.stage2_default || 1500) : targetTotal;
+                
+                // ── PATCH v2.2.0: Stage 2 allocation floor + uniform fallback ──
+                // Constants from profile (prereg-locked per manifest)
+                const ALLOC_FLOOR_PER_BUCKET = RUNTIME_CONFIG.alloc_floor_per_bucket || 10;
+                const ALLOC_MIN_PER_GATE = RUNTIME_CONFIG.alloc_min_per_gate || 100;
+                const MAX_ALLOC_BUCKET = RUNTIME_CONFIG.max_alloc_bucket || 200;
+
+                // Compute per-gate max calibration rates
+                let gateMaxRates = gateIds.map(g =>
+                    Math.max(0, ...Object.values(calibrationRates[g] || {}))
+                );
+                let totalRate = gateMaxRates.reduce((sum, r) => sum + r, 0);
+
+                // If calibration is silent → uniform fallback (the core fix)
+                if (!(totalRate > 0)) {
+                    logMessage("⚠ Calibration rates are zero/silent. Using uniform Stage-2 allocation fallback.", "warning");
+                    gateMaxRates = gateIds.map(() => 1);
+                    totalRate = gateIds.length;
+                }
+
+                // Epsilon weights: bias toward completeness zone
+                const epsWeights = { 0.01: 3, 0.02: 3, 0.05: 2, 0.10: 1, 0.20: 1 };
+                const families = MECHANISM_SPACE.families;
+                const numBuckets = gateIds.length * epsilonGrid.length * families.length;
+
+                // Phase 1: Compute floor allocations per bucket
+                let floorTotal = numBuckets * ALLOC_FLOOR_PER_BUCKET;
+                let effectiveFloor = ALLOC_FLOOR_PER_BUCKET;
+                if (floorTotal > stage2Target) {
+                    effectiveFloor = Math.max(1, Math.floor(stage2Target / numBuckets));
+                    floorTotal = numBuckets * effectiveFloor;
+                }
+
+                // Phase 2: Distribute remaining budget proportional to weights
+                const remaining = Math.max(0, stage2Target - floorTotal);
+                const bucketAllocs = {};  // bucketAllocs[gate][eps] = total across families
+
+                for (let gi = 0; gi < gateIds.length; gi++) {
+                    const gateId = gateIds[gi];
+                    bucketAllocs[gateId] = {};
+                    for (const eps of epsilonGrid) {
+                        const w = gateMaxRates[gi] * (epsWeights[eps] || 1);
+                        const totalW = gateMaxRates.reduce((s, r, idx) => {
+                            return s + epsilonGrid.reduce((es, e) => es + r * (epsWeights[e] || 1), 0);
+                        }, 0);
+                        const proportional = totalW > 0
+                            ? Math.floor((w / totalW) * remaining / families.length)
+                            : Math.floor(remaining / numBuckets);
+                        const alloc = Math.min(effectiveFloor + proportional, MAX_ALLOC_BUCKET);
+                        bucketAllocs[gateId][eps] = Math.max(alloc, effectiveFloor);
+                    }
+                }
+
+                // Phase 3: Enforce per-gate minimum
+                for (const gateId of gateIds) {
+                    const gateTotal = Object.values(bucketAllocs[gateId]).reduce((s, v) => s + v * families.length, 0);
+                    if (gateTotal < ALLOC_MIN_PER_GATE) {
+                        const deficit = ALLOC_MIN_PER_GATE - gateTotal;
+                        const perBucket = Math.ceil(deficit / (epsilonGrid.length * families.length));
+                        for (const eps of epsilonGrid) {
+                            bucketAllocs[gateId][eps] += perBucket;
+                        }
+                    }
+                }
+
+                logMessage(`Stage 2 target: ${stage2Target} | Buckets: ${numBuckets} | Floor/bucket: ${effectiveFloor} | Remaining budget: ${remaining}`, "info");
+                logMessage(`Calibration weights: [${gateIds.map((g, i) => g + '=' + gateMaxRates[i].toFixed(3)).join(', ')}]`, "info");
+
+                // Per-gate tracking for truthful ε_max table
+                const _bucketStats = {};
+                for (const gateId of gateIds) {
+                    _bucketStats[gateId] = { total: 0, byEps: {} };
+                    for (const eps of epsilonGrid) _bucketStats[gateId].byEps[eps] = 0;
+                }
+
+                // ────────────────────────────────────────────────────────────────────
+                // PATCH v3.0.1: Stage 2 QUOTA-FILLING LOOP
+                // Goal: stage2Count reaches stage2Target (or logs shortfall with cap),
+                // instead of doing a single pass over (gate, eps) and stopping early.
+                // ────────────────────────────────────────────────────────────────────
+
+                // Track ε_max on a per-gate basis (non-decreasing by eps order)
+                const gateEpsMax = {};
+                for (const g of gateIds) gateEpsMax[g] = 0;
+
+                // Safety caps to avoid infinite loops when delta-yield is extremely sparse
+                const STAGE2_MAX_PASSES = RUNTIME_CONFIG.stage2_max_passes || 50;
+                const BUCKET_MAX_RETRIES = RUNTIME_CONFIG.bucket_max_retries || 6;
+                const BUCKET_GROWTH_FACTOR = RUNTIME_CONFIG.bucket_growth_factor || 2.0;
+
+                let stage2Pass = 0;
+                let stage2Attempted = 0;
+
+                while (stage2Count < stage2Target && stage2Pass < STAGE2_MAX_PASSES) {
+                    stage2Pass++;
+                    logMessage(`Stage 2 pass ${stage2Pass}/${STAGE2_MAX_PASSES} (tested=${stage2Count}/${stage2Target})`, "info");
+
+                    for (let gi = 0; gi < gateIds.length; gi++) {
+                        const gateId = gateIds[gi];
+
+                        for (const eps of epsilonGrid) {
+                            if (stage2Count >= stage2Target) break;
+
+                            const planned = bucketAllocs[gateId][eps];
+                            const need = stage2Target - stage2Count;
+                            const allocation = Math.max(0, Math.min(planned, need));
+                            if (allocation === 0) continue;
+
+                            const otherGates = gateIds.filter(g => g !== gateId);
+                            let allCandidates = [];
+
+                            // Retry loop to fill the allocation for this bucket
+                            let retry = 0;
+                            let batchSize = Math.max(40, Math.ceil(allocation / Math.max(1, families.length)));
+                            while (allCandidates.length < allocation && retry < BUCKET_MAX_RETRIES) {
+                                retry++;
+                                stage2Attempted++;
+
+                                const mechanisms = sampleMechanismSpace(
+                                    batchSize,
+                                    samplingStrategy,
+                                    totalMechanismsTested + retry * 777 + stage2Pass * 1337,
+                                    gateId
+                                );
+
+                                const candidates = mechanisms.filter(m => {
+                                    const passesOthers = otherGates.every(g => evaluateGate(g, m, 'base'));
+                                    const passesRelaxedTarget = evaluateGate(gateId, m, 'relaxed', eps);
+                                    const failsBaseTarget = !evaluateGate(gateId, m, 'base');
+                                    return passesOthers && passesRelaxedTarget && failsBaseTarget;
+                                });
+
+                                allCandidates = allCandidates.concat(candidates);
+
+                                // If yield is sparse, grow sample size geometrically
+                                if (allCandidates.length < allocation) {
+                                    batchSize = Math.ceil(batchSize * BUCKET_GROWTH_FACTOR);
+                                }
+                            }
+
+                            // If still empty, apply near-boundary fallback
+                            if (allCandidates.length === 0) {
+                                const fallbackSize = Math.max(80, allocation * 2);
+                                const fallbackMechs = sampleMechanismSpace(
+                                    fallbackSize,
+                                    'pathological',
+                                    totalMechanismsTested + 31337 + stage2Pass * 2718,
+                                    gateId
+                                );
+                                allCandidates = fallbackMechs.filter(m => {
+                                    const passesOthers = otherGates.every(g => evaluateGate(g, m, 'base'));
+                                    const passesRelaxed = evaluateGate(gateId, m, 'relaxed', Math.min(eps * 2, 0.20));
+                                    return passesOthers && passesRelaxed;
+                                });
+                                if (allCandidates.length > 0) {
+                                    logMessage(`  ${gateId} @ ε=${eps}: delta-yield sparse, fallback yielded ${allCandidates.length}`, "warning");
+                                }
+                            }
+
+                            // Final test batch: cap to remaining need
+                            const testBatch = allCandidates.slice(0, Math.min(allocation, stage2Target - stage2Count));
+
+                            let validCount = 0;
+                            for (const mech of testBatch) {
+                                const isViable = isEmpiricallyViable(mech, replicates);
+                                totalMechanismsTested++;
+                                stage2Count++;
+                                _bucketStats[gateId].total++;
+                                _bucketStats[gateId].byEps[eps] = (_bucketStats[gateId].byEps[eps] || 0) + 1;
+
+                                if (isViable) {
+                                    validCount++;
+                                } else {
+                                    residualFailures.push({
+                                        mechanism: mech,
+                                        violatedGate: gateId,
+                                        epsilon: eps,
+                                        stage: 2
+                                    });
+                                }
+
+                                if (totalMechanismsTested % 50 === 0) {
+                                    updateStatus(totalMechanismsTested, residualFailures.length, 0);
+                                    document.getElementById('stage-2-count').textContent = `${stage2Count} / ${stage2Target}`;
+                                    executionState.progressDetail = `Full Power: ${stage2Count} / ${stage2Target}`;
+                                    setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                                    await sleep(0);
+                                }
+
+                                if (stage2Count >= stage2Target) break;
+                            }
+
+                            const validationRate = testBatch.length > 0 ? (validCount / testBatch.length) : 1.0;
+                            logMessage(
+                                `  ${gateId} @ ε=${eps}: planned=${planned}, tested=${testBatch.length}, validation=${(validationRate * 100).toFixed(1)}%`,
+                                validationRate >= 0.95 ? "success" : "warning"
+                            );
+
+                            // ε_max tracking: keep the greatest eps that maintains ≥95% validity
+                            if (validationRate >= 0.95) {
+                                gateEpsMax[gateId] = Math.max(gateEpsMax[gateId], eps);
+                            }
+                        }
+                    }
+
+                    // Force a progress refresh each pass (truthful UI)
+                    document.getElementById('stage-2-count').textContent = `${stage2Count} / ${stage2Target}`;
+                    executionState.progressDetail = `Full Power: ${stage2Count} / ${stage2Target} (passes=${stage2Pass}, attempts=${stage2Attempted})`;
+                    setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                    await sleep(0);
+                }
+
+                // Write ε_max results from the quota-filled run
+                for (const gateId of gateIds) {
+                    epsilonMaxResults[gateId] = gateEpsMax[gateId] || 0;
+                }
+
+                if (stage2Count < stage2Target) {
+                    logMessage(`⚠ Stage 2 quota shortfall after ${stage2Pass} passes: tested ${stage2Count}/${stage2Target}.`, "warning");
+                }
+                // ────────────────────────────────────────────────────────────────────
+
+                if (stage2Count === 0) {
+                    logMessage("⚠ Stage 2 produced 0 candidate mechanisms (delta-yield collapse). Power run not informative.", "warning");
+                } else if (stage2Count < stage2Target * 0.5) {
+                    logMessage(`⚠ Stage 2 shortfall: tested ${stage2Count}/${stage2Target} (${((stage2Count/stage2Target)*100).toFixed(0)}% of target).`, "warning");
+                }
+                // ── END PATCH: Stage 2 allocation floor ───────────────────────
+                
+                // Persist per-gate bucket stats for truthful ε_max table
+                executionState.bucketStats = _bucketStats;
+                
+                setStageComplete(2);
+                logMessage(`Stage 2 complete: ${stage2Count} mechanisms tested`, "success");
+                executionState.mechanismsTested = totalMechanismsTested;
+            }
+            
+            // ========================================================================
+            // STAGE 3: TIGHTENING TEST
+            // ========================================================================
+            if (execMode === 'three_stage') {
+                executionState.currentStage = 3;
+                setStageActive(3);
+                logMessage("=== STAGE 3: TIGHTENING TEST ===", "info");
+                executionState.stageLabel = "Stage 3 / Tightening";
+                executionState.progressDetail = "Testing tightening non-exclusion on detected clusters…";
+                setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                
+                // Cluster residuals first
+                const clusters = clusterResiduals(residualFailures, minClusterSize);
+                logMessage(`Found ${clusters.length} residual clusters`, "info");
+                executionState.progressDetail = `Clustering complete: ${clusters.length} components`;
+                setProgress(executionState.stageLabel, totalMechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+                
+                // Test tightening for each cluster
+                for (const cluster of clusters) {
+                    cluster.tighteningExclusion = testTighteningExclusion(cluster, deltaGrid);
+                    stage3Count += cluster.members.length;
+                    
+                    document.getElementById('stage-3-count').textContent = `${stage3Count} tested`;
+                    await sleep(0);
+                }
+                
+                executionState.clusters = clusters;
+                setStageComplete(3);
+                logMessage(`Stage 3 complete: ${clusters.length} clusters analyzed`, "success");
+            }
+            
+            executionState.mechanismsTested = totalMechanismsTested;
+            finishExecution(residualFailures, epsilonMaxResults, calibrationRates, minClusterSize, deltaGrid);
+        }
+
+        function finishExecution(residualFailures, epsilonMaxResults, calibrationRates, minClusterSize, deltaGrid) {
+            // Guard against pipeline failures
+            if (executionState.mechanismsTested === 0) {
+                logMessage("ERROR: No mechanisms were recorded as tested. Aborting verdict.", "error");
+                if (!executionState.silentMode) {
+                    document.getElementById('run-btn').disabled = false;
+                    document.getElementById('run-btn').textContent = "Execute P₄ Protocol";
+                }
+                executionState.running = false;
+                return;
+            }
+            
+            const totalMechanismsTested = executionState.mechanismsTested;
+            
+            executionState.residualSet = residualFailures;
+            executionState.mechanismsTested = totalMechanismsTested;
+            executionState.residualsFound = residualFailures.length;
+            executionState.epsilonMax = epsilonMaxResults;
+            executionState.calibrationRates = calibrationRates;
+            
+            // Update tables
+            renderEpsilonTable(epsilonMaxResults, calibrationRates);
+            renderResidualDistribution(residualFailures);
+            
+            // Cluster residuals
+            logMessage("Clustering residual failures...", "info");
+            const clusters = clusterResiduals(residualFailures, minClusterSize);
+            executionState.clusters = clusters;
+            updateStatus(totalMechanismsTested, residualFailures.length, clusters.length);
+            logMessage(`Found ${clusters.length} connected components (min_size=${minClusterSize})`, "info");
+            
+            // Test tightening if not done in Stage 3
+            if (executionState.currentStage < 3) {
+                for (const cluster of clusters) {
+                    cluster.tighteningExclusion = testTighteningExclusion(cluster, deltaGrid);
+                }
+            }
+            
+            // Compute gate redundancy
+            logMessage("Computing gate redundancy indices...", "info");
+            const redundancy = computeGateRedundancy(Object.keys(GATES), 1000);
+            executionState.redundancyIndices = redundancy;
+            renderRedundancyTable(redundancy, executionState.witnessMap);
+            
+            // Generate verdict
+            logMessage("Generating completeness verdict...", "info");
+            const verdict = generateVerdict(
+                epsilonMaxResults,
+                residualFailures,
+                clusters,
+                redundancy,
+                0.95,
+                0.05
+            );
+            
+            executionState.results = verdict;
+            
+            // Render results
+            renderGapCurve([0.01, 0.02, 0.05, 0.10, 0.20], residualFailures);
+            renderClusters(clusters);
+            renderVerdict(verdict);
+            
+            const profileTag = ACTIVE_PROFILE?.profile_id || '—';
+            logMessage(`Protocol complete: ${verdict.case} [profile: ${profileTag}]`, verdict.case === "complete" ? "success" : "warning");
+            logMessage(`Total mechanisms tested: ${executionState.mechanismsTested} | Manifest: ${MANIFEST_HASH.slice(0,12)}`, "info");
+            
+            document.getElementById('exec-stage').textContent = "COMPLETE";
+
+            if (!executionState.silentMode) {
+                document.getElementById('run-btn').disabled = false;
+                document.getElementById('run-btn').textContent = "Execute P₄ Protocol";
+            }
+            
+            // Final progress snap (counters only)
+            executionState.stageLabel = "Complete";
+            executionState.progressDetail = `Run complete [${profileTag}]. Export results when ready.`;
+            setProgress(executionState.stageLabel, executionState.mechanismsTested, executionState.plannedTotal, executionState.progressDetail);
+            
+            executionState.running = false;
+            
+            document.getElementById('results-panel').style.display = 'block';
+            document.getElementById('json-results').textContent = JSON.stringify(formatResults(verdict), null, 2);
+        }
+
+        // ============================================================================
+        // CLUSTERING (DBSCAN with min_size = 20)
+        // ============================================================================
+
+        function clusterResiduals(residuals, minSize = 20) {
+            if (residuals.length === 0) return [];
+            
+            const eps = 0.25; // Adjacency threshold
+            const clusters = [];
+            const visited = new Set();
+            
+            function distance(m1, m2) {
+                const d_gamma0 = (m1.gamma0 - m2.gamma0) / 2.0;
+                const d_beta = (m1.beta - m2.beta) / 2.0;
+                const d_d = (m1.d - m2.d) / 5.0;
+                const d_kmax = (m1.kmax - m2.kmax) / 6.0;
+                const d_locality = (m1.locality_score - m2.locality_score);
+                return Math.sqrt(d_gamma0**2 + d_beta**2 + d_d**2 + d_kmax**2 + d_locality**2);
+            }
+            
+            function getNeighbors(idx) {
+                const neighbors = [];
+                for (let i = 0; i < residuals.length; i++) {
+                    if (i !== idx && distance(residuals[idx].mechanism, residuals[i].mechanism) < eps) {
+                        neighbors.push(i);
+                    }
+                }
+                return neighbors;
+            }
+            
+            for (let i = 0; i < residuals.length; i++) {
+                if (visited.has(i)) continue;
+                
+                const neighbors = getNeighbors(i);
+                if (neighbors.length < minSize) {
+                    visited.add(i);
+                    continue;
+                }
+                
+                const cluster = {
+                    id: `C${clusters.length + 1}`,
+                    members: [residuals[i]],
+                    indices: [i]
+                };
+                visited.add(i);
+                
+                const queue = [...neighbors];
+                while (queue.length > 0) {
+                    const idx = queue.shift();
+                    if (visited.has(idx)) continue;
+                    visited.add(idx);
+                    
+                    cluster.members.push(residuals[idx]);
+                    cluster.indices.push(idx);
+                    
+                    const newNeighbors = getNeighbors(idx);
+                    if (newNeighbors.length >= minSize) {
+                        queue.push(...newNeighbors);
+                    }
+                }
+                
+                clusters.push(cluster);
+            }
+            
+            // Compute cluster statistics
+            for (const cluster of clusters) {
+                const mechanisms = cluster.members.map(m => m.mechanism);
+                cluster.centroid = {
+                    gamma0: mechanisms.reduce((s, m) => s + m.gamma0, 0) / mechanisms.length,
+                    beta: mechanisms.reduce((s, m) => s + m.beta, 0) / mechanisms.length,
+                    d: mechanisms.reduce((s, m) => s + m.d, 0) / mechanisms.length,
+                    kmax: mechanisms.reduce((s, m) => s + m.kmax, 0) / mechanisms.length,
+                    locality_score: mechanisms.reduce((s, m) => s + m.locality_score, 0) / mechanisms.length
+                };
+                cluster.signature = {
+                    mean_kappa: mechanisms.reduce((s, m) => s + m.kappa, 0) / mechanisms.length,
+                    mean_delta_kappa: mechanisms.reduce((s, m) => s + m.delta_kappa, 0) / mechanisms.length,
+                    mean_locality_score: cluster.centroid.locality_score,
+                    curvature_methods: [...new Set(mechanisms.map(m => m.curvature_method))],
+                    locality_modes: [...new Set(mechanisms.map(m => m.locality_mode))],
+                    regime_pattern: getMajorityRegime(mechanisms)
+                };
+            }
+            
+            return clusters;
+        }
+
+        function getMajorityRegime(mechanisms) {
+            const counts = {};
+            for (const m of mechanisms) {
+                counts[m.regime] = (counts[m.regime] || 0) + 1;
+            }
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            return sorted.length > 0 ? sorted[0][0] : 'R2';
+        }
+
+        function testTighteningExclusion(cluster, deltaGrid) {
+            const gateIds = Object.keys(GATES);
+            
+            for (const delta of deltaGrid) {
+                for (const gateId of gateIds) {
+                    const allFail = cluster.members.every(m => 
+                        !evaluateGate(gateId, m.mechanism, 'tightened', 0, delta)
+                    );
+                    
+                    if (allFail) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function computeGateRedundancy(gateIds, sampleCount) {
+            const redundancy = {};
+            const mechanisms = sampleMechanismSpace(sampleCount, 'adversarial', 99999);
+            
+            for (const gateId of gateIds) {
+                const otherGates = gateIds.filter(g => g !== gateId);
+                
+                const uniqueExclusions = mechanisms.filter(m => {
+                    const failsTarget = !evaluateGate(gateId, m, 'base');
+                    const passesOthers = otherGates.every(g => evaluateGate(g, m, 'base'));
+                    return failsTarget && passesOthers;
+                });
+                
+                redundancy[gateId] = uniqueExclusions.length / mechanisms.length;
+            }
+            
+            return redundancy;
+        }
+
+        function generateVerdict(epsilonMax, residuals, clusters, redundancy, validationThreshold, gapThreshold) {
+            // ── PATCH v2.2.0: Hard minimum-N guard ────────────────────────
+            const MIN_TESTED_FOR_VERDICT = RUNTIME_CONFIG.min_tested_for_verdict || 500;
+            const totalTested = executionState.mechanismsTested;
+
+            if (totalTested < MIN_TESTED_FOR_VERDICT) {
+                logMessage(`⚠ Verdict guard: only ${totalTested} mechanisms tested (minimum ${MIN_TESTED_FOR_VERDICT}). Forcing INCONCLUSIVE.`, "warning");
+                return {
+                    case: "inconclusive",
+                    summary: `Insufficient sample size: ${totalTested} tested < ${MIN_TESTED_FOR_VERDICT} minimum. P₄ decision requires adequate N. Verdict blocked.`,
+                    metrics: {
+                        mechanisms_tested: totalTested,
+                        minimum_required: MIN_TESTED_FOR_VERDICT,
+                        gap_ratio: totalTested > 0 ? residuals.length / totalTested : 0,
+                        clusters: clusters.length,
+                        guard_triggered: true
+                    }
+                };
+            }
+            // ── END PATCH: Hard minimum-N guard ───────────────────────────
+
+            const totalEpsilonMax = Object.values(epsilonMax).length > 0 ? 
+                Math.min(...Object.values(epsilonMax)) : 0;
+            const gapRatio = residuals.length / executionState.mechanismsTested;
+            const allIndependent = Object.values(redundancy).every(r => r > 0);
+            
+            if (gapRatio < gapThreshold && totalEpsilonMax >= 0.05 && allIndependent && clusters.length === 0) {
+                return {
+                    case: "complete",
+                    summary: `Gate set is structurally complete. Gap ratio ${(gapRatio * 100).toFixed(2)}% < ${(gapThreshold * 100).toFixed(0)}%. All gates independent. No persistent clusters.`,
+                    metrics: {
+                        validation_rate: 1 - gapRatio,
+                        gap_ratio: gapRatio,
+                        min_epsilon_max: totalEpsilonMax,
+                        clusters: 0
+                    }
+                };
+            }
+            
+            const persistentClusters = clusters.filter(c => !c.tighteningExclusion && c.members.length >= 25);
+            
+            if (persistentClusters.length > 0) {
+                return {
+                    case: "gap_detected",
+                    summary: `Gap detected. ${persistentClusters.length} persistent cluster(s) cannot be excluded by tightening. Irreducible gate required.`,
+                    metrics: {
+                        validation_rate: 1 - gapRatio,
+                        gap_ratio: gapRatio,
+                        persistent_clusters: persistentClusters.length,
+                        total_clusters: clusters.length
+                    },
+                    candidate_gate: identifyCandidateGate(persistentClusters)
+                };
+            }
+            
+            return {
+                case: "inconclusive",
+                summary: `Results inconclusive. Gap ratio ${(gapRatio * 100).toFixed(2)}%. Clusters: ${clusters.length}. Sample size may be insufficient.`,
+                metrics: {
+                    validation_rate: 1 - gapRatio,
+                    gap_ratio: gapRatio,
+                    clusters: clusters.length,
+                    mechanisms_tested: executionState.mechanismsTested
+                }
+            };
+        }
+
+        function identifyCandidateGate(clusters) {
+            const violations = {};
+            const signatures = {
+                locality: 0,
+                curvature: 0,
+                monotonicity: 0
+            };
+            
+            for (const cluster of clusters) {
+                for (const member of cluster.members) {
+                    violations[member.violatedGate] = (violations[member.violatedGate] || 0) + 1;
+                }
+                
+                // Analyze cluster signature
+                if (cluster.signature.mean_locality_score > 0.2) signatures.locality++;
+                if (cluster.signature.curvature_methods.includes('wrong_metric')) signatures.curvature++;
+            }
+            
+            const primaryGate = Object.entries(violations).length > 0 ?
+                Object.entries(violations).sort((a, b) => b[1] - a[1])[0] : ['G2', 0];
+            
+            let principle = "Regime transition monotonicity";
+            let constraint = "gamma0 < gamma0' => R(gamma0) <= R(gamma0')";
+            
+            if (signatures.locality > signatures.curvature) {
+                principle = "Locality saturation bound";
+                constraint = "locality_score must saturate at finite budget";
+            }
+            
+            return {
+                exists: true,
+                gate_id: "G5",
+                structural_principle: principle,
+                formal_constraint: constraint,
+                eliminates_clusters: clusters.map(c => c.id),
+                primary_violation: primaryGate[0],
+                rationale: `${primaryGate[1]} violations at ${primaryGate[0]}. Cluster analysis suggests ${principle}.`
+            };
+        }
+
+        // ============================================================================
+        // RENDERING
+        // ============================================================================
+
+        function renderEpsilonTable(epsilonMax, calibrationRates) {
+            const tbody = document.getElementById('epsilon-tbody');
+            tbody.innerHTML = '';
+            
+            const gateIds = Object.keys(GATES);
+            for (const gateId of gateIds) {
+                const tr = document.createElement('tr');
+                const eps = epsilonMax[gateId] || 0;
+                const rate = calibrationRates[gateId] ? 
+                    Math.max(...Object.values(calibrationRates[gateId])) : 0;
+                const nTested = executionState.bucketStats?.[gateId]?.total || 0;
+                const status = eps >= 0.05 ? 'metric-positive' : (eps > 0 ? 'metric-neutral' : 'metric-negative');
+                const nClass = nTested >= 50 ? 'metric-positive' : (nTested > 0 ? 'metric-neutral' : 'metric-negative');
+                tr.innerHTML = `
+                    <td>${gateId}</td>
+                    <td>${GATES[gateId].name}</td>
+                    <td class="${status}">${eps.toFixed(3)}</td>
+                    <td class="${nClass}">${nTested}</td>
+                    <td>${(rate * 100).toFixed(1)}%</td>
+                    <td>${eps >= 0.05 ? 'PASS' : (eps > 0 ? 'RESTRICTED' : 'BRITTLE')}${nTested < 50 ? ' ⚠low-n' : ''}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function renderRedundancyTable(redundancy, witnessMap = {}) {
+            const tbody = document.getElementById('redundancy-tbody');
+            tbody.innerHTML = '';
+            
+            const gateIds = Object.keys(GATES);
+            for (const gateId of gateIds) {
+                const tr = document.createElement('tr');
+                const r = redundancy[gateId] || 0;
+                const witness = witnessMap[gateId];
+                const status = r > 0 ? 'metric-positive' : 'metric-negative';
+                tr.innerHTML = `
+                    <td>${gateId}</td>
+                    <td class="${status}">${r.toFixed(4)}</td>
+                    <td>${witness ? `✓ ${witness.id.slice(0, 12)}` : (witness === null ? '✗ None' : '—')}</td>
+                    <td>${r > 0 ? 'INDEPENDENT' : 'REDUNDANT'}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // ============================================================================
+        // RESIDUAL DISTRIBUTION RENDERING
+        // ============================================================================
+
+        function renderResidualDistribution(residualFailures) {
+            const tbody = document.getElementById('residual-dist-tbody');
+            tbody.innerHTML = '';
+            
+            const gateIds = Object.keys(GATES);
+            const totalResiduals = residualFailures.length;
+            
+            // Count residuals per gate and per (gate, eps)
+            const byGate = {};
+            const byGateEps = {};
+            for (const gateId of gateIds) {
+                byGate[gateId] = 0;
+                byGateEps[gateId] = {};
+            }
+            
+            for (const r of residualFailures) {
+                const g = r.violatedGate;
+                if (byGate[g] !== undefined) {
+                    byGate[g]++;
+                    byGateEps[g][r.epsilon] = (byGateEps[g][r.epsilon] || 0) + 1;
+                }
+            }
+            
+            // Render table rows
+            for (const gateId of gateIds) {
+                const count = byGate[gateId];
+                const pct = totalResiduals > 0 ? (count / totalResiduals * 100) : 0;
+                const epsBreakdown = Object.entries(byGateEps[gateId])
+                    .sort(([a], [b]) => parseFloat(a) - parseFloat(b))
+                    .map(([eps, n]) => `ε=${eps}:${n}`)
+                    .join(', ') || '—';
+                
+                const tr = document.createElement('tr');
+                const barWidth = totalResiduals > 0 ? Math.round(count / totalResiduals * 100) : 0;
+                const isMax = count === Math.max(...Object.values(byGate)) && count > 0;
+                tr.innerHTML = `
+                    <td>${gateId}${isMax ? ' ⚠' : ''}</td>
+                    <td>${count}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: ${barWidth}px; height: 10px; background: ${isMax ? 'var(--accent-yellow)' : 'var(--accent-blue)'}; border-radius: 2px; min-width: ${count > 0 ? 3 : 0}px;"></div>
+                            <span>${pct.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td style="font-size: 10px; color: var(--text-secondary);">${epsBreakdown}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+            
+            // Render bar chart
+            renderResidualBarChart(byGate, byGateEps, gateIds);
+            
+            // G3 soft-band detail
+            renderG3BandDetail(residualFailures);
+        }
+        
+        function renderResidualBarChart(byGate, byGateEps, gateIds) {
+            const canvas = document.getElementById('residual-bar-chart');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            const maxCount = Math.max(1, ...Object.values(byGate));
+            const padding = { top: 15, bottom: 35, left: 45, right: 15 };
+            const plotW = w - padding.left - padding.right;
+            const plotH = h - padding.top - padding.bottom;
+            const barW = Math.floor(plotW / gateIds.length) - 8;
+            
+            const epsColors = {
+                0.01: '#60a5fa', 0.02: '#34d399', 0.05: '#fbbf24',
+                0.10: '#f97316', 0.20: '#ef4444'
+            };
+            
+            // Y axis
+            ctx.strokeStyle = '#555';
+            ctx.fillStyle = '#888';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, h - padding.bottom);
+            ctx.lineTo(w - padding.right, h - padding.bottom);
+            ctx.stroke();
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (plotH * (1 - i / 4));
+                const val = Math.round(maxCount * i / 4);
+                ctx.fillText(String(val), padding.left - 5, y + 3);
+                if (i > 0) {
+                    ctx.strokeStyle = '#333';
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, y);
+                    ctx.lineTo(w - padding.right, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // Bars
+            gateIds.forEach((gateId, gi) => {
+                const x = padding.left + gi * (plotW / gateIds.length) + 4;
+                const total = byGate[gateId];
+                const barH = (total / maxCount) * plotH;
+                
+                // Stacked by epsilon
+                const epsCounts = Object.entries(byGateEps[gateId])
+                    .sort(([a], [b]) => parseFloat(a) - parseFloat(b));
+                
+                let stackY = h - padding.bottom;
+                for (const [eps, count] of epsCounts) {
+                    const segH = (count / maxCount) * plotH;
+                    ctx.fillStyle = epsColors[parseFloat(eps)] || '#a78bfa';
+                    ctx.fillRect(x, stackY - segH, barW, segH);
+                    stackY -= segH;
+                }
+                
+                // Gate label
+                ctx.fillStyle = '#ccc';
+                ctx.textAlign = 'center';
+                ctx.font = '11px monospace';
+                ctx.fillText(gateId, x + barW / 2, h - padding.bottom + 14);
+                
+                // Count label
+                if (total > 0) {
+                    ctx.fillStyle = total === Math.max(...Object.values(byGate)) ? '#fbbf24' : '#aaa';
+                    ctx.font = '10px monospace';
+                    ctx.fillText(String(total), x + barW / 2, h - padding.bottom - barH - 3);
+                }
+            });
+            
+            // Legend
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'left';
+            let legendX = padding.left + 5;
+            for (const [eps, color] of Object.entries(epsColors)) {
+                ctx.fillStyle = color;
+                ctx.fillRect(legendX, 3, 8, 8);
+                ctx.fillStyle = '#999';
+                ctx.fillText(`ε=${eps}`, legendX + 10, 10);
+                legendX += 55;
+            }
+        }
+        
+        function renderG3BandDetail(residualFailures) {
+            const panel = document.getElementById('g3-band-detail');
+            const stats = document.getElementById('g3-band-stats');
+            
+            const s_lo = RUNTIME_CONFIG.G3_s_lo;
+            const s_hi = RUNTIME_CONFIG.G3_s_hi;
+            
+            // Count G3 residuals in each zone
+            const g3Residuals = residualFailures.filter(r => r.violatedGate === 'G3');
+            let belowLo = 0, inBand = 0, aboveHi = 0;
+            for (const r of g3Residuals) {
+                const s = r.mechanism?.sharpness || 0;
+                if (s < s_lo) belowLo++;
+                else if (s < s_hi) inBand++;
+                else aboveHi++;
+            }
+            
+            if (g3Residuals.length > 0) {
+                panel.style.display = 'block';
+                stats.innerHTML = `
+                    Total G3 residuals: <strong>${g3Residuals.length}</strong> | 
+                    Below s_lo (${s_lo}): <strong>${belowLo}</strong> | 
+                    In band [${s_lo}, ${s_hi}): <strong style="color: var(--accent-yellow);">${inBand}</strong> | 
+                    Above s_hi (${s_hi}): <strong>${aboveHi}</strong>
+                    ${inBand > 0 ? ` — boundary failures are temporal-quality rejections` : ''}
+                `;
+            } else {
+                panel.style.display = 'block';
+                stats.innerHTML = `No G3 residuals. Soft-band [${s_lo}, ${s_hi}) with T_min=${RUNTIME_CONFIG.G3_T_min} is clean.`;
+            }
+        }
+
+        function renderGapCurve(epsilonGrid, residuals) {
+            const canvas = document.getElementById('gap-curve');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const gapByEpsilon = {};
+            for (const r of residuals) {
+                gapByEpsilon[r.epsilon] = (gapByEpsilon[r.epsilon] || 0) + 1;
+            }
+            
+            const maxGap = Math.max(...Object.values(gapByEpsilon), 1);
+            const padding = 40;
+            
+            ctx.strokeStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(padding, h - padding);
+            ctx.lineTo(w - padding, h - padding);
+            ctx.moveTo(padding, h - padding);
+            ctx.lineTo(padding, padding);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#fbbf24';
+            ctx.fillStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const sortedEps = Object.keys(gapByEpsilon).map(Number).sort((a, b) => a - b);
+            sortedEps.forEach((eps, i) => {
+                const x = padding + (i / (sortedEps.length - 1 || 1)) * (w - 2 * padding);
+                const y = h - padding - (gapByEpsilon[eps] / maxGap) * (h - 2 * padding);
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                
+                ctx.fillRect(x - 3, y - 3, 6, 6);
+            });
+            ctx.stroke();
+            
+            ctx.fillStyle = '#999';
+            ctx.font = '11px Courier New';
+            ctx.fillText('ε', w - padding + 10, h - padding + 5);
+            ctx.fillText('Gap', padding - 35, padding);
+            ctx.fillText(`n=${residuals.length}`, padding, padding - 10);
+        }
+
+        function renderClusters(clusters) {
+            const container = document.getElementById('cluster-container');
+            
+            if (clusters.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); text-align: center;">No clusters detected</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            for (const cluster of clusters) {
+                const card = document.createElement('div');
+                card.className = 'cluster-card';
+                card.innerHTML = `
+                    <div class="cluster-header">
+                        <span class="cluster-id">${cluster.id}</span>
+                        <span class="cluster-size">Size: ${cluster.members.length}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        <div>Centroid: γ₀=${cluster.centroid.gamma0.toFixed(2)}, β=${cluster.centroid.beta.toFixed(2)}, locality=${cluster.centroid.locality_score.toFixed(3)}</div>
+                        <div>Curvature methods: ${cluster.signature.curvature_methods.join(', ')}</div>
+                        <div>Locality modes: ${cluster.signature.locality_modes.join(', ')}</div>
+                        <div>Regime: ${cluster.signature.regime_pattern} | Δκ_mean=${cluster.signature.mean_delta_kappa.toFixed(3)}</div>
+                        <div>Tightening exclusion: ${cluster.tighteningExclusion ? 'YES' : '<strong style="color: var(--accent-red);">NO (persistent)</strong>'}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function renderVerdict(verdict) {
+            const panel = document.getElementById('verdict-panel');
+            const display = document.getElementById('verdict-display');
+            const statusEl = document.getElementById('verdict-status');
+            
+            panel.style.display = 'block';
+            
+            if (verdict.case === 'complete') {
+                display.className = 'verdict verdict-complete';
+                display.innerHTML = `CASE 1: STRUCTURAL COMPLETENESS<br><span style="font-size: 14px;">${verdict.summary}</span>`;
+                if (statusEl) statusEl.textContent = 'COMPLETE';
+            } else if (verdict.case === 'gap_detected') {
+                display.className = 'verdict verdict-gap';
+                display.innerHTML = `CASE 2: GAP DETECTED — IRREDUCIBLE GATE REQUIRED<br><span style="font-size: 14px;">${verdict.summary}</span>`;
+                if (statusEl) statusEl.textContent = 'GAP DETECTED';
+            } else {
+                display.className = 'verdict verdict-gap';
+                display.innerHTML = `INCONCLUSIVE<br><span style="font-size: 14px;">${verdict.summary}</span>`;
+                if (statusEl) statusEl.textContent = 'INCONCLUSIVE';
+            }
+        }
+
+        function setStageActive(stage) {
+            for (let i = 1; i <= 3; i++) {
+                const elem = document.getElementById(`stage-${i}`);
+                elem.classList.remove('stage-active', 'stage-complete');
+                if (i === stage) elem.classList.add('stage-active');
+            }
+        }
+
+        function setStageComplete(stage) {
+            document.getElementById(`stage-${stage}`).classList.remove('stage-active');
+            document.getElementById(`stage-${stage}`).classList.add('stage-complete');
+        }
+
+        // ============================================================================
+        // RESULTS EXPORT
+        // ============================================================================
+
+        function formatResults(verdict) {
+            return {
+                schema_version: "0.2.0",
+                chamber_id: "LIII",
+                chamber_version: "3.1.0",
+                profile: {
+                    profile_id: ACTIVE_PROFILE?.profile_id || "unknown",
+                    manifest_hash: MANIFEST_HASH,
+                    locked: ACTIVE_PROFILE?.locked || false,
+                    runtime_config: RUNTIME_CONFIG
+                },
+                execution_metadata: {
+                    timestamp: CHAMBER_CONFIG.timestamp,
+                    engine_version: CHAMBER_CONFIG.version,
+                    protocol_ref: "LII_v1.3.2_enhanced",
+                    total_mechanisms_tested: executionState.mechanismsTested,
+                    sampling_strategy: document.getElementById('sampling-strategy').value,
+                    g4_removed: !GATES.hasOwnProperty('G4')
+                },
+                epsilon_max: Object.entries(executionState.epsilonMax).map(([gate_id, epsilon_max]) => ({
+                    gate_id,
+                    epsilon_max,
+                    calibration_rate: executionState.calibrationRates[gate_id] ? 
+                        Math.max(...Object.values(executionState.calibrationRates[gate_id])) : 0
+                })),
+                gap_analysis: {
+                    gap_volume: executionState.residualSet.length,
+                    gap_ratio: executionState.residualSet.length / executionState.mechanismsTested,
+                    clusters: executionState.clusters.map(c => ({
+                        cluster_id: c.id,
+                        size: c.members.length,
+                        parameter_centroid: c.centroid,
+                        feature_signature: c.signature,
+                        tightening_exclusion: c.tighteningExclusion || false
+                    }))
+                },
+                residual_distribution: (() => {
+                    const dist = {};
+                    const gateIds = Object.keys(GATES);
+                    for (const g of gateIds) dist[g] = { count: 0, by_epsilon: {} };
+                    for (const r of executionState.residualSet) {
+                        if (dist[r.violatedGate]) {
+                            dist[r.violatedGate].count++;
+                            dist[r.violatedGate].by_epsilon[r.epsilon] = 
+                                (dist[r.violatedGate].by_epsilon[r.epsilon] || 0) + 1;
+                        }
+                    }
+                    return dist;
+                })(),
+                g3_soft_band: {
+                    s_lo: RUNTIME_CONFIG.G3_s_lo,
+                    s_hi: RUNTIME_CONFIG.G3_s_hi,
+                    T_min: RUNTIME_CONFIG.G3_T_min,
+                    residuals_below_s_lo: executionState.residualSet.filter(r => 
+                        r.violatedGate === 'G3' && (r.mechanism?.sharpness || 0) < RUNTIME_CONFIG.G3_s_lo).length,
+                    residuals_in_band: executionState.residualSet.filter(r => 
+                        r.violatedGate === 'G3' && (r.mechanism?.sharpness || 0) >= RUNTIME_CONFIG.G3_s_lo 
+                        && (r.mechanism?.sharpness || 0) < RUNTIME_CONFIG.G3_s_hi).length,
+                    residuals_above_s_hi: executionState.residualSet.filter(r => 
+                        r.violatedGate === 'G3' && (r.mechanism?.sharpness || 0) >= RUNTIME_CONFIG.G3_s_hi).length
+                },
+                gate_redundancy: Object.entries(executionState.redundancyIndices).map(([gate_id, redundancy_index]) => ({
+                    gate_id,
+                    redundancy_index,
+                    witness_found: executionState.witnessMap[gate_id] ? true : false
+                })),
+                candidate_gate: verdict.candidate_gate || {
+                    exists: false,
+                    gate_id: null,
+                    structural_principle: null,
+                    formal_constraint: null,
+                    eliminates_clusters: null
+                },
+                verdict: {
+                    case: verdict.case,
+                    summary: verdict.summary,
+                    metrics: verdict.metrics
+                }
+            };
+        }
+
+        function exportResults() {
+            if (!executionState.results) {
+                logMessage("No results to export. Run protocol first.", "error");
+                return;
+            }
+            
+            const results = formatResults(executionState.results);
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const g4Status = GATES.hasOwnProperty('G4') ? 'full' : 'noG4';
+            const profileTag = ACTIVE_PROFILE?.profile_id || 'unknown';
+            a.download = `chamber_LIII_v3_${profileTag}_${g4Status}_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            logMessage("Results exported successfully", "success");
+        }
+
+        function resetChamber() {
+            executionState = {
+                running: false,
+                silentMode: false,
+                currentStage: 0,
+                mechanismsTested: 0,
+                residualsFound: 0,
+                results: null,
+                // Progress bookkeeping
+                plannedTotal: 0,
+                stageLabel: "Idle",
+                progressDetail: "—",
+                epsilonMax: {},
+                calibrationRates: {},
+                residualSet: [],
+                clusters: [],
+                redundancyIndices: {},
+                witnessMap: {},
+                bucketStats: {}
+            };
+            
+            GATES = {...GATES_BASE_DYNAMIC};
+            
+            document.getElementById('epsilon-tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>';
+            document.getElementById('residual-dist-tbody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>';
+            document.getElementById('g3-band-detail').style.display = 'none';
+            document.getElementById('redundancy-tbody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Run protocol to populate</td></tr>';
+            document.getElementById('cluster-container').innerHTML = '<div style="color: var(--text-secondary); text-align: center;">No clusters detected</div>';
+            document.getElementById('verdict-panel').style.display = 'none';
+            document.getElementById('results-panel').style.display = 'none';
+            document.getElementById('stage-indicator').style.display = 'none';
+            
+            const canvas = document.getElementById('gap-curve');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const barCanvas = document.getElementById('residual-bar-chart');
+            const barCtx = barCanvas.getContext('2d');
+            barCtx.clearRect(0, 0, barCanvas.width, barCanvas.height);
+            
+            updateStatus(0, 0, 0);
+            setProgress("Idle", 0, 0, "—");
+            document.getElementById('exec-stage').textContent = 'READY';
+            logMessage("Chamber reset complete", "info");
+        }
+
+        function updateStatus(tested, residuals, clusters) {
+            executionState.mechanismsTested = tested;
+            executionState.residualsFound = residuals;
+            
+            document.getElementById('mechanisms-tested').textContent = tested;
+            document.getElementById('residuals-found').textContent = residuals;
+            document.getElementById('clusters-detected').textContent = clusters;
+        }
+
+        function logMessage(msg, type = "info") {
+            const log = document.getElementById('execution-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toISOString().slice(11, 19)}] ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ============================================================================
+        // SWEEP RUNNER — runs multiple profiles back-to-back, writes aggregated JSON
+        // ============================================================================
+
+        async function runSweep() {
+            const profileId = document.getElementById('profile-select').value;
+            const profile = PROFILES[profileId];
+            if (!profile || !profile.sweep) {
+                logMessage("Selected profile has no sweep configuration.", "error");
+                return;
+            }
+
+            const baseId = profile.inherit || profileId;
+            const sweepParam = profile.sweep.param;
+            const sweepValues = profile.sweep.values;
+
+            const sweepBtn = document.getElementById('sweep-btn');
+            const runBtn = document.getElementById('run-btn');
+            sweepBtn.disabled = true;
+            runBtn.disabled = true;
+            sweepBtn.textContent = "Sweeping...";
+
+            const sweepPanel = document.getElementById('sweep-progress');
+            sweepPanel.style.display = 'block';
+
+            const sweepResults = [];
+
+            // Force sweep to run FULL POWER per step (not whatever UI mode was set)
+            const execModeEl = document.getElementById('exec-mode');
+            const targetTotalEl = document.getElementById('target-total');
+            const prevExecMode = execModeEl.value;
+            const prevTargetTotal = targetTotalEl.value;
+
+            // Use sweep-specific target if provided, else keep current target-total UI value
+            const sweepTarget = (profile.sweep && profile.sweep.full_power_target)
+                ? profile.sweep.full_power_target
+                : parseInt(prevTargetTotal, 10);
+
+            execModeEl.value = 'full_power';
+            targetTotalEl.value = String(sweepTarget);
+
+            for (let i = 0; i < sweepValues.length; i++) {
+                const value = sweepValues[i];
+                document.getElementById('sweep-status').textContent = 
+                    `Step ${i+1}/${sweepValues.length}: ${sweepParam} = ${value}`;
+
+                // Build overrides for this sweep step
+                const overrides = { gates: {} };
+                overrides.gates[sweepParam] = value;
+
+                // Apply profile with overrides
+                await applyProfile(baseId, overrides);
+
+                logMessage(`═══ SWEEP STEP ${i+1}/${sweepValues.length}: ${sweepParam} = ${value} ═══`, "info");
+
+                // Reset state for clean run
+                executionState.running = false;
+                executionState.currentStage = 0;
+                executionState.mechanismsTested = 0;
+                executionState.residualsFound = 0;
+                executionState.results = null;
+                executionState.epsilonMax = {};
+                executionState.calibrationRates = {};
+                executionState.residualSet = [];
+                executionState.clusters = [];
+                executionState.redundancyIndices = {};
+
+                // Run the protocol
+                await executeP4Protocol(true);
+
+                // Collect results
+                const stepResult = {
+                    step: i + 1,
+                    [sweepParam]: value,
+                    manifest_hash: MANIFEST_HASH,
+                    total_tested: executionState.mechanismsTested,
+                    gap_ratio: executionState.residualSet.length / Math.max(1, executionState.mechanismsTested),
+                    gap_volume: executionState.residualSet.length,
+                    clusters: executionState.clusters.length,
+                    persistent_clusters: executionState.clusters.filter(c => !c.tighteningExclusion).length,
+                    epsilon_max: { ...executionState.epsilonMax },
+                    verdict: executionState.results?.case || "unknown"
+                };
+                sweepResults.push(stepResult);
+
+                logMessage(`Step ${i+1} result: gap=${(stepResult.gap_ratio*100).toFixed(2)}%, clusters=${stepResult.clusters}, verdict=${stepResult.verdict}`, 
+                    stepResult.verdict === 'complete' ? "success" : "warning");
+            }
+
+            // Restore baseline profile
+            await applyProfile(baseId);
+
+            const sweepOutput = {
+                sweep_id: `sweep_${profileId}_${new Date().toISOString()}`,
+                profile_id: profileId,
+                baseline: baseId,
+                swept_parameter: sweepParam,
+                values: sweepValues,
+                results: sweepResults,
+                summary: {
+                    min_gap: Math.min(...sweepResults.map(r => r.gap_ratio)),
+                    max_gap: Math.max(...sweepResults.map(r => r.gap_ratio)),
+                    verdicts: sweepResults.map(r => ({ [sweepParam]: r[sweepParam], verdict: r.verdict }))
+                }
+            };
+
+            logMessage("═══ SWEEP COMPLETE ═══", "success");
+            logMessage(`Gap range: ${(sweepOutput.summary.min_gap*100).toFixed(2)}% – ${(sweepOutput.summary.max_gap*100).toFixed(2)}%`, "info");
+
+            downloadJSON(sweepOutput, `LIII_sweep_${sweepParam}_${new Date().toISOString().slice(0,10)}.json`);
+
+            // Restore user UI settings
+            execModeEl.value = prevExecMode;
+            targetTotalEl.value = prevTargetTotal;
+
+            sweepBtn.disabled = false;
+            runBtn.disabled = false;
+            sweepBtn.textContent = "Run Sweep";
+            document.getElementById('sweep-status').textContent = `Complete: ${sweepValues.length} steps.`;
+        }
+
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            logMessage(`Downloaded: ${filename}`, "success");
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+
+        window.addEventListener('load', async () => {
+            initProgressUI();
+            populateProfileSelector();
+            await applyProfile('P4_baseline');
+            logMessage("Chamber LIII v3.1.0 (Modular) initialized", "success");
+            logMessage("Profile engine active — no more chamber forks", "info");
+            logMessage(`G3 soft-band gate: s_lo=${RUNTIME_CONFIG.G3_s_lo}, s_hi=${RUNTIME_CONFIG.G3_s_hi}, T_min=${RUNTIME_CONFIG.G3_T_min}`, "info");
+            logMessage("G4 (Locality) reinstated with configurable strict/viable split", "info");
+            logMessage(`Generator mix from profile: ${JSON.stringify(RUNTIME_CONFIG.generator_mix)}`, "info");
+            logMessage("Stage-1 retry loop, Stage-2 QUOTA-FILLING loop, verdict N-guard: active", "info");
+            logMessage("Manifest hashing (SHA-256): active", "info");
+            logMessage("Residual distribution panel: active", "info");
+            logMessage("Ready for production P₄ completeness testing", "success");
+        });
+    </script>
+</body>
+</html>

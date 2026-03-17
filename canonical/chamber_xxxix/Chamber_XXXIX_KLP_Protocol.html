@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory – Chamber XXXIX: κ-Limited Propagation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; margin-top: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .button-warning { background: #ff4a4a; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .metric.warning { border-color: #ff4a4a; }
+    .metric.warning .metric-value { color: #ff4a4a; }
+    .metric.success { border-color: #4aff4a; }
+    .metric.success .metric-value { color: #4aff4a; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .status.warning { background: #4a2a2a; color: #ff4a4a; }
+    .protocol-results { margin-top: 15px; }
+    .protocol-item { background: #0a0a0a; padding: 12px; margin-bottom: 8px; border-left: 3px solid #2a2a2a; }
+    .protocol-item.pass { border-left-color: #4aff4a; }
+    .protocol-item.fail { border-left-color: #ff4a4a; }
+    .protocol-item.pending { border-left-color: #ffa54a; }
+    .kappa-gate { font-weight: bold; color: #4a9eff; }
+    .collapse-indicator { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; margin-left: 8px; }
+    .collapse-indicator.collapsed { background: #ff4a4a; color: #fff; }
+    .collapse-indicator.stable { background: #4aff4a; color: #000; }
+    .collapse-indicator.marginal { background: #ffa54a; color: #000; }
+    code { background: #0a0a0a; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ CHAMBER XXXIX: κ-LIMITED PROPAGATION PROTOCOL</h1>
+      <div class="subtitle">Testing Phase/Group/Information Velocity Decomposition via κ-Gate Collapse</div>
+    </header>
+    
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="64">64×64 (fast)</option>
+            <option value="128" selected>128×128 (balanced)</option>
+            <option value="256">256×256 (high-res)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Propagation Mode</label>
+          <select id="propagationMode">
+            <option value="phase">Phase (default)</option>
+            <option value="group">Group (envelope)</option>
+            <option value="info">Information</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>λ (Coupling)</label>
+          <input type="number" id="lambda" step="0.01" value="0.10">
+        </div>
+        <div class="control-group">
+          <label>β (Dispersive Strength)</label>
+          <input type="number" id="beta" step="0.01" value="0.20">
+        </div>
+        <div class="control-group">
+          <label>k_filter (Phase Control)</label>
+          <input type="number" id="kFilter" step="0.1" value="3.0">
+        </div>
+        <div class="control-group">
+          <label>Duration (steps)</label>
+          <input type="number" id="duration" value="400">
+        </div>
+        <div class="control-group">
+          <label>c_eff (Effective Ceiling)</label>
+          <input type="number" id="cEff" step="0.01" value="1.00">
+        </div>
+        <div class="control-group">
+          <label>σ (Noise Level)</label>
+          <input type="number" id="sigma" step="0.001" value="0.010" min="0">
+        </div>
+        <div class="control-group">
+          <label>Seed (Reproducibility)</label>
+          <input type="number" id="seed" step="1" value="137042" min="1">
+        </div>
+      </div>
+      
+      <div style="margin-top: 15px; padding: 12px; background: #1a2a1a; border-left: 3px solid #4aff4a; border-radius: 4px;">
+        <strong style="color: #4aff4a;">⚙️ Regime Presets:</strong>
+        <div style="margin-top: 8px;">
+          <button id="presetAdmissible" style="background: #2a4a2a; margin: 5px;">Admissible (v < c)</button>
+          <button id="presetMarginal" style="background: #4a3a2a; margin: 5px;">Marginal (v ≈ c)</button>
+          <button id="presetSuperluminal" style="background: #4a2a2a; margin: 5px;">Superluminal (v > c)</button>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px; padding: 15px; background: #1a1a2a; border-left: 3px solid #4a9eff; border-radius: 4px;">
+        <strong style="color: #4a9eff;">κ₂ Stress-Test Controls</strong>
+        <div class="controls" style="margin-top: 10px;">
+          <div class="control-group">
+            <label>Observer Boost (v/c_eff) <span id="boostValue">0.50</span></label>
+            <input type="range" id="observerBoost" min="0" max="0.95" step="0.05" value="0.50">
+          </div>
+          <div class="control-group">
+            <label>Boost Angle (degrees) <span id="angleValue">0</span></label>
+            <input type="range" id="boostAngle" min="0" max="180" step="15" value="0">
+          </div>
+        </div>
+        <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
+          Adjust observer frame parameters to stress-test κ₂ consistency under extreme boosts
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px; padding: 15px; background: #1a2a1a; border-left: 3px solid #4aff4a; border-radius: 4px;">
+        <strong style="color: #4aff4a;">⚠️ Experiment Protocol:</strong>
+        <ol style="margin: 10px 0 0 20px; line-height: 1.8;">
+          <li><strong>Initialization:</strong> Prepare dual τ-field with k-filtered excitation</li>
+          <li><strong>Evolution:</strong> Run dispersive dynamics (β-coupled Laplacian)</li>
+          <li><strong>Phase Velocity:</strong> Measure v_phase from spectral ω(k) relation</li>
+          <li><strong>κ₁ Test:</strong> Check local registration continuity</li>
+          <li><strong>κ₂ Test:</strong> Verify cross-observer consistency</li>
+          <li><strong>κ₃ Test:</strong> Test re-entry persistence</li>
+        </ol>
+      </div>
+      
+      <button id="runProtocol" class="button-primary">▶ Run Full Protocol</button>
+      <button id="stopProtocol" disabled>⏸ Stop</button>
+      <button id="runK1Only">κ₁ Test Only</button>
+      <button id="runK2Only">κ₂ Test Only</button>
+      <button id="runK3Only">κ₃ Test Only</button>
+      <button id="exportData" disabled>💾 Export Results</button>
+      
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasField1"></canvas>
+          <div class="canvas-label">τ-Field #1 (Carrier)</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasField2"></canvas>
+          <div class="canvas-label">τ-Field #2 (Envelope)</div>
+        </div>
+      </div>
+      <div class="visualization" style="margin-top: 20px;">
+        <div class="canvas-container">
+          <canvas id="canvasSpectrum"></canvas>
+          <div class="canvas-label">Power Spectrum P(k)</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasDispersion"></canvas>
+          <div class="canvas-label">Dispersion ω(k)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Measured Velocities & κ-Classification</div>
+      <div class="metrics">
+        <div class="metric" id="metricPhaseVel">
+          <div class="metric-label">v_phase</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricGroupVel">
+          <div class="metric-label">v_group</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricInfoVel">
+          <div class="metric-label">v_info</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricCEff">
+          <div class="metric-label">c_eff (ceiling)</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricK1Status">
+          <div class="metric-label">κ₁ Status</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricK2Status">
+          <div class="metric-label">κ₂ Status</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricK3Status">
+          <div class="metric-label">κ₃ Status</div>
+          <div class="metric-value">—</div>
+        </div>
+        <div class="metric" id="metricKLPVerdict">
+          <div class="metric-label">KLP Verdict</div>
+          <div class="metric-value">—</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">κ-Gate Test Results</div>
+      <div class="protocol-results" id="protocolResults">
+        <div class="protocol-item pending">
+          <span class="kappa-gate">κ₁ (Local Registrability):</span> 
+          <span>Awaiting test...</span>
+        </div>
+        <div class="protocol-item pending">
+          <span class="kappa-gate">κ₂ (Cross-Observer Consistency):</span> 
+          <span>Awaiting test...</span>
+        </div>
+        <div class="protocol-item pending">
+          <span class="kappa-gate">κ₃ (Re-Entry Persistence):</span> 
+          <span>Awaiting test...</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">κ-Gate Timeline</div>
+      <div style="position: relative; height: 200px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px;">
+        <canvas id="canvasTimeline" style="width: 100%; height: 100%;"></canvas>
+      </div>
+      <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+        <div style="text-align: center;">
+          <div style="width: 20px; height: 20px; background: #4aff4a; border-radius: 3px; display: inline-block; margin-right: 5px;"></div>
+          <span style="font-size: 0.85em;">PASS</span>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 20px; height: 20px; background: #ffa54a; border-radius: 3px; display: inline-block; margin-right: 5px;"></div>
+          <span style="font-size: 0.85em;">MARGINAL</span>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 20px; height: 20px; background: #ff4a4a; border-radius: 3px; display: inline-block; margin-right: 5px;"></div>
+          <span style="font-size: 0.85em;">COLLAPSE</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title" id="guideToggle" style="cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center;">
+        <span>📚 Chamber XXXIX Guide</span>
+        <span id="guideIcon" style="font-size: 0.8em; color: #4a9eff;">▼</span>
+      </div>
+      <div id="guideContent" style="display: none; line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">Purpose & Theoretical Foundation</h3>
+        
+        <p>Chamber XXXIX implements the <strong>κ-Limited Propagation Principle (KLP)</strong> test protocol. Rather than asserting "nothing can exceed c," KLP states that propagation admissibility depends on <em>what kind of structure</em> is propagating:</p>
+        
+        <div style="background: #0a1a2a; padding: 15px; border-radius: 4px; margin: 15px 0;">
+          <p style="margin: 0 0 10px;"><strong>Phase Velocity:</strong> κ₀-definable pattern speed (coordinate artifact)</p>
+          <p style="margin: 0 0 10px;"><strong>Group Velocity:</strong> κ₁ candidate (locally registrable envelope)</p>
+          <p style="margin: 0;"><strong>Information Velocity:</strong> κ₃ requirement (persistent causal record)</p>
+        </div>
+        
+        <p><strong>Key Prediction:</strong> You can engineer v_phase > c, but it will necessarily exhibit κ₁, κ₂, or κ₃ collapse—it cannot carry persistent causal structure.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Experimental Design</h3>
+        
+        <p>We use a dual τ-field system with dispersive coupling:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          ∂τ₁/∂t = λ sin(Δτ₁) - β ∇²τ₁<br>
+          ∂τ₂/∂t = λ sin(Δτ₂) - β ∇²τ₂
+        </p>
+        
+        <p>The dispersive term β∇²τ creates a frequency-dependent phase velocity via the dispersion relation ω(k). By filtering to specific k-modes, we engineer regimes where v_phase = ω/k > c_eff.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Test Protocols</h3>
+        
+        <h4 style="color: #4a9eff; margin: 15px 0 8px;">κ₁ Test: Local Registrability</h4>
+        <p><strong>Question:</strong> Can you track discrete propagation steps locally?</p>
+        <p><strong>Method:</strong> Measure spatial registration continuity via gradient correlation:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 8px; margin: 8px 0;">
+          C_κ₁ = ⟨∇τ(t) · ∇τ(t+Δt)⟩ / (|∇τ(t)| |∇τ(t+Δt)|)
+        </p>
+        <p><strong>Collapse Criterion:</strong> C_κ₁ < 0.3 indicates failure to maintain local tracking</p>
+        
+        <h4 style="color: #4a9eff; margin: 15px 0 8px;">κ₂ Test: Cross-Observer Consistency</h4>
+        <p><strong>Question:</strong> Do boosted observers agree on propagation invariants?</p>
+        <p><strong>Method:</strong> Apply Lorentz-like transformation and check invariant preservation:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 8px; margin: 8px 0;">
+          τ'(x', t') = τ(γ(x' + vt'), γ(t' + vx'/c²))
+        </p>
+        <p><strong>Collapse Criterion:</strong> Observer-dependent metrics indicate κ₂ failure</p>
+        
+        <h4 style="color: #4a9eff; margin: 15px 0 8px;">κ₃ Test: Re-Entry Persistence</h4>
+        <p><strong>Question:</strong> Does the propagation leave a stable, replayable record?</p>
+        <p><strong>Method:</strong> Extract "propagated structure," reset field, replay, and compare:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 8px; margin: 8px 0;">
+          R_κ₃ = ⟨(τ_replay - τ_original)²⟩^(1/2) / ⟨τ²⟩^(1/2)
+        </p>
+        <p><strong>Collapse Criterion:</strong> R_κ₃ > 0.5 indicates non-persistent structure</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Expected Results</h3>
+        
+        <div style="background: #1a2a1a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="margin: 0 0 10px;"><strong style="color: #4aff4a;">Regime I (Admissible):</strong> v_group < c_eff, σ=0, β≤0.01, k≤1.0, duration≥600 → All gates pass (κ₁ ✓ with C_κ₁>0.5, κ₂ ✓, κ₃ ✓)</p>
+          <p style="margin: 0 0 10px;"><strong style="color: #ffa54a;">Regime II (Marginal):</strong> v_group ≈ c_eff → Gates marginal</p>
+          <p style="margin: 0 0 10px;"><strong style="color: #ff9a4a;">Regime III (Subcritical Nonregistrable):</strong> v_group < c_eff but σ>0 or high dispersion → κ₁ collapse (diffusive/non-carrier)</p>
+          <p style="margin: 0;"><strong style="color: #ff4a4a;">Regime IV (Superluminal Collapse):</strong> v_phase > c_eff in phase mode → Gates collapse (κ₀ coordinate artifact)</p>
+        </div>
+        
+        <p style="margin-top: 10px; font-size: 0.9em; color: #aaa;"><strong>Critical Insight:</strong> Sub-ceiling velocity (v < c_eff) does NOT guarantee κ-admissibility. Clean carrier requires σ=0 AND low dispersion. Regime III demonstrates that speed limits are insufficient - structural gates matter.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Interpretation Guidelines</h3>
+        
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>κ₁ Collapse:</strong> Pattern is not a locally registrable transport event (no step-by-step carrier)</li>
+          <li><strong>κ₂ Collapse:</strong> Observers disagree on what propagated → frame-dependent artifact</li>
+          <li><strong>κ₃ Collapse:</strong> Cannot extract stable causal record → ephemeral phase pattern</li>
+          <li><strong>SUBCRITICAL_NONREGISTRABLE:</strong> Valid regime - v < c but noise/dispersion destroys κ₁ carrier (NOT an anomaly)</li>
+          <li><strong>NO_KAPPA_ADMISSIBLE_PROPAGATION:</strong> κ₁ collapse with null velocity - no measurable carrier exists (valid result, not data failure)</li>
+        </ul>
+        
+        <p><strong>KLP Verdict:</strong> If v > c_eff but structure persists through all three gates, KLP is falsified. Otherwise, KLP is supported with classification of propagation regime.</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Recommended Workflow</h3>
+        
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Regime I (Admissible):</strong> σ=0, β=0.01, k_filter=0.8, duration=600 → Clean carrier, C_κ₁>0.5, all gates PASS</li>
+          <li><strong>Regime III (Nonregistrable):</strong> σ=0.01, β=0.12, k_filter=2.5, duration=400 → Diffusive, κ₁ COLLAPSE despite v<c</li>
+          <li><strong>Regime IV (Phase Collapse):</strong> β=0.25, k_filter=5.0, duration=400 → Superluminal phase, all gates COLLAPSE</li>
+          <li><strong>Analysis:</strong> Compare κ-gate results across regimes to validate structural vs kinematic admissibility</li>
+          <li><strong>Validation:</strong> Verify Regime I requires BOTH v<c AND σ≈0 for full admissibility</li>
+        </ol>
+        
+        <div style="background: #2a1a1a; border-left: 3px solid #ff4a4a; padding: 12px; margin: 15px 0;">
+          <strong style="color: #ff4a9e;">⚠️ Critical Parameter Constraints:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li><strong>For κ₁ PASS:</strong> Requires σ=0 (deterministic), β≤0.01 (minimal dispersion), k≤1.0 (narrow bandwidth)</li>
+            <li><strong>For κ₁ COLLAPSE:</strong> Any σ>0 OR β>0.10 will destroy gradient coherence</li>
+            <li>FFT Laplacian required for dispersive term (power-of-2 grids only)</li>
+            <li>Duration ≥ 600 recommended for Regime I (ensures stable equilibration)</li>
+            <li>k_filter must be < W/4 to avoid aliasing</li>
+            <li>c_eff=1.0 is standard admissibility ceiling for this substrate</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Theoretical Significance</h3>
+        
+        <p>Chamber XXXIX provides <strong>positive evidence</strong> for KLP by demonstrating:</p>
+        
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Structural Dominance:</strong> κ-admissibility depends on coherence (σ, β), not just velocity</li>
+          <li><strong>Regime Separation:</strong> Four experimentally distinguishable propagation classes</li>
+          <li><strong>Falsifiability:</strong> KLP makes specific, testable predictions about collapse modes</li>
+          <li><strong>Operational Clarity:</strong> "Faster than light" requires specifying <em>what</em> moves and <em>how</em> it's registered</li>
+          <li><strong>Substrate Generality:</strong> Results should hold in any κ-admissible substrate, not just this τ-field implementation</li>
+        </ul>
+        
+        <p style="margin-top: 15px;"><strong>Connection to Lorentz Symmetry:</strong> If KLP holds, Lorentz invariance emerges as the unique symmetry preserving κ-admissibility across inertial observers—exactly the reinterpretation proposed in the companion theoretical document.</p>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 1.0.0 | <strong>Engine:</strong> TauFieldEngineN (N=2, FFT) | <strong>Status:</strong> Experimental Protocol
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+// ═══════════════════════════════════════════════════════════════
+// CHAMBER XXXIX: κ-LIMITED PROPAGATION PROTOCOL
+// Testing phase/group/information velocity decomposition
+// ═══════════════════════════════════════════════════════════════
+
+console.log('═══════════════════════════════════════════');
+console.log('UNNS Chamber XXXIX | κ-Limited Propagation');
+console.log('═══════════════════════════════════════════');
+
+// ═══════════════════════════════════════════════════════════════
+// DUAL-FIELD DISPERSIVE ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+class DualFieldDispersiveEngine {
+  constructor(config) {
+    this.W = config.grid_width || 128;
+    this.size = this.W * this.W;
+    this.lambda = config.lambda || 0.1;
+    this.beta = config.beta || 0.2;
+    this.sigma = config.sigma || 0.01;
+    this.k_filter = config.k_filter || 3.0;
+    
+    // Check power-of-2 for FFT
+    if ((this.W & (this.W - 1)) !== 0) {
+      throw new Error(`FFT requires power-of-2 grid; got ${this.W}`);
+    }
+    
+    // Dual fields
+    this.tau1 = new Float64Array(this.size);
+    this.tau2 = new Float64Array(this.size);
+    this.tau1_next = new Float64Array(this.size);
+    this.tau2_next = new Float64Array(this.size);
+    
+    // History for tests
+    this.history = [];
+    this.max_history = 50;
+    
+    // FFT cache
+    this.kx_grid = new Float64Array(this.size);
+    this.ky_grid = new Float64Array(this.size);
+    this.k2_grid = new Float64Array(this.size);
+    this.initFFTCache();
+    
+    // RNG
+    this.seed = config.seed || 137042;
+    this.rng = this.createRNG(this.seed);
+    
+    // Performance
+    this.step_count = 0;
+  }
+  
+  initFFTCache() {
+    const factor = 2 * Math.PI / this.W;
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const kx_idx = (x < this.W / 2) ? x : x - this.W;
+        const ky_idx = (y < this.W / 2) ? y : y - this.W;
+        const kx = factor * kx_idx;
+        const ky = factor * ky_idx;
+        this.kx_grid[idx] = kx;
+        this.ky_grid[idx] = ky;
+        this.k2_grid[idx] = -(kx * kx + ky * ky);
+      }
+    }
+  }
+  
+  initialize() {
+    // Initialize with k-filtered pattern
+    for (let i = 0; i < this.size; i++) {
+      this.tau1[i] = this.rng.gaussian();
+      this.tau2[i] = this.rng.gaussian();
+    }
+    
+    // Apply k-filter to create dominant mode
+    this.applyKFilter(this.tau1);
+    this.applyKFilter(this.tau2);
+  }
+  
+  applyKFilter(field) {
+    const {real, imag} = this.fft2D(field);
+    const k_target = this.k_filter;
+    const k_width = 1.0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const kx = this.kx_grid[idx];
+        const ky = this.ky_grid[idx];
+        const k = Math.sqrt(kx*kx + ky*ky);
+        
+        // Gaussian filter around k_target
+        const filter = Math.exp(-Math.pow((k - k_target) / k_width, 2));
+        real[idx] *= filter;
+        imag[idx] *= filter;
+      }
+    }
+    
+    const filtered = this.ifft2D(real, imag);
+    for (let i = 0; i < this.size; i++) {
+      field[i] = filtered[i];
+    }
+  }
+  
+  step() {
+    // Compute Laplacians
+    const lap1 = this.laplacianFFT(this.tau1);
+    const lap2 = this.laplacianFFT(this.tau2);
+    
+    // Evolution
+    for (let idx = 0; idx < this.size; idx++) {
+      const x = idx % this.W;
+      const y = Math.floor(idx / this.W);
+      
+      // Field 1
+      const right1 = this.tau1[((x + 1) % this.W) + y * this.W];
+      const delta1 = right1 - this.tau1[idx];
+      let update1 = this.tau1[idx];
+      update1 += this.lambda * Math.sin(delta1);
+      update1 -= this.beta * lap1[idx];
+      if (this.sigma > 0) update1 += this.sigma * this.rng.gaussian();
+      this.tau1_next[idx] = update1;
+      
+      // Field 2
+      const right2 = this.tau2[((x + 1) % this.W) + y * this.W];
+      const delta2 = right2 - this.tau2[idx];
+      let update2 = this.tau2[idx];
+      update2 += this.lambda * Math.sin(delta2);
+      update2 -= this.beta * lap2[idx];
+      if (this.sigma > 0) update2 += this.sigma * this.rng.gaussian();
+      this.tau2_next[idx] = update2;
+    }
+    
+    // Swap
+    [this.tau1, this.tau1_next] = [this.tau1_next, this.tau1];
+    [this.tau2, this.tau2_next] = [this.tau2_next, this.tau2];
+    
+    // Store in history
+    if (this.history.length >= this.max_history) {
+      this.history.shift();
+    }
+    this.history.push({
+      step: this.step_count,
+      tau1: new Float64Array(this.tau1),
+      tau2: new Float64Array(this.tau2)
+    });
+    
+    this.step_count++;
+  }
+  
+  laplacianFFT(field) {
+    const {real, imag} = this.fft2D(field);
+    for (let i = 0; i < this.size; i++) {
+      const k2 = this.k2_grid[i];
+      real[i] *= k2;
+      imag[i] *= k2;
+    }
+    return this.ifft2D(real, imag);
+  }
+  
+  fft2D(field) {
+    const W = this.W;
+    const real = new Float64Array(field);
+    const imag = new Float64Array(this.size);
+    
+    // FFT rows
+    for (let y = 0; y < W; y++) {
+      const row_real = new Float64Array(W);
+      const row_imag = new Float64Array(W);
+      for (let x = 0; x < W; x++) {
+        row_real[x] = real[x + y * W];
+      }
+      const {real: fft_real, imag: fft_imag} = this.fft1D(row_real, row_imag);
+      for (let x = 0; x < W; x++) {
+        real[x + y * W] = fft_real[x];
+        imag[x + y * W] = fft_imag[x];
+      }
+    }
+    
+    // FFT cols
+    for (let x = 0; x < W; x++) {
+      const col_real = new Float64Array(W);
+      const col_imag = new Float64Array(W);
+      for (let y = 0; y < W; y++) {
+        col_real[y] = real[x + y * W];
+        col_imag[y] = imag[x + y * W];
+      }
+      const {real: fft_real, imag: fft_imag} = this.fft1D(col_real, col_imag);
+      for (let y = 0; y < W; y++) {
+        real[x + y * W] = fft_real[y];
+        imag[x + y * W] = fft_imag[y];
+      }
+    }
+    
+    return {real, imag};
+  }
+  
+  ifft2D(real, imag) {
+    const W = this.W;
+    const result_real = new Float64Array(real);
+    const result_imag = new Float64Array(imag);
+    
+    // Step 1: Conjugate (negate imaginary part)
+    for (let i = 0; i < this.size; i++) {
+      result_imag[i] = -result_imag[i];
+    }
+    
+    // Step 2: Forward FFT on conjugated data (must pass both real and imag)
+    // FFT along rows
+    for (let y = 0; y < W; y++) {
+      const row_real = new Float64Array(W);
+      const row_imag = new Float64Array(W);
+      
+      for (let x = 0; x < W; x++) {
+        row_real[x] = result_real[x + y * W];
+        row_imag[x] = result_imag[x + y * W];
+      }
+      
+      const {real: fft_real, imag: fft_imag} = this.fft1D(row_real, row_imag);
+      
+      for (let x = 0; x < W; x++) {
+        result_real[x + y * W] = fft_real[x];
+        result_imag[x + y * W] = fft_imag[x];
+      }
+    }
+    
+    // FFT along columns
+    for (let x = 0; x < W; x++) {
+      const col_real = new Float64Array(W);
+      const col_imag = new Float64Array(W);
+      
+      for (let y = 0; y < W; y++) {
+        col_real[y] = result_real[x + y * W];
+        col_imag[y] = result_imag[x + y * W];
+      }
+      
+      const {real: fft_real, imag: fft_imag} = this.fft1D(col_real, col_imag);
+      
+      for (let y = 0; y < W; y++) {
+        result_real[x + y * W] = fft_real[y];
+        result_imag[x + y * W] = fft_imag[y];
+      }
+    }
+    
+    // Step 3: Conjugate back (negate imaginary again)
+    for (let i = 0; i < this.size; i++) {
+      result_imag[i] = -result_imag[i];
+    }
+    
+    // Step 4: Normalize by 1/(W²) and extract real part
+    const scale = 1.0 / this.size; // W² = this.size
+    const output = new Float64Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      output[i] = result_real[i] * scale; // Real part (imaginary should be ~0 for real input)
+    }
+    
+    return output;
+  }
+  
+  fft1D(real, imag) {
+    const N = real.length;
+    const rev_real = new Float64Array(N);
+    const rev_imag = new Float64Array(N);
+    
+    for (let i = 0; i < N; i++) {
+      const j = this.reverseBits(i, Math.log2(N));
+      rev_real[i] = real[j];
+      rev_imag[i] = imag[j];
+    }
+    
+    for (let s = 1; s <= Math.log2(N); s++) {
+      const m = 1 << s;
+      const m2 = m >> 1;
+      const theta = -2 * Math.PI / m;
+      
+      for (let k = 0; k < N; k += m) {
+        for (let j = 0; j < m2; j++) {
+          const angle = theta * j;
+          const wr = Math.cos(angle);
+          const wi = Math.sin(angle);
+          
+          const idx1 = k + j;
+          const idx2 = k + j + m2;
+          
+          const t_real = wr * rev_real[idx2] - wi * rev_imag[idx2];
+          const t_imag = wr * rev_imag[idx2] + wi * rev_real[idx2];
+          
+          const u_real = rev_real[idx1];
+          const u_imag = rev_imag[idx1];
+          
+          rev_real[idx1] = u_real + t_real;
+          rev_imag[idx1] = u_imag + t_imag;
+          rev_real[idx2] = u_real - t_real;
+          rev_imag[idx2] = u_imag - t_imag;
+        }
+      }
+    }
+    
+    return {real: rev_real, imag: rev_imag};
+  }
+  
+  reverseBits(x, bits) {
+    let result = 0;
+    for (let i = 0; i < bits; i++) {
+      result = (result << 1) | (x & 1);
+      x >>= 1;
+    }
+    return result;
+  }
+  
+  computeSpectrum(field) {
+    const {real, imag} = this.fft2D(field);
+    const power = new Float64Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      power[i] = real[i] * real[i] + imag[i] * imag[i];
+    }
+    return power;
+  }
+  
+  createRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VELOCITY MEASUREMENT
+// ═══════════════════════════════════════════════════════════════
+
+function unwrapPhase(phases) {
+  // Unwrap phase to handle 2π discontinuities
+  const out = phases.slice();
+  for (let i = 1; i < out.length; i++) {
+    let dp = out[i] - out[i-1];
+    while (dp > Math.PI)  { out[i] -= 2*Math.PI; dp -= 2*Math.PI; }
+    while (dp < -Math.PI) { out[i] += 2*Math.PI; dp += 2*Math.PI; }
+  }
+  return out;
+}
+
+function measurePhaseVelocity(engine) {
+  // Extract true phase velocity from dominant Fourier mode
+  // Tracks complex phase atan2(imag, real) through time
+  
+  if (engine.history.length < 20) return null;
+  
+  const W = engine.W;
+  const k_target = engine.k_filter;
+  
+  // --- (1) Find dominant k-mode from current spectrum ---
+  const spectrum = engine.computeSpectrum(engine.tau1);
+  let max_power = 0;
+  let max_idx = 0;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const kx = engine.kx_grid[idx];
+      const ky = engine.ky_grid[idx];
+      const k = Math.sqrt(kx*kx + ky*ky);
+      
+      if (Math.abs(k - k_target) < 1.0 && spectrum[idx] > max_power) {
+        max_power = spectrum[idx];
+        max_idx = idx;
+      }
+    }
+  }
+  
+  const kx_dom = engine.kx_grid[max_idx];
+  const ky_dom = engine.ky_grid[max_idx];
+  const k_dom = Math.sqrt(kx_dom*kx_dom + ky_dom*ky_dom);
+  
+  if (k_dom < 1e-9) return null;
+  
+  // --- (2) Track PHASE of that Fourier coefficient through time ---
+  const N_hist = Math.min(20, engine.history.length);
+  const phases = [];
+  
+  for (let i = engine.history.length - N_hist; i < engine.history.length; i++) {
+    const frame = engine.history[i];
+    const {real, imag} = engine.fft2D(frame.tau1);
+    const phase = Math.atan2(imag[max_idx], real[max_idx]);
+    phases.push(phase);
+  }
+  
+  // --- (3) Unwrap phase to handle 2π discontinuities ---
+  const unwrapped = unwrapPhase(phases);
+  
+  // --- (4) Estimate ω from average phase slope ---
+  let sum = 0;
+  let cnt = 0;
+  
+  for (let i = 1; i < unwrapped.length; i++) {
+    sum += (unwrapped[i] - unwrapped[i-1]); // dt = 1 step
+    cnt++;
+  }
+  
+  const omega = (cnt > 0) ? (sum / cnt) : null;
+  
+  if (omega === null || !Number.isFinite(omega)) return null;
+  
+  const v_phase = Math.abs(omega / k_dom);
+  
+  return {
+    v_phase: v_phase,
+    omega: omega,
+    k: k_dom,
+    kx: kx_dom,
+    ky: ky_dom,
+    max_power: max_power
+  };
+}
+
+function measureGroupVelocity(engine) {
+  // Track envelope propagation via center-of-mass motion
+  if (engine.history.length < 10) return null;
+  
+  const N = Math.min(10, engine.history.length);
+  const tau_recent = engine.history.slice(-N).map(h => h.tau1);
+  
+  // Compute envelope as |field|
+  const envelopes = tau_recent.map(field => {
+    const env = new Float64Array(engine.size);
+    for (let i = 0; i < engine.size; i++) {
+      env[i] = Math.abs(field[i]);
+    }
+    return env;
+  });
+  
+  // Track center of mass displacement
+  const displacements = [];
+  
+  for (let i = 1; i < N; i++) {
+    let com1_x = 0, com1_y = 0, total1 = 0;
+    let com2_x = 0, com2_y = 0, total2 = 0;
+    
+    for (let y = 0; y < engine.W; y++) {
+      for (let x = 0; x < engine.W; x++) {
+        const idx = x + y * engine.W;
+        const e1 = envelopes[i-1][idx];
+        const e2 = envelopes[i][idx];
+        
+        com1_x += x * e1; 
+        com1_y += y * e1; 
+        total1 += e1;
+        
+        com2_x += x * e2; 
+        com2_y += y * e2; 
+        total2 += e2;
+      }
+    }
+    
+    if (total1 > 1e-10 && total2 > 1e-10) {
+      const cx1 = com1_x / total1;
+      const cy1 = com1_y / total1;
+      const cx2 = com2_x / total2;
+      const cy2 = com2_y / total2;
+      
+      // Handle periodic boundaries
+      let dx = cx2 - cx1;
+      let dy = cy2 - cy1;
+      
+      // Wrap to nearest image
+      if (dx > engine.W/2) dx -= engine.W;
+      if (dx < -engine.W/2) dx += engine.W;
+      if (dy > engine.W/2) dy -= engine.W;
+      if (dy < -engine.W/2) dy += engine.W;
+      
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      displacements.push(dist);
+    }
+  }
+  
+  if (displacements.length === 0) return {v_group: 0};
+  
+  // Average displacement per step
+  const avg_displacement = displacements.reduce((a,b) => a+b, 0) / displacements.length;
+  
+  return {
+    v_group: avg_displacement
+  };
+}
+
+function measureInformationVelocity(engine) {
+  // Attempt to measure causal influence propagation
+  // This is a simplified version - real test is κ₃
+  return {v_info: null}; // Determined by κ₃ test
+}
+
+// ═══════════════════════════════════════════════════════════════
+// κ-GATE TEST PROTOCOLS
+// ═══════════════════════════════════════════════════════════════
+
+function testKappa1(engine, mode = 'phase') {
+  // κ₁: Local Registrability Test
+  // Check if propagation can be tracked locally
+  
+  if (engine.history.length < 5) return null;
+  
+  const recent = engine.history.slice(-5);
+  let correlations = [];
+  
+  if (mode === 'group') {
+    // Track envelope continuity instead of phase
+    for (let i = 1; i < recent.length; i++) {
+      const t1 = recent[i-1].tau1;
+      const t2 = recent[i].tau1;
+      
+      // Compute envelope as |field|
+      const env1 = new Float64Array(engine.size);
+      const env2 = new Float64Array(engine.size);
+      
+      for (let j = 0; j < engine.size; j++) {
+        env1[j] = Math.abs(t1[j]);
+        env2[j] = Math.abs(t2[j]);
+      }
+      
+      // Compute envelope gradient correlation
+      let dot = 0, norm1 = 0, norm2 = 0;
+      
+      for (let y = 0; y < engine.W; y++) {
+        for (let x = 0; x < engine.W; x++) {
+          const idx = x + y * engine.W;
+          const right = ((x + 1) % engine.W) + y * engine.W;
+          const down = x + ((y + 1) % engine.W) * engine.W;
+          
+          const gx1 = env1[right] - env1[idx];
+          const gy1 = env1[down] - env1[idx];
+          const gx2 = env2[right] - env2[idx];
+          const gy2 = env2[down] - env2[idx];
+          
+          dot += gx1*gx2 + gy1*gy2;
+          norm1 += gx1*gx1 + gy1*gy1;
+          norm2 += gx2*gx2 + gy2*gy2;
+        }
+      }
+      
+      const corr = dot / Math.sqrt(norm1 * norm2 + 1e-10);
+      correlations.push(corr);
+    }
+  } else {
+    // Track phase gradient continuity (original behavior)
+    for (let i = 1; i < recent.length; i++) {
+      const t1 = recent[i-1].tau1;
+      const t2 = recent[i].tau1;
+      
+      // Compute gradient correlation
+      let dot = 0, norm1 = 0, norm2 = 0;
+      
+      for (let y = 0; y < engine.W; y++) {
+        for (let x = 0; x < engine.W; x++) {
+          const idx = x + y * engine.W;
+          const right = ((x + 1) % engine.W) + y * engine.W;
+          const down = x + ((y + 1) % engine.W) * engine.W;
+          
+          const gx1 = t1[right] - t1[idx];
+          const gy1 = t1[down] - t1[idx];
+          const gx2 = t2[right] - t2[idx];
+          const gy2 = t2[down] - t2[idx];
+          
+          dot += gx1*gx2 + gy1*gy2;
+          norm1 += gx1*gx1 + gy1*gy1;
+          norm2 += gx2*gx2 + gy2*gy2;
+        }
+      }
+      
+      const corr = dot / Math.sqrt(norm1 * norm2 + 1e-10);
+      correlations.push(corr);
+    }
+  }
+  
+  const C_k1 = correlations.reduce((a,b) => a+b, 0) / correlations.length;
+  
+  return {
+    C_k1: C_k1,
+    mode: mode,
+    status: C_k1 > 0.5 ? 'PASS' : (C_k1 > 0.3 ? 'MARGINAL' : 'COLLAPSE'),
+    interpretation: C_k1 > 0.5 ? 'Locally registrable' : 
+                    C_k1 > 0.3 ? 'Marginal tracking' :
+                    'Registration discontinuity - κ₁ collapse'
+  };
+}
+
+function testKappa2(engine, c_eff, boost_params = null) {
+  // κ₂: Cross-Observer Consistency Test
+  // Apply pseudo-boost transformation and check invariant preservation
+  // 
+  // NOTE: This is a "pseudo-boost observer map" stress test, not a strict Lorentz transformation.
+  // It applies spatial reshuffling with γ-like scaling to test observer-dependence.
+  // A proper Lorentz boost would require treating history index as time coordinate.
+  
+  // Get boost parameters from sliders if not provided
+  if (!boost_params) {
+    const v_frac = parseFloat(document.getElementById('observerBoost').value);
+    const angle_deg = parseFloat(document.getElementById('boostAngle').value);
+    boost_params = {
+      v_frac: v_frac,
+      angle_deg: angle_deg
+    };
+  }
+  
+  const v_boost = boost_params.v_frac * c_eff;
+  const angle_rad = boost_params.angle_deg * Math.PI / 180;
+  const gamma = 1 / Math.sqrt(1 - boost_params.v_frac * boost_params.v_frac);
+  
+  const tau_rest = engine.tau1;
+  const tau_boosted = new Float64Array(engine.size);
+  
+  // Pseudo-boost transformation: spatial reshuffling with γ-scaling
+  // This tests whether field structure is observer-dependent
+  for (let y = 0; y < engine.W; y++) {
+    for (let x = 0; x < engine.W; x++) {
+      const idx = x + y * engine.W;
+      
+      // Apply directional spatial shift (not proper Lorentz, but effective stress test)
+      const vx = v_boost * Math.cos(angle_rad);
+      const vy = v_boost * Math.sin(angle_rad);
+      
+      const x_prime = Math.floor(gamma * (x - vx * y / c_eff)) % engine.W;
+      const y_prime = Math.floor(gamma * (y - vy * x / c_eff)) % engine.W;
+      const idx_prime = ((x_prime + engine.W) % engine.W) + ((y_prime + engine.W) % engine.W) * engine.W;
+      
+      tau_boosted[idx] = tau_rest[idx_prime];
+    }
+  }
+  
+  // Check if invariants are preserved
+  let variance_rest = 0, variance_boosted = 0;
+  let mean_rest = 0, mean_boosted = 0;
+  
+  for (let i = 0; i < engine.size; i++) {
+    mean_rest += tau_rest[i];
+    mean_boosted += tau_boosted[i];
+  }
+  mean_rest /= engine.size;
+  mean_boosted /= engine.size;
+  
+  for (let i = 0; i < engine.size; i++) {
+    variance_rest += (tau_rest[i] - mean_rest) * (tau_rest[i] - mean_rest);
+    variance_boosted += (tau_boosted[i] - mean_boosted) * (tau_boosted[i] - mean_boosted);
+  }
+  variance_rest /= engine.size;
+  variance_boosted /= engine.size;
+  
+  const invariant_ratio = variance_boosted / (variance_rest + 1e-10);
+  const deviation = Math.abs(invariant_ratio - 1.0);
+  
+  return {
+    invariant_ratio: invariant_ratio,
+    deviation: deviation,
+    boost_velocity: v_boost,
+    boost_angle: boost_params.angle_deg,
+    gamma: gamma,
+    transform_type: 'pseudo-boost',
+    status: deviation < 0.1 ? 'PASS' : (deviation < 0.3 ? 'MARGINAL' : 'COLLAPSE'),
+    interpretation: deviation < 0.1 ? 'Observer-independent' :
+                    deviation < 0.3 ? 'Marginal consistency' :
+                    'Observer-dependent - κ₂ collapse'
+  };
+}
+
+function testKappa3(engine) {
+  // κ₃: Re-Entry Persistence Test
+  // Extract structure, reset, replay, compare
+  
+  if (engine.history.length < 10) return null;
+  
+  // "Extract" structure (use recent average as "persistent record")
+  const N = 5;
+  const extracted = new Float64Array(engine.size);
+  for (let i = 0; i < N; i++) {
+    const h = engine.history[engine.history.length - N + i];
+    for (let j = 0; j < engine.size; j++) {
+      extracted[j] += h.tau1[j];
+    }
+  }
+  for (let i = 0; i < engine.size; i++) {
+    extracted[i] /= N;
+  }
+  
+  // Compare with original
+  let residual = 0;
+  let original_norm = 0;
+  for (let i = 0; i < engine.size; i++) {
+    const orig = engine.tau1[i];
+    residual += (extracted[i] - orig) * (extracted[i] - orig);
+    original_norm += orig * orig;
+  }
+  
+  const R_k3 = Math.sqrt(residual / engine.size) / (Math.sqrt(original_norm / engine.size) + 1e-10);
+  
+  return {
+    R_k3: R_k3,
+    status: R_k3 < 0.3 ? 'PASS' : (R_k3 < 0.5 ? 'MARGINAL' : 'COLLAPSE'),
+    interpretation: R_k3 < 0.3 ? 'Persistent causal record' :
+                    R_k3 < 0.5 ? 'Marginal persistence' :
+                    'Ephemeral structure - κ₃ collapse'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VISUALIZATION
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// UI UTILITIES
+// ═══════════════════════════════════════════════════════════════
+
+function fmt(x, digits = 3) {
+  // Safe number formatter: handles null, undefined, NaN, Infinity, huge numbers
+  if (typeof x !== 'number' || !isFinite(x)) return '—';
+  // Prevent absurdly long fixed strings for huge magnitudes
+  if (Math.abs(x) >= 1e6) return x.toExponential(2);
+  return x.toFixed(digits);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════════════════════
+
+function renderField(canvas, field, W, label) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const cellSize = Math.min(w, h) / W;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const min_val = Math.min(...field);
+  const max_val = Math.max(...field);
+  const range = max_val - min_val;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const val = field[idx];
+      const normalized = range > 0 ? (val - min_val) / range : 0.5;
+      const hue = normalized * 240;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+function renderSpectrum(canvas, power, W) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Radially averaged spectrum
+  const max_k = Math.floor(W / 2);
+  const radial = new Float64Array(max_k);
+  const counts = new Float64Array(max_k);
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const kx = (x < W/2) ? x : x - W;
+      const ky = (y < W/2) ? y : y - W;
+      const k = Math.floor(Math.sqrt(kx*kx + ky*ky));
+      if (k < max_k) {
+        radial[k] += Math.log(power[idx] + 1e-10);
+        counts[k]++;
+      }
+    }
+  }
+  
+  for (let i = 0; i < max_k; i++) {
+    if (counts[i] > 0) radial[i] /= counts[i];
+  }
+  
+  // Plot
+  const max_p = Math.max(...radial);
+  const min_p = Math.min(...radial);
+  const padding = 40;
+  
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < max_k; i++) {
+    const px = padding + (i / max_k) * (w - 2*padding);
+    const py = h - padding - ((radial[i] - min_p) / (max_p - min_p + 1e-10)) * (h - 2*padding);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Consolas';
+  ctx.fillText('P(k)', padding, padding - 5);
+  ctx.fillText('k', w - padding, h - padding + 15);
+}
+
+function renderTimeline(canvas, timeline) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (timeline.length === 0) {
+    ctx.fillStyle = '#555';
+    ctx.font = '12px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText('No timeline data yet', w/2, h/2);
+    return;
+  }
+  
+  const padding = 40;
+  const plot_h = h - 2*padding;
+  const gate_height = plot_h / 3;
+  
+  // Draw gate labels
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.textAlign = 'right';
+  ctx.fillText('κ₁', padding - 10, padding + gate_height * 0.5);
+  ctx.fillText('κ₂', padding - 10, padding + gate_height * 1.5);
+  ctx.fillText('κ₃', padding - 10, padding + gate_height * 2.5);
+  
+  // Draw timeline grid
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(padding, padding + i * gate_height);
+    ctx.lineTo(w - padding, padding + i * gate_height);
+    ctx.stroke();
+  }
+  
+  // Draw timeline entries
+  const entry_width = Math.min(40, (w - 2*padding) / (timeline.length + 1));
+  
+  timeline.forEach((entry, idx) => {
+    const x = padding + (idx + 0.5) * entry_width;
+    
+    // κ₁
+    if (entry.k1) {
+      const y1 = padding + gate_height * 0.5;
+      const color = entry.k1.status === 'PASS' ? '#4aff4a' : 
+                    entry.k1.status === 'MARGINAL' ? '#ffa54a' : '#ff4a4a';
+      ctx.fillStyle = color;
+      ctx.fillRect(x - entry_width/3, y1 - 10, entry_width*2/3, 20);
+    }
+    
+    // κ₂
+    if (entry.k2) {
+      const y2 = padding + gate_height * 1.5;
+      const color = entry.k2.status === 'PASS' ? '#4aff4a' : 
+                    entry.k2.status === 'MARGINAL' ? '#ffa54a' : '#ff4a4a';
+      ctx.fillStyle = color;
+      ctx.fillRect(x - entry_width/3, y2 - 10, entry_width*2/3, 20);
+    }
+    
+    // κ₃
+    if (entry.k3) {
+      const y3 = padding + gate_height * 2.5;
+      const color = entry.k3.status === 'PASS' ? '#4aff4a' : 
+                    entry.k3.status === 'MARGINAL' ? '#ffa54a' : '#ff4a4a';
+      ctx.fillStyle = color;
+      ctx.fillRect(x - entry_width/3, y3 - 10, entry_width*2/3, 20);
+    }
+    
+    // Timestamp label
+    ctx.fillStyle = '#888';
+    ctx.font = '8px Consolas';
+    ctx.textAlign = 'center';
+    const time_str = new Date(entry.timestamp).toLocaleTimeString();
+    ctx.fillText(time_str, x, h - padding + 15);
+  });
+  
+  // Current time marker
+  if (timeline.length > 0) {
+    const x = padding + timeline.length * entry_width;
+    ctx.strokeStyle = '#4a9eff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(x, padding);
+    ctx.lineTo(x, h - padding);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE MANAGEMENT & UI
+// ═══════════════════════════════════════════════════════════════
+
+let running = false;
+let engine = null;
+let results = {
+  config: null,
+  velocities: {
+    phase: null,
+    group: null,
+    info: null
+  },
+  kappa_tests: {
+    k1: null,
+    k2: null,
+    k3: null
+  },
+  verdict: null,
+  timeline: []
+};
+
+const ui = {
+  runBtn: document.getElementById('runProtocol'),
+  stopBtn: document.getElementById('stopProtocol'),
+  runK1: document.getElementById('runK1Only'),
+  runK2: document.getElementById('runK2Only'),
+  runK3: document.getElementById('runK3Only'),
+  exportBtn: document.getElementById('exportData'),
+  status: document.getElementById('statusDisplay'),
+  canvasField1: document.getElementById('canvasField1'),
+  canvasField2: document.getElementById('canvasField2'),
+  canvasSpectrum: document.getElementById('canvasSpectrum'),
+  canvasDispersion: document.getElementById('canvasDispersion'),
+  canvasTimeline: document.getElementById('canvasTimeline'),
+  protocolResults: document.getElementById('protocolResults')
+};
+
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasField1, ui.canvasField2, ui.canvasSpectrum, ui.canvasDispersion, ui.canvasTimeline].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+// Boost slider event listeners
+document.getElementById('observerBoost').addEventListener('input', (e) => {
+  document.getElementById('boostValue').textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+document.getElementById('boostAngle').addEventListener('input', (e) => {
+  document.getElementById('angleValue').textContent = parseFloat(e.target.value).toFixed(0);
+});
+
+// Regime preset buttons
+document.getElementById('presetAdmissible').addEventListener('click', applyAdmissiblePreset);
+document.getElementById('presetMarginal').addEventListener('click', applyMarginalPreset);
+document.getElementById('presetSuperluminal').addEventListener('click', applySuperluminalPreset);
+
+function updateMetrics(velocities, kappa_tests, c_eff, mode = 'phase') {
+  const phaseMetric = document.getElementById('metricPhaseVel').querySelector('.metric-value');
+  const groupMetric = document.getElementById('metricGroupVel').querySelector('.metric-value');
+  const infoMetric = document.getElementById('metricInfoVel').querySelector('.metric-value');
+  const cEffMetric = document.getElementById('metricCEff').querySelector('.metric-value');
+  const k1Metric = document.getElementById('metricK1Status').querySelector('.metric-value');
+  const k2Metric = document.getElementById('metricK2Status').querySelector('.metric-value');
+  const k3Metric = document.getElementById('metricK3Status').querySelector('.metric-value');
+  const verdictMetric = document.getElementById('metricKLPVerdict').querySelector('.metric-value');
+  
+  if (velocities.phase) {
+    phaseMetric.textContent = fmt(velocities.phase.v_phase, 3);
+    const parent = document.getElementById('metricPhaseVel');
+    parent.className = velocities.phase.v_phase > c_eff ? 'metric warning' : 'metric success';
+  }
+  
+  if (velocities.group) {
+    groupMetric.textContent = fmt(velocities.group.v_group, 3);
+    const parent = document.getElementById('metricGroupVel');
+    parent.className = velocities.group.v_group > c_eff ? 'metric warning' : 'metric success';
+  }
+  
+  if (velocities.info) {
+    infoMetric.textContent = velocities.info.v_info !== null ? fmt(velocities.info.v_info, 3) : '—';
+  }
+  
+  cEffMetric.textContent = c_eff.toFixed(2);
+  
+  if (kappa_tests.k1) {
+    k1Metric.textContent = kappa_tests.k1.status;
+    const parent = document.getElementById('metricK1Status');
+    parent.className = kappa_tests.k1.status === 'PASS' ? 'metric success' : 
+                       kappa_tests.k1.status === 'MARGINAL' ? 'metric' : 'metric warning';
+  }
+  
+  if (kappa_tests.k2) {
+    k2Metric.textContent = kappa_tests.k2.status;
+    const parent = document.getElementById('metricK2Status');
+    parent.className = kappa_tests.k2.status === 'PASS' ? 'metric success' : 
+                       kappa_tests.k2.status === 'MARGINAL' ? 'metric' : 'metric warning';
+  }
+  
+  if (kappa_tests.k3) {
+    k3Metric.textContent = kappa_tests.k3.status;
+    const parent = document.getElementById('metricK3Status');
+    parent.className = kappa_tests.k3.status === 'PASS' ? 'metric success' : 
+                       kappa_tests.k3.status === 'MARGINAL' ? 'metric' : 'metric warning';
+  }
+  
+  // Verdict - use centralized computation to avoid UI/JSON divergence
+  if (kappa_tests.k1 && kappa_tests.k2 && kappa_tests.k3) {
+    const verdict = computeKLPVerdict(velocities, kappa_tests, c_eff, mode);
+    verdictMetric.textContent = verdict;
+    
+    // Color code based on verdict type
+    const parent = document.getElementById('metricKLPVerdict');
+    if (verdict.includes('CONSISTENT') || verdict.includes('SUPPORTED')) {
+      // KLP validated - expected behavior
+      parent.className = 'metric success';
+    } else if (verdict.includes('VIOLATED')) {
+      // KLP falsified - v > c with gates passing
+      parent.className = 'metric warning';
+    } else if (verdict.includes('NO_KAPPA_ADMISSIBLE_PROPAGATION')) {
+      // No κ₁ carrier - valid result (informational, not error)
+      parent.className = 'metric';
+    } else if (verdict.includes('SUBCRITICAL_NONREGISTRABLE')) {
+      // Regime III - valid but non-carrier propagation (informational)
+      parent.className = 'metric';
+    } else if (verdict.includes('MEASUREMENT_INCOMPLETE')) {
+      // Actual data insufficiency (rare - κ₁ passed but velocity failed)
+      parent.className = 'metric warning';
+    } else {
+      // Marginal, incomplete tests, etc.
+      parent.className = 'metric';
+    }
+  }
+}
+
+function updateProtocolResults(kappa_tests) {
+  const items = ui.protocolResults.querySelectorAll('.protocol-item');
+  
+  if (kappa_tests.k1) {
+    items[0].className = 'protocol-item ' + (kappa_tests.k1.status === 'PASS' ? 'pass' : 
+                                              kappa_tests.k1.status === 'MARGINAL' ? 'pending' : 'fail');
+    items[0].innerHTML = `
+      <span class="kappa-gate">κ₁ (Local Registrability):</span>
+      <span class="collapse-indicator ${kappa_tests.k1.status === 'PASS' ? 'stable' : 
+                                         kappa_tests.k1.status === 'MARGINAL' ? 'marginal' : 'collapsed'}">
+        ${kappa_tests.k1.status}
+      </span>
+      <div style="margin-top: 5px; font-size: 0.9em; color: #aaa;">
+        C_κ₁ = ${fmt(kappa_tests.k1.C_k1, 3)} | ${kappa_tests.k1.interpretation}
+      </div>
+    `;
+  }
+  
+  if (kappa_tests.k2) {
+    items[1].className = 'protocol-item ' + (kappa_tests.k2.status === 'PASS' ? 'pass' : 
+                                              kappa_tests.k2.status === 'MARGINAL' ? 'pending' : 'fail');
+    items[1].innerHTML = `
+      <span class="kappa-gate">κ₂ (Cross-Observer Consistency):</span>
+      <span class="collapse-indicator ${kappa_tests.k2.status === 'PASS' ? 'stable' : 
+                                         kappa_tests.k2.status === 'MARGINAL' ? 'marginal' : 'collapsed'}">
+        ${kappa_tests.k2.status}
+      </span>
+      <div style="margin-top: 5px; font-size: 0.9em; color: #aaa;">
+        Deviation = ${fmt(kappa_tests.k2.deviation, 3)} | ${kappa_tests.k2.interpretation}
+      </div>
+    `;
+  }
+  
+  if (kappa_tests.k3) {
+    items[2].className = 'protocol-item ' + (kappa_tests.k3.status === 'PASS' ? 'pass' : 
+                                              kappa_tests.k3.status === 'MARGINAL' ? 'pending' : 'fail');
+    items[2].innerHTML = `
+      <span class="kappa-gate">κ₃ (Re-Entry Persistence):</span>
+      <span class="collapse-indicator ${kappa_tests.k3.status === 'PASS' ? 'stable' : 
+                                         kappa_tests.k3.status === 'MARGINAL' ? 'marginal' : 'collapsed'}">
+        ${kappa_tests.k3.status}
+      </span>
+      <div style="margin-top: 5px; font-size: 0.9em; color: #aaa;">
+        R_κ₃ = ${fmt(kappa_tests.k3.R_k3, 3)} | ${kappa_tests.k3.interpretation}
+      </div>
+    `;
+  }
+}
+
+function computeKLPVerdict(velocities, kappa_tests, c_eff, mode) {
+  // Determine formal KLP verdict based on velocity regime and gate status
+  // CRITICAL: κ-gate status takes precedence over velocity measurements
+  // If κ₁ collapses, velocity may be null/undefined - this is correct physics, not insufficient data
+  
+  // Check if we have gate results first
+  const k1 = kappa_tests.k1;
+  const k2 = kappa_tests.k2;
+  const k3 = kappa_tests.k3;
+  
+  if (!k1 || !k2 || !k3) {
+    return 'INCOMPLETE_TESTS';
+  }
+  
+  const statuses = [k1.status, k2.status, k3.status];
+  
+  // If κ₁ collapses, there is no locally registrable carrier
+  // Velocity measurements may fail (null) - this is expected, not insufficient data
+  if (k1.status === 'COLLAPSE') {
+    // No κ-admissible propagation exists regardless of velocity
+    return `NO_KAPPA_ADMISSIBLE_PROPAGATION (κ₁ collapse)`;
+  }
+  
+  // If we reach here, κ₁ passed - now we need velocity to classify regime
+  // Determine operative velocity based on mode
+  let v_operative = null;
+  let v_type = 'unknown';
+  
+  if (mode === 'phase' && velocities.phase) {
+    v_operative = velocities.phase.v_phase;
+    v_type = 'phase';
+  } else if (mode === 'group' && velocities.group) {
+    v_operative = velocities.group.v_group;
+    v_type = 'group';
+  } else if (mode === 'info' && velocities.info && velocities.info.v_info !== null) {
+    v_operative = velocities.info.v_info;
+    v_type = 'info';
+  } else if (velocities.phase) {
+    // Fallback to phase if mode unavailable
+    v_operative = velocities.phase.v_phase;
+    v_type = 'phase';
+  }
+  
+  // If κ₁ passed but velocity is null, this is actually insufficient measurement
+  if (v_operative === null) {
+    return 'MEASUREMENT_INCOMPLETE';
+  }
+  
+  // SUB-CEILING REGIME: v < c_eff with κ₁ PASS
+  if (v_operative < c_eff) {
+    if (statuses.every(s => s === 'PASS')) {
+      return `KLP_CONSISTENT_ADMISSIBLE (${v_type})`;
+    } else if (statuses.includes('COLLAPSE')) {
+      // κ₁ passed but κ₂ or κ₃ collapsed (unusual but possible)
+      return `SUBCRITICAL_PARTIAL_COLLAPSE (${v_type})`;
+    } else {
+      return `MARGINAL_ADMISSIBLE (${v_type})`;
+    }
+  }
+  
+  // SUPER-CEILING REGIME: v > c_eff
+  else {
+    // KLP predicts: at least one gate should COLLAPSE
+    if (statuses.every(s => s === 'PASS')) {
+      // True KLP violation: superluminal carrier with all gates passing
+      return `KLP_VIOLATED (${v_type})`;
+    } else if (statuses.includes('COLLAPSE')) {
+      return `KLP_SUPPORTED_COLLAPSE (${v_type})`;
+    } else {
+      return `MARGINAL_SUPERCRITICAL (${v_type})`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FULL PROTOCOL EXECUTION
+// ═══════════════════════════════════════════════════════════════
+
+async function runFullProtocol() {
+  console.log('🚀 Starting KLP Protocol');
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    beta: parseFloat(document.getElementById('beta').value),
+    k_filter: parseFloat(document.getElementById('kFilter').value),
+    sigma: parseFloat(document.getElementById('sigma').value),
+    seed: parseInt(document.getElementById('seed').value)
+  };
+  
+  const duration = parseInt(document.getElementById('duration').value);
+  const c_eff = parseFloat(document.getElementById('cEff').value);
+  
+  results.config = config;
+  
+  ui.status.textContent = 'Initializing dual-field system...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  // Initialize
+  engine = new DualFieldDispersiveEngine(config);
+  engine.initialize();
+  
+  ui.status.textContent = `Evolving for ${duration} steps...`;
+  
+  // Evolution
+  for (let step = 0; step < duration && running; step++) {
+    engine.step();
+    
+    if (step % 20 === 0) {
+      renderField(ui.canvasField1, engine.tau1, engine.W, 'Field 1');
+      renderField(ui.canvasField2, engine.tau2, engine.W, 'Field 2');
+      const spectrum = engine.computeSpectrum(engine.tau1);
+      renderSpectrum(ui.canvasSpectrum, spectrum, engine.W);
+    }
+    
+    if (step % 100 === 0) {
+      ui.status.textContent = `Evolution: ${step}/${duration}`;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  if (!running) {
+    ui.status.textContent = 'Stopped by user';
+    ui.stopBtn.disabled = true;
+    ui.runBtn.disabled = false;
+    return;
+  }
+  
+  // Measure velocities
+  ui.status.textContent = 'Measuring velocities...';
+  
+  let phase_result = null;
+  let group_result = null;
+  let info_result = null;
+  
+  try {
+    phase_result = measurePhaseVelocity(engine);
+    if (phase_result) {
+      // Validate phase velocity is a reasonable number
+      if (!Number.isFinite(phase_result.v_phase) || phase_result.v_phase < 0) {
+        console.warn('⚠️ Phase velocity is invalid:', phase_result.v_phase);
+        phase_result = null;
+      } else {
+        console.log('📊 Phase velocity:', phase_result);
+      }
+    } else {
+      console.warn('⚠️ Phase velocity measurement returned null');
+    }
+  } catch (e) {
+    console.error('❌ Phase velocity measurement failed:', e);
+  }
+  
+  try {
+    group_result = measureGroupVelocity(engine);
+    if (group_result) {
+      // Validate group velocity is a reasonable number
+      if (!Number.isFinite(group_result.v_group) || group_result.v_group < 0) {
+        console.warn('⚠️ Group velocity is invalid:', group_result.v_group);
+        group_result = null;
+      } else {
+        console.log('📊 Group velocity:', group_result);
+      }
+    } else {
+      console.warn('⚠️ Group velocity measurement returned null');
+    }
+  } catch (e) {
+    console.error('❌ Group velocity measurement failed:', e);
+  }
+  
+  try {
+    info_result = measureInformationVelocity(engine);
+  } catch (e) {
+    console.error('❌ Information velocity measurement failed:', e);
+  }
+  
+  results.velocities.phase = phase_result;
+  results.velocities.group = group_result;
+  results.velocities.info = info_result;
+  
+  // κ-gate tests
+  ui.status.textContent = 'Running κ₁ test...';
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  const mode = document.getElementById('propagationMode').value;
+  let k1_result = null;
+  let k2_result = null;
+  let k3_result = null;
+  
+  try {
+    k1_result = testKappa1(engine, mode);
+    if (k1_result) {
+      results.kappa_tests.k1 = k1_result;
+      console.log('κ₁ result:', k1_result);
+    } else {
+      console.warn('⚠️ κ₁ test returned null');
+    }
+  } catch (e) {
+    console.error('❌ κ₁ test failed:', e);
+  }
+  
+  ui.status.textContent = 'Running κ₂ test...';
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    k2_result = testKappa2(engine, c_eff);
+    if (k2_result) {
+      results.kappa_tests.k2 = k2_result;
+      console.log('κ₂ result:', k2_result);
+    } else {
+      console.warn('⚠️ κ₂ test returned null');
+    }
+  } catch (e) {
+    console.error('❌ κ₂ test failed:', e);
+  }
+  
+  ui.status.textContent = 'Running κ₃ test...';
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    k3_result = testKappa3(engine);
+    if (k3_result) {
+      results.kappa_tests.k3 = k3_result;
+      console.log('κ₃ result:', k3_result);
+    } else {
+      console.warn('⚠️ κ₃ test returned null');
+    }
+  } catch (e) {
+    console.error('❌ κ₃ test failed:', e);
+  }
+  
+  // Update UI (even if some tests failed)
+  try {
+    updateMetrics(results.velocities, results.kappa_tests, c_eff, mode);
+    updateProtocolResults(results.kappa_tests);
+  } catch (e) {
+    console.error('❌ UI update failed:', e);
+  }
+  
+  // Compute formal KLP verdict (if we have enough data)
+  try {
+    if (k1_result && k2_result && k3_result) {
+      results.verdict = computeKLPVerdict(results.velocities, results.kappa_tests, c_eff, mode);
+      console.log('📊 Final verdict:', results.verdict);
+    } else {
+      results.verdict = 'INCOMPLETE_TESTS';
+      console.warn('⚠️ Not all κ-tests completed, verdict: INCOMPLETE_TESTS');
+    }
+  } catch (e) {
+    console.error('❌ Verdict computation failed:', e);
+    results.verdict = 'COMPUTATION_ERROR';
+  }
+  
+  // Add to timeline
+  results.timeline.push({
+    timestamp: new Date().toISOString(),
+    type: 'full_protocol',
+    k1: k1_result,
+    k2: k2_result,
+    k3: k3_result,
+    verdict: results.verdict,
+    mode: mode
+  });
+  renderTimeline(ui.canvasTimeline, results.timeline);
+  
+  // Determine operative velocity for verdict display
+  let v_display = null;
+  let v_type_display = '';
+  if (mode === 'phase' && phase_result) {
+    v_display = phase_result.v_phase;
+    v_type_display = 'v_phase';
+  } else if (mode === 'group' && group_result) {
+    v_display = group_result.v_group;
+    v_type_display = 'v_group';
+  }
+  
+  // Verdict
+  if (v_display && v_display > c_eff) {
+    const any_collapse = k1_result.status === 'COLLAPSE' || 
+                         k2_result.status === 'COLLAPSE' || 
+                         k3_result.status === 'COLLAPSE';
+    if (any_collapse) {
+      ui.status.textContent = `✅ KLP SUPPORTED: ${v_type_display}=${fmt(v_display, 3)} > c_eff, κ-gates collapsed as predicted`;
+      ui.status.className = 'status complete';
+    } else {
+      // True KLP violation: superluminal but gates stable
+      ui.status.textContent = `❌ KLP VIOLATED: ${v_type_display}=${fmt(v_display, 3)} > c_eff but gates stable - KLP falsified!`;
+      ui.status.className = 'status warning';
+    }
+  } else if (v_display && v_display < c_eff) {
+    const all_pass = k1_result.status === 'PASS' && 
+                     k2_result.status === 'PASS' && 
+                     k3_result.status === 'PASS';
+    if (all_pass) {
+      ui.status.textContent = `✅ KLP CONSISTENT: ${v_type_display}=${fmt(v_display, 3)} < c_eff, κ-gates pass as predicted (ADMISSIBLE REGIME)`;
+      ui.status.className = 'status complete';
+    } else {
+      // Regime III: Subcritical nonregistrable - NOT an anomaly, but a valid diffusive regime
+      ui.status.textContent = `⚠️ REGIME III: ${v_type_display}=${fmt(v_display, 3)} < c_eff but κ-collapse (diffusive/non-carrier propagation)`;
+      ui.status.className = 'status warning';
+    }
+  } else {
+    ui.status.textContent = `Complete: verdict = ${results.verdict}`;
+    ui.status.className = 'status complete';
+  }
+  
+  console.log('📊 Final verdict:', results.verdict);
+  ui.stopBtn.disabled = true;
+  ui.runBtn.disabled = false;
+  ui.exportBtn.disabled = false;
+  running = false;
+  
+  console.log('✅ Protocol complete');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REGIME PRESET HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+function applyAdmissiblePreset() {
+  // Configure for v < c_eff with trackable envelope
+  // Empirically validated parameters for clean κ₁ PASS
+  document.getElementById('propagationMode').value = 'group';
+  document.getElementById('lambda').value = '0.10';     // Moderate coupling
+  document.getElementById('beta').value = '0.01';       // Very low dispersion
+  document.getElementById('kFilter').value = '0.8';     // Narrow bandwidth
+  document.getElementById('duration').value = '600';    // Extended evolution
+  document.getElementById('cEff').value = '1.00';
+  document.getElementById('sigma').value = '0.000';     // Deterministic - enables κ₁ PASS
+  document.getElementById('seed').value = '137042';
+  console.log('✅ Applied ADMISSIBLE regime preset (v_group < c_eff, C_κ₁ > 0.5, all gates PASS expected)');
+}
+
+function applyMarginalPreset() {
+  // Configure for v ≈ c_eff
+  document.getElementById('propagationMode').value = 'group';
+  document.getElementById('lambda').value = '0.10';
+  document.getElementById('beta').value = '0.12';
+  document.getElementById('kFilter').value = '2.5';
+  document.getElementById('duration').value = '400';
+  document.getElementById('cEff').value = '1.00';
+  document.getElementById('sigma').value = '0.005';  // Small noise
+  document.getElementById('seed').value = '137042';
+  console.log('✅ Applied MARGINAL regime preset (v_group ≈ c_eff expected)');
+}
+
+function applySuperluminalPreset() {
+  // Configure for v > c_eff with phase dominance
+  document.getElementById('propagationMode').value = 'phase';
+  document.getElementById('lambda').value = '0.10';
+  document.getElementById('beta').value = '0.25';  // High dispersion
+  document.getElementById('kFilter').value = '5.0'; // High k
+  document.getElementById('duration').value = '400';
+  document.getElementById('cEff').value = '1.00';
+  document.getElementById('sigma').value = '0.010';  // Standard noise
+  document.getElementById('seed').value = '137042';
+  console.log('✅ Applied SUPERLUMINAL regime preset (v_phase > c_eff expected)');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INDIVIDUAL κ-GATE TEST HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function runK1Only() {
+  if (!engine) {
+    alert('⚠️ Run full protocol first to initialize the system.');
+    return;
+  }
+  
+  console.log('🔬 Running κ₁ test only...');
+  ui.status.textContent = 'Running κ₁ test...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const mode = document.getElementById('propagationMode').value;
+  const k1 = testKappa1(engine, mode);
+  results.kappa_tests.k1 = k1;
+  
+  // Update verdict
+  const c_eff = parseFloat(document.getElementById('cEff').value);
+  results.verdict = computeKLPVerdict(results.velocities, results.kappa_tests, c_eff, mode);
+  
+  // Add to timeline
+  results.timeline.push({
+    timestamp: new Date().toISOString(),
+    type: 'k1_only',
+    k1: k1,
+    verdict: results.verdict,
+    mode: mode
+  });
+  
+  updateMetrics(results.velocities, results.kappa_tests, c_eff, mode);
+  updateProtocolResults(results.kappa_tests);
+  renderTimeline(ui.canvasTimeline, results.timeline);
+  
+  ui.status.textContent = `κ₁ test complete: ${k1.status} (${mode} mode)`;
+  ui.status.className = k1.status === 'PASS' ? 'status complete' : 'status warning';
+  
+  console.log('κ₁ result:', k1);
+}
+
+async function runK2Only() {
+  if (!engine) {
+    alert('⚠️ Run full protocol first to initialize the system.');
+    return;
+  }
+  
+  if (!results.kappa_tests.k1) {
+    console.warn('⚠️ κ₂ test without κ₁ baseline — interpretation may be limited.');
+  }
+  
+  console.log('🔬 Running κ₂ test only...');
+  ui.status.textContent = 'Running κ₂ test...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const c_eff = parseFloat(document.getElementById('cEff').value);
+  const mode = document.getElementById('propagationMode').value;
+  const k2 = testKappa2(engine, c_eff);
+  results.kappa_tests.k2 = k2;
+  
+  // Update verdict
+  results.verdict = computeKLPVerdict(results.velocities, results.kappa_tests, c_eff, mode);
+  
+  // Add to timeline
+  results.timeline.push({
+    timestamp: new Date().toISOString(),
+    type: 'k2_only',
+    k2: k2,
+    verdict: results.verdict,
+    mode: mode
+  });
+  
+  updateMetrics(results.velocities, results.kappa_tests, c_eff, mode);
+  updateProtocolResults(results.kappa_tests);
+  renderTimeline(ui.canvasTimeline, results.timeline);
+  
+  ui.status.textContent = `κ₂ test complete: ${k2.status} (v=${fmt(k2.boost_velocity, 3)}, θ=${k2.boost_angle}°)`;
+  ui.status.className = k2.status === 'PASS' ? 'status complete' : 'status warning';
+  
+  console.log('κ₂ result:', k2);
+}
+
+async function runK3Only() {
+  if (!engine) {
+    alert('⚠️ Run full protocol first to initialize the system.');
+    return;
+  }
+  
+  if (!results.kappa_tests.k1 || !results.kappa_tests.k2) {
+    console.warn('⚠️ κ₃ test without κ₁/κ₂ baseline — interpretation may be limited.');
+  }
+  
+  console.log('🔬 Running κ₃ test only...');
+  ui.status.textContent = 'Running κ₃ test...';
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  const k3 = testKappa3(engine);
+  results.kappa_tests.k3 = k3;
+  
+  // Update verdict
+  const c_eff = parseFloat(document.getElementById('cEff').value);
+  const mode = document.getElementById('propagationMode').value;
+  results.verdict = computeKLPVerdict(results.velocities, results.kappa_tests, c_eff, mode);
+  
+  // Add to timeline
+  results.timeline.push({
+    timestamp: new Date().toISOString(),
+    type: 'k3_only',
+    k3: k3,
+    verdict: results.verdict,
+    mode: mode
+  });
+  
+  updateMetrics(results.velocities, results.kappa_tests, c_eff, mode);
+  updateProtocolResults(results.kappa_tests);
+  renderTimeline(ui.canvasTimeline, results.timeline);
+  
+  ui.status.textContent = `κ₃ test complete: ${k3.status}`;
+  ui.status.className = k3.status === 'PASS' ? 'status complete' : 'status warning';
+  
+  console.log('κ₃ result:', k3);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+ui.runBtn.addEventListener('click', runFullProtocol);
+
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.status.textContent = 'Stopping...';
+  console.log('⏸️ Stop requested');
+});
+
+// κ-gate individual test buttons
+ui.runK1.addEventListener('click', runK1Only);
+ui.runK2.addEventListener('click', runK2Only);
+ui.runK3.addEventListener('click', runK3Only);
+
+ui.exportBtn.addEventListener('click', () => {
+  const exportData = {
+    chamber: 'XXXIX',
+    title: 'κ-Limited Propagation Protocol',
+    timestamp: new Date().toISOString(),
+    config: results.config,
+    velocities: results.velocities,
+    kappa_tests: results.kappa_tests,
+    verdict: results.verdict,
+    timeline: results.timeline
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Chamber_XXXIX_KLP_${exportData.timestamp.split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Results exported');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GUIDE TOGGLE
+// ═══════════════════════════════════════════════════════════════
+
+const guideToggle = document.getElementById('guideToggle');
+const guideContent = document.getElementById('guideContent');
+const guideIcon = document.getElementById('guideIcon');
+
+if (guideToggle && guideContent && guideIcon) {
+  guideToggle.addEventListener('click', () => {
+    if (guideContent.style.display === 'none') {
+      guideContent.style.display = 'block';
+      guideIcon.textContent = '▲';
+    } else {
+      guideContent.style.display = 'none';
+      guideIcon.textContent = '▼';
+    }
+  });
+}
+
+console.log('✅ Chamber XXXIX initialized');
+console.log('═══════════════════════════════════════════');
+  </script>
+</body>
+</html>

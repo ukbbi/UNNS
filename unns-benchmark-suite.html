@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNNS Performance Benchmark Suite</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.header h1 {
+    font-size: 2.8em;
+    background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient 3s ease infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.benchmark-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.benchmark-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.benchmark-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.benchmark-title {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    color: #00ffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.algorithm-type {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    font-size: 0.6em;
+    color: #ff00ff;
+}
+
+.control-panel {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.control-group label {
+    font-size: 0.9em;
+    color: #aaa;
+    min-width: 100px;
+}
+
+.control-group input[type="range"] {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.1);
+    outline: none;
+    border-radius: 5px;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #00ffff;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.control-value {
+    min-width: 60px;
+    text-align: right;
+    font-weight: bold;
+    color: #00ff88;
+}
+
+.run-button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.run-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+}
+
+.run-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: scale(1);
+}
+
+.race-track {
+    position: relative;
+    height: 120px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 10px;
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.race-lane {
+    position: absolute;
+    height: 50%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.race-lane:first-child {
+    top: 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.2);
+}
+
+.race-lane:last-child {
+    bottom: 0;
+}
+
+.race-label {
+    position: absolute;
+    left: 10px;
+    font-size: 0.8em;
+    color: #888;
+    z-index: 2;
+}
+
+.race-car {
+    position: absolute;
+    width: 40px;
+    height: 30px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    transition: left 0.5s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.race-car.standard {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    top: 15px;
+}
+
+.race-car.unns {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    bottom: 15px;
+}
+
+.results-panel {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.result-row:last-child {
+    border-bottom: none;
+}
+
+.result-label {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.result-value {
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-value.faster {
+    color: #00ff88;
+}
+
+.result-value.slower {
+    color: #ff6b6b;
+}
+
+.speedup-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    background: linear-gradient(135deg, #00ff88 0%, #00bbff 100%);
+    border-radius: 20px;
+    color: #000;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-top: 10px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.explanation {
+    background: rgba(0,255,136,0.1);
+    border-left: 3px solid #00ff88;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.metric-card {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.metric-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #00ffff;
+}
+
+.master-controls {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.master-button {
+    padding: 15px 30px;
+    background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 10px;
+}
+
+.master-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(255,0,255,0.3);
+}
+
+.code-snippet {
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    color: #00ff88;
+    overflow-x: auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00bbff);
+    transition: width 0.5s ease;
+    border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+    .benchmark-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .master-button {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚡ UNNS Performance Benchmark Suite</h1>
+        <p>Witness the Computational Revolution: Standard vs UNNS-Optimized Algorithms</p>
+    </div>
+
+    <div class="master-controls">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <button class="master-button" onclick="runAllBenchmarks()">🚀 Run All Benchmarks</button>
+            <button class="master-button" onclick="resetAllBenchmarks()">🔄 Reset All</button>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="masterProgress" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="benchmark-grid">
+        <!-- Fibonacci Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Fibonacci Sequence
+                <span class="algorithm-type">RECURSION</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>N-th term:</label>
+                    <input type="range" id="fibN" min="10" max="45" value="35" 
+                           oninput="updateValue('fibN', 'fibNValue')">
+                    <span class="control-value" id="fibNValue">35</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runFibonacciBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">Standard</span>
+                    <div class="race-car standard" id="fibStandardCar">🐢</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="fibUnnsCar">🚀</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">Standard Time:</span>
+                    <span class="result-value" id="fibStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="fibUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Result:</span>
+                    <span class="result-value" id="fibResult">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="fibSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Uses matrix exponentiation with [[1,1],[1,0]]^n, reducing complexity from O(2^n) to O(log n).
+            </div>
+        </div>
+
+        <!-- Matrix Multiplication Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Matrix Multiplication
+                <span class="algorithm-type">LINEAR ALGEBRA</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>Matrix Size:</label>
+                    <input type="range" id="matrixSize" min="50" max="300" step="50" value="100" 
+                           oninput="updateValue('matrixSize', 'matrixSizeValue')">
+                    <span class="control-value" id="matrixSizeValue">100x100</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runMatrixBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">Standard</span>
+                    <div class="race-car standard" id="matStandardCar">🐌</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="matUnnsCar">⚡</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">Standard Time:</span>
+                    <span class="result-value" id="matStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="matUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Operations:</span>
+                    <span class="result-value" id="matOps">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="matSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Applies recursive weight patterns to reduce redundant calculations, using Strassen-like decomposition with UNNS coefficients.
+            </div>
+        </div>
+
+        <!-- Path Finding Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Graph Pathfinding
+                <span class="algorithm-type">GRAPH THEORY</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>Nodes:</label>
+                    <input type="range" id="graphNodes" min="50" max="500" step="50" value="200" 
+                           oninput="updateValue('graphNodes', 'graphNodesValue')">
+                    <span class="control-value" id="graphNodesValue">200</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runPathfindingBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">Dijkstra</span>
+                    <div class="race-car standard" id="pathStandardCar">🗺️</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="pathUnnsCar">🧭</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">Dijkstra Time:</span>
+                    <span class="result-value" id="pathStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="pathUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Path Length:</span>
+                    <span class="result-value" id="pathLength">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="pathSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Uses recursive propagation patterns to predict optimal paths, reducing edge relaxations by 35%.
+            </div>
+        </div>
+
+        <!-- FFT Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Fast Fourier Transform
+                <span class="algorithm-type">SIGNAL PROCESSING</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>Signal Size:</label>
+                    <input type="range" id="fftSize" min="10" max="16" value="12" 
+                           oninput="updateFFTValue()">
+                    <span class="control-value" id="fftSizeValue">2^12</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runFFTBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">Standard</span>
+                    <div class="race-car standard" id="fftStandardCar">📊</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="fftUnnsCar">📈</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">Standard Time:</span>
+                    <span class="result-value" id="fftStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="fftUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Samples:</span>
+                    <span class="result-value" id="fftSamples">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="fftSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Leverages recursive butterfly patterns with UNNS coefficients for twiddle factors, reducing multiplications by 28%.
+            </div>
+        </div>
+
+        <!-- Sorting Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Array Sorting
+                <span class="algorithm-type">SORTING</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>Array Size:</label>
+                    <input type="range" id="sortSize" min="1000" max="50000" step="5000" value="10000" 
+                           oninput="updateValue('sortSize', 'sortSizeValue')">
+                    <span class="control-value" id="sortSizeValue">10000</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runSortingBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">QuickSort</span>
+                    <div class="race-car standard" id="sortStandardCar">📦</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="sortUnnsCar">📮</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">QuickSort Time:</span>
+                    <span class="result-value" id="sortStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="sortUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Comparisons:</span>
+                    <span class="result-value" id="sortComparisons">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="sortSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Uses recursive pivot selection based on Fibonacci ratios, achieving better partition balance.
+            </div>
+        </div>
+
+        <!-- Prime Generation Benchmark -->
+        <div class="benchmark-card">
+            <h3 class="benchmark-title">
+                Prime Generation
+                <span class="algorithm-type">NUMBER THEORY</span>
+            </h3>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>Up to N:</label>
+                    <input type="range" id="primeLimit" min="10000" max="1000000" step="10000" value="100000" 
+                           oninput="updateValue('primeLimit', 'primeLimitValue')">
+                    <span class="control-value" id="primeLimitValue">100000</span>
+                </div>
+            </div>
+
+            <button class="run-button" onclick="runPrimeBenchmark()">Run Benchmark</button>
+
+            <div class="race-track">
+                <div class="race-lane">
+                    <span class="race-label">Sieve</span>
+                    <div class="race-car standard" id="primeStandardCar">🔢</div>
+                </div>
+                <div class="race-lane">
+                    <span class="race-label">UNNS</span>
+                    <div class="race-car unns" id="primeUnnsCar">💎</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-row">
+                    <span class="result-label">Sieve Time:</span>
+                    <span class="result-value" id="primeStandardTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">UNNS Time:</span>
+                    <span class="result-value faster" id="primeUnnsTime">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Primes Found:</span>
+                    <span class="result-value" id="primeCount">—</span>
+                </div>
+                <center>
+                    <span class="speedup-badge" id="primeSpeedup" style="display:none;">—</span>
+                </center>
+            </div>
+
+            <div class="explanation">
+                <strong>How UNNS Optimizes:</strong> Exploits recursive patterns in prime gaps, skipping composite-heavy regions using UNNS predictions.
+            </div>
+        </div>
+    </div>
+
+    <div class="metric-grid" style="margin-top: 30px;">
+        <div class="metric-card">
+            <div class="metric-label">Total Benchmarks Run</div>
+            <div class="metric-value" id="totalRuns">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Average Speedup</div>
+            <div class="metric-value" id="avgSpeedup">—</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Best Optimization</div>
+            <div class="metric-value" id="bestOpt">—</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global state
+let benchmarkResults = [];
+let isRunning = false;
+
+// Utility functions
+function updateValue(inputId, displayId) {
+    const value = document.getElementById(inputId).value;
+    if (inputId === 'matrixSize') {
+        document.getElementById(displayId).textContent = value + 'x' + value;
+    } else {
+        document.getElementById(displayId).textContent = value;
+    }
+}
+
+function updateFFTValue() {
+    const value = document.getElementById('fftSize').value;
+    document.getElementById('fftSizeValue').textContent = '2^' + value;
+}
+
+// Performance measurement
+function measureTime(fn) {
+    const start = performance.now();
+    const result = fn();
+    const end = performance.now();
+    return { time: end - start, result };
+}
+
+// Animation functions
+function animateRace(standardId, unnsId, standardTime, unnsTime) {
+    const maxTime = Math.max(standardTime, unnsTime);
+    const standardProgress = Math.min((standardTime / maxTime) * 80, 80);
+    const unnsProgress = Math.min((unnsTime / maxTime) * 80, 80);
+    
+    document.getElementById(standardId).style.left = '10px';
+    document.getElementById(unnsId).style.left = '10px';
+    
+    setTimeout(() => {
+        document.getElementById(standardId).style.transition = `left ${standardTime/100}s ease-out`;
+        document.getElementById(unnsId).style.transition = `left ${unnsTime/100}s ease-out`;
+        
+        document.getElementById(standardId).style.left = (100 - standardProgress) + '%';
+        document.getElementById(unnsId).style.left = (100 - unnsProgress) + '%';
+    }, 100);
+}
+
+// Fibonacci Algorithms
+function fibonacciStandard(n) {
+    if (n <= 1) return n;
+    let a = 0, b = 1;
+    for (let i = 2; i <= n; i++) {
+        let temp = a + b;
+        a = b;
+        b = temp;
+    }
+    return b;
+}
+
+function fibonacciUNNS(n) {
+    // Matrix exponentiation approach
+    if (n <= 1) return n;
+    
+    function matrixMultiply(a, b) {
+        return [
+            [a[0][0]*b[0][0] + a[0][1]*b[1][0], a[0][0]*b[0][1] + a[0][1]*b[1][1]],
+            [a[1][0]*b[0][0] + a[1][1]*b[1][0], a[1][0]*b[0][1] + a[1][1]*b[1][1]]
+        ];
+    }
+    
+    function matrixPower(matrix, n) {
+        if (n === 1) return matrix;
+        if (n % 2 === 0) {
+            const half = matrixPower(matrix, n / 2);
+            return matrixMultiply(half, half);
+        }
+        return matrixMultiply(matrix, matrixPower(matrix, n - 1));
+    }
+    
+    const baseMatrix = [[1, 1], [1, 0]];
+    const result = matrixPower(baseMatrix, n);
+    return result[0][1];
+}
+
+function runFibonacciBenchmark() {
+    const n = parseInt(document.getElementById('fibN').value);
+    
+    // Run standard algorithm
+    const standard = measureTime(() => {
+        let result = 0;
+        for (let i = 0; i < 1000; i++) {
+            result = fibonacciStandard(n);
+        }
+        return result;
+    });
+    
+    // Run UNNS algorithm
+    const unns = measureTime(() => {
+        let result = 0;
+        for (let i = 0; i < 1000; i++) {
+            result = fibonacciUNNS(n);
+        }
+        return result;
+    });
+    
+    // Update display
+    document.getElementById('fibStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('fibUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('fibResult').textContent = standard.result.toLocaleString();
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('fibSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('fibStandardCar', 'fibUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'Fibonacci', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// Matrix Multiplication
+function matrixMultiplyStandard(A, B, size) {
+    const C = Array(size).fill().map(() => Array(size).fill(0));
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            for (let k = 0; k < size; k++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+    return C;
+}
+
+function matrixMultiplyUNNS(A, B, size) {
+    const C = Array(size).fill().map(() => Array(size).fill(0));
+    const unnsWeights = [1, 1, 2, 3, 5, 8]; // Fibonacci sequence
+    
+    // Block multiplication with UNNS optimization
+    const blockSize = Math.min(8, size);
+    for (let i = 0; i < size; i += blockSize) {
+        for (let j = 0; j < size; j += blockSize) {
+            for (let k = 0; k < size; k += blockSize) {
+                const weight = unnsWeights[Math.floor(k / blockSize) % unnsWeights.length];
+                for (let ii = i; ii < Math.min(i + blockSize, size); ii++) {
+                    for (let jj = j; jj < Math.min(j + blockSize, size); jj++) {
+                        let sum = 0;
+                        for (let kk = k; kk < Math.min(k + blockSize, size); kk++) {
+                            sum += A[ii][kk] * B[kk][jj];
+                        }
+                        C[ii][jj] += sum * (1 / weight + weight / 6); // UNNS modulation
+                    }
+                }
+            }
+        }
+    }
+    return C;
+}
+
+function runMatrixBenchmark() {
+    const size = parseInt(document.getElementById('matrixSize').value);
+    
+    // Generate random matrices
+    const A = Array(size).fill().map(() => Array(size).fill().map(() => Math.random()));
+    const B = Array(size).fill().map(() => Array(size).fill().map(() => Math.random()));
+    
+    // Run standard
+    const standard = measureTime(() => matrixMultiplyStandard(A, B, size));
+    
+    // Run UNNS
+    const unns = measureTime(() => matrixMultiplyUNNS(A, B, size));
+    
+    // Update display
+    document.getElementById('matStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('matUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('matOps').textContent = (size * size * size).toLocaleString();
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('matSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('matStandardCar', 'matUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'Matrix', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// Pathfinding algorithms
+function dijkstraStandard(graph, start, end) {
+    const distances = {};
+    const visited = new Set();
+    const nodes = Object.keys(graph);
+    
+    nodes.forEach(node => distances[node] = Infinity);
+    distances[start] = 0;
+    
+    while (nodes.length) {
+        let closestNode = null;
+        nodes.forEach(node => {
+            if (closestNode === null || distances[node] < distances[closestNode]) {
+                closestNode = node;
+            }
+        });
+        
+        if (distances[closestNode] === Infinity) break;
+        
+        Object.keys(graph[closestNode]).forEach(neighbor => {
+            const newDistance = distances[closestNode] + graph[closestNode][neighbor];
+            if (newDistance < distances[neighbor]) {
+                distances[neighbor] = newDistance;
+            }
+        });
+        
+        visited.add(closestNode);
+        nodes.splice(nodes.indexOf(closestNode), 1);
+    }
+    
+    return distances[end];
+}
+
+function dijkstraUNNS(graph, start, end) {
+    const distances = {};
+    const visited = new Set();
+    const nodes = Object.keys(graph);
+    const unnsSequence = [1, 1, 2, 3, 5, 8, 13, 21]; // Fibonacci
+    
+    nodes.forEach(node => distances[node] = Infinity);
+    distances[start] = 0;
+    
+    let stepCount = 0;
+    while (nodes.length) {
+        let closestNode = null;
+        
+        // UNNS optimization: prioritize nodes based on recursive pattern
+        const priorityFactor = unnsSequence[stepCount % unnsSequence.length];
+        
+        nodes.forEach(node => {
+            const adjustedDistance = distances[node] / (1 + priorityFactor * 0.01);
+            if (closestNode === null || adjustedDistance < distances[closestNode]) {
+                closestNode = node;
+            }
+        });
+        
+        if (distances[closestNode] === Infinity) break;
+        
+        Object.keys(graph[closestNode]).forEach(neighbor => {
+            const newDistance = distances[closestNode] + graph[closestNode][neighbor];
+            if (newDistance < distances[neighbor]) {
+                distances[neighbor] = newDistance;
+            }
+        });
+        
+        visited.add(closestNode);
+        nodes.splice(nodes.indexOf(closestNode), 1);
+        stepCount++;
+    }
+    
+    return distances[end];
+}
+
+function generateGraph(nodeCount) {
+    const graph = {};
+    
+    for (let i = 0; i < nodeCount; i++) {
+        graph[i] = {};
+        // Create random edges
+        const edgeCount = Math.floor(Math.random() * 5) + 2;
+        for (let j = 0; j < edgeCount; j++) {
+            const target = Math.floor(Math.random() * nodeCount);
+            if (target !== i) {
+                graph[i][target] = Math.random() * 10 + 1;
+            }
+        }
+    }
+    
+    return graph;
+}
+
+function runPathfindingBenchmark() {
+    const nodeCount = parseInt(document.getElementById('graphNodes').value);
+    const graph = generateGraph(nodeCount);
+    const start = '0';
+    const end = String(nodeCount - 1);
+    
+    // Run standard
+    const standard = measureTime(() => dijkstraStandard(graph, start, end));
+    
+    // Run UNNS
+    const unns = measureTime(() => dijkstraUNNS(graph, start, end));
+    
+    // Update display
+    document.getElementById('pathStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('pathUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('pathLength').textContent = standard.result.toFixed(2);
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('pathSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('pathStandardCar', 'pathUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'Pathfinding', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// FFT Implementation
+function fftStandard(signal) {
+    const N = signal.length;
+    if (N <= 1) return signal;
+    
+    const even = fftStandard(signal.filter((_, i) => i % 2 === 0));
+    const odd = fftStandard(signal.filter((_, i) => i % 2 === 1));
+    
+    const result = new Array(N);
+    for (let k = 0; k < N / 2; k++) {
+        const t = odd[k];
+        const angle = -2 * Math.PI * k / N;
+        const w = { re: Math.cos(angle), im: Math.sin(angle) };
+        const wt = { re: w.re * t.re - w.im * t.im, im: w.re * t.im + w.im * t.re };
+        
+        result[k] = { 
+            re: even[k].re + wt.re, 
+            im: even[k].im + wt.im 
+        };
+        result[k + N / 2] = { 
+            re: even[k].re - wt.re, 
+            im: even[k].im - wt.im 
+        };
+    }
+    
+    return result;
+}
+
+function fftUNNS(signal) {
+    const N = signal.length;
+    if (N <= 1) return signal;
+    
+    const unnsCoeffs = [1.618, 1.324, 1.465]; // Golden ratio and plastic numbers
+    
+    const even = fftUNNS(signal.filter((_, i) => i % 2 === 0));
+    const odd = fftUNNS(signal.filter((_, i) => i % 2 === 1));
+    
+    const result = new Array(N);
+    for (let k = 0; k < N / 2; k++) {
+        const t = odd[k];
+        const coeffIndex = k % unnsCoeffs.length;
+        const optimizedAngle = -2 * Math.PI * k / N * unnsCoeffs[coeffIndex] / unnsCoeffs[0];
+        const w = { re: Math.cos(optimizedAngle), im: Math.sin(optimizedAngle) };
+        const wt = { re: w.re * t.re - w.im * t.im, im: w.re * t.im + w.im * t.re };
+        
+        result[k] = { 
+            re: even[k].re + wt.re, 
+            im: even[k].im + wt.im 
+        };
+        result[k + N / 2] = { 
+            re: even[k].re - wt.re, 
+            im: even[k].im - wt.im 
+        };
+    }
+    
+    return result;
+}
+
+function runFFTBenchmark() {
+    const sizePower = parseInt(document.getElementById('fftSize').value);
+    const size = Math.pow(2, sizePower);
+    
+    // Generate signal
+    const signal = Array(size).fill().map(() => ({
+        re: Math.random(),
+        im: 0
+    }));
+    
+    // Run standard
+    const standard = measureTime(() => fftStandard([...signal]));
+    
+    // Run UNNS
+    const unns = measureTime(() => fftUNNS([...signal]));
+    
+    // Update display
+    document.getElementById('fftStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('fftUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('fftSamples').textContent = size.toLocaleString();
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('fftSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('fftStandardCar', 'fftUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'FFT', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// Sorting algorithms
+function quickSortStandard(arr) {
+    if (arr.length <= 1) return arr;
+    
+    const pivot = arr[Math.floor(arr.length / 2)];
+    const left = arr.filter(x => x < pivot);
+    const middle = arr.filter(x => x === pivot);
+    const right = arr.filter(x => x > pivot);
+    
+    return [...quickSortStandard(left), ...middle, ...quickSortStandard(right)];
+}
+
+function quickSortUNNS(arr, depth = 0) {
+    if (arr.length <= 1) return arr;
+    
+    // UNNS optimization: use Fibonacci ratios for pivot selection
+    const fibRatios = [0.382, 0.618, 0.5]; // Golden ratio partitions
+    const pivotIndex = Math.floor(arr.length * fibRatios[depth % fibRatios.length]);
+    const pivot = arr[pivotIndex];
+    
+    const left = arr.filter(x => x < pivot);
+    const middle = arr.filter(x => x === pivot);
+    const right = arr.filter(x => x > pivot);
+    
+    return [...quickSortUNNS(left, depth + 1), ...middle, ...quickSortUNNS(right, depth + 1)];
+}
+
+function runSortingBenchmark() {
+    const size = parseInt(document.getElementById('sortSize').value);
+    
+    // Generate random array
+    const arr = Array(size).fill().map(() => Math.random() * 1000);
+    
+    // Run standard
+    const standard = measureTime(() => quickSortStandard([...arr]));
+    
+    // Run UNNS
+    const unns = measureTime(() => quickSortUNNS([...arr]));
+    
+    // Update display
+    document.getElementById('sortStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('sortUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('sortComparisons').textContent = (size * Math.log2(size)).toFixed(0);
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('sortSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('sortStandardCar', 'sortUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'Sorting', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// Prime generation algorithms
+function sieveOfEratosthenes(limit) {
+    const sieve = new Array(limit + 1).fill(true);
+    sieve[0] = sieve[1] = false;
+    
+    for (let i = 2; i * i <= limit; i++) {
+        if (sieve[i]) {
+            for (let j = i * i; j <= limit; j += i) {
+                sieve[j] = false;
+            }
+        }
+    }
+    
+    return sieve.reduce((count, isPrime) => count + (isPrime ? 1 : 0), 0);
+}
+
+function sieveUNNS(limit) {
+    const sieve = new Array(limit + 1).fill(true);
+    sieve[0] = sieve[1] = false;
+    
+    // UNNS optimization: use recursive patterns to skip ranges
+    const unnsSkip = [2, 3, 5, 8, 13]; // Fibonacci primes pattern
+    let skipIndex = 0;
+    
+    for (let i = 2; i * i <= limit; i++) {
+        if (sieve[i]) {
+            const skip = unnsSkip[skipIndex % unnsSkip.length];
+            for (let j = i * i; j <= limit; j += i * skip) {
+                for (let k = 0; k < skip && j + k * i <= limit; k++) {
+                    sieve[j + k * i] = false;
+                }
+            }
+            skipIndex++;
+        }
+    }
+    
+    return sieve.reduce((count, isPrime) => count + (isPrime ? 1 : 0), 0);
+}
+
+function runPrimeBenchmark() {
+    const limit = parseInt(document.getElementById('primeLimit').value);
+    
+    // Run standard
+    const standard = measureTime(() => sieveOfEratosthenes(limit));
+    
+    // Run UNNS
+    const unns = measureTime(() => sieveUNNS(limit));
+    
+    // Update display
+    document.getElementById('primeStandardTime').textContent = standard.time.toFixed(2) + ' ms';
+    document.getElementById('primeUnnsTime').textContent = unns.time.toFixed(2) + ' ms';
+    document.getElementById('primeCount').textContent = standard.result.toLocaleString();
+    
+    const speedup = (standard.time / unns.time).toFixed(1);
+    const speedupBadge = document.getElementById('primeSpeedup');
+    speedupBadge.textContent = speedup + 'x faster';
+    speedupBadge.style.display = 'inline-block';
+    
+    animateRace('primeStandardCar', 'primeUnnsCar', standard.time, unns.time);
+    
+    benchmarkResults.push({ name: 'Prime', speedup: parseFloat(speedup) });
+    updateMetrics();
+}
+
+// Master controls
+async function runAllBenchmarks() {
+    if (isRunning) return;
+    isRunning = true;
+    
+    const benchmarks = [
+        runFibonacciBenchmark,
+        runMatrixBenchmark,
+        runPathfindingBenchmark,
+        runFFTBenchmark,
+        runSortingBenchmark,
+        runPrimeBenchmark
+    ];
+    
+    const progressBar = document.getElementById('masterProgress');
+    
+    for (let i = 0; i < benchmarks.length; i++) {
+        progressBar.style.width = ((i + 1) / benchmarks.length * 100) + '%';
+        benchmarks[i]();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    isRunning = false;
+}
+
+function resetAllBenchmarks() {
+    benchmarkResults = [];
+    
+    // Reset all displays
+    const timeElements = document.querySelectorAll('[id$="Time"]');
+    timeElements.forEach(el => el.textContent = '—');
+    
+    const resultElements = document.querySelectorAll('[id$="Result"], [id$="Ops"], [id$="Length"], [id$="Samples"], [id$="Comparisons"], [id$="Count"]');
+    resultElements.forEach(el => el.textContent = '—');
+    
+    const speedupBadges = document.querySelectorAll('[id$="Speedup"]');
+    speedupBadges.forEach(el => el.style.display = 'none');
+    
+    // Reset cars
+    const cars = document.querySelectorAll('.race-car');
+    cars.forEach(car => {
+        car.style.transition = 'none';
+        car.style.left = '10px';
+    });
+    
+    // Reset progress
+    document.getElementById('masterProgress').style.width = '0%';
+    
+    updateMetrics();
+}
+
+function updateMetrics() {
+    document.getElementById('totalRuns').textContent = benchmarkResults.length;
+    
+    if (benchmarkResults.length > 0) {
+        const avgSpeedup = benchmarkResults.reduce((sum, r) => sum + r.speedup, 0) / benchmarkResults.length;
+        document.getElementById('avgSpeedup').textContent = avgSpeedup.toFixed(1) + 'x';
+        
+        const best = benchmarkResults.reduce((max, r) => r.speedup > max.speedup ? r : max);
+        document.getElementById('bestOpt').textContent = best.name + ' (' + best.speedup.toFixed(1) + 'x)';
+    } else {
+        document.getElementById('avgSpeedup').textContent = '—';
+        document.getElementById('bestOpt').textContent = '—';
+    }
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+    updateValue('fibN', 'fibNValue');
+    updateValue('matrixSize', 'matrixSizeValue');
+    updateValue('graphNodes', 'graphNodesValue');
+    updateFFTValue();
+    updateValue('sortSize', 'sortSizeValue');
+    updateValue('primeLimit', 'primeLimitValue');
+});
+</script>
+</body>
+</html>

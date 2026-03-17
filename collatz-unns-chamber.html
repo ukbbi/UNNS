@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Paradox Chamber: Collatz & Gödel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #0f172a, #020617);
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .chamber-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .chamber-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .chamber-title {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #fbbf24, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .chamber-subtitle {
+            font-size: 1.2rem;
+            color: #cbd5e1;
+            opacity: 0.8;
+        }
+
+        .module-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 25px;
+            padding: 5px;
+            border: 2px solid #64748b;
+        }
+
+        .module-tab {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 20px;
+            background: transparent;
+            color: #cbd5e1;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .module-tab.active {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .module-tab:hover:not(.active) {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chamber-input {
+            padding: 12px 16px;
+            border: 2px solid #fbbf24;
+            border-radius: 25px;
+            background: rgba(15, 23, 42, 0.8);
+            color: #f1f5f9;
+            font-size: 1.1rem;
+            width: 120px;
+            text-align: center;
+        }
+
+        .chamber-input:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+
+        .chamber-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .info-button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .info-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .godel-button {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .edge-button {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .edge-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .chamber-main {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .chamber-visualization {
+            position: relative;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid #fbbf24;
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chamber-svg {
+            border-radius: 15px;
+            background: radial-gradient(circle at center, rgba(251, 191, 36, 0.1), transparent);
+        }
+
+        .glyph {
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .glyph.breathing-out {
+            animation: breatheOut 0.8s ease-out;
+        }
+
+        .glyph.breathing-in {
+            animation: breatheIn 0.6s ease-in;
+        }
+
+        .glyph.self-referencing {
+            animation: selfReference 1.5s ease-in-out infinite;
+        }
+
+        @keyframes breatheOut {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.8); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes breatheIn {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.6); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes selfReference {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            25% { transform: scale(1.3) rotate(90deg); opacity: 0.7; }
+            50% { transform: scale(0.8) rotate(180deg); opacity: 1; }
+            75% { transform: scale(1.2) rotate(270deg); opacity: 0.8; }
+        }
+
+        .trace-path {
+            fill: none;
+            stroke-width: 2;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        .golden-ring {
+            fill: none;
+            stroke: #fbbf24;
+            stroke-width: 3;
+            opacity: 0;
+            filter: drop-shadow(0 0 15px #fbbf24);
+            animation: goldenPulse 2s ease-in-out infinite;
+        }
+
+        .paradox-spiral {
+            fill: none;
+            stroke: #8b5cf6;
+            stroke-width: 2;
+            opacity: 0;
+            filter: drop-shadow(0 0 10px #8b5cf6);
+            animation: paradoxPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes goldenPulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        @keyframes paradoxPulse {
+            0%, 100% { opacity: 0.4; stroke-dashoffset: 0; }
+            50% { opacity: 0.8; stroke-dashoffset: 20; }
+        }
+
+        .diagnostics-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid #64748b;
+            border-radius: 15px;
+            padding: 20px;
+            width: 320px;
+            backdrop-filter: blur(10px);
+        }
+
+        .diagnostics-title {
+            color: #fbbf24;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .metric {
+            margin-bottom: 15px;
+        }
+
+        .metric-label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #10b981;
+        }
+
+        .upi-gauge {
+            width: 100%;
+            height: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 8px;
+        }
+
+        .upi-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #fbbf24, #ef4444);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .upi-zones {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+        }
+
+        .zone {
+            flex: 1;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sequence-display {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .sequence-title {
+            color: #fbbf24;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .sequence-numbers {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #cbd5e1;
+        }
+
+        .current-number {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .godel-display {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid #8b5cf6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .godel-title {
+            color: #8b5cf6;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .bounded-sequence {
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+
+        .unbounded-sequence {
+            color: #ef4444;
+            margin-bottom: 8px;
+        }
+
+        .self-ref-indicator {
+            color: #8b5cf6;
+            font-style: italic;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .info-content {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 2px solid #fbbf24;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .info-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #fbbf24;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .info-title {
+            color: #fbbf24;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info-section {
+            margin-bottom: 25px;
+        }
+
+        .info-section h3 {
+            color: #8b5cf6;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .info-highlight {
+            background: rgba(251, 191, 36, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #fbbf24;
+            margin: 15px 0;
+        }
+
+        .godel-highlight {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #8b5cf6;
+            margin: 15px 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-safe { background: #10b981; }
+        .status-caution { background: #fbbf24; }
+        .status-danger { background: #ef4444; }
+
+        .module-content {
+            display: none;
+        }
+
+        .module-content.active {
+            display: block;
+        }
+
+        .edge-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .edge-content {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 2px solid #f59e0b;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(245, 158, 11, 0.3);
+        }
+
+        .edge-title {
+            color: #f59e0b;
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+        }
+
+        .edge-intro {
+            margin-bottom: 30px;
+        }
+
+        .critical-finding {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+            border: 2px solid #f59e0b;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .critical-finding h3 {
+            color: #f59e0b;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .critical-finding p {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .edge-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .edge-section {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .section-header {
+            color: #f59e0b;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .evidence-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+            border: 1px solid #10b981;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .evidence-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .evidence-card h4 {
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+
+        .evidence-card p {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .framework-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .framework-item {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .framework-item strong {
+            color: #3b82f6;
+        }
+
+        .verification-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid #8b5cf6;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .stat-number {
+            color: #8b5cf6;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+
+        .verification-note {
+            color: #94a3b8;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .comparison-table {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .system-type {
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .system-type.stable {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .system-type.transitional {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .system-type.chaotic {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .system-example {
+            color: #cbd5e1;
+            padding: 10px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .example-card {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+            border: 1px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .example-card h4 {
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .example-card p {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .implications-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .implication-highlight {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1));
+            border: 1px solid #8b5cf6;
+            border-radius: 10px;
+            padding: 15px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .implication-highlight strong {
+            color: #8b5cf6;
+        }
+
+        .edge-conclusion {
+            margin-top: 30px;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2));
+            border: 2px solid #f59e0b;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .conclusion-box h3 {
+            color: #f59e0b;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .conclusion-box p {
+            color: #cbd5e1;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .chamber-title {
+                font-size: 2rem;
+            }
+            
+            .chamber-main {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .diagnostics-panel {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chamber-container">
+        <div class="chamber-header">
+            <h1 class="chamber-title">🌀 UNNS Paradox Chamber</h1>
+            <p class="chamber-subtitle">Where Numbers Breathe, Logic Transcends, and Truth Escapes Proof</p>
+        </div>
+
+    <!-- Edge of Chaos Panel -->
+    <div class="edge-panel" id="edgePanel">
+        <div class="edge-content">
+            <button class="info-close" onclick="hideEdgeOfChaos()">×</button>
+            <h2 class="edge-title">⚡ Collatz at the Mathematical Edge of Chaos</h2>
+            
+            <div class="edge-intro">
+                <div class="critical-finding">
+                    <h3>🔬 Critical Research Finding</h3>
+                    <p>While the specific UNNS framework cannot be verified in academic literature, <strong>established mathematical theory</strong> provides robust evidence that Collatz occupies a genuine transitional zone between order and chaos.</p>
+                </div>
+            </div>
+
+            <div class="edge-sections">
+                <div class="edge-section">
+                    <h3 class="section-header">🌊 The Transitional Evidence</h3>
+                    <div class="evidence-grid">
+                        <div class="evidence-card">
+                            <div class="evidence-icon">📊</div>
+                            <h4>Terence Tao's Breakthrough</h4>
+                            <p>Almost all Collatz orbits eventually descend, yet behave "more like a random process than deterministic" - the hallmark of transitional dynamics.</p>
+                        </div>
+                        <div class="evidence-card">
+                            <div class="evidence-icon">🌀</div>
+                            <h4>Fractal Statistics</h4>
+                            <p>Spectral exponent β ≈ 2.2-2.3, Hurst exponent H ≈ 0.60-0.65, fractal dimension D ≈ 1.35-1.40 - precisely between order (D=1) and chaos (D=2).</p>
+                        </div>
+                        <div class="evidence-card">
+                            <div class="evidence-icon">⚖️</div>
+                            <h4>Piecewise Balance</h4>
+                            <p>The 3n+1/n÷2 rule creates neither pure expansion nor contraction - a delicate balance generating complex, structured behavior.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edge-section">
+                    <h3 class="section-header">🎯 Mathematical Framework</h3>
+                    <div class="framework-content">
+                        <div class="framework-item">
+                            <strong>Edge of Chaos Theory:</strong> Systems must be locally active (can amplify perturbations) while globally stable (bounded in phase space). Collatz exhibits both properties.
+                        </div>
+                        <div class="framework-item">
+                            <strong>Critical Phenomena:</strong> Power-law correlations, scale invariance, and critical slowing down - all observed in Collatz behavior.
+                        </div>
+                        <div class="framework-item">
+                            <strong>Marginal Stability:</strong> Poised exactly at the boundary between stable and unstable behavior, requiring higher-order analysis.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edge-section">
+                    <h3 class="section-header">💻 Computational Verification</h3>
+                    <div class="verification-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">2^71</div>
+                            <div class="stat-label">Numbers Verified</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">50%</div>
+                            <div class="stat-label">Long/Short Cycle Distribution</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">1.7×</div>
+                            <div class="stat-label">Max Growth Bound</div>
+                        </div>
+                    </div>
+                    <p class="verification-note">This combination of local unpredictability with global convergence characterizes marginal stability.</p>
+                </div>
+
+                <div class="edge-section">
+                    <h3 class="section-header">🔄 Comparative Analysis</h3>
+                    <div class="comparison-table">
+                        <div class="comparison-row">
+                            <div class="system-type stable">Stable Systems</div>
+                            <div class="system-example">Fibonacci: Explicit formulas, bounded growth, predictable</div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="system-type transitional">Transitional Systems</div>
+                            <div class="system-example">Collatz: Structured but unpredictable, bounded but complex</div>
+                        </div>
+                        <div class="comparison-row">
+                            <div class="system-type chaotic">Chaotic Systems</div>
+                            <div class="system-example">Lorenz: Strange attractors, exponential separation, aperiodic</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edge-section">
+                    <h3 class="section-header">🚀 Breakthrough Examples</h3>
+                    <div class="examples-grid">
+                        <div class="example-card">
+                            <h4>The 27 Anomaly</h4>
+                            <p>Takes 111 steps, peaks at 9,232 - disproportionately long trajectory demonstrating transitional "breathing."</p>
+                        </div>
+                        <div class="example-card">
+                            <h4>Path Records</h4>
+                            <p>Follow empirical law: log₂(MaxValue) ≈ 2×log₂(StartingNumber) - systematic but complex growth.</p>
+                        </div>
+                        <div class="example-card">
+                            <h4>The 3/4 Rule</h4>
+                            <p>Average ratio for odd numbers provides heuristic convergence evidence while maintaining unpredictability.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edge-section">
+                    <h3 class="section-header">💫 Profound Implications</h3>
+                    <div class="implications-content">
+                        <div class="implication-highlight">
+                            <strong>Information Processing Capacity:</strong> Transitional zones maximize the balance between memory and sensitivity, suggesting deep connections between mathematical structure and computational capability.
+                        </div>
+                        <div class="implication-highlight">
+                            <strong>Self-Organization:</strong> Collatz's apparent convergence into structured patterns may exemplify emergence principles in number-theoretic contexts.
+                        </div>
+                        <div class="implication-highlight">
+                            <strong>Discrete Analog:</strong> May represent a discrete version of continuous critical phenomena, bridging number theory and dynamical systems.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edge-conclusion">
+                <div class="conclusion-box">
+                    <h3>🎭 The Mathematical Truth</h3>
+                    <p>Collatz occupies a genuine transitional zone between stability and chaos through its piecewise nonlinear structure, marginal stability characteristics, fractal statistical properties, and universal convergence with stochastic-like behavior. This makes it not merely a curious problem, but a window into fundamental principles governing complex mathematical systems at critical thresholds.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <div class="module-selector">
+            <button class="module-tab active" onclick="switchModule('collatz')">🌊 Collatz Conjecture</button>
+            <button class="module-tab" onclick="switchModule('godel')">🎭 Gödel's Incompleteness</button>
+        </div>
+
+        <div class="control-panel">
+            <!-- Collatz Controls -->
+            <div id="collatzControls" class="module-content active">
+                <div class="input-group">
+                    <label for="numberInput">Enter Number:</label>
+                    <input type="number" id="numberInput" class="chamber-input" value="27" min="1" max="1000000">
+                </div>
+                <button class="chamber-button start-button" onclick="startCollatzJourney()">▶ Start Collatz</button>
+            </div>
+
+            <!-- Gödel Controls -->
+            <div id="godelControls" class="module-content">
+                <div class="input-group">
+                    <label for="recursionDepth">Recursion Depth:</label>
+                    <input type="number" id="recursionDepth" class="chamber-input" value="10" min="5" max="50">
+                </div>
+                <button class="chamber-button godel-button" onclick="demonstrateGodel()">🎭 Show Incompleteness</button>
+            </div>
+
+            <!-- Common Controls -->
+            <button class="chamber-button info-button" onclick="showInfo()">📖 UNNS Insights</button>
+            <button class="chamber-button edge-button" onclick="showEdgeOfChaos()">⚡ Edge of Chaos</button>
+            <button class="chamber-button reset-button" onclick="resetChamber()">🔄 Reset</button>
+        </div>
+
+        <div class="chamber-main">
+            <div class="chamber-visualization">
+                <svg id="chamberSvg" class="chamber-svg" width="500" height="500" viewBox="0 0 500 500">
+                    <!-- Background grid -->
+                    <defs>
+                        <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(251, 191, 36, 0.1)" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    <!-- Collatz trace path -->
+                    <path id="tracePath" class="trace-path" d="M250,250" stroke="#3b82f6"/>
+                    
+                    <!-- Gödel paradox spiral -->
+                    <path id="paradoxSpiral" class="paradox-spiral" d="M250,250" stroke="#8b5cf6" stroke-dasharray="5,5"/>
+                    
+                    <!-- Golden ring (appears at convergence) -->
+                    <circle id="goldenRing" class="golden-ring" cx="250" cy="250" r="30"/>
+                    
+                    <!-- Bounded sequence circle (for Gödel) -->
+                    <circle id="boundedRing" class="golden-ring" cx="150" cy="150" r="20" stroke="#10b981"/>
+                    
+                    <!-- Main glyph -->
+                    <circle id="mainGlyph" class="glyph" cx="250" cy="250" r="15" fill="#10b981" stroke="#fbbf24" stroke-width="2"/>
+                    
+                    <!-- Secondary glyph (for Gödel bounded sequence) -->
+                    <circle id="boundedGlyph" class="glyph" cx="150" cy="150" r="12" fill="#10b981" stroke="#059669" stroke-width="2" opacity="0"/>
+                    
+                    <!-- Number labels -->
+                    <text id="glyphLabel" x="250" y="255" text-anchor="middle" fill="white" font-size="12" font-weight="bold">27</text>
+                    <text id="boundedLabel" x="150" y="155" text-anchor="middle" fill="white" font-size="10" font-weight="bold" opacity="0">B</text>
+                </svg>
+            </div>
+
+            <div class="diagnostics-panel">
+                <h3 class="diagnostics-title">🔬 UNNS Diagnostics</h3>
+                
+                <div class="metric">
+                    <div class="metric-label">Current Value:</div>
+                    <div class="metric-value" id="currentValue">27</div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">Recursive Depth (D):</div>
+                    <div class="metric-value" id="depthValue">0</div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">Self-Reference Rate (R):</div>
+                    <div class="metric-value" id="selfRefValue">0.5</div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">UPI (Paradox Index):</div>
+                    <div class="metric-value" id="upiValue">0.0</div>
+                    <div class="upi-gauge">
+                        <div class="upi-fill" id="upiFill" style="width: 0%"></div>
+                        <div class="upi-zones">
+                            <div class="zone">SAFE</div>
+                            <div class="zone">CAUTION</div>
+                            <div class="zone">DANGER</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">Status:</div>
+                    <div class="metric-value" id="statusValue">
+                        <span class="status-indicator status-safe"></span>Ready
+                    </div>
+                </div>
+
+                <!-- Collatz Sequence Display -->
+                <div id="collatzDisplay" class="sequence-display module-content active">
+                    <div class="sequence-title">Collatz Trail:</div>
+                    <div class="sequence-numbers" id="sequenceDisplay">Enter a number to begin...</div>
+                </div>
+
+                <!-- Gödel Display -->
+                <div id="godelDisplay" class="godel-display module-content">
+                    <div class="godel-title">🎭 Incompleteness Manifestation</div>
+                    <div class="bounded-sequence" id="boundedSeq">Bounded: Provable truths (periodic)</div>
+                    <div class="unbounded-sequence" id="unboundedSeq">Unbounded: Truth beyond proof</div>
+                    <div class="self-ref-indicator" id="selfRefIndicator">"This statement is unprovable"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <div class="info-content">
+            <button class="info-close" onclick="hideInfo()">×</button>
+            <h2 class="info-title">🏛️ UNNS Framework: Paradox as Natural Law</h2>
+            
+            <div class="info-section">
+                <h3>🌊 The Collatz Conjecture Through UNNS</h3>
+                <div class="info-text">
+                    The Collatz Conjecture represents one of mathematics' most tantalizing unsolved problems: for any positive integer n, the iterated map f(n) = n/2 if even, 3n+1 if odd, always reaches the cycle 4→2→1.
+                </div>
+
+                <div class="info-highlight">
+                    <strong>🌊 UNNS Paradox Index (UPI) Insights:</strong><br>
+                    UPI = (D × R) / (M + S) diagnoses Collatz's elusiveness through transitional zone analysis (1 ≤ UPI ≤ 3: marginal stability). Parameters: D (orbit length), R (~0.5 moderate self-ref), M (~2 piecewise chaos), S (~1 single seed).
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>🎭 Gödel's Incompleteness as Spectral Inevitability</h3>
+                <div class="info-text">
+                    Through the UNNS prism, Gödel's incompleteness theorem reveals itself not as a flaw but as a natural consequence of recursive embedding and self-reference reaching critical thresholds.
+                </div>
+
+                <div class="godel-highlight">
+                    <strong>🔮 The Spectral Threshold:</strong><br>
+                    When self-reference rate R→1 (full feedback) meets deep recursive nesting D↑, UPI crosses into DANGER zone (>3). This creates "spectral inevitability"—truths that exist beyond the system's proof horizon, like eigenvalues outside the provability operator's spectrum.
+                </div>
+
+                <div class="info-text">
+                    <strong>Bounded vs Unbounded Recursion:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Bounded Sequences:</strong> Eventually periodic (Theorem 1.5) → Provable truths within formal systems</li>
+                        <li><strong>Unbounded Embeddings:</strong> Can harbor aperiodic patterns → Truths that transcend proof (like Gödel sentences)</li>
+                        <li><strong>Self-Reference Amplification:</strong> The diagonal lemma creates fixed-points where statements refer to themselves, pushing UPI into paradox territory</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>⚖️ UPI Stability Zones</h3>
+                <div class="info-text">
+                    <span class="status-indicator status-safe"></span><strong>SAFE (UPI < 1):</strong> Stable recursion, provable truths, "golden" mathematical objects like Fibonacci sequences<br><br>
+                    <span class="status-indicator status-caution"></span><strong>CAUTION (1 ≤ UPI ≤ 3):</strong> Transitional zone where complexity meets stability—Collatz territory<br><br>
+                    <span class="status-indicator status-danger"></span><strong>DANGER (UPI > 3):</strong> High self-reference creates paradox-prone thresholds—Gödel sentence territory
+                </div>
+            </div>
+
+            <div class="godel-highlight">
+                <strong>🌟 The Profound Insight:</strong><br>
+                Incompleteness isn't mathematical failure but optimal design. Bounded systems prove periodic truths efficiently, while unbounded depths harbor transcendent truths that fuel mathematical hierarchy. The "spectral shadow" of undecidability drives the evolution of mathematics itself.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentModule = 'collatz';
+        let currentSequence = [];
+        let isRunning = false;
+        let animationSpeed = 1000;
+        let currentStep = 0;
+        let maxValue = 0;
+
+        function switchModule(module) {
+            // Update tab states
+            document.querySelectorAll('.module-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide content
+            document.querySelectorAll('.module-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll(`#${module}Controls, #${module}Display`).forEach(el => el.classList.add('active'));
+            
+            currentModule = module;
+            resetChamber();
+        }
+
+        // Collatz functions (existing)
+        function collatzStep(n) {
+            return n % 2 === 0 ? n / 2 : 3 * n + 1;
+        }
+
+        function generateCollatzSequence(start) {
+            const sequence = [start];
+            let current = start;
+            let depth = 0;
+            const maxSteps = 1000;
+            
+            while (current !== 1 && depth < maxSteps) {
+                current = collatzStep(current);
+                sequence.push(current);
+                depth++;
+            }
+            
+            return sequence;
+        }
+
+        // Gödel simulation functions
+        function generateBoundedSequence(depth) {
+            // Simulate a bounded, eventually periodic sequence (provable truths)
+            const sequence = [];
+            for (let i = 0; i < depth; i++) {
+                // Simple bounded recurrence that becomes periodic
+                if (i < 3) {
+                    sequence.push(i + 1);
+                } else {
+                    sequence.push((sequence[i-1] + sequence[i-2]) % 7); // Bounded by mod 7
+                }
+            }
+            return sequence;
+        }
+
+        function simulateGodelSentence(depth) {
+            // Simulate self-referential unbounded sequence
+            const sentence = [];
+            for (let i = 0; i < depth; i++) {
+                // Self-referential: each term depends on its own index in a non-converging way
+                const selfRef = Math.sin(i * Math.PI / 3) * (i + 1);
+                sentence.push(parseFloat(selfRef.toFixed(2)));
+            }
+            return sentence;
+        }
+
+        function calculateUPI(depth, selfRef, bounded = false) {
+            const R = selfRef; // Self-reference rate
+            const M = bounded ? 0.5 : 2; // Morphism divergence (low for bounded, high for unbounded)
+            const S = 1; // Memory saturation
+            
+            const normalizedDepth = Math.min(depth / 20, 10);
+            return (normalizedDepth * R) / (M + S);
+        }
+
+        function getStatusFromUPI(upi) {
+            if (upi < 1) return { text: 'SAFE', class: 'status-safe' };
+            if (upi <= 3) return { text: 'CAUTION', class: 'status-caution' };
+            return { text: 'DANGER', class: 'status-danger' };
+        }
+
+        function updateDiagnostics(current, depth, selfRef, upi, status) {
+            document.getElementById('currentValue').textContent = typeof current === 'number' ? current.toLocaleString() : current;
+            document.getElementById('depthValue').textContent = depth;
+            document.getElementById('selfRefValue').textContent = selfRef.toFixed(2);
+            document.getElementById('upiValue').textContent = upi.toFixed(2);
+            
+            // Update UPI gauge
+            const upiPercent = Math.min((upi / 5) * 100, 100);
+            document.getElementById('upiFill').style.width = upiPercent + '%';
+            
+            // Update status
+            const statusElement = document.getElementById('statusValue');
+            statusElement.innerHTML = `<span class="status-indicator ${status.class}"></span>${status.text}`;
+        }
+
+        function updateSequenceDisplay(sequence, currentIndex) {
+            const display = document.getElementById('sequenceDisplay');
+            const displaySequence = sequence.slice(0, currentIndex + 1);
+            
+            let html = displaySequence.map((num, index) => {
+                if (index === currentIndex) {
+                    return `<span class="current-number">${num}</span>`;
+                }
+                return num.toString();
+            }).join(' → ');
+            
+            if (currentIndex < sequence.length - 1) {
+                html += ' → ...';
+            }
+            
+            display.innerHTML = html;
+        }
+
+        function animateGlyph(isExpanding, isGodel = false) {
+            const glyph = document.getElementById('mainGlyph');
+            
+            // Remove existing animation classes
+            glyph.classList.remove('breathing-out', 'breathing-in', 'self-referencing');
+            
+            if (isGodel) {
+                glyph.classList.add('self-referencing');
+                glyph.setAttribute('fill', '#8b5cf6'); // Purple for Gödel
+            } else {
+                if (isExpanding) {
+                    glyph.classList.add('breathing-out');
+                    glyph.setAttribute('fill', '#ef4444'); // Red for expansion
+                } else {
+                    glyph.classList.add('breathing-in');
+                    glyph.setAttribute('fill', '#10b981'); // Green for contraction
+                }
+            }
+        }
+
+        function updateGlyphPosition(step, totalSteps, isSpiral = false) {
+            const centerX = 250;
+            const centerY = 250;
+            const radius = 80;
+            
+            let x, y;
+            
+            if (isSpiral) {
+                // Spiral outward for Gödel (unbounded)
+                const angle = (step / totalSteps) * 6 * Math.PI;
+                const spiralRadius = 20 + (step / totalSteps) * radius;
+                x = centerX + spiralRadius * Math.cos(angle);
+                y = centerY + spiralRadius * Math.sin(angle);
+            } else {
+                // Spiral inward for Collatz (convergent)
+                const angle = (step / totalSteps) * 4 * Math.PI;
+                const spiralRadius = radius * (1 - step / totalSteps);
+                x = centerX + spiralRadius * Math.cos(angle);
+                y = centerY + spiralRadius * Math.sin(angle);
+            }
+            
+            const glyph = document.getElementById('mainGlyph');
+            const label = document.getElementById('glyphLabel');
+            
+            glyph.setAttribute('cx', x);
+            glyph.setAttribute('cy', y);
+            label.setAttribute('x', x);
+            label.setAttribute('y', y + 4);
+            
+            // Update trace path
+            const pathId = isSpiral ? 'paradoxSpiral' : 'tracePath';
+            const path = document.getElementById(pathId);
+            const currentPath = path.getAttribute('d');
+            path.setAttribute('d', currentPath + ` L${x},${y}`);
+        }
+
+        function showGoldenRing() {
+            const ring = document.getElementById('goldenRing');
+            ring.style.opacity = '1';
+            
+            // Animate glyph to center and transform to golden
+            const glyph = document.getElementById('mainGlyph');
+            const label = document.getElementById('glyphLabel');
+            
+            glyph.setAttribute('cx', 250);
+            glyph.setAttribute('cy', 250);
+            glyph.setAttribute('fill', '#fbbf24');
+            glyph.setAttribute('r', 8);
+            
+            label.setAttribute('x', 250);
+            label.setAttribute('y', 254);
+            label.setAttribute('fill', '#fbbf24');
+        }
+
+        function showParadoxSpiral() {
+            const spiral = document.getElementById('paradoxSpiral');
+            spiral.style.opacity = '0.8';
+        }
+
+        async function startCollatzJourney() {
+            if (isRunning) return;
+            
+            const input = document.getElementById('numberInput');
+            const startNumber = parseInt(input.value);
+            
+            if (!startNumber || startNumber < 1) {
+                alert('Please enter a positive integer');
+                return;
+            }
+            
+            currentSequence = generateCollatzSequence(startNumber);
+            resetVisualization();
+            await animateCollatzSequence(currentSequence);
+        }
+
+        async function animateCollatzSequence(sequence) {
+            isRunning = true;
+            currentStep = 0;
+            maxValue = Math.max(...sequence);
+            
+            for (let i = 0; i < sequence.length && isRunning; i++) {
+                const current = sequence[i];
+                const selfRef = 0.5; // Moderate self-reference for Collatz
+                const upi = calculateUPI(i, selfRef);
+                const status = getStatusFromUPI(upi);
+                
+                updateDiagnostics(current, i, selfRef, upi, status);
+                updateSequenceDisplay(sequence, i);
+                
+                document.getElementById('glyphLabel').textContent = current;
+                updateGlyphPosition(i, sequence.length - 1, false);
+                
+                if (i > 0) {
+                    const previous = sequence[i - 1];
+                    const isExpanding = current > previous;
+                    animateGlyph(isExpanding, false);
+                }
+                
+                if (current === 1) {
+                    setTimeout(() => {
+                        showGoldenRing();
+                        updateDiagnostics(1, i, selfRef, 0, { text: 'CONVERGED', class: 'status-safe' });
+                    }, 500);
+                    break;
+                }
+                
+                currentStep = i;
+                await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            }
+            
+            isRunning = false;
+        }
+
+        async function demonstrateGodel() {
+            if (isRunning) return;
+            
+            const depth = parseInt(document.getElementById('recursionDepth').value) || 10;
+            
+            resetVisualization();
+            isRunning = true;
+            
+            // First show bounded sequence (provable truths)
+            const boundedSeq = generateBoundedSequence(Math.floor(depth / 2));
+            await animateBoundedSequence(boundedSeq);
+            
+            // Then show unbounded Gödel sentence
+            const godelSeq = simulateGodelSentence(depth);
+            await animateGodelSequence(godelSeq);
+            
+            isRunning = false;
+        }
+
+        async function animateBoundedSequence(sequence) {
+            const boundedGlyph = document.getElementById('boundedGlyph');
+            const boundedLabel = document.getElementById('boundedLabel');
+            const boundedRing = document.getElementById('boundedRing');
+            
+            boundedGlyph.style.opacity = '1';
+            boundedLabel.style.opacity = '1';
+            boundedRing.style.opacity = '0.6';
+            
+            document.getElementById('boundedSeq').innerHTML = `Bounded: ${sequence.join(' → ')} (periodic)`;
+            
+            for (let i = 0; i < sequence.length; i++) {
+                const selfRef = 0.1; // Low self-reference for bounded
+                const upi = calculateUPI(i, selfRef, true);
+                const status = getStatusFromUPI(upi);
+                
+                updateDiagnostics(`B${sequence[i]}`, i, selfRef, upi, status);
+                boundedLabel.textContent = sequence[i];
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        async function animateGodelSequence(sequence) {
+            // Hide bounded elements
+            document.getElementById('boundedGlyph').style.opacity = '0';
+            document.getElementById('boundedLabel').style.opacity = '0';
+            document.getElementById('boundedRing').style.opacity = '0';
+            
+            // Show Gödel sequence
+            document.getElementById('unboundedSeq').innerHTML = `Unbounded: ${sequence.slice(0, 5).join(' → ')}... (aperiodic)`;
+            document.getElementById('selfRefIndicator').innerHTML = '"This statement is unprovable" ⟲';
+            
+            for (let i = 0; i < sequence.length; i++) {
+                const selfRef = 0.9 + (i / sequence.length) * 0.1; // Increasing self-reference
+                const upi = calculateUPI(i, selfRef);
+                const status = getStatusFromUPI(upi);
+                
+                updateDiagnostics(sequence[i], i, selfRef, upi, status);
+                document.getElementById('glyphLabel').textContent = 'G';
+                
+                updateGlyphPosition(i, sequence.length - 1, true); // Spiral outward
+                animateGlyph(false, true); // Self-referencing animation
+                
+                await new Promise(resolve => setTimeout(resolve, 400));
+            }
+            
+            showParadoxSpiral();
+            updateDiagnostics('∞', sequence.length, 1.0, calculateUPI(sequence.length, 1.0), 
+                           { text: 'TRANSCENDENT', class: 'status-danger' });
+        }
+
+        function resetVisualization() {
+            const elements = ['mainGlyph', 'boundedGlyph', 'glyphLabel', 'boundedLabel'];
+            const paths = ['tracePath', 'paradoxSpiral'];
+            const rings = ['goldenRing', 'boundedRing'];
+            
+            // Reset glyphs
+            const mainGlyph = document.getElementById('mainGlyph');
+            mainGlyph.setAttribute('cx', 250);
+            mainGlyph.setAttribute('cy', 250);
+            mainGlyph.setAttribute('r', 15);
+            mainGlyph.setAttribute('fill', '#10b981');
+            mainGlyph.classList.remove('breathing-out', 'breathing-in', 'self-referencing');
+            
+            // Reset labels
+            document.getElementById('glyphLabel').setAttribute('x', 250);
+            document.getElementById('glyphLabel').setAttribute('y', 255);
+            document.getElementById('glyphLabel').setAttribute('fill', 'white');
+            
+            // Reset paths
+            paths.forEach(pathId => {
+                document.getElementById(pathId).setAttribute('d', 'M250,250');
+                document.getElementById(pathId).style.opacity = '0';
+            });
+            
+            // Reset rings
+            rings.forEach(ringId => {
+                document.getElementById(ringId).style.opacity = '0';
+            });
+            
+            // Hide bounded elements
+            document.getElementById('boundedGlyph').style.opacity = '0';
+            document.getElementById('boundedLabel').style.opacity = '0';
+        }
+
+        function resetChamber() {
+            isRunning = false;
+            currentStep = 0;
+            currentSequence = [];
+            
+            resetVisualization();
+            
+            if (currentModule === 'collatz') {
+                const startValue = parseInt(document.getElementById('numberInput').value) || 27;
+                document.getElementById('glyphLabel').textContent = startValue;
+                updateDiagnostics(startValue, 0, 0.5, 0, { text: 'Ready', class: 'status-safe' });
+                document.getElementById('sequenceDisplay').innerHTML = 'Enter a number to begin...';
+            } else {
+                document.getElementById('glyphLabel').textContent = 'G';
+                updateDiagnostics('Ready', 0, 0.0, 0, { text: 'Ready', class: 'status-safe' });
+                document.getElementById('boundedSeq').innerHTML = 'Bounded: Provable truths (periodic)';
+                document.getElementById('unboundedSeq').innerHTML = 'Unbounded: Truth beyond proof';
+                document.getElementById('selfRefIndicator').innerHTML = '"This statement is unprovable"';
+            }
+            
+            document.getElementById('upiFill').style.width = '0%';
+        }
+
+        function showInfo() {
+            document.getElementById('infoPanel').style.display = 'flex';
+        }
+
+        function hideInfo() {
+            document.getElementById('infoPanel').style.display = 'none';
+        }
+
+        function showEdgeOfChaos() {
+            document.getElementById('edgePanel').style.display = 'flex';
+        }
+
+        function hideEdgeOfChaos() {
+            document.getElementById('edgePanel').style.display = 'none';
+        }
+
+        // Event listeners
+        document.getElementById('infoPanel').addEventListener('click', function(e) {
+            if (e.target === this) hideInfo();
+        });
+
+        document.getElementById('edgePanel').addEventListener('click', function(e) {
+            if (e.target === this) hideEdgeOfChaos();
+        });
+
+        document.getElementById('numberInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') startCollatzJourney();
+        });
+
+        document.getElementById('recursionDepth').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') demonstrateGodel();
+        });
+
+        // Initialize
+        window.addEventListener('load', function() {
+            resetChamber();
+        });
+    </script>
+</body>
+</html>

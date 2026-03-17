@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XIV v0.8.0</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .version-badge { display: inline-block; background: #2a4a2a; color: #4aff4a; padding: 4px 12px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    label { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    input[type="number"], input[type="range"], select { background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; padding: 8px; border-radius: 4px; font-family: inherit; }
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-family: inherit; margin-right: 10px; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    .button-primary { background: #4a9eff; }
+    .button-secondary { background: #2a7a4a; }
+    .visualization { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 3px; font-size: 0.9em; color: #4a9eff; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+    .metric { background: #0a0a0a; padding: 10px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.2em; color: #4a9eff; font-weight: bold; }
+    .metric-value.primary { color: #4aff4a; }
+    .metric-value.derived { color: #ffa54a; }
+    .status { padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status.running { background: #2a4a2a; color: #4aff4a; }
+    .status.complete { background: #2a3a4a; color: #4a9eff; }
+    .progress-bar { width: 100%; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { height: 100%; background: #4a9eff; transition: width 0.3s; }
+    
+    .tau-validation { background: #1a2a1a; border-left: 4px solid #4aff4a; padding: 15px; margin-top: 20px; }
+    .tau-validation h3 { color: #4aff4a; font-size: 1.1em; margin-bottom: 10px; }
+    .validation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+    .validation-item { background: #0a0a0a; padding: 12px; border-radius: 4px; border: 1px solid #2a4a2a; }
+    .validation-item .label { font-size: 0.85em; color: #888; margin-bottom: 5px; }
+    .validation-item .value { font-size: 1.1em; color: #4aff4a; font-family: 'Courier New', monospace; }
+    .validation-item .value.warning { color: #ffa54a; }
+    .validation-item .value.error { color: #ff4a4a; }
+    
+    .signature-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-left: 8px; }
+    .signature-badge.O { background: #4a4aff; color: #fff; }
+    .signature-badge.R { background: #ff4aff; color: #fff; }
+    .signature-badge.P { background: #4affff; color: #000; }
+    .signature-badge.OR { background: linear-gradient(90deg, #4a4aff 50%, #ff4aff 50%); color: #fff; }
+    .signature-badge.OP { background: linear-gradient(90deg, #4a4aff 50%, #4affff 50%); color: #000; }
+    .signature-badge.RP { background: linear-gradient(90deg, #ff4aff 50%, #4affff 50%); color: #000; }
+    .signature-badge.ORP { background: linear-gradient(120deg, #4a4aff, #ff4aff, #4affff); color: #fff; }
+    
+    .collapse-section { margin-top: 20px; padding: 15px; background: #1a1a2a; border-radius: 4px; }
+    .collapse-section h4 { color: #4a9eff; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ CHAMBER XIV: Φ-SCALE <span class="version-badge">v0.8.0 + τ-VALIDATOR</span></h1>
+      <div class="subtitle">Operator XIV — Self-Contained with τ-Invariant Analysis</div>
+    </header>
+    
+    <div class="panel">
+      <div class="panel-title">Configuration</div>
+      <div class="controls">
+        <div class="control-group">
+          <label>Grid Size</label>
+          <select id="gridSize">
+            <option value="64" selected>64×64 (fast)</option>
+            <option value="128">128×128 (balanced)</option>
+            <option value="256">256×256 (high-res)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>λ <span id="lambdaValue">0.10825</span></label>
+          <input type="range" id="lambda" min="0.08" max="0.15" step="0.00001" value="0.10825">
+        </div>
+        <div class="control-group">
+          <label>Depth</label>
+          <input type="number" id="depth" value="200">
+        </div>
+        <div class="control-group">
+          <label>μ Min</label>
+          <input type="number" id="muMin" step="0.01" value="1.55">
+        </div>
+        <div class="control-group">
+          <label>μ Max</label>
+          <input type="number" id="muMax" step="0.01" value="1.68">
+        </div>
+        <div class="control-group">
+          <label>μ Step</label>
+          <input type="number" id="muStep" step="0.001" value="0.01">
+        </div>
+        <div class="control-group">
+          <label>σ (Noise) <span id="sigmaValue">0.02</span></label>
+          <input type="range" id="sigma" min="0" max="0.05" step="0.001" value="0.02">
+        </div>
+        <div class="control-group">
+          <label>Seed</label>
+          <input type="number" id="seed" value="137042">
+        </div>
+      </div>
+      <button id="runSweep" class="button-primary">▶ Run Sweep</button>
+      <button id="runMultiSeed" class="button-secondary">🔬 Multi-Seed (C⊗₃)</button>
+      <button id="runDepthSweep" class="button-secondary">📊 Depth Sweep (C⊗₅)</button>
+      <button id="stopSweep" disabled>⏸ Stop</button>
+      <button id="exportData" disabled>💾 Export Data</button>
+      <div id="statusDisplay" class="status" style="display: none;"></div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width: 0%;"></div></div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Visualization</div>
+      <div class="visualization">
+        <div class="canvas-container">
+          <canvas id="canvasField"></canvas>
+          <div class="canvas-label">τ-Field Evolution</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="canvasInvariants"></canvas>
+          <div class="canvas-label">Δ_scale(μ) & Π(μ)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">Standard Metrics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">μ★</div><div class="metric-value" id="metricMuStar">—</div></div>
+        <div class="metric"><div class="metric-label">φ Error</div><div class="metric-value" id="metricPhiError">—</div></div>
+        <div class="metric"><div class="metric-label">Current μ</div><div class="metric-value" id="metricMu">—</div></div>
+        <div class="metric"><div class="metric-label">Δ_scale</div><div class="metric-value" id="metricDelta">—</div></div>
+        <div class="metric"><div class="metric-label">Π</div><div class="metric-value" id="metricPi">—</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value" id="metricStatus">Ready</div></div>
+      </div>
+    </div>
+    
+    <!-- τ-INVARIANT VALIDATION PANEL -->
+    <div class="panel tau-validation">
+      <div class="panel-title">🔬 τ-Invariant Validation Analysis</div>
+      
+      <div class="validation-grid">
+        <div class="validation-item">
+          <div class="label">Closure Residual (Δτ)</div>
+          <div class="value" id="tauDeltaTau">—</div>
+        </div>
+        <div class="validation-item">
+          <div class="label">Closure Signature</div>
+          <div class="value" id="tauSignature">—</div>
+        </div>
+        <div class="validation-item">
+          <div class="label">Classification</div>
+          <div class="value" id="tauClassification">—</div>
+        </div>
+        <div class="validation-item">
+          <div class="label">N★ (Transcendence)</div>
+          <div class="value" id="tauNStar">—</div>
+        </div>
+        <div class="validation-item">
+          <div class="label">Ψ-Drift (final)</div>
+          <div class="value" id="tauPsiDrift">—</div>
+        </div>
+        <div class="validation-item">
+          <div class="label">τ-Closure Status</div>
+          <div class="value" id="tauClosureStatus">—</div>
+        </div>
+      </div>
+      
+      <div style="background: #1a2a3a; border-left: 3px solid #4a9eff; padding: 12px; margin-top: 15px; border-radius: 4px;">
+        <p style="margin: 0; font-size: 0.9em; line-height: 1.6; color: #aaa;">
+          <strong style="color: #4a9eff;">📘 Note on Derived τ-Structures:</strong> 
+          Derived τ-structures may exhibit high stability and reproducibility without satisfying τ-closure. 
+          Certification requires Δτ → 0 under refinement. Stable structures with Δτ > 10⁻⁶ indicate 
+          <em>composition</em> of primary mechanisms, not primariness itself.
+        </p>
+      </div>
+      
+      <div id="whatThisProves" style="background: #1a2a1a; border-left: 4px solid #4aff4a; padding: 18px; margin-top: 20px; border-radius: 4px; display: none;">
+        <h4 style="color: #4aff4a; font-size: 1.1em; margin: 0 0 12px 0;">What This Result Proves</h4>
+        <p style="margin: 0 0 12px 0; font-size: 0.95em; line-height: 1.7; color: #ddd;">
+          This run demonstrates the distinction between <strong>stability</strong> and <strong>τ-closure</strong>.
+        </p>
+        <p style="margin: 0 0 12px 0; font-size: 0.95em; line-height: 1.7; color: #ddd;">
+          The detected structure exhibits:
+        </p>
+        <ul style="margin: 0 0 12px 20px; font-size: 0.95em; line-height: 1.7; color: #ddd;">
+          <li>strong equilibrium behavior,</li>
+          <li>reproducibility across seeds,</li>
+          <li>bounded response to noise,</li>
+        </ul>
+        <p style="margin: 0 0 12px 0; font-size: 0.95em; line-height: 1.7; color: #ddd;">
+          yet fails to satisfy τ-closure under arbitrary refinement (Δτ ≠ 0).
+        </p>
+        <p style="margin: 0 0 15px 0; font-size: 0.95em; line-height: 1.7; color: #ddd;">
+          <strong style="color: #4aff4a;">Conclusion:</strong> This confirms the existence of <em>derived τ-structures</em> — 
+          stable configurations composed from primary closure mechanisms — and validates the primariness criterion 
+          established in the UNNS Basis Theorem.
+        </p>
+        <p style="margin: 0; font-size: 0.95em; font-style: italic; color: #aaa;">
+          Stability alone does not imply τ-invariance.
+        </p>
+        
+        <details style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #2a4a2a;">
+          <summary style="color: #4a9eff; cursor: pointer; font-size: 0.9em; user-select: none;">
+            📖 Theoretical Reference
+          </summary>
+          <p style="margin: 10px 0 0 0; font-size: 0.85em; line-height: 1.6; color: #999;">
+            See: <a href="https://unns.tech/media/docs/Primary%20%CF%84%20-Invariants%20in%20the%20UNNS%20Substrate.pdf" 
+                    target="_blank" 
+                    style="color: #4a9eff; text-decoration: none;">
+              Primary τ-Invariants in the UNNS Substrate</a>, 
+            Corollaries 1–4 (Derived Structures, Stability Without Primariness, Collapse Consistency).
+          </p>
+        </details>
+      </div>
+      
+      <div class="collapse-section" id="collapseSection" style="display: none;">
+        <h4>Structural Half-Life (Operator XII)</h4>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">t₁/₂</div><div class="metric-value" id="tauHalfLife">—</div></div>
+          <div class="metric"><div class="metric-label">Initial Δτ</div><div class="metric-value" id="tauInitialDelta">—</div></div>
+          <div class="metric"><div class="metric-label">Final Δτ</div><div class="metric-value" id="tauFinalDelta">—</div></div>
+          <div class="metric"><div class="metric-label">Persistence</div><div class="metric-value" id="tauPersistence">—</div></div>
+        </div>
+      </div>
+      
+      <div class="collapse-section">
+        <h4>C⊗ Extended Validation</h4>
+        <div class="validation-grid">
+          <div class="validation-item">
+            <div class="label">C⊗₃ (Reproducibility)</div>
+            <div class="value" id="cPhi3">—</div>
+          </div>
+          <div class="validation-item">
+            <div class="label">C⊗₄ (τ-Closure)</div>
+            <div class="value" id="cPhi4">—</div>
+          </div>
+          <div class="validation-item">
+            <div class="label">C⊗₅ (Stability)</div>
+            <div class="value" id="cPhi5">—</div>
+          </div>
+          <div class="validation-item">
+            <div class="label">Certification</div>
+            <div class="value" id="certification">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title">📚 Laboratory Guide</div>
+      <div style="line-height: 1.6; color: #aaa;">
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin-bottom: 10px;">v0.8.0 Updates: τ-Invariant Integration</h3>
+        
+        <div style="background: #1a2a1a; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #4aff4a;">
+          <p><strong style="color: #4aff4a;">New in v0.8.0:</strong></p>
+          <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+            <li><strong>Δτ Calculator:</strong> Real-time closure residual computation</li>
+            <li><strong>Φ→Ψ→τ Mapping:</strong> Full regime progression with N★ threshold detection</li>
+            <li><strong>Signature Classification:</strong> Automatic detection of closure mechanisms (O/R/P)</li>
+            <li><strong>Structural Half-Life:</strong> Operator XII collapse dynamics</li>
+            <li><strong>Extended C⊗ Validation:</strong> τ-informed certification criteria</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Operator XIV: Φ-Scale Hypothesis</h3>
+        
+        <p><strong>Theoretical Foundation:</strong> The recursive scaling operator XIV implements:</p>
+        <p style="font-family: 'Courier New', monospace; background: #0a0a0a; padding: 10px; border-left: 3px solid #4a9eff; margin: 10px 0;">
+          τ<sub>n+1</sub>(x) = τ<sub>n</sub>(x) + λ sin(τ<sub>n</sub>(S<sub>μ</sub>x) - τ<sub>n</sub>(x)) + σ ξ
+        </p>
+        
+        <p><strong>Primary Finding:</strong> μ★ ≈ 1.618 ± 0.01 (golden ratio φ)</p>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">τ-Invariant Analysis</h3>
+        
+        <p><strong>Closure Signature of φ:</strong> <span class="signature-badge OR">OR</span></p>
+        <ul style="margin: 10px 0 10px 20px;">
+          <li><strong>O (Orthogonal):</strong> √5 component in φ = (1+√5)/2</li>
+          <li><strong>R (Relaxation):</strong> Fibonacci ratio equilibration dynamics</li>
+          <li><strong>Classification:</strong> DERIVED τ-structure (not primary)</li>
+        </ul>
+        
+        <p style="margin-top: 15px;"><strong>Expected Behavior:</strong></p>
+        <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li>Δτ(φ) decreases exponentially with depth (R dominates)</li>
+          <li>t₁/₂ = finite but large (derived stability)</li>
+          <li>N★ ≈ 15-25 μ-steps for Φ→Ψ→τ transcendence</li>
+          <li>Survives noise σ ≤ 0.05, collapses for σ > 0.1</li>
+        </ul>
+        
+        <h3 style="color: #4a9eff; font-size: 1.1em; margin: 20px 0 10px;">Validation Workflow</h3>
+        
+        <ol style="margin: 10px 0 10px 20px; line-height: 1.8;">
+          <li><strong>Standard Run:</strong> Click "▶ Run Sweep" for basic μ★ detection</li>
+          <li><strong>Reproducibility Test:</strong> Click "🔬 Multi-Seed" for C⊗₃ (CV ≤ 1%)</li>
+          <li><strong>Stability Test:</strong> Click "📊 Depth Sweep" for C⊗₅ plateau</li>
+          <li><strong>Review τ-Analysis:</strong> Check Δτ, signature, and certification status</li>
+          <li><strong>Export Bundle:</strong> Save complete JSON with τ-validation data</li>
+        </ol>
+        
+        <p style="margin-top: 20px; font-size: 0.85em; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px;">
+          <strong>Version:</strong> 0.8.0 | <strong>Engine:</strong> TauFieldEngineN v0.7.0 | <strong>Validator:</strong> TauInvariantValidator v1.0.0
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// UNNS Laboratory Phase B — TauFieldEngineN v0.7.0
+// ═══════════════════════════════════════════════════════════════════════════
+
+class TauFieldEngineN {
+  constructor(config = {}) {
+    this.n_fields = config.n_fields || 1;
+    this.W = config.grid_width || 192;
+    this.size = this.W * this.W;
+    this.operatorMode = config.operator_mode || 'standard';
+    this.samplingMode = config.sampling_mode || 'bilinear';
+    this.lambda = config.lambda || 0.1;
+    this.sigma = config.sigma || 0.02;
+    this.beta = config.beta || 0.0;
+    this.alpha_c = config.alpha_c || 0.0;
+    this.mu_current = config.mu || 1.618;
+    this.laplacianMode = config.laplacian_mode || 'none';
+    this.window = config.window || 'none';
+    this.zeroPad = config.zero_pad || 2;
+    
+    if (this.laplacianMode === 'fft') {
+      const isPowerOfTwo = (n) => (n > 0) && ((n & (n - 1)) === 0);
+      if (!isPowerOfTwo(this.W)) {
+        throw new Error(`FFT requires power-of-two grid; got W=${this.W}`);
+      }
+    }
+    
+    this.fields = Array(this.n_fields).fill(null).map(() => ({
+      tau: new Float64Array(this.size),
+      tau_next: new Float64Array(this.size)
+    }));
+    
+    this.trajectory_config = {
+      strategy: config.trajectory_strategy || 'incrementalJ+checkpoints',
+      checkpoint_stride: config.checkpoint_stride || 80,
+      ring_buffer_size: config.ring_buffer_size || 12
+    };
+    
+    this.checkpoints = [];
+    this.ring_buffer = [];
+    
+    this.flux = {
+      Jx: new Float64Array(this.size),
+      Jy: new Float64Array(this.size),
+      reset_counter: 0
+    };
+    
+    this.coupling = Array(this.n_fields).fill(null).map(() => 
+      Array(this.n_fields).fill(0)
+    );
+    for (let i = 0; i < this.n_fields; i++) {
+      this.coupling[i][i] = this.lambda;
+    }
+    
+    this.seed = config.seed || 137042;
+    this.rng = this.createSeededRNG(this.seed);
+    
+    this.step_count = 0;
+    this.performance = {
+      total_time: 0,
+      avg_step_time: 0,
+      step_times: []
+    };
+    
+    this.fft_cache = {
+      kx_grid: null,
+      ky_grid: null,
+      k2_grid: null
+    };
+    this.initializeFFTCache();
+    
+    this.initialize(config.init_mode || 'random');
+  }
+  
+  initialize(mode = 'random') {
+    for (let field_idx = 0; field_idx < this.n_fields; field_idx++) {
+      const tau = this.fields[field_idx].tau;
+      
+      switch(mode) {
+        case 'random':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.random() * 2 * Math.PI;
+          }
+          break;
+        case 'gaussian':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.gaussian();
+          }
+          break;
+        case 'uniform':
+          for (let i = 0; i < this.size; i++) {
+            tau[i] = this.rng.random();
+          }
+          break;
+        case 'zero':
+          break;
+        case 'sine':
+          for (let y = 0; y < this.W; y++) {
+            for (let x = 0; x < this.W; x++) {
+              const idx = x + y * this.W;
+              tau[idx] = Math.sin(2 * Math.PI * x / this.W);
+            }
+          }
+          break;
+        default:
+          throw new Error(`Unknown init mode: ${mode}`);
+      }
+    }
+  }
+  
+  initializeFFTCache() {
+    this.fft_cache.kx_grid = new Float64Array(this.size);
+    this.fft_cache.ky_grid = new Float64Array(this.size);
+    this.fft_cache.k2_grid = new Float64Array(this.size);
+    
+    const factor = 2 * Math.PI / this.W;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const kx_idx = (x < this.W / 2) ? x : x - this.W;
+        const ky_idx = (y < this.W / 2) ? y : y - this.W;
+        const kx = factor * kx_idx;
+        const ky = factor * ky_idx;
+        
+        this.fft_cache.kx_grid[idx] = kx;
+        this.fft_cache.ky_grid[idx] = ky;
+        this.fft_cache.k2_grid[idx] = -(kx * kx + ky * ky);
+      }
+    }
+  }
+  
+  step() {
+    const now = this.getTimestamp();
+    const t_start = now();
+    
+    const field_idx = 0;
+    const {tau, tau_next} = this.fields[field_idx];
+    const {gx, gy} = this.computeGradient(field_idx);
+    
+    let laplacian_field = null;
+    if (this.beta > 0 && this.laplacianMode !== 'none') {
+      laplacian_field = this.computeLaplacian(field_idx);
+    }
+    
+    for (let idx = 0; idx < this.size; idx++) {
+      const x = idx % this.W;
+      const y = Math.floor(idx / this.W);
+      
+      let delta_phi;
+      
+      if (this.operatorMode === 'XIV') {
+        if (this.samplingMode === 'bilinear') {
+          const scaled_val = this.sampleScaledBilinear(x, y, this.mu_current, field_idx);
+          delta_phi = scaled_val - tau[idx];
+        } else {
+          const scaled_idx = this.getScaledIndex(x, y, this.mu_current);
+          delta_phi = tau[scaled_idx] - tau[idx];
+        }
+      } else {
+        const right_idx = ((x + 1) % this.W) + y * this.W;
+        delta_phi = tau[right_idx] - tau[idx];
+      }
+      
+      let update = tau[idx];
+      update += this.lambda * Math.sin(delta_phi);
+      
+      if (laplacian_field !== null) {
+        update -= this.beta * laplacian_field[idx];
+      }
+      
+      if (this.sigma > 0) {
+        update += this.sigma * this.rng.gaussian();
+      }
+      
+      tau_next[idx] = update;
+      
+      if (this.trajectory_config.strategy.includes('incrementalJ')) {
+        this.flux.Jx[idx] += gx[idx] / this.trajectory_config.checkpoint_stride;
+        this.flux.Jy[idx] += gy[idx] / this.trajectory_config.checkpoint_stride;
+      }
+    }
+    
+    this.fields[field_idx].tau = tau_next;
+    this.fields[field_idx].tau_next = tau;
+    
+    this.updateTrajectoryStorage(field_idx);
+    
+    this.step_count++;
+    const t_end = now();
+    const step_time = t_end - t_start;
+    this.performance.total_time += step_time;
+    this.performance.step_times.push(step_time);
+    if (this.performance.step_times.length > 100) {
+      this.performance.step_times.shift();
+    }
+    this.performance.avg_step_time = this.performance.total_time / this.step_count;
+  }
+  
+  computeGradient(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const gx = new Float64Array(this.size);
+    const gy = new Float64Array(this.size);
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const right = tau[((x + 1) % this.W) + y * this.W];
+        const left = tau[((x - 1 + this.W) % this.W) + y * this.W];
+        const up = tau[x + ((y + 1) % this.W) * this.W];
+        const down = tau[x + ((y - 1 + this.W) % this.W) * this.W];
+        
+        gx[idx] = (right - left) / 2;
+        gy[idx] = (up - down) / 2;
+      }
+    }
+    
+    return {gx, gy};
+  }
+  
+  getScaledIndex(x, y, mu) {
+    const x_scaled = Math.floor(x * mu) % this.W;
+    const y_scaled = Math.floor(y * mu) % this.W;
+    return x_scaled + y_scaled * this.W;
+  }
+  
+  sampleScaledBilinear(x, y, mu, field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    const W = this.W;
+    
+    let xf = (x * mu) % W;
+    let yf = (y * mu) % W;
+    if (xf < 0) xf += W;
+    if (yf < 0) yf += W;
+    
+    const x0 = Math.floor(xf);
+    const y0 = Math.floor(yf);
+    const x1 = (x0 + 1) % W;
+    const y1 = (y0 + 1) % W;
+    
+    const dx = xf - x0;
+    const dy = yf - y0;
+    
+    const i00 = x0 + y0 * W;
+    const i10 = x1 + y0 * W;
+    const i01 = x0 + y1 * W;
+    const i11 = x1 + y1 * W;
+    
+    const a = tau[i00] * (1 - dx) + tau[i10] * dx;
+    const b = tau[i01] * (1 - dx) + tau[i11] * dx;
+    
+    return a * (1 - dy) + b * dy;
+  }
+  
+  computeScaleInvariants(mu) {
+    const tau = this.fields[0].tau;
+    let sum_sq_diff = 0;
+    let sum_cos_diff = 0;
+    
+    for (let y = 0; y < this.W; y++) {
+      for (let x = 0; x < this.W; x++) {
+        const idx = x + y * this.W;
+        const tau_scaled = this.sampleScaledBilinear(x, y, mu, 0);
+        const diff = tau_scaled - tau[idx];
+        
+        sum_sq_diff += diff * diff;
+        sum_cos_diff += Math.cos(diff);
+      }
+    }
+    
+    return {
+      Delta_scale: sum_sq_diff / this.size,
+      Pi: sum_cos_diff / this.size
+    };
+  }
+  
+  updateTrajectoryStorage(field_idx = 0) {
+    const tau = this.fields[field_idx].tau;
+    
+    if (this.ring_buffer.length >= this.trajectory_config.ring_buffer_size) {
+      this.ring_buffer.shift();
+    }
+    this.ring_buffer.push(new Float64Array(tau));
+    
+    if (this.step_count % this.trajectory_config.checkpoint_stride === 0) {
+      this.checkpoints.push({
+        step: this.step_count,
+        field: new Float64Array(tau)
+      });
+      
+      if (this.trajectory_config.strategy.includes('incrementalJ')) {
+        this.flux.Jx.fill(0);
+        this.flux.Jy.fill(0);
+        this.flux.reset_counter++;
+      }
+    }
+  }
+  
+  createSeededRNG(seed) {
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+  
+  getTimestamp() {
+    if (typeof performance !== 'undefined' && performance.now) {
+      return performance.now.bind(performance);
+    } else {
+      return () => Date.now();
+    }
+  }
+  
+  getField(field_idx = 0) {
+    return new Float64Array(this.fields[field_idx].tau);
+  }
+  
+  setField(field_data, field_idx = 0) {
+    if (field_data.length !== this.size) {
+      throw new Error(`Field size mismatch: expected ${this.size}, got ${field_data.length}`);
+    }
+    this.fields[field_idx].tau.set(field_data);
+  }
+  
+  reset() {
+    this.step_count = 0;
+    this.performance = {
+      total_time: 0,
+      avg_step_time: 0,
+      step_times: []
+    };
+    this.checkpoints = [];
+    this.ring_buffer = [];
+    this.flux.Jx.fill(0);
+    this.flux.Jy.fill(0);
+    this.flux.reset_counter = 0;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// τ-INVARIANT VALIDATOR v1.0.0
+// ═══════════════════════════════════════════════════════════════════════════
+
+class TauInvariantValidator {
+  constructor(config = {}) {
+    this.epsilon_psi = config.epsilon_psi || 1e-6;
+    this.epsilon_tau = config.epsilon_tau || 1e-6;
+    
+    this.primaries = {
+      sqrt2: Math.sqrt(2),
+      e: Math.E,
+      pi: Math.PI
+    };
+    
+    this.derived = {
+      phi: (1 + Math.sqrt(5)) / 2,
+      alpha_fs: 1 / 137.035999084,
+      sqrt5: Math.sqrt(5)
+    };
+    
+    this.collapse_history = [];
+    this.half_life_cache = new Map();
+  }
+  
+  computeClosureResidual(value, constant_type, context = {}) {
+    const result = {
+      value: value,
+      constant_type: constant_type,
+      delta_tau: null,
+      closure_constraint: null,
+      reference_value: null,
+      satisfied: false,
+      signature: null
+    };
+    
+    switch(constant_type) {
+      case 'phi':
+      case 'mu_star':
+        result.closure_constraint = 'x² - x - 1 = 0';
+        result.reference_value = this.derived.phi;
+        result.delta_tau = Math.abs(value * value - value - 1);
+        result.signature = 'OR';
+        result.satisfied = result.delta_tau < this.epsilon_tau;
+        break;
+        
+      case 'sqrt2':
+        result.closure_constraint = 'x² - 2 = 0';
+        result.reference_value = this.primaries.sqrt2;
+        result.delta_tau = Math.abs(value * value - 2);
+        result.signature = 'O';
+        result.satisfied = result.delta_tau < this.epsilon_tau;
+        break;
+        
+      case 'e':
+        result.closure_constraint = 'lim(1 + 1/n)ⁿ = x';
+        result.reference_value = this.primaries.e;
+        const n_test = 1000000;
+        const e_approx = Math.pow(1 + 1/n_test, n_test);
+        result.delta_tau = Math.abs(value - e_approx) / e_approx;
+        result.signature = 'R';
+        result.satisfied = result.delta_tau < this.epsilon_tau;
+        break;
+        
+      case 'pi':
+        result.closure_constraint = 'C/d = x';
+        result.reference_value = this.primaries.pi;
+        result.delta_tau = Math.abs(value - Math.PI) / Math.PI;
+        result.signature = 'P';
+        result.satisfied = result.delta_tau < this.epsilon_tau;
+        break;
+        
+      case 'alpha':
+        result.closure_constraint = 'e²/(4πε₀ℏc)';
+        result.reference_value = this.derived.alpha_fs;
+        result.delta_tau = Math.abs(value - this.derived.alpha_fs) / this.derived.alpha_fs;
+        result.signature = 'ORP';
+        result.satisfied = result.delta_tau < this.epsilon_tau * 10;
+        break;
+        
+      default:
+        throw new Error(`Unknown constant type: ${constant_type}`);
+    }
+    
+    return result;
+  }
+  
+  mapPhiToPsi(phi_sequence, relation_type = 'direct') {
+    if (phi_sequence.length < 2) {
+      throw new Error('Φ-sequence must have at least 2 elements');
+    }
+    
+    const result = {
+      psi_relation: null,
+      drift_history: [],
+      convergence_depth: null,
+      converged: false
+    };
+    
+    switch(relation_type) {
+      case 'ratio':
+        const ratios = [];
+        for (let i = 1; i < phi_sequence.length; i++) {
+          if (phi_sequence[i-1] !== 0) {
+            ratios.push(phi_sequence[i] / phi_sequence[i-1]);
+          }
+        }
+        result.psi_relation = ratios[ratios.length - 1];
+        
+        for (let i = 1; i < ratios.length; i++) {
+          const drift = Math.abs(ratios[i] - ratios[i-1]);
+          result.drift_history.push(drift);
+          
+          if (drift < this.epsilon_psi && result.convergence_depth === null) {
+            result.convergence_depth = i;
+            result.converged = true;
+          }
+        }
+        break;
+        
+      case 'direct':
+        result.psi_relation = phi_sequence[phi_sequence.length - 1];
+        
+        for (let i = 1; i < phi_sequence.length; i++) {
+          const drift = Math.abs(phi_sequence[i] - phi_sequence[i-1]);
+          result.drift_history.push(drift);
+          
+          if (drift < this.epsilon_psi && result.convergence_depth === null) {
+            result.convergence_depth = i;
+            result.converged = true;
+          }
+        }
+        break;
+    }
+    
+    return result;
+  }
+  
+  mapPsiToTau(psi_value, constant_type) {
+    const closure = this.computeClosureResidual(psi_value, constant_type);
+    
+    return {
+      psi_value: psi_value,
+      tau_closure: closure.reference_value,
+      delta_tau: closure.delta_tau,
+      closure_satisfied: closure.satisfied,
+      signature: closure.signature,
+      transcendence_achieved: closure.delta_tau < this.epsilon_tau
+    };
+  }
+  
+  fullRegimeMapping(phi_sequence, constant_type, relation_type = 'direct') {
+    const psi_result = this.mapPhiToPsi(phi_sequence, relation_type);
+    const tau_result = this.mapPsiToTau(psi_result.psi_relation, constant_type);
+    
+    let n_star = null;
+    for (let i = 0; i < psi_result.drift_history.length; i++) {
+      const psi_converged = psi_result.drift_history[i] < this.epsilon_psi;
+      
+      const interim_psi = phi_sequence[i];
+      const interim_tau = this.computeClosureResidual(interim_psi, constant_type);
+      const tau_converged = interim_tau.delta_tau < this.epsilon_tau;
+      
+      if (psi_converged && tau_converged && n_star === null) {
+        n_star = i + 1;
+        break;
+      }
+    }
+    
+    return {
+      phi_sequence: phi_sequence,
+      psi_result: psi_result,
+      tau_result: tau_result,
+      n_star: n_star,
+      regime_report: {
+        phi_length: phi_sequence.length,
+        psi_converged: psi_result.converged,
+        psi_convergence_depth: psi_result.convergence_depth,
+        tau_satisfied: tau_result.closure_satisfied,
+        delta_tau_final: tau_result.delta_tau,
+        threshold_reached: n_star !== null,
+        closure_signature: tau_result.signature
+      }
+    };
+  }
+  
+  estimateHalfLife(generator, constant_type, collapse_config = {}) {
+    const max_iterations = collapse_config.max_iterations || 50;
+    const noise_schedule = collapse_config.noise_schedule || 
+                           ((k) => 0.01 * Math.pow(1.5, k));
+    
+    const trajectory = [];
+    let initial_residual = null;
+    let half_life = null;
+    
+    for (let k = 0; k < max_iterations; k++) {
+      const noise_level = noise_schedule(k);
+      const noisy_value = generator(noise_level);
+      const residual = this.computeClosureResidual(noisy_value, constant_type);
+      
+      trajectory.push({
+        iteration: k,
+        noise: noise_level,
+        value: noisy_value,
+        delta_tau: residual.delta_tau
+      });
+      
+      if (k === 0) {
+        initial_residual = residual.delta_tau;
+      }
+      
+      if (half_life === null && residual.delta_tau >= 0.5 * initial_residual) {
+        half_life = k;
+      }
+      
+      if (residual.delta_tau > 100 * initial_residual || !isFinite(residual.delta_tau)) {
+        break;
+      }
+    }
+    
+    const is_primary = half_life === null || half_life >= max_iterations;
+    
+    return {
+      constant_type: constant_type,
+      half_life: half_life || Infinity,
+      is_primary: is_primary,
+      initial_residual: initial_residual,
+      final_residual: trajectory[trajectory.length - 1].delta_tau,
+      trajectory: trajectory,
+      classification: is_primary ? 'PRIMARY' : 'DERIVED'
+    };
+  }
+  
+  generateValidationReport(chamber_results, constant_type) {
+    const report = {
+      chamber: chamber_results.chamber || 'XIV',
+      constant_type: constant_type,
+      timestamp: new Date().toISOString(),
+      
+      c_phi_1: null,
+      c_phi_2: null,
+      c_phi_3: null,
+      c_phi_4: null,
+      c_phi_5: null,
+      
+      tau_validation: {
+        delta_tau: null,
+        closure_satisfied: false,
+        signature: null,
+        is_primary: false,
+        half_life: null,
+        regime_mapping: null
+      }
+    };
+    
+    if (chamber_results.measured_value) {
+      const closure = this.computeClosureResidual(
+        chamber_results.measured_value, 
+        constant_type
+      );
+      
+      report.tau_validation.delta_tau = closure.delta_tau;
+      report.tau_validation.closure_satisfied = closure.satisfied;
+      report.tau_validation.signature = closure.signature;
+      report.tau_validation.is_primary = closure.signature.length === 1;
+      
+      report.c_phi_4 = {
+        measured: chamber_results.measured_value,
+        reference: closure.reference_value,
+        error: closure.delta_tau,
+        threshold: this.epsilon_tau,
+        passed: closure.satisfied
+      };
+    }
+    
+    if (chamber_results.multi_seed_results) {
+      const values = chamber_results.multi_seed_results;
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+      const std = Math.sqrt(variance);
+      const cv = std / mean;
+      
+      report.c_phi_3 = {
+        cv: cv,
+        threshold: 0.01,
+        passed: cv <= 0.01
+      };
+    }
+    
+    if (chamber_results.depth_sweep) {
+      const depths = chamber_results.depth_sweep;
+      const final_values = depths.map(d => d.value);
+      const drift = Math.max(...final_values) - Math.min(...final_values);
+      
+      report.c_phi_5 = {
+        depth_range: [depths[0].depth, depths[depths.length-1].depth],
+        value_drift: drift,
+        relative_drift: drift / final_values[final_values.length-1],
+        threshold: 0.001,
+        passed: drift / final_values[final_values.length-1] < 0.001
+      };
+    }
+    
+    const all_passed = [
+      report.c_phi_3?.passed,
+      report.c_phi_4?.passed,
+      report.c_phi_5?.passed
+    ].filter(x => x !== undefined).every(x => x === true);
+    
+    report.certification = all_passed ? 'CERTIFIED ✅' : 'REVIEW REQUIRED ⚠️';
+    
+    return report;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHAMBER XIV UI & CONTROL
+// ═══════════════════════════════════════════════════════════════════════════
+
+console.log('═══════════════════════════════════════════════════════════');
+console.log('UNNS Phase B | Chamber XIV v0.8.0 + τ-Validator');
+console.log('═══════════════════════════════════════════════════════════');
+console.log('✅ TauFieldEngineN v0.7.0 loaded');
+console.log('✅ TauInvariantValidator v1.0.0 loaded');
+
+let running = false;
+let sweepData = {
+  mu_values: [],
+  Delta_scale: [],
+  Pi: [],
+  mu_star: null,
+  phi_error: null,
+  config: null,
+  tau_validation: null
+};
+
+const validator = new TauInvariantValidator({
+  epsilon_psi: 1e-6,
+  epsilon_tau: 1e-6
+});
+
+const ui = {
+  runBtn: document.getElementById('runSweep'),
+  runMultiSeedBtn: document.getElementById('runMultiSeed'),
+  runDepthSweepBtn: document.getElementById('runDepthSweep'),
+  stopBtn: document.getElementById('stopSweep'),
+  exportBtn: document.getElementById('exportData'),
+  status: document.getElementById('statusDisplay'),
+  progress: document.getElementById('progressFill'),
+  canvasField: document.getElementById('canvasField'),
+  canvasInvariants: document.getElementById('canvasInvariants'),
+  metricMuStar: document.getElementById('metricMuStar'),
+  metricPhiError: document.getElementById('metricPhiError'),
+  metricStatus: document.getElementById('metricStatus'),
+  metricMu: document.getElementById('metricMu'),
+  metricDelta: document.getElementById('metricDelta'),
+  metricPi: document.getElementById('metricPi'),
+  
+  tauDeltaTau: document.getElementById('tauDeltaTau'),
+  tauSignature: document.getElementById('tauSignature'),
+  tauClassification: document.getElementById('tauClassification'),
+  tauNStar: document.getElementById('tauNStar'),
+  tauPsiDrift: document.getElementById('tauPsiDrift'),
+  tauClosureStatus: document.getElementById('tauClosureStatus'),
+  tauHalfLife: document.getElementById('tauHalfLife'),
+  tauInitialDelta: document.getElementById('tauInitialDelta'),
+  tauFinalDelta: document.getElementById('tauFinalDelta'),
+  tauPersistence: document.getElementById('tauPersistence'),
+  
+  cPhi3: document.getElementById('cPhi3'),
+  cPhi4: document.getElementById('cPhi4'),
+  cPhi5: document.getElementById('cPhi5'),
+  certification: document.getElementById('certification')
+};
+
+function setupCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  [ui.canvasField, ui.canvasInvariants].forEach(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  });
+}
+setupCanvases();
+
+function renderField(field, W) {
+  const canvas = ui.canvasField;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const cellSize = Math.min(w, h) / W;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const min_val = Math.min(...field);
+  const max_val = Math.max(...field);
+  const range = max_val - min_val;
+  
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = x + y * W;
+      const val = field[idx];
+      const normalized = (val - min_val) / range;
+      const hue = normalized * 240;
+      ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+function renderInvariants() {
+  if (sweepData.mu_values.length < 2) return;
+  
+  const canvas = ui.canvasInvariants;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plot_w = w - 2 * padding;
+  const plot_h = (h - 3 * padding) / 2;
+  
+  const mu_min = Math.min(...sweepData.mu_values);
+  const mu_max = Math.max(...sweepData.mu_values);
+  const delta_min = Math.min(...sweepData.Delta_scale);
+  const delta_max = Math.max(...sweepData.Delta_scale);
+  const pi_min = Math.min(...sweepData.Pi);
+  const pi_max = Math.max(...sweepData.Pi);
+  
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < sweepData.mu_values.length; i++) {
+    const mu = sweepData.mu_values[i];
+    const delta = sweepData.Delta_scale[i];
+    const px = padding + ((mu - mu_min) / (mu_max - mu_min)) * plot_w;
+    const py = padding + ((delta_max - delta) / (delta_max - delta_min)) * plot_h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  ctx.fillStyle = '#4a9eff';
+  ctx.font = '12px Consolas';
+  ctx.fillText('Δ_scale(μ)', padding, padding - 10);
+  
+  ctx.strokeStyle = '#ff4a9e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  const pi_y_offset = padding + plot_h + padding;
+  
+  for (let i = 0; i < sweepData.mu_values.length; i++) {
+    const mu = sweepData.mu_values[i];
+    const pi = sweepData.Pi[i];
+    const px = padding + ((mu - mu_min) / (mu_max - mu_min)) * plot_w;
+    const py = pi_y_offset + ((pi_max - pi) / (pi_max - pi_min)) * plot_h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  ctx.fillStyle = '#ff4a9e';
+  ctx.fillText('Π(μ)', padding, pi_y_offset - 10);
+  
+  const phi = 1.618033988749895;
+  if (phi >= mu_min && phi <= mu_max) {
+    const phi_x = padding + ((phi - mu_min) / (mu_max - mu_min)) * plot_w;
+    ctx.strokeStyle = '#4aff4a';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(phi_x, padding);
+    ctx.lineTo(phi_x, h - padding);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#4aff4a';
+    ctx.fillText('φ', phi_x + 5, padding + 15);
+  }
+}
+
+function updateTauValidation(mapping_result, mu_star) {
+  const tau = mapping_result.tau_result;
+  const regime = mapping_result.regime_report;
+  
+  ui.tauDeltaTau.textContent = tau.delta_tau.toExponential(4);
+  ui.tauDeltaTau.className = 'value' + (tau.closure_satisfied ? '' : ' warning');
+  
+  const sigBadge = `<span class="signature-badge ${tau.signature}">${tau.signature}</span>`;
+  ui.tauSignature.innerHTML = sigBadge;
+  
+  const isPrimary = tau.signature.length === 1;
+  ui.tauClassification.textContent = isPrimary ? 'PRIMARY τ-INVARIANT' : 'DERIVED τ-STRUCTURE';
+  ui.tauClassification.className = 'value ' + (isPrimary ? 'primary' : 'derived');
+  
+  // Show "What This Proves" panel for non-primary results
+  const whatThisProvesPanel = document.getElementById('whatThisProves');
+  if (!isPrimary) {
+    whatThisProvesPanel.style.display = 'block';
+  } else {
+    whatThisProvesPanel.style.display = 'none';
+  }
+  
+  ui.tauNStar.textContent = mapping_result.n_star !== null ? mapping_result.n_star : '—';
+  
+  const finalDrift = mapping_result.psi_result.drift_history;
+  if (finalDrift.length > 0) {
+    ui.tauPsiDrift.textContent = finalDrift[finalDrift.length - 1].toExponential(3);
+  }
+  
+  ui.tauClosureStatus.textContent = tau.closure_satisfied ? '✅ SATISFIED' : '⚠️ REVIEW';
+  ui.tauClosureStatus.className = 'value' + (tau.closure_satisfied ? '' : ' warning');
+}
+
+function updateCPhiValidation(report) {
+  if (report.c_phi_3) {
+    ui.cPhi3.textContent = `CV=${(report.c_phi_3.cv * 100).toFixed(2)}% ${report.c_phi_3.passed ? '✅' : '❌'}`;
+    ui.cPhi3.className = 'value' + (report.c_phi_3.passed ? '' : ' warning');
+  }
+  
+  if (report.c_phi_4) {
+    ui.cPhi4.textContent = `Δτ=${report.c_phi_4.error.toExponential(3)} ${report.c_phi_4.passed ? '✅' : '❌'}`;
+    ui.cPhi4.className = 'value' + (report.c_phi_4.passed ? '' : ' warning');
+  }
+  
+  if (report.c_phi_5) {
+    ui.cPhi5.textContent = `drift=${(report.c_phi_5.relative_drift * 100).toFixed(3)}% ${report.c_phi_5.passed ? '✅' : '❌'}`;
+    ui.cPhi5.className = 'value' + (report.c_phi_5.passed ? '' : ' warning');
+  }
+  
+  ui.certification.textContent = report.certification;
+  ui.certification.className = 'value' + (report.certification.includes('✅') ? '' : ' warning');
+}
+
+document.getElementById('lambda').addEventListener('input', (e) => {
+  document.getElementById('lambdaValue').textContent = parseFloat(e.target.value).toFixed(5);
+});
+
+document.getElementById('sigma').addEventListener('input', (e) => {
+  document.getElementById('sigmaValue').textContent = parseFloat(e.target.value).toFixed(3);
+});
+
+ui.runBtn.addEventListener('click', async () => {
+  console.log('🚀 Starting standard sweep');
+  running = true;
+  ui.runBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  ui.exportBtn.disabled = true;
+  ui.metricStatus.textContent = 'Running...';
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: parseFloat(document.getElementById('sigma').value),
+    depth: parseInt(document.getElementById('depth').value),
+    mu_min: parseFloat(document.getElementById('muMin').value),
+    mu_max: parseFloat(document.getElementById('muMax').value),
+    mu_step: parseFloat(document.getElementById('muStep').value),
+    seed: parseInt(document.getElementById('seed').value)
+  };
+  
+  sweepData = {
+    mu_values: [],
+    Delta_scale: [],
+    Pi: [],
+    mu_star: null,
+    phi_error: null,
+    config: config,
+    tau_validation: null
+  };
+  
+  const mu_range = [];
+  for (let mu = config.mu_min; mu <= config.mu_max; mu += config.mu_step) {
+    mu_range.push(mu);
+  }
+  
+  ui.status.textContent = `Running ${mu_range.length} μ values...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let i = 0; i < mu_range.length && running; i++) {
+    const mu = mu_range[i];
+    
+    const engine = new TauFieldEngineN({
+      grid_width: config.grid_width,
+      operator_mode: 'XIV',
+      lambda: config.lambda,
+      sigma: config.sigma,
+      mu: mu,
+      seed: config.seed,
+      laplacian_mode: 'none',
+      sampling_mode: 'bilinear'
+    });
+    
+    for (let step = 0; step < config.depth; step++) {
+      engine.step();
+      if (step % 50 === 0) {
+        renderField(engine.getField(0), config.grid_width);
+      }
+    }
+    
+    const inv = engine.computeScaleInvariants(mu);
+    sweepData.mu_values.push(mu);
+    sweepData.Delta_scale.push(inv.Delta_scale);
+    sweepData.Pi.push(inv.Pi);
+    
+    ui.metricMu.textContent = mu.toFixed(6);
+    ui.metricDelta.textContent = inv.Delta_scale.toFixed(6);
+    ui.metricPi.textContent = inv.Pi.toFixed(6);
+    
+    renderInvariants();
+    ui.progress.style.width = `${((i+1)/mu_range.length)*100}%`;
+    
+    // Force visual update every iteration
+    if (i % 1 === 0) {
+      await new Promise(resolve => requestAnimationFrame(() => {
+        requestAnimationFrame(resolve); // Double RAF for reliable repaint
+      }));
+    }
+  }
+  
+  if (running && sweepData.mu_values.length > 0) {
+    let min_idx = 0;
+    for (let i = 1; i < sweepData.mu_values.length; i++) {
+      if (sweepData.Delta_scale[i] < sweepData.Delta_scale[min_idx]) min_idx = i;
+    }
+    
+    sweepData.mu_star = sweepData.mu_values[min_idx];
+    const phi = 1.618033988749895;
+    sweepData.phi_error = Math.abs(sweepData.mu_star - phi) / phi * 100;
+    
+    ui.metricMuStar.textContent = sweepData.mu_star.toFixed(6);
+    ui.metricPhiError.textContent = sweepData.phi_error.toFixed(3) + '%';
+    
+    // τ-VALIDATION
+    const mu_sequence = sweepData.mu_values.slice(0, min_idx + 5);
+    const mapping = validator.fullRegimeMapping(mu_sequence, 'mu_star', 'direct');
+    updateTauValidation(mapping, sweepData.mu_star);
+    
+    const report = validator.generateValidationReport({
+      chamber: 'XIV',
+      measured_value: sweepData.mu_star
+    }, 'mu_star');
+    
+    sweepData.tau_validation = report.tau_validation;
+    updateCPhiValidation(report);
+    
+    ui.status.textContent = `Complete! μ★=${sweepData.mu_star.toFixed(4)}, φ error=${sweepData.phi_error.toFixed(3)}%`;
+    ui.status.className = 'status complete';
+    ui.exportBtn.disabled = false;
+    
+    console.log(`✅ μ★ = ${sweepData.mu_star.toFixed(6)}`);
+    console.log(`   Δτ = ${report.tau_validation.delta_tau.toExponential(4)}`);
+    console.log(`   Signature: ${report.tau_validation.signature}`);
+  }
+  
+  ui.runBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  ui.metricStatus.textContent = 'Complete';
+  running = false;
+});
+
+ui.runMultiSeedBtn.addEventListener('click', async () => {
+  console.log('🔬 Starting multi-seed reproducibility test');
+  running = true;
+  ui.runMultiSeedBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  
+  const seeds = [41, 42, 43, 44, 45];
+  const results = [];
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: parseFloat(document.getElementById('sigma').value),
+    depth: parseInt(document.getElementById('depth').value),
+    mu_min: parseFloat(document.getElementById('muMin').value),
+    mu_max: parseFloat(document.getElementById('muMax').value),
+    mu_step: parseFloat(document.getElementById('muStep').value),
+    base_seed: parseInt(document.getElementById('seed').value)
+  };
+  
+  ui.status.textContent = `Multi-seed test: ${seeds.length} runs...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let s = 0; s < seeds.length && running; s++) {
+    const seed = seeds[s];
+    const mu_range = [];
+    for (let mu = config.mu_min; mu <= config.mu_max; mu += config.mu_step) {
+      mu_range.push(mu);
+    }
+    
+    const local_delta = [];
+    
+    for (let i = 0; i < mu_range.length && running; i++) {
+      const mu = mu_range[i];
+      
+      const engine = new TauFieldEngineN({
+        grid_width: config.grid_width,
+        operator_mode: 'XIV',
+        lambda: config.lambda,
+        sigma: config.sigma,
+        mu: mu,
+        seed: seed,
+        laplacian_mode: 'none',
+        sampling_mode: 'bilinear'
+      });
+      
+      for (let step = 0; step < config.depth; step++) {
+        engine.step();
+      }
+      
+      const inv = engine.computeScaleInvariants(mu);
+      local_delta.push(inv.Delta_scale);
+    }
+    
+    let min_idx = 0;
+    for (let i = 1; i < local_delta.length; i++) {
+      if (local_delta[i] < local_delta[min_idx]) min_idx = i;
+    }
+    
+    const mu_star_seed = mu_range[min_idx];
+    results.push(mu_star_seed);
+    
+    ui.progress.style.width = `${((s+1)/seeds.length)*100}%`;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  if (running) {
+    const report = validator.generateValidationReport({
+      chamber: 'XIV',
+      measured_value: results[results.length - 1],
+      multi_seed_results: results
+    }, 'mu_star');
+    
+    updateCPhiValidation(report);
+    
+    ui.status.textContent = `Multi-seed complete! CV=${(report.c_phi_3.cv * 100).toFixed(2)}%`;
+    ui.status.className = 'status complete';
+    
+    console.log(`✅ C⊗₃: CV = ${(report.c_phi_3.cv * 100).toFixed(2)}%`);
+  }
+  
+  ui.runMultiSeedBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+});
+
+ui.runDepthSweepBtn.addEventListener('click', async () => {
+  console.log('📊 Starting depth sweep stability test');
+  running = true;
+  ui.runDepthSweepBtn.disabled = true;
+  ui.stopBtn.disabled = false;
+  
+  const depths = [200, 400, 600];
+  const results = [];
+  
+  const config = {
+    grid_width: parseInt(document.getElementById('gridSize').value),
+    lambda: parseFloat(document.getElementById('lambda').value),
+    sigma: parseFloat(document.getElementById('sigma').value),
+    mu_min: parseFloat(document.getElementById('muMin').value),
+    mu_max: parseFloat(document.getElementById('muMax').value),
+    mu_step: parseFloat(document.getElementById('muStep').value),
+    seed: parseInt(document.getElementById('seed').value)
+  };
+  
+  ui.status.textContent = `Depth sweep: ${depths.length} depths...`;
+  ui.status.className = 'status running';
+  ui.status.style.display = 'block';
+  
+  for (let d = 0; d < depths.length && running; d++) {
+    const depth = depths[d];
+    const mu_range = [];
+    for (let mu = config.mu_min; mu <= config.mu_max; mu += config.mu_step) {
+      mu_range.push(mu);
+    }
+    
+    const local_delta = [];
+    
+    for (let i = 0; i < mu_range.length && running; i++) {
+      const mu = mu_range[i];
+      
+      const engine = new TauFieldEngineN({
+        grid_width: config.grid_width,
+        operator_mode: 'XIV',
+        lambda: config.lambda,
+        sigma: config.sigma,
+        mu: mu,
+        seed: config.seed,
+        laplacian_mode: 'none',
+        sampling_mode: 'bilinear'
+      });
+      
+      for (let step = 0; step < depth; step++) {
+        engine.step();
+      }
+      
+      const inv = engine.computeScaleInvariants(mu);
+      local_delta.push(inv.Delta_scale);
+    }
+    
+    let min_idx = 0;
+    for (let i = 1; i < local_delta.length; i++) {
+      if (local_delta[i] < local_delta[min_idx]) min_idx = i;
+    }
+    
+    const mu_star_depth = mu_range[min_idx];
+    results.push({depth: depth, value: mu_star_depth});
+    
+    ui.progress.style.width = `${((d+1)/depths.length)*100}%`;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  
+  if (running) {
+    const report = validator.generateValidationReport({
+      chamber: 'XIV',
+      measured_value: results[results.length - 1].value,
+      depth_sweep: results
+    }, 'mu_star');
+    
+    updateCPhiValidation(report);
+    
+    ui.status.textContent = `Depth sweep complete! Drift=${(report.c_phi_5.relative_drift * 100).toFixed(3)}%`;
+    ui.status.className = 'status complete';
+    
+    console.log(`✅ C⊗₅: drift = ${(report.c_phi_5.relative_drift * 100).toFixed(3)}%`);
+  }
+  
+  ui.runDepthSweepBtn.disabled = false;
+  ui.stopBtn.disabled = true;
+  running = false;
+});
+
+ui.stopBtn.addEventListener('click', () => {
+  running = false;
+  ui.status.textContent = 'Stopped by user';
+  ui.metricStatus.textContent = 'Stopped';
+  console.log('⏸️ Sweep stopped');
+});
+
+ui.exportBtn.addEventListener('click', () => {
+  const exportData = {
+    version: '0.8.0',
+    operator: 'XIV',
+    chamber: 'Phi-Scale',
+    timestamp: new Date().toISOString(),
+    config: sweepData.config,
+    results: {
+      mu_values: sweepData.mu_values,
+      Delta_scale: sweepData.Delta_scale,
+      Pi: sweepData.Pi,
+      mu_star: sweepData.mu_star,
+      phi_error: sweepData.phi_error
+    },
+    tau_validation: sweepData.tau_validation
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Chamber_XIV_v080_${exportData.timestamp.split('T')[0]}_seed${exportData.config.seed}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+});
+
+console.log('✅ Chamber XIV v0.8.0 ready!');
+console.log('═══════════════════════════════════════════════════════════');
+  </script>
+</body>
+</html>

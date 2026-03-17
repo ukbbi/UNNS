@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UNNS — Chamber XXXVI (UI Overhaul): Ω-Gravity Diagnostics</title>
+<style>
+  :root{
+    --bg:#07080a;
+    --panel:#0d1016;
+    --panel2:#0a0c11;
+    --line:#1f2532;
+    --text:#e7ebf2;
+    --muted:#9aa4b2;
+
+    --pink:#ff4a9e;
+    --blue:#4a9eff;
+    --green:#46ff7a;
+    --amber:#ffb14a;
+    --red:#ff4a4a;
+
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --radius:14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background: radial-gradient(1200px 600px at 50% -10%, rgba(74,158,255,.20), transparent 60%),
+                radial-gradient(900px 500px at 85% 10%, rgba(255,74,158,.18), transparent 65%),
+                var(--bg);
+    color:var(--text);
+    font-family: var(--mono);
+  }
+
+  .wrap{
+    max-width: 1750px;
+    margin: 0 auto;
+    padding: 18px;
+  }
+
+  /* ======= TOP BAR ======= */
+  .top{
+    background: linear-gradient(135deg, rgba(255,74,158,.12), rgba(74,158,255,.10));
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 16px 14px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 10px;
+    z-index: 5;
+    backdrop-filter: blur(8px);
+  }
+
+  .top h1{
+    margin:0;
+    letter-spacing: 2px;
+    font-size: 20px;
+    color: var(--pink);
+  }
+  .sub{
+    margin-top:6px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .runboard{
+    margin-top: 12px;
+    display:grid;
+    grid-template-columns: 1.2fr 2.2fr 1.6fr;
+    gap: 12px;
+  }
+
+  .card{
+    background: rgba(13,16,22,.85);
+    border:1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .chip{
+    border:1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    background: rgba(0,0,0,.25);
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+  }
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot.green{background: var(--green)}
+  .dot.pink{background: var(--pink)}
+  .dot.blue{background: var(--blue)}
+  .dot.amber{background: var(--amber)}
+  .dot.red{background: var(--red)}
+
+  .ctrlgrid{
+    display:grid;
+    grid-template-columns: repeat(6, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  label{
+    display:block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type="number"], select, input[type="range"]{
+    width:100%;
+    background: rgba(0,0,0,.35);
+    border: 1px solid #2a3244;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-family: var(--mono);
+    outline: none;
+  }
+  input[type="range"]{ padding: 9px 0; }
+  .mini{
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .btnbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    align-items:center;
+  }
+  button{
+    border: 1px solid var(--line);
+    background: rgba(0,0,0,.25);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 10px 12px;
+    cursor:pointer;
+    font-family: var(--mono);
+    transition: transform .07s ease, border-color .2s ease;
+  }
+  button:hover{ border-color: rgba(255,74,158,.55); transform: translateY(-1px); }
+  button.primary{
+    background: linear-gradient(135deg, rgba(255,74,158,.85), rgba(255,74,158,.55));
+    border-color: rgba(255,74,158,.65);
+  }
+  button.secondary{
+    background: linear-gradient(135deg, rgba(74,158,255,.55), rgba(74,158,255,.25));
+    border-color: rgba(74,158,255,.55);
+  }
+  button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+  }
+
+  .progress{
+    margin-top: 10px;
+    height: 8px;
+    border-radius: 999px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background: rgba(0,0,0,.3);
+  }
+  .fill{
+    height:100%;
+    width:0%;
+    background: linear-gradient(90deg, var(--pink), var(--blue));
+    transition: width .15s linear;
+  }
+
+  /* ======= MAIN GRID ======= */
+  .grid{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 420px 1fr 420px;
+    gap: 14px;
+    align-items:start;
+  }
+
+  .panel{
+    background: rgba(13,16,22,.78);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .ph{
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+  }
+  .ph strong{ color: var(--pink); letter-spacing: 1px; }
+  .pb{ padding: 14px; }
+
+  /* ======= MODE CARDS ======= */
+  .mode{
+    border:1px solid #2a3244;
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(0,0,0,.28);
+    cursor:pointer;
+    transition: border-color .18s ease, transform .07s ease;
+    margin-bottom: 10px;
+  }
+  .mode:hover{ border-color: rgba(255,74,158,.55); transform: translateY(-1px); }
+  .mode.active{
+    border-color: rgba(70,255,122,.75);
+    box-shadow: 0 0 0 2px rgba(70,255,122,.12) inset;
+  }
+  .mtitle{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 6px;
+  }
+  .mtitle span{ color: var(--pink); font-size: 14px; }
+  .expect{
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border:1px solid var(--line);
+    color: var(--muted);
+  }
+  .expect.pass{ color: var(--green); border-color: rgba(70,255,122,.35); }
+  .expect.fail{ color: var(--red); border-color: rgba(255,74,74,.35); }
+  .mdesc{
+    font-size: 12px;
+    color: var(--muted);
+    line-height:1.5;
+  }
+
+  /* ======= STRUCTURAL MODE ELEMENTS ======= */
+  .mode-diagram{
+    font-family: var(--mono);
+    font-size: 13px;
+    margin: 8px 0 10px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,.35);
+    border-left: 3px solid var(--blue);
+    border-radius: 6px;
+    color: var(--text);
+    letter-spacing: 0.5px;
+  }
+  .mode-badge{
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    background: rgba(0,0,0,.25);
+    margin-top: 6px;
+  }
+  .mode-demonstrates{
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 6px 8px;
+    background: rgba(74,158,255,.08);
+    border-left: 2px solid var(--blue);
+    border-radius: 4px;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .mode-demonstrates strong{
+    color: var(--blue);
+  }
+
+
+  .falsify{
+    margin-top: 12px;
+    border:1px solid rgba(255,74,74,.25);
+    background: rgba(255,74,74,.06);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .falsify strong{ color: var(--red); }
+  .falsify ul{ margin:8px 0 0 18px; color: var(--muted); font-size: 12px; line-height:1.5; }
+
+  /* ======= CENTER: LAYERS ======= */
+  .layerbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    border:1px solid var(--line);
+    background: rgba(0,0,0,.22);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor:pointer;
+  }
+  .tab.active{
+    border-color: rgba(74,158,255,.55);
+    color: var(--text);
+  }
+
+  .viz{
+    margin-top: 12px;
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .vbox{
+    background: rgba(0,0,0,.28);
+    border:1px solid #2a3244;
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .vlabel{
+    font-size: 12px;
+    color: var(--pink);
+    margin-bottom: 8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .hint{ color: var(--muted); font-size: 11px; }
+  canvas{ width:100%; height:auto; border-radius: 10px; display:block; background:#000; }
+
+  /* ======= RIGHT: VERDICT STACK ======= */
+  .verdict{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+  }
+  .metric{
+    background: rgba(0,0,0,.28);
+    border:1px solid #2a3244;
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .ml{ font-size: 11px; color: var(--muted); }
+  .mv{
+    margin-top: 6px;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .mv.good{ color: var(--green); }
+  .mv.bad{ color: var(--red); }
+  .mv.warn{ color: var(--amber); }
+
+  .stack{
+    margin-top: 12px;
+    border:1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+  }
+  .stack .sh{
+    padding: 10px 12px;
+    background: rgba(255,255,255,.03);
+    border-bottom:1px solid var(--line);
+    color: var(--pink);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .stack .sb{ padding: 12px; color: var(--muted); font-size: 12px; line-height:1.6; }
+  .gate{
+    margin-top: 10px;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:8px;
+  }
+  .gitem{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    border:1px solid #2a3244;
+    border-radius: 12px;
+    padding: 10px;
+    background: rgba(0,0,0,.22);
+  }
+  .gitem strong{ color: var(--text); font-size: 12px; }
+  .gitem span{ font-size: 12px; color: var(--muted); }
+  .tag{
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border:1px solid var(--line);
+  }
+  .tag.pass{ color: var(--green); border-color: rgba(70,255,122,.35); }
+  .tag.fail{ color: var(--red); border-color: rgba(255,74,74,.35); }
+
+  /* ======= BOTTOM: LOGS ======= */
+  .bottom{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 14px;
+  }
+  table{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  th, td{
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(31,37,50,.8);
+    text-align:left;
+  }
+  th{ color: var(--text); font-weight: 600; }
+  .pill{
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border:1px solid var(--line);
+  }
+  .pill.pass{ color: var(--green); border-color: rgba(70,255,122,.35); }
+  .pill.fail{ color: var(--red); border-color: rgba(255,74,74,.35); }
+
+  .log{
+    height: 220px;
+    overflow:auto;
+    padding: 10px;
+    background: rgba(0,0,0,.28);
+    border:1px solid #2a3244;
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height:1.45;
+    white-space: pre-wrap;
+  }
+
+  @media (max-width: 1400px){
+    .grid{ grid-template-columns: 1fr; }
+    .bottom{ grid-template-columns: 1fr; }
+    .ctrlgrid{ grid-template-columns: repeat(3, minmax(130px, 1fr)); }
+  }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>CHAMBER XXXVI — Ω-Gravity Diagnostics (UI Overhaul)</h1>
+    <div class="sub">
+      Joint Admissibility (A<sub>joint</sub>) · Ω-Drift · σ(Ω) · Mode A–D boundary tests · v1.3 engine behavior preserved
+    </div>
+
+    <div class="runboard">
+      <div class="card">
+        <div class="row">
+          <span class="chip"><span class="dot pink"></span><strong id="chipMode">Mode A</strong></span>
+          <span class="chip"><span class="dot blue"></span>β <span id="chipBeta">10</span></span>
+          <span class="chip"><span class="dot amber"></span>λ <span id="chipLambda">0.10</span></span>
+          <span class="chip"><span class="dot green"></span>Engine <span>v1.3</span></span>
+        </div>
+        <div class="mini" style="margin-top:10px;">
+          The UI is designed to surface falsification *immediately* (A_joint + gates), not after inspection.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ctrlgrid">
+          <div>
+            <label>Grid</label>
+            <select id="gridSize">
+              <option value="64">64×64</option>
+              <option value="128" selected>128×128</option>
+              <option value="192">192×192</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Steps</label>
+            <input id="steps" type="number" min="100" max="4000" step="100" value="500" />
+          </div>
+
+          <div>
+            <label>τ Coupling λ</label>
+            <input id="lambda" type="range" min="0.05" max="0.30" step="0.01" value="0.10" />
+            <div class="mini">λ = <span id="lambdaVal">0.10</span></div>
+          </div>
+
+          <div>
+            <label>Ω Coupling</label>
+            <input id="omegaCoupling" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+            <div class="mini">k = <span id="omegaCouplingVal">1.0</span></div>
+          </div>
+
+          <div>
+            <label>Stability β</label>
+            <input id="beta" type="range" min="0" max="50" step="1" value="10" />
+            <div class="mini">β = <span id="betaVal">10</span></div>
+          </div>
+
+          <div>
+            <label>Seed</label>
+            <input id="seed" type="number" min="1" value="137042" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="btnbar">
+          <button class="primary" id="runBtn">▶ Run</button>
+          <button class="secondary" id="runMultiBtn">▶▶ Run 5 Seeds</button>
+          <button id="stopBtn" disabled>⏸ Stop</button>
+          <button id="exportBtn" disabled>💾 Export JSON</button>
+        </div>
+        <div class="progress"><div class="fill" id="progressFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: MODES -->
+    <div class="panel">
+      <div class="ph"><strong>Ω–τ STRUCTURAL COUPLING MODES</strong></div>
+      <div class="pb">
+        <p style="color: var(--muted); font-size: 12px; line-height: 1.6; margin-bottom: 16px;">
+          Each mode specifies how source geometry (Σ), selection structure (Ω), 
+          and stabilizing dynamics (τ) are allowed to interact. 
+          No outcomes or expectations are implied.
+        </p>
+
+        <div class="mode active" data-mode="A">
+          <div class="mtitle">
+            <span>Mode A — Fixed Ω Background</span>
+          </div>
+          <div class="mode-diagram">Σ → Ω → τ</div>
+          <div class="mdesc">
+            τ evolves on a fixed Ω geometry. 
+            Ω does not respond to τ.
+          </div>
+          <div class="mode-demonstrates">
+            <strong>Demonstrates:</strong> Layer-respecting dynamics (τ admissible, Ω stationary, Joint: PASS)
+          </div>
+          <span class="mode-badge">Classical background</span>
+        </div>
+
+        <div class="mode" data-mode="B">
+          <div class="mtitle">
+            <span>Mode B — Structurally Non-Stationary Ω</span>
+          </div>
+          <div class="mode-diagram">Σ → Ω ↔ τ</div>
+          <div class="mdesc">
+            Ω and τ evolve simultaneously with mutual feedback.
+            Tests whether τ can remain admissible when Ω becomes structurally unstable.
+          </div>
+          <div class="mode-demonstrates">
+            <strong>Demonstrates:</strong> τ survives but Ω coherence fails (τ admissible, Ω non-stationary, Joint: FAIL)
+          </div>
+          <span class="mode-badge">Non-stationary Ω / Recursive coupling</span>
+        </div>
+
+        <div class="mode" data-mode="C">
+          <div class="mtitle">
+            <span>Mode C — Semiclassical Backreaction</span>
+          </div>
+          <div class="mode-diagram">Σ → Ω ⇢ τ</div>
+          <div class="mdesc">
+            τ evolves within Ω.
+            Ω responds slowly via accumulated τ stress.
+          </div>
+          <div class="mode-demonstrates">
+            <strong>Demonstrates:</strong> τ survives but Ω coherence fails via stress accumulation (Joint: FAIL)
+          </div>
+          <span class="mode-badge">Mediated coupling</span>
+        </div>
+
+        <div class="mode" data-mode="D">
+          <div class="mtitle">
+            <span>Mode D — Direct Layer Violation</span>
+          </div>
+          <div class="mode-diagram">Σ → τ → Ω</div>
+          <div class="mdesc">
+            τ rules are applied directly to Ω 
+            without mediation or selection hierarchy.
+          </div>
+          <div class="mode-demonstrates">
+            <strong>Demonstrates:</strong> True layer violation (everything collapses, Joint: FAIL)
+          </div>
+          <span class="mode-badge">Boundary stress test</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CENTER: LAYERS -->
+    <div class="panel">
+      <div class="ph">
+        <div class="layerbar">
+          <strong>LAYER VIEW</strong>
+          <div class="tabs">
+            <div class="tab active" data-focus="all">All</div>
+            <div class="tab" data-focus="sigma">Σ Focus</div>
+            <div class="tab" data-focus="omega">Ω Focus</div>
+            <div class="tab" data-focus="tau">τ Focus</div>
+          </div>
+        </div>
+      </div>
+      <div class="pb">
+        <div class="viz">
+          <div class="vbox" id="boxSigma">
+            <div class="vlabel">Σ Layer <span class="hint">seed geometry</span></div>
+            <canvas id="canvasSigma" width="420" height="420"></canvas>
+          </div>
+          <div class="vbox" id="boxOmega">
+            <div class="vlabel">Ω Layer <span class="hint">selector / geometry</span></div>
+            <canvas id="canvasOmega" width="420" height="420"></canvas>
+          </div>
+          <div class="vbox" id="boxTau">
+            <div class="vlabel">τ Layer <span class="hint">field dynamics</span></div>
+            <canvas id="canvasTau" width="420" height="420"></canvas>
+          </div>
+        </div>
+        <div class="mini" style="margin-top:12px;">
+          Note: β parameter controls Ω stability. In Mode B, higher β creates stronger gating of τ updates based on geometric stability.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: VERDICT -->
+    <div class="panel">
+      <div class="ph"><strong>JOINT ADMISSIBILITY VERDICT</strong></div>
+      <div class="pb">
+
+        <!-- HEADLINE: Layer-Level Breakdown -->
+        <div class="stack" style="margin-top:0;">
+          <div class="sh">Primary Verdict</div>
+          <div class="sb">
+            <div class="gate">
+              <div class="gitem">
+                <strong>τ-admissible</strong>
+                <span class="tag" id="layerTau">—</span>
+              </div>
+              <div class="gitem">
+                <strong>Ω-stationary</strong>
+                <span class="tag" id="layerOmega">—</span>
+              </div>
+              <div class="gitem">
+                <strong>Joint: PASS/FAIL</strong>
+                <span class="tag" id="layerJoint">—</span>
+              </div>
+            </div>
+            <div class="mini" style="margin-top:10px; color: var(--muted);">
+              Mode B/C: τ survives, Ω fails → Joint: FAIL. Mode A: both pass → Joint: PASS. Mode D: both fail → Joint: FAIL.
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <div class="verdict" style="margin-top:16px;">
+          <div class="metric">
+            <div class="ml">A(τ)</div>
+            <div class="mv" id="mA">—</div>
+          </div>
+          <div class="metric">
+            <div class="ml">Ω-drift</div>
+            <div class="mv" id="mDrift">—</div>
+          </div>
+
+          <div class="metric">
+            <div class="ml">σ(Ω)</div>
+            <div class="mv" id="mSigmaOmega">—</div>
+          </div>
+          <div class="metric">
+            <div class="ml">Ω-coherence ⟨w⟩</div>
+            <div class="mv" id="mW">—</div>
+          </div>
+
+          <div class="metric">
+            <div class="ml">A_joint</div>
+            <div class="mv" id="mJoint">—</div>
+          </div>
+          <div class="metric">
+            <div class="ml">Step</div>
+            <div class="mv" id="mStep">0</div>
+          </div>
+        </div>
+
+        <!-- Gate Thresholds -->
+        <div class="stack" style="margin-top:12px;">
+          <div class="sh">Joint admissibility gates</div>
+          <div class="sb">
+            <div class="gate">
+              <div class="gitem">
+                <strong>A(τ) ≥ 0.70</strong>
+                <span class="tag" id="gA">—</span>
+              </div>
+              <div class="gitem">
+                <strong>Ω-drift ≤ 0.30</strong>
+                <span class="tag" id="gD">—</span>
+              </div>
+              <div class="gitem">
+                <strong>σ(Ω) ≤ 0.50</strong>
+                <span class="tag" id="gS">—</span>
+              </div>
+            </div>
+            <div class="mini" style="margin-top:10px;">
+              The three gates must all pass for joint admissibility. Mode B typically shows layer-independent τ coherence (τ-pass) with Ω non-stationarity (Ω-fail), resulting in pipeline rejection (joint-fail).
+            </div>
+          </div>
+        </div>
+
+        <!-- B vs C Diagnostic -->
+        <div class="stack" style="margin-top:12px;">
+          <div class="sh">Mode B vs C Diagnostic</div>
+          <div class="sb">
+            <div class="mini" style="line-height:1.6;">
+              <strong>Ω-coherence ⟨w⟩</strong> distinguishes coupling mechanisms:<br>
+              • Mode B: Direct recursive coupling → ⟨w⟩ drops sharply as Ω destabilizes<br>
+              • Mode C: Stress-mediated coupling → ⟨w⟩ decays gradually via accumulation<br>
+              • Mode A/D: ⟨w⟩ stays high (A) or collapses completely (D)
+            </div>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:12px;">
+          <div class="sh">Run status</div>
+          <div class="sb" id="statusText">Ready.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom">
+    <div class="panel">
+      <div class="ph"><strong>MULTI-SEED TABLE</strong></div>
+      <div class="pb">
+        <table>
+          <thead>
+            <tr>
+              <th>Seed</th>
+              <th>A(τ)</th>
+              <th>Ω-drift</th>
+              <th>σ(Ω)</th>
+              <th>A_joint</th>
+            </tr>
+          </thead>
+          <tbody id="multiBody">
+            <tr><td colspan="5" style="color:#9aa4b2;">Run “5 Seeds” to populate.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><strong>RUN LOG</strong></div>
+      <div class="pb">
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===========================
+   UI OVERHAUL — ENGINE CORE
+   (based on your v1.3 file)
+   =========================== */
+
+let running = false;
+let selectedMode = 'A';
+let currentEngine = null;
+let multiSeedResults = [];
+
+const $ = (id) => document.getElementById(id);
+
+function logLine(s){
+  const el = $("log");
+  el.textContent += s + "\\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(s){
+  $("statusText").textContent = s;
+}
+
+function setChip(){
+  $("chipMode").textContent = "Mode " + selectedMode;
+  $("chipBeta").textContent = $("beta").value;
+  $("chipLambda").textContent = parseFloat($("lambda").value).toFixed(2);
+}
+
+/* ===== Mode selector ===== */
+document.querySelectorAll(".mode").forEach(m=>{
+  m.addEventListener("click", ()=>{
+    document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));
+    m.classList.add("active");
+    selectedMode = m.getAttribute("data-mode");
+    setChip();
+    logLine("Selected Mode " + selectedMode);
+  });
+});
+
+/* ===== Layer focus tabs ===== */
+function setFocus(focus){
+  const boxes = {
+    sigma: $("boxSigma"),
+    omega: $("boxOmega"),
+    tau: $("boxTau"),
+  };
+  const all = ["sigma","omega","tau"];
+  if(focus==="all"){
+    all.forEach(k=>boxes[k].style.opacity="1");
+  } else {
+    all.forEach(k=>boxes[k].style.opacity = (k===focus ? "1" : "0.35"));
+  }
+}
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    const focus = t.getAttribute("data-focus");
+    setFocus(focus==="all" ? "all" : focus);
+  });
+});
+
+/* ===== Sliders ===== */
+$("lambda").addEventListener("input", e=>{
+  $("lambdaVal").textContent = parseFloat(e.target.value).toFixed(2);
+  setChip();
+});
+$("omegaCoupling").addEventListener("input", e=>{
+  $("omegaCouplingVal").textContent = parseFloat(e.target.value).toFixed(1);
+});
+$("beta").addEventListener("input", e=>{
+  $("betaVal").textContent = parseFloat(e.target.value).toFixed(0);
+  setChip();
+});
+
+/* ===========================
+   ENGINE (copied logic style)
+   =========================== */
+
+class OmegaGravityEngineV13 {
+  constructor(config){
+    this.W = config.grid_size;
+    this.size = this.W*this.W;
+    this.mode = config.mode;
+
+    this.lambda = config.lambda;
+    this.kappa = config.kappa;
+    this.sigma = config.sigma || 0.02;
+    this.omega_coupling = config.omega_coupling || 1.0;
+    this.beta = config.beta || 10.0;
+
+    this.Sigma = new Float64Array(this.size);
+    this.Omega = new Float64Array(this.size);
+    this.Omega_initial = new Float64Array(this.size);
+    this.Omega_prev = new Float64Array(this.size);
+    this.Tau = new Float64Array(this.size);
+    this.Tau_next = new Float64Array(this.size);
+    this.Omega_next = new Float64Array(this.size);
+
+    this.step = 0;
+    this.metrics = {
+      omega_drift: 0,
+      admissibility: 0,
+      stability: 0,
+      avg_stability_weight: 1.0,
+      joint_admissible: false
+    };
+    this.history = { omega_std: [], divergence: [] };
+    this.renorm_counter = 0;
+
+    this.seed = config.seed;
+    this.rng = this.createRNG(this.seed);
+
+    this.initialize();
+  }
+
+  createRNG(seed){
+    let state = seed >>> 0;
+    return {
+      random() {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+      },
+      gaussian() {
+        let u1 = this.random();
+        let u2 = this.random();
+        if (u1 < 1e-10) u1 = 1e-10;
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+    };
+  }
+
+  initialize(){
+    for(let i=0;i<this.size;i++){
+      this.Sigma[i] = this.rng.random()*2*Math.PI;
+    }
+
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+        const cx = x - this.W/2;
+        const cy = y - this.W/2;
+        const r = Math.sqrt(cx*cx + cy*cy)/(this.W/2);
+        this.Omega[idx] = this.kappa * Math.exp(-r*r/0.5);
+        this.Omega_initial[idx] = this.Omega[idx];
+        this.Omega_prev[idx] = this.Omega[idx];
+      }
+    }
+
+    for(let i=0;i<this.size;i++){
+      if(this.Omega[i] > 0.1*this.kappa) this.Tau[i] = this.Sigma[i];
+      else this.Tau[i] = 0;
+    }
+  }
+
+  evolve(){
+    this.step++;
+    if(this.mode==='A') this.modeA();
+    if(this.mode==='B') this.modeB();
+    if(this.mode==='C') this.modeC();
+    if(this.mode==='D') this.modeD();
+    this.computeDiagnostics();
+  }
+
+  modeA(){
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+        if(this.Omega[idx] < 0.1*this.kappa){ this.Tau_next[idx]=0; continue; }
+
+        const right = this.Tau[((x+1)%this.W)+y*this.W];
+        const left  = this.Tau[((x-1+this.W)%this.W)+y*this.W];
+        const up    = this.Tau[x+((y+1)%this.W)*this.W];
+        const down  = this.Tau[x+((y-1+this.W)%this.W)*this.W];
+        const lap = (right+left+up+down-4*this.Tau[idx]);
+        const noise = this.sigma*this.rng.gaussian();
+
+        this.Tau_next[idx] = this.Tau[idx] + this.lambda*Math.sin(lap) + noise;
+        this.Tau_next[idx] *= this.Omega[idx]/this.kappa;
+      }
+    }
+    [this.Tau, this.Tau_next] = [this.Tau_next, this.Tau];
+  }
+
+  modeB(){
+    let sumW = 0;
+
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+
+        const right = this.Tau[((x+1)%this.W)+y*this.W];
+        const left  = this.Tau[((x-1+this.W)%this.W)+y*this.W];
+        const up    = this.Tau[x+((y+1)%this.W)*this.W];
+        const down  = this.Tau[x+((y-1+this.W)%this.W)*this.W];
+        const lap = (right+left+up+down-4*this.Tau[idx]);
+        const noise = this.sigma*this.rng.gaussian();
+
+        const dO = Math.abs(this.Omega[idx] - this.Omega_prev[idx]);
+        const w = Math.exp(-this.beta*dO);
+        sumW += w;
+
+        let update = (this.lambda*Math.sin(lap) + noise) * w;
+        this.Tau_next[idx] = this.Tau[idx] + update;
+      }
+    }
+    this.metrics.avg_stability_weight = sumW/this.size;
+
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+
+        const right = this.Omega[((x+1)%this.W)+y*this.W];
+        const left  = this.Omega[((x-1+this.W)%this.W)+y*this.W];
+        const up    = this.Omega[x+((y+1)%this.W)*this.W];
+        const down  = this.Omega[x+((y-1+this.W)%this.W)*this.W];
+        const lap = (right+left+up+down-4*this.Omega[idx]);
+        const noise = this.sigma*this.rng.gaussian();
+
+        this.Omega_next[idx] = this.Omega[idx] + this.lambda*this.omega_coupling*Math.sin(lap) + noise;
+
+        const stress = this.Tau[idx]*this.Tau[idx];
+        this.Omega_next[idx] += 0.01*stress*Math.sin(lap);
+
+        this.Omega_next[idx] = Math.max(0, this.Omega_next[idx]);
+      }
+    }
+
+    this.Omega_prev.set(this.Omega);
+    [this.Tau, this.Tau_next] = [this.Tau_next, this.Tau];
+    [this.Omega, this.Omega_next] = [this.Omega_next, this.Omega];
+  }
+
+  modeC(){
+    // τ confined to Ω-admissible (v1.3 fix)
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+        if(this.Omega[idx] <= 0.1*this.kappa){ this.Tau_next[idx]=0; continue; }
+
+        const right = this.Tau[((x+1)%this.W)+y*this.W];
+        const left  = this.Tau[((x-1+this.W)%this.W)+y*this.W];
+        const up    = this.Tau[x+((y+1)%this.W)*this.W];
+        const down  = this.Tau[x+((y-1+this.W)%this.W)*this.W];
+        const lap = (right+left+up+down-4*this.Tau[idx]);
+        const noise = this.sigma*this.rng.gaussian();
+
+        this.Tau_next[idx] = this.Tau[idx] + this.lambda*Math.sin(lap) + noise;
+        this.Tau_next[idx] *= this.Omega[idx]/this.kappa;
+      }
+    }
+
+    // slow Ω response
+    const epsilon = 0.002;
+    let sumT = 0;
+    const T = new Float64Array(this.size);
+    for(let i=0;i<this.size;i++){ T[i]=this.Tau[i]*this.Tau[i]; sumT += T[i]; }
+    const meanT = sumT/this.size;
+
+    for(let i=0;i<this.size;i++){
+      const resp = epsilon*(T[i]-meanT);
+      this.Omega[i] += resp;
+      this.Omega[i] = Math.max(0.1, Math.min(2.0*this.kappa, this.Omega[i]));
+    }
+
+    // soft renorm every 10 steps, re-clamp AFTER scaling (v1.3 fix)
+    this.renorm_counter++;
+    if(this.renorm_counter>=10){
+      let sumO=0;
+      for(let i=0;i<this.size;i++) sumO += this.Omega[i];
+      const target = this.kappa*this.size*0.5;
+      const scale = target/Math.max(1e-12, sumO);
+      for(let i=0;i<this.size;i++){
+        this.Omega[i] *= scale;
+        this.Omega[i] = Math.max(0.1, Math.min(2.0*this.kappa, this.Omega[i]));
+      }
+      this.renorm_counter=0;
+    }
+
+    [this.Tau, this.Tau_next] = [this.Tau_next, this.Tau];
+  }
+
+  modeD(){
+    for (let y=0;y<this.W;y++){
+      for (let x=0;x<this.W;x++){
+        const idx = x + y*this.W;
+        const right = this.Omega[((x+1)%this.W)+y*this.W];
+        const phase = right - this.Omega[idx];
+        const noise = this.sigma*this.rng.gaussian();
+
+        this.Omega_next[idx] = this.Omega[idx] + this.lambda*Math.sin(phase) + noise;
+        this.Tau_next[idx] = this.Tau[idx] + this.Omega_next[idx]*0.1;
+      }
+    }
+    [this.Omega, this.Omega_next] = [this.Omega_next, this.Omega];
+    [this.Tau, this.Tau_next] = [this.Tau_next, this.Tau];
+  }
+
+  computeOmegaDrift(){
+    let sDiff=0, sInit=0;
+    for(let i=0;i<this.size;i++){
+      const d = this.Omega[i]-this.Omega_initial[i];
+      sDiff += d*d;
+      sInit += this.Omega_initial[i]*this.Omega_initial[i];
+    }
+    return Math.sqrt(sDiff/Math.max(1e-12,sInit));
+  }
+
+  computeDiagnostics(){
+    this.metrics.omega_drift = this.computeOmegaDrift();
+
+    // A(τ): count admissible points
+    let ok=0;
+    const thr = 0.1*this.kappa;
+    for(let i=0;i<this.size;i++){
+      if(this.Omega[i]>thr && Math.abs(this.Tau[i])<2*Math.PI) ok++;
+    }
+    this.metrics.admissibility = ok/this.size;
+
+    // σ(Ω)
+    let sumO=0;
+    for(let i=0;i<this.size;i++) sumO+=this.Omega[i];
+    const meanO = sumO/this.size;
+    let ss=0;
+    for(let i=0;i<this.size;i++){ const dev=this.Omega[i]-meanO; ss += dev*dev; }
+    const std = Math.sqrt(ss/this.size);
+    this.history.omega_std.push(std);
+    const recent = this.history.omega_std.slice(-10);
+    this.metrics.stability = recent.reduce((a,b)=>a+b,0)/recent.length;
+
+    // joint admissibility
+    this.metrics.joint_admissible =
+      this.metrics.admissibility >= 0.70 &&
+      this.metrics.omega_drift <= 0.30 &&
+      this.metrics.stability <= 0.50;
+  }
+}
+
+/* ===== Rendering ===== */
+function renderLayer(canvas, field, W, scheme){
+  const ctx = canvas.getContext("2d");
+  const size = canvas.width;
+  const cell = size/W;
+
+  // find min/max
+  let min=Infinity, max=-Infinity;
+  for(let i=0;i<field.length;i++){ const v=field[i]; if(v<min)min=v; if(v>max)max=v; }
+  const range = Math.max(1e-12, max-min);
+
+  for(let y=0;y<W;y++){
+    for(let x=0;x<W;x++){
+      const idx = x+y*W;
+      const v = field[idx];
+      const t = (v-min)/range;
+
+      let color="#000";
+      if(scheme==="hue"){
+        const hue = t*240;
+        color = `hsl(${hue}, 70%, 52%)`;
+      } else if(scheme==="heat"){
+        const r = Math.floor(255*t);
+        const b = Math.floor(255*(1-t));
+        color = `rgb(${r}, 110, ${b})`;
+      }
+      ctx.fillStyle = color;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+    }
+  }
+}
+
+/* ===== Metrics UI ===== */
+function paint(){
+  if(!currentEngine) return;
+
+  const m = currentEngine.metrics;
+
+  $("mStep").textContent = currentEngine.step;
+
+  // A_joint
+  $("mJoint").textContent = m.joint_admissible ? "PASS" : "FAIL";
+  $("mJoint").className = "mv " + (m.joint_admissible ? "good" : "bad");
+
+  // A(τ)
+  const aPct = (m.admissibility*100).toFixed(1) + "%";
+  $("mA").textContent = aPct;
+  $("mA").className = "mv " + (m.admissibility>=0.80 ? "good" : m.admissibility>=0.50 ? "warn" : "bad");
+
+  // Ω-drift
+  $("mDrift").textContent = m.omega_drift.toFixed(4);
+  $("mDrift").className = "mv " + (m.omega_drift<0.05 ? "good" : m.omega_drift<=0.30 ? "warn" : "bad");
+
+  // σ(Ω)
+  $("mSigmaOmega").textContent = m.stability.toFixed(4);
+  $("mSigmaOmega").className = "mv " + (m.stability<0.20 ? "good" : m.stability<=0.50 ? "warn" : "bad");
+
+  // ⟨w⟩
+  $("mW").textContent = (m.avg_stability_weight ?? 1.0).toFixed(4);
+  $("mW").className = "mv " + ((m.avg_stability_weight ?? 1.0) > 0.80 ? "good" : (m.avg_stability_weight ?? 1.0) > 0.30 ? "warn" : "bad");
+
+  // gates
+  $("gA").textContent = (m.admissibility>=0.70 ? "PASS" : "FAIL");
+  $("gA").className = "tag " + (m.admissibility>=0.70 ? "pass" : "fail");
+
+  $("gD").textContent = (m.omega_drift<=0.30 ? "PASS" : "FAIL");
+  $("gD").className = "tag " + (m.omega_drift<=0.30 ? "pass" : "fail");
+
+  $("gS").textContent = (m.stability<=0.50 ? "PASS" : "FAIL");
+  $("gS").className = "tag " + (m.stability<=0.50 ? "pass" : "fail");
+
+  // Layer-level breakdown
+  const tauAdmissible = m.admissibility >= 0.70;
+  const omegaStable = (m.omega_drift <= 0.30) && (m.stability <= 0.50);
+  const jointAdmissible = tauAdmissible && omegaStable;
+
+  $("layerTau").textContent = tauAdmissible ? "YES" : "NO";
+  $("layerTau").className = "tag " + (tauAdmissible ? "pass" : "fail");
+
+  $("layerOmega").textContent = omegaStable ? "YES" : "NO";
+  $("layerOmega").className = "tag " + (omegaStable ? "pass" : "fail");
+
+  $("layerJoint").textContent = jointAdmissible ? "YES" : "NO";
+  $("layerJoint").className = "tag " + (jointAdmissible ? "pass" : "fail");
+}
+
+/* ===== Run control ===== */
+async function runOnce(seedOverride){
+  const config = {
+    mode: selectedMode,
+    grid_size: parseInt($("gridSize").value),
+    lambda: parseFloat($("lambda").value),
+    kappa: 1.0,
+    sigma: 0.02,
+    omega_coupling: parseFloat($("omegaCoupling").value),
+    beta: parseFloat($("beta").value),
+    seed: (seedOverride ?? parseInt($("seed").value)),
+    steps: parseInt($("steps").value)
+  };
+
+  currentEngine = new OmegaGravityEngineV13(config);
+
+  setStatus(`Running Mode ${selectedMode} | seed=${config.seed} ...`);
+  logLine(`RUN: mode=${selectedMode} seed=${config.seed} steps=${config.steps} beta=${config.beta}`);
+
+  for(let s=0; s<config.steps && running; s++){
+    currentEngine.evolve();
+
+    if(s%5===0){
+      renderLayer($("canvasSigma"), currentEngine.Sigma, currentEngine.W, "hue");
+      renderLayer($("canvasOmega"), currentEngine.Omega, currentEngine.W, "heat");
+      renderLayer($("canvasTau"), currentEngine.Tau, currentEngine.W, "hue");
+      paint();
+      $("progressFill").style.width = ((s/config.steps)*100).toFixed(1)+"%";
+    }
+
+    if(s%30===0) await new Promise(r=>setTimeout(r,0));
+  }
+
+  if(!running) return null;
+
+  // final paint
+  renderLayer($("canvasSigma"), currentEngine.Sigma, currentEngine.W, "hue");
+  renderLayer($("canvasOmega"), currentEngine.Omega, currentEngine.W, "heat");
+  renderLayer($("canvasTau"), currentEngine.Tau, currentEngine.W, "hue");
+  paint();
+  $("progressFill").style.width = "100%";
+
+  const m = currentEngine.metrics;
+  const line = `DONE: seed=${config.seed} A=${(m.admissibility*100).toFixed(1)}% drift=${m.omega_drift.toFixed(3)} sigma=${m.stability.toFixed(3)} A_joint=${m.joint_admissible?"PASS":"FAIL"}`;
+  setStatus(line);
+  logLine(line);
+
+  return {
+    seed: config.seed,
+    admissibility: m.admissibility,
+    omega_drift: m.omega_drift,
+    stability: m.stability,
+    joint_admissible: m.joint_admissible
+  };
+}
+
+function setButtons(isRunning){
+  $("runBtn").disabled = isRunning;
+  $("runMultiBtn").disabled = isRunning;
+  $("stopBtn").disabled = !isRunning;
+  $("exportBtn").disabled = isRunning || !currentEngine;
+}
+
+$("runBtn").addEventListener("click", async ()=>{
+  if(running) return;
+  running = true;
+  setButtons(true);
+  $("progressFill").style.width = "0%";
+  await runOnce();
+  running = false;
+  setButtons(false);
+});
+
+$("runMultiBtn").addEventListener("click", async ()=>{
+  if(running) return;
+  running = true;
+  setButtons(true);
+  $("progressFill").style.width = "0%";
+
+  multiSeedResults = [];
+  const base = parseInt($("seed").value);
+  const seeds = [base, base+1, base+2, base+3, base+4];
+
+  for(let i=0;i<seeds.length && running;i++){
+    const r = await runOnce(seeds[i]);
+    if(r) multiSeedResults.push(r);
+  }
+
+  // render table
+  const body = $("multiBody");
+  body.innerHTML = "";
+  if(multiSeedResults.length===0){
+    body.innerHTML = '<tr><td colspan="5" style="color:#9aa4b2;">No results.</td></tr>';
+  } else {
+    for(const r of multiSeedResults){
+      const pj = r.joint_admissible ? '<span class="pill pass">PASS</span>' : '<span class="pill fail">FAIL</span>';
+      body.innerHTML += `
+        <tr>
+          <td>${r.seed}</td>
+          <td>${(r.admissibility*100).toFixed(1)}%</td>
+          <td>${r.omega_drift.toFixed(3)}</td>
+          <td>${r.stability.toFixed(3)}</td>
+          <td>${pj}</td>
+        </tr>`;
+    }
+  }
+
+  const passCount = multiSeedResults.filter(x=>x.joint_admissible).length;
+  logLine(`MULTI: ${passCount}/${multiSeedResults.length} joint PASS`);
+  setStatus(`Multi-seed complete: ${passCount}/${multiSeedResults.length} joint PASS`);
+
+  running = false;
+  setButtons(false);
+});
+
+$("stopBtn").addEventListener("click", ()=>{
+  running = false;
+  setStatus("Stopped.");
+  logLine("STOP");
+});
+
+$("exportBtn").addEventListener("click", ()=>{
+  const exportData = {
+    chamber: "XXXVI",
+    ui: "v1.4_ui_overhaul",
+    engine: "v1.3_behavior",
+    timestamp: new Date().toISOString(),
+    mode: selectedMode,
+    config: {
+      grid_size: parseInt($("gridSize").value),
+      steps: parseInt($("steps").value),
+      lambda: parseFloat($("lambda").value),
+      omega_coupling: parseFloat($("omegaCoupling").value),
+      beta: parseFloat($("beta").value),
+      seed: parseInt($("seed").value)
+    },
+    final_metrics: currentEngine ? currentEngine.metrics : null,
+    multi_seed_results: multiSeedResults.length ? multiSeedResults : null
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Chamber_XXXVI_UIOverhaul_Mode${selectedMode}_${exportData.timestamp.split("T")[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  logLine("EXPORT: " + a.download);
+});
+
+/* init */
+setChip();
+setFocus("all");
+logLine("Ready. Select Mode and Run.");
+setStatus("Ready.");
+setButtons(false);
+</script>
+</body>
+</html>

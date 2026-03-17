@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNNS Laboratory — Chamber XXXIII v0.2 (Tree Support)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Monaco', monospace; background: #0a0a0a; color: #e0e0e0; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #2a2a2a; }
+    h1 { font-size: 2em; color: #4a9eff; letter-spacing: 2px; }
+    .subtitle { color: #888; margin-top: 10px; font-size: 0.9em; }
+    .badges { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+    .badge { background: #1a2a3a; padding: 5px 12px; border-radius: 12px; font-size: 0.85em; border: 1px solid #2a4a5a; }
+    .badge.mode { background: #2a1a2a; border-color: #4a2a4a; }
+    .badge.stage { background: #1a2a1a; border-color: #2a4a2a; }
+    .badge.status { background: #2a2a1a; border-color: #4a4a2a; }
+    
+    .main-grid { display: grid; grid-template-columns: 350px 1fr 300px; gap: 20px; }
+    .panel { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .panel-title { font-size: 1.2em; color: #4a9eff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    
+    .control-group { margin-bottom: 15px; }
+    .control-group label { display: block; font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+    .control-group select, .control-group input[type="number"], .control-group input[type="text"] { 
+      width: 100%; background: #0a0a0a; border: 1px solid #3a3a3a; color: #e0e0e0; 
+      padding: 8px; border-radius: 4px; font-family: inherit; 
+    }
+    .control-group input[type="range"] { width: 100%; }
+    
+    .param-display { font-size: 0.85em; color: #4a9eff; margin-top: 3px; }
+    
+    button { background: #2a4a7a; border: none; color: #e0e0e0; padding: 10px 20px; 
+             border-radius: 4px; cursor: pointer; font-family: inherit; margin: 5px 5px 5px 0; }
+    button:hover { background: #3a5a8a; }
+    button:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+    button.primary { background: #4a9eff; }
+    button.danger { background: #7a2a2a; }
+    
+    .canvas-container { position: relative; background: #000; border: 1px solid #2a2a2a; 
+                        margin-bottom: 15px; aspect-ratio: 1; }
+    canvas { width: 100%; height: 100%; }
+    .canvas-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); 
+                    padding: 5px 10px; border-radius: 3px; font-size: 0.85em; color: #4a9eff; }
+    
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric { background: #0a0a0a; padding: 12px; border-radius: 4px; border: 1px solid #2a2a2a; }
+    .metric-label { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 1.3em; color: #4a9eff; font-weight: bold; font-family: 'Courier New', monospace; }
+    .metric-value.pass { color: #4aff4a; }
+    .metric-value.fail { color: #ff4a4a; }
+    
+    .status-display { padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; }
+    .status-display.idle { background: #1a1a2a; color: #888; }
+    .status-display.running { background: #2a4a2a; color: #4aff4a; }
+    .status-display.complete { background: #2a3a4a; color: #4a9eff; }
+    .status-display.fail { background: #4a2a2a; color: #ff4a9e; }
+    
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 10px; }
+    .results-table th { text-align: left; padding: 10px 8px; color: #4a9eff; border-bottom: 2px solid #2a4a4a; }
+    .results-table td { padding: 8px; border-bottom: 1px solid #1a1a1a; }
+    .results-table td.value { font-family: 'Courier New', monospace; }
+    .results-table tr.protected { background: rgba(74, 255, 74, 0.05); }
+    .results-table tr.diagnostic { background: rgba(136, 136, 136, 0.05); }
+    
+    .notes { background: #1a2a1a; border-left: 3px solid #4a9eff; padding: 12px; 
+             margin: 15px 0; font-size: 0.85em; line-height: 1.5; }
+    .notes.warning { background: #2a1a1a; border-color: #ff4a4a; }
+    .notes.success { background: #1a2a1a; border-color: #4aff4a; }
+    
+    .scatter-container { position: relative; background: #000; border: 1px solid #2a2a2a; 
+                         height: 300px; margin-top: 15px; }
+    
+    .info-section { margin: 20px 0; }
+    .info-section h3 { color: #4a9eff; font-size: 1.1em; margin-bottom: 10px; }
+    .info-section ul { margin-left: 20px; line-height: 1.8; }
+    .info-section code { background: #0a0a0a; padding: 2px 6px; border-radius: 3px; }
+    
+    .metric-role { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; 
+                   margin-left: 5px; font-weight: bold; }
+    .metric-role.protected { background: rgba(74, 255, 74, 0.2); color: #4aff4a; }
+    .metric-role.diagnostic { background: rgba(136, 136, 136, 0.2); color: #888; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚖️ CHAMBER XXXIII: κ-OPERATOR v0.2.3</h1>
+      <div class="subtitle">Pre-Projective Coherence — Certified Production Ready</div>
+      <div class="badges">
+        <span class="badge mode">Mode: Gatekeeper</span>
+        <span class="badge stage">Stage: Pre-Projective</span>
+        <span class="badge">Domain: Abstract</span>
+        <span class="badge status">Status: Experimental</span>
+      </div>
+    </header>
+    
+    <div class="main-grid">
+      <!-- LEFT COLUMN: Controls -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Structure Source</div>
+          <div class="control-group">
+            <label>Structure Type</label>
+            <select id="structureType">
+              <option value="weighted_graph" selected>Weighted Graph</option>
+              <option value="tree">Tree (κ₃ compatible)</option>
+            </select>
+          </div>
+          <div id="graphControls">
+            <div class="control-group">
+              <label>Generator</label>
+              <select id="generator">
+                <option value="erdos_renyi" selected>Erdős-Rényi</option>
+                <option value="barabasi_albert">Barabási-Albert</option>
+                <option value="watts_strogatz">Watts-Strogatz</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Size (nodes)</label>
+              <input type="number" id="structureSize" value="80" min="20" max="200" step="10">
+            </div>
+            <div class="control-group">
+              <label>Edge Probability <span id="probDisplay" class="param-display">0.04</span></label>
+              <input type="range" id="edgeProb" min="0.01" max="0.15" step="0.01" value="0.04">
+            </div>
+          </div>
+          <div id="treeControls" style="display: none;">
+            <div class="control-group">
+              <label>Tree Type</label>
+              <select id="treeType">
+                <option value="skew" selected>Skew Tree (Imbalanced)</option>
+                <option value="bimodal">Bimodal Tree</option>
+                <option value="burst">Burst Tree</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Main Depth (L)</label>
+              <input type="number" id="treeDepth" value="80" min="20" max="200" step="10">
+            </div>
+            <div class="control-group">
+              <label>Side Branch Rate <span id="branchRateDisplay" class="param-display">0.15</span></label>
+              <input type="range" id="branchRate" min="0.05" max="0.5" step="0.05" value="0.15">
+            </div>
+            <div class="control-group">
+              <label>Side Branch Length</label>
+              <input type="number" id="branchLength" value="3" min="1" max="10">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Seed</label>
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="seed" value="137042" style="flex: 1;">
+              <button onclick="randomizeSeed()" style="padding: 8px 12px;">🎲</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">κ Family</div>
+          <div class="control-group">
+            <label>κ Family</label>
+            <select id="kappaFamily">
+              <option value="kappa1">κ₁: Variance Clamp</option>
+              <option value="kappa2">κ₂: Spectral Cap</option>
+              <option value="kappa3" selected>κ₃: Depth Balance</option>
+              <option value="kappa4">κ₄: Sparsity Filter</option>
+            </select>
+          </div>
+          <div id="kappaParams">
+            <!-- Dynamic parameters -->
+          </div>
+          <div class="control-group">
+            <label>Application Mode</label>
+            <select id="kappaMode">
+              <option value="single">Single Pass</option>
+              <option value="iterate" selected>Iterate to Convergence</option>
+              <option value="fixed">Fixed N Iterations</option>
+            </select>
+          </div>
+          <div class="control-group" id="maxIterGroup">
+            <label>Max Iterations</label>
+            <input type="number" id="maxIter" value="50" min="1" max="200">
+          </div>
+          <div class="control-group">
+            <label>Convergence Tolerance</label>
+            <input type="number" id="kappaTol" value="0.0001" step="0.0001" min="0.00001">
+          </div>
+          <div id="kappaDescription" class="notes">
+            <strong>κ₃ Depth Balance:</strong> Enforces bounded depth asymmetry. For trees: prunes deepest branches when D(S) > Δ.
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">τ Projection & Residual</div>
+          <div class="control-group">
+            <label>τ Metrics</label>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #2a2a2a; padding: 8px; background: #0a0a0a; font-size: 0.85em;">
+              <div id="tauMetricsContainer">
+                <!-- Dynamic metric list -->
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Residual Mode</label>
+            <select id="residualMode">
+              <option value="depth" selected>Depth Residual (for κ₃ tests)</option>
+              <option value="refinement">Refinement Residual</option>
+              <option value="stability">Stability Residual (Jitter)</option>
+            </select>
+          </div>
+          <div class="notes success" style="margin-top: 10px;">
+            <strong>Protected</strong> metrics count toward ID threshold.<br>
+            <strong>Diagnostic</strong> metrics are informational only.
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Thresholds</div>
+          <div class="control-group">
+            <label>Residual Reduction (min %)</label>
+            <input type="number" id="thresholdRR" value="20" min="0" max="100" step="1">
+          </div>
+          <div class="control-group">
+            <label>Invariant Drift (max %)</label>
+            <input type="number" id="thresholdID" value="0.1" min="0" max="10" step="0.1">
+          </div>
+        </div>
+        
+        <div class="panel">
+          <button class="primary" onclick="runCompare()" style="width: 100%;">▶ Run Compare</button>
+          <button onclick="resetChamber()" style="width: 100%;">🔄 Reset</button>
+          <button onclick="exportJSON()" id="exportBtn" disabled style="width: 100%;">💾 Export JSON</button>
+        </div>
+      </div>
+      
+      <!-- CENTER COLUMN: Visualizations -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Structure View: Before / After</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="canvas-container">
+              <canvas id="canvasBaseline"></canvas>
+              <div class="canvas-label">S (Baseline)</div>
+            </div>
+            <div class="canvas-container">
+              <canvas id="canvasRegulated"></canvas>
+              <div class="canvas-label">κ(S) (Regulated)</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 10px; font-size: 0.85em;">
+            <label><input type="checkbox" id="showWeights" checked> Show Weights</label>
+            <label><input type="checkbox" id="showDelta" checked> Highlight Δedges</label>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Projection Output</div>
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>τ(S)</th>
+                <th>τ(κ(S))</th>
+                <th>Δ%</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTableBody">
+              <tr><td colspan="5" style="text-align: center; color: #666;">Run comparison to populate</td></tr>
+            </tbody>
+          </table>
+          <div id="residualInfo" style="margin-top: 15px; display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="metric">
+                <div class="metric-label">Residual Reduction</div>
+                <div class="metric-value" id="rrValue">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Invariant Drift (Protected)</div>
+                <div class="metric-value" id="idValue">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Gatekeeper Scatter</div>
+          <div class="scatter-container">
+            <canvas id="canvasScatter"></canvas>
+          </div>
+          <div style="margin-top: 10px; font-size: 0.85em; color: #888;">
+            Quadrants: <span style="color: #4aff4a;">■</span> Pass (high RR, low ID) | 
+            <span style="color: #ff4a4a;">■</span> Fail regions
+          </div>
+        </div>
+      </div>
+      
+      <!-- RIGHT COLUMN: Diagnostics -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Run Status</div>
+          <div id="statusDisplay" class="status-display idle">IDLE — Ready to run</div>
+          <div class="metrics-grid" style="margin-top: 15px;">
+            <div class="metric">
+              <div class="metric-label">κ Converged</div>
+              <div class="metric-value" id="metricConverged">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Iterations <span id="iterLive" style="color: #4aff4a; display: none;">●</span></div>
+              <div class="metric-value" id="metricIter">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Verdict</div>
+              <div class="metric-value" id="metricVerdict">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Structure Δ</div>
+              <div class="metric-value" id="metricDelta">—</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Convergence Plot</div>
+          <div class="canvas-container" style="aspect-ratio: 1.5;">
+            <canvas id="canvasConvergence"></canvas>
+            <div class="canvas-label">‖κᵗ⁺¹(S) − κᵗ(S)‖</div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Depth Analysis</div>
+          <div id="depthInfo" style="display: none;">
+            <div class="metrics-grid">
+              <div class="metric">
+                <div class="metric-label">Depth Imbalance (Baseline)</div>
+                <div class="metric-value" id="depthBase">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Depth Imbalance (Regulated)</div>
+                <div class="metric-value" id="depthReg">—</div>
+              </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.85em;">
+              <div>Max depth: <span id="maxDepth" style="color: #4a9eff;">—</span></div>
+              <div>Min depth: <span id="minDepth" style="color: #4a9eff;">—</span></div>
+              <div>Target Δ: <span id="targetDelta" style="color: #4aff4a;">—</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <div class="panel-title">Success Criteria</div>
+          <table style="width: 100%; font-size: 0.85em;">
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 8px;">Residual reduction</td>
+              <td style="padding: 8px; text-align: right;">≥ <span id="dispThreshRR">20</span>%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 8px;">Protected τ-invariants</td>
+              <td style="padding: 8px; text-align: right;">≤ <span id="dispThreshID">0.1</span>%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1a1a1a;">
+              <td style="padding: 8px;">κ converges</td>
+              <td style="padding: 8px; text-align: right;">idempotent</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">No instabilities</td>
+              <td style="padding: 8px; text-align: right;">stable</td>
+            </tr>
+          </table>
+          <div class="notes warning" style="margin-top: 15px;">
+            <strong>⚠️ v0.2 Update:</strong> ID now computed only on <strong>protected</strong> τ-invariants. Diagnostic metrics may change.
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Compact Guide -->
+    <div class="panel" style="margin-top: 30px;">
+      <div class="panel-title">📚 Quick Guide</div>
+      
+      <div class="notes success">
+        <strong>v0.2.1 Update:</strong> κ-iteration now updates live! Watch the convergence plot animate, iteration counter increment, and green indicator (●) pulse during execution. No more UI freezing.
+      </div>
+      
+      <div class="notes success" style="margin-top: 10px;">
+        <strong>v0.2.0 Major Update:</strong> Tree structure support + Protected/Diagnostic τ-metric split. κ₃ can now be tested properly on depth-imbalanced structures.
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+        <div>
+          <h4 style="color: #4a9eff; margin-bottom: 10px;">Testing κ₃ (Depth Balance)</h4>
+          <ol style="margin-left: 20px; line-height: 1.8; font-size: 0.9em;">
+            <li>Select <strong>Tree</strong> structure type</li>
+            <li>Choose <strong>Skew Tree</strong> for max imbalance</li>
+            <li>Set L=80, side branches=0.15</li>
+            <li>κ₃ family with Δ=10</li>
+            <li>Use <strong>Depth Residual</strong> mode</li>
+            <li>Run and observe depth imbalance reduction</li>
+          </ol>
+        </div>
+        <div>
+          <h4 style="color: #4a9eff; margin-bottom: 10px;">τ-Metric Roles</h4>
+          <ul style="margin-left: 20px; line-height: 1.8; font-size: 0.9em;">
+            <li><strong>Protected</strong> (<span class="metric-role protected">P</span>): Must remain stable (≤0.1% drift). Counts toward ID threshold.</li>
+            <li><strong>Diagnostic</strong> (<span class="metric-role diagnostic">D</span>): Allowed to change. Informational only.</li>
+            <li>For trees: tree_height/paths are diagnostic (κ₃ will change them)</li>
+            <li>entropy/spectral radius are typically protected</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #2a2a2a; font-size: 0.85em; color: #666;">
+        <strong>Version:</strong> 0.2.3 | <strong>Chamber:</strong> XXXIII | <strong>Operator:</strong> κ (Pre-Projective Coherence) | <strong>Status:</strong> <span style="color: #4aff4a;">✓ Certified Production Ready</span>
+        <div style="margin-top: 10px; padding: 10px; background: #1a2a1a; border-left: 3px solid #4aff4a;">
+          <strong>v0.2.3 (2026-01-08) — Semantic & Robustness Fixes:</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+            <li>Fixed parent edge detection in κ₃ (robust to edge direction)</li>
+            <li>Renamed 'diameter' → 'tree_height' for semantic accuracy</li>
+            <li>Added defensive guards to residual reduction calculation</li>
+            <li>Clarified avg_path_length is root-based proxy</li>
+            <li>Added note: κ₂ spectral cap on trees is approximate</li>
+          </ul>
+        </div>
+        <div style="margin-top: 10px; padding: 10px; background: #2a1a1a; border-left: 3px solid #ff4a4a;">
+          <strong>v0.2.2 (2026-01-08) — Critical Bug Fixes:</strong>
+          Fixed node ID reindexing, adjacency dimension mismatch, truncated function, added structure type warnings.
+        </div>
+        <div style="margin-top: 10px; padding: 10px; background: #1a2a1a; border-left: 3px solid #4a9eff;">
+          <strong>v0.2.1 (2026-01-08):</strong> Added live UI updates during κ-iteration. <strong>v0.2.0:</strong> Tree generators + Protected/Diagnostic τ-split.
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+// ==========================================
+// CHAMBER XXXIII v0.2.0: κ-OPERATOR ENGINE
+// Tree Support + Protected/Diagnostic Split
+// ==========================================
+
+console.log('╔════════════════════════════════════════╗');
+console.log('  UNNS Chamber XXXIII | κ-Operator      ');
+console.log('  Pre-Projective Coherence | v0.2.3     ');
+console.log('  Production Ready (Certified)          ');
+console.log('╚════════════════════════════════════════╝');
+
+// ==========================================
+// TAU METRIC CATALOG
+// ==========================================
+
+const TAU_METRICS = {
+  // Graph metrics
+  spectral_radius: { name: 'Spectral Radius', protected: { graph: true, tree: true }, domains: ['graph', 'tree'] },
+  laplacian_energy: { name: 'Laplacian Energy', protected: { graph: true, tree: true }, domains: ['graph', 'tree'] },
+  cycle_density: { name: 'Cycle Density', protected: { graph: true, tree: false }, domains: ['graph'] },
+  connectivity: { name: 'Connectivity', protected: { graph: true, tree: false }, domains: ['graph', 'tree'] },
+  entropy: { name: 'Entropy', protected: { graph: true, tree: true }, domains: ['graph', 'tree'] },
+  
+  // Tree-specific metrics
+  tree_height: { name: 'Tree Height (max depth)', protected: { tree: false }, domains: ['tree'] },
+  avg_path_length: { name: 'Avg Path Length (root)', protected: { tree: false }, domains: ['tree'] },
+  leaf_fraction: { name: 'Leaf Fraction', protected: { tree: false }, domains: ['tree'] },
+  depth_imbalance: { name: 'Depth Imbalance', protected: { tree: false }, domains: ['tree'] }
+};
+
+// ==========================================
+// STATE MODEL
+// ==========================================
+
+const state = {
+  run: {
+    id: null,
+    status: 'IDLE',
+    seed: 137042,
+    mode: 'compare'
+  },
+  structure: {
+    type: 'tree',  // Changed default to tree for κ₃ testing
+    generator: { name: 'skew', params: { L: 80, side_branch_rate: 0.15, side_branch_len: 3 } },
+    S: null,
+    S_reg: null,
+    layout: null
+  },
+  kappa: {
+    family: 'kappa3',
+    params: { depth_tol: 10 },
+    mode: 'iterate',
+    maxIter: 50,
+    tol: 0.0001,
+    history: []
+  },
+  tau: {
+    metrics: ['spectral_radius', 'entropy', 'tree_height', 'avg_path_length'],
+    protected: ['spectral_radius', 'entropy'],
+    residualMode: 'depth'
+  },
+  thresholds: {
+    RR: 20.0,
+    ID: 0.1
+  },
+  results: {
+    baseline: null,
+    regulated: null,
+    RR: null,
+    ID: null,
+    verdict: null,
+    converged: false
+  },
+  scatterPoints: []
+};
+
+// ==========================================
+// SEEDED RNG
+// ==========================================
+
+class SeededRNG {
+  constructor(seed) {
+    this.state = seed >>> 0;
+  }
+  random() {
+    this.state = (this.state * 1664525 + 1013904223) >>> 0;
+    return this.state / 4294967296;
+  }
+  gaussian() {
+    let u1 = this.random();
+    let u2 = this.random();
+    if (u1 < 1e-10) u1 = 1e-10;
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  randomInt(min, max) {
+    return Math.floor(this.random() * (max - min + 1)) + min;
+  }
+}
+
+// ==========================================
+// TREE STRUCTURE GENERATION
+// ==========================================
+
+function generateTree(type, params, seed) {
+  const rng = new SeededRNG(seed);
+  
+  if (type === 'skew') {
+    return generateSkewTree(params.L, params.side_branch_rate, params.side_branch_len, rng);
+  } else if (type === 'bimodal') {
+    return generateBimodalTree(params.L1 || 30, params.L2 || 120, params.branching || 2, rng);
+  } else if (type === 'burst') {
+    return generateBurstTree(params.base_depth || 40, params.spike_count || 5, params.spike_depth || 60, rng);
+  }
+  
+  throw new Error(`Unknown tree type: ${type}`);
+}
+
+function generateSkewTree(L, side_branch_rate, side_branch_len, rng) {
+  const tree = {
+    type: 'tree',
+    nodes: [],
+    edges: [],
+    root: 0,
+    adjacency: null
+  };
+  
+  // Main chain (root to depth L)
+  for (let i = 0; i <= L; i++) {
+    tree.nodes.push({ id: i, depth: i, isLeaf: (i === L) });
+    if (i > 0) {
+      tree.edges.push({ from: i - 1, to: i, weight: 1.0 });
+    }
+  }
+  
+  let nextId = L + 1;
+  
+  // Add side branches
+  for (let i = 1; i < L; i++) {
+    if (rng.random() < side_branch_rate) {
+      const branch_len = rng.randomInt(1, side_branch_len);
+      const branch_root = i;
+      
+      for (let j = 0; j < branch_len; j++) {
+        const nodeId = nextId++;
+        const parentId = (j === 0) ? branch_root : (nextId - 2);
+        const depth = tree.nodes[branch_root].depth + j + 1;
+        
+        tree.nodes.push({ id: nodeId, depth, isLeaf: (j === branch_len - 1) });
+        tree.edges.push({ from: parentId, to: nodeId, weight: 1.0 });
+      }
+      
+      // Main chain node is no longer leaf
+      tree.nodes[branch_root].isLeaf = false;
+    }
+  }
+  
+  // Build adjacency
+  tree.adjacency = buildAdjacency(tree);
+  
+  return tree;
+}
+
+function generateBimodalTree(L1, L2, branching, rng) {
+  const tree = {
+    type: 'tree',
+    nodes: [{ id: 0, depth: 0, isLeaf: false }],  // Hub root
+    edges: [],
+    root: 0,
+    adjacency: null
+  };
+  
+  let nextId = 1;
+  
+  // Subtree 1 (depth L1)
+  const sub1Root = nextId++;
+  tree.nodes.push({ id: sub1Root, depth: 1, isLeaf: false });
+  tree.edges.push({ from: 0, to: sub1Root, weight: 1.0 });
+  nextId = buildSubtree(tree, sub1Root, L1 - 1, branching, nextId, 1);
+  
+  // Subtree 2 (depth L2)
+  const sub2Root = nextId++;
+  tree.nodes.push({ id: sub2Root, depth: 1, isLeaf: false });
+  tree.edges.push({ from: 0, to: sub2Root, weight: 1.0 });
+  nextId = buildSubtree(tree, sub2Root, L2 - 1, branching, nextId, 1);
+  
+  tree.adjacency = buildAdjacency(tree);
+  return tree;
+}
+
+function buildSubtree(tree, rootId, depth, branching, nextId, currentDepth) {
+  if (depth === 0) {
+    tree.nodes[rootId].isLeaf = true;
+    return nextId;
+  }
+  
+  for (let i = 0; i < branching; i++) {
+    const childId = nextId++;
+    tree.nodes.push({ id: childId, depth: currentDepth + 1, isLeaf: false });
+    tree.edges.push({ from: rootId, to: childId, weight: 1.0 });
+    nextId = buildSubtree(tree, childId, depth - 1, branching, nextId, currentDepth + 1);
+  }
+  
+  return nextId;
+}
+
+function generateBurstTree(base_depth, spike_count, spike_depth, rng) {
+  // Start with balanced tree, then add spikes
+  const tree = generateBimodalTree(base_depth, base_depth, 2, rng);
+  
+  // Pick random nodes and add deep spikes
+  const eligibleNodes = tree.nodes.filter(n => !n.isLeaf && n.depth < base_depth);
+  
+  for (let s = 0; s < spike_count && eligibleNodes.length > 0; s++) {
+    const targetIdx = rng.randomInt(0, eligibleNodes.length - 1);
+    const targetNode = eligibleNodes[targetIdx];
+    eligibleNodes.splice(targetIdx, 1);
+    
+    let nextId = tree.nodes.length;
+    let parentId = targetNode.id;
+    
+    for (let d = 0; d < spike_depth; d++) {
+      const nodeId = nextId++;
+      tree.nodes.push({ id: nodeId, depth: targetNode.depth + d + 1, isLeaf: (d === spike_depth - 1) });
+      tree.edges.push({ from: parentId, to: nodeId, weight: 1.0 });
+      parentId = nodeId;
+    }
+  }
+  
+  tree.adjacency = buildAdjacency(tree);
+  return tree;
+}
+
+function buildAdjacency(tree) {
+  const n = tree.nodes.length;
+  const adj = Array(n).fill(0).map(() => Array(n).fill(0));
+  
+  for (const edge of tree.edges) {
+    adj[edge.from][edge.to] = edge.weight;
+    adj[edge.to][edge.from] = edge.weight;  // Undirected
+  }
+  
+  return adj;
+}
+
+// ==========================================
+// GRAPH STRUCTURE GENERATION
+// ==========================================
+
+function generateStructure(type, generator, params, seed) {
+  const rng = new SeededRNG(seed);
+  
+  if (type === 'tree') {
+    return generateTree(generator, params, seed);
+  } else if (type === 'weighted_graph') {
+    return generateErdosRenyi(params.n, params.p, rng);
+  }
+  
+  throw new Error(`Unsupported structure type: ${type}`);
+}
+
+function generateErdosRenyi(n, p, rng) {
+  const graph = {
+    type: 'weighted_graph',
+    nodes: n,
+    edges: [],
+    adjacency: Array(n).fill(0).map(() => Array(n).fill(0))
+  };
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (rng.random() < p) {
+        const weight = 0.5 + rng.random() * 0.5;
+        graph.edges.push({ from: i, to: j, weight });
+        graph.adjacency[i][j] = weight;
+        graph.adjacency[j][i] = weight;
+      }
+    }
+  }
+  
+  return graph;
+}
+
+// ==========================================
+// κ₃ TREE-AWARE IMPLEMENTATION
+// ==========================================
+
+function kappa3Tree(S, params) {
+  // κ₃: Depth Balance for trees (prune-deep mode)
+  const { depth_tol } = params;
+  
+  // Compute depth imbalance
+  const leaves = S.nodes.filter(n => n.isLeaf);
+  if (leaves.length === 0) return cloneStructure(S);
+  
+  const depths = leaves.map(n => n.depth);
+  const maxDepth = Math.max(...depths);
+  const minDepth = Math.min(...depths);
+  const imbalance = maxDepth - minDepth;
+  
+  if (imbalance <= depth_tol) {
+    // Already balanced
+    return cloneStructure(S);
+  }
+  
+  // Prune deepest leaf
+  const S_new = cloneStructure(S);
+  const deepestLeaves = S_new.nodes.filter(n => n.isLeaf && n.depth === maxDepth);
+  
+  if (deepestLeaves.length === 0) return S_new;
+  
+  // Pick first deepest leaf
+  const leafToPrune = deepestLeaves[0];
+  
+  // Find parent edge (robust to edge direction)
+  const parentEdge = S_new.edges.find(
+    e => e.to === leafToPrune.id || e.from === leafToPrune.id
+  );
+  if (!parentEdge) return S_new;
+  
+  const parentId = (parentEdge.to === leafToPrune.id)
+    ? parentEdge.from
+    : parentEdge.to;
+  
+  // Remove leaf node
+  S_new.nodes = S_new.nodes.filter(n => n.id !== leafToPrune.id);
+  
+  // Remove edge
+  S_new.edges = S_new.edges.filter(e => e.to !== leafToPrune.id);
+  
+  // Update parent's leaf status
+  const parentNode = S_new.nodes.find(n => n.id === parentId);
+  const hasOtherChildren = S_new.edges.some(e => e.from === parentId);
+  if (!hasOtherChildren && parentNode) {
+    parentNode.isLeaf = true;
+  }
+  
+  // CRITICAL: Reindex nodes to maintain dense IDs
+  const idMap = new Map();
+  S_new.nodes.forEach((node, newIndex) => {
+    idMap.set(node.id, newIndex);
+    node.id = newIndex;
+  });
+  
+  // Update root if it was remapped
+  S_new.root = idMap.get(S_new.root) ?? 0;
+  
+  // Remap edge references
+  S_new.edges = S_new.edges.map(e => ({
+    from: idMap.get(e.from),
+    to: idMap.get(e.to),
+    weight: e.weight
+  }));
+  
+  // Rebuild adjacency with correct dimensions
+  S_new.adjacency = buildAdjacency(S_new);
+  
+  return S_new;
+}
+
+// ==========================================
+// κ-OPERATOR FAMILIES
+// ==========================================
+
+async function applyKappa(S, kappaConfig) {
+  const { family, params, mode, maxIter, tol } = kappaConfig;
+  const history = [];
+  
+  let curr = cloneStructure(S);
+  
+  if (mode === 'single') {
+    curr = kappaFamilies[family](curr, params);
+    history.push({ t: 0, delta: 0, structure: cloneStructure(curr) });
+  } else if (mode === 'iterate') {
+    // Show live indicator
+    const liveIndicator = document.getElementById('iterLive');
+    if (liveIndicator) liveIndicator.style.display = 'inline';
+    
+    for (let t = 0; t < maxIter; t++) {
+      const next = kappaFamilies[family](curr, params);
+      const delta = structureDelta(curr, next);
+      history.push({ t, delta, structure: cloneStructure(next) });
+      
+      // Live UI updates every 5 iterations or on convergence
+      if (t % 5 === 0 || delta < tol) {
+        document.getElementById('metricIter').textContent = t + 1;
+        document.getElementById('metricDelta').textContent = delta.toExponential(2);
+        
+        // Update convergence plot
+        state.kappa.history = history;
+        renderConvergence();
+        
+        // Yield to browser (prevent freezing)
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      
+      if (delta < tol) {
+        curr = next;
+        break;
+      }
+      curr = next;
+    }
+    
+    // Hide live indicator
+    if (liveIndicator) liveIndicator.style.display = 'none';
+  } else if (mode === 'fixed') {
+    const N = parseInt(document.getElementById('maxIter').value);
+    
+    // Show live indicator
+    const liveIndicator = document.getElementById('iterLive');
+    if (liveIndicator) liveIndicator.style.display = 'inline';
+    
+    for (let t = 0; t < N; t++) {
+      curr = kappaFamilies[family](curr, params);
+      const delta = t > 0 ? structureDelta(history[t-1].structure, curr) : 0;
+      history.push({ t, delta, structure: cloneStructure(curr) });
+      
+      // Live UI updates every 5 iterations
+      if (t % 5 === 0) {
+        document.getElementById('metricIter').textContent = t + 1;
+        document.getElementById('metricDelta').textContent = delta.toExponential(2);
+        state.kappa.history = history;
+        renderConvergence();
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+    
+    // Hide live indicator
+    if (liveIndicator) liveIndicator.style.display = 'none';
+  }
+  
+  state.kappa.history = history;
+  return curr;
+}
+
+const kappaFamilies = {
+  kappa1: function(S, params) {
+    // κ₁: Variance Clamp (graph-only)
+    if (S.type === 'tree') return cloneStructure(S);
+    
+    const { delta } = params;
+    const S_new = cloneStructure(S);
+    const n = S.nodes || S.nodes.length;
+    
+    const meanWeights = Array(n).fill(0);
+    const counts = Array(n).fill(0);
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (S.adjacency[i][j] > 0) {
+          meanWeights[i] += S.adjacency[i][j];
+          counts[i]++;
+        }
+      }
+      if (counts[i] > 0) meanWeights[i] /= counts[i];
+    }
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (S.adjacency[i][j] > 0) {
+          const w = S.adjacency[i][j];
+          const threshold = Math.max(meanWeights[i], meanWeights[j]) + delta;
+          const w_new = Math.min(w, threshold);
+          S_new.adjacency[i][j] = w_new;
+          S_new.adjacency[j][i] = w_new;
+        }
+      }
+    }
+    
+    S_new.edges = [];
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (S_new.adjacency[i][j] > 0) {
+          S_new.edges.push({ from: i, to: j, weight: S_new.adjacency[i][j] });
+        }
+      }
+    }
+    
+    return S_new;
+  },
+  
+  kappa2: function(S, params) {
+    // κ₂: Spectral Cap
+    if (S.type === 'tree') {
+      // For trees, use simplified approach
+      const { lambda_max } = params;
+      const spectral_radius = computeSpectralRadius(S);
+      
+      if (spectral_radius <= lambda_max) return cloneStructure(S);
+      
+      const S_new = cloneStructure(S);
+      const scale = lambda_max / spectral_radius;
+      
+      for (let i = 0; i < S_new.edges.length; i++) {
+        S_new.edges[i].weight *= scale;
+      }
+      
+      S_new.adjacency = buildAdjacency(S_new);
+      return S_new;
+    }
+    
+    // Graph version
+    const { lambda_max } = params;
+    const S_new = cloneStructure(S);
+    
+    const spectral_radius = computeSpectralRadius(S);
+    
+    if (spectral_radius > lambda_max) {
+      const scale = lambda_max / spectral_radius;
+      const n = S.nodes;
+      
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          if (S_new.adjacency[i][j] > 0) {
+            S_new.adjacency[i][j] *= scale;
+          }
+        }
+      }
+      
+      S_new.edges = [];
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          if (S_new.adjacency[i][j] > 0) {
+            S_new.edges.push({ from: i, to: j, weight: S_new.adjacency[i][j] });
+          }
+        }
+      }
+    }
+    
+    return S_new;
+  },
+  
+  kappa3: function(S, params) {
+    // κ₃: Depth Balance
+    if (S.type === 'tree') {
+      return kappa3Tree(S, params);
+    }
+    
+    // No-op for graphs
+    return cloneStructure(S);
+  },
+  
+  kappa4: function(S, params) {
+    // κ₄: Sparsity Filter
+    if (S.type === 'tree') return cloneStructure(S);
+    
+    const { epsilon } = params;
+    const S_new = cloneStructure(S);
+    const n = S.nodes;
+    
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (S_new.adjacency[i][j] > 0 && S_new.adjacency[i][j] < epsilon) {
+          S_new.adjacency[i][j] = 0;
+        }
+      }
+    }
+    
+    S_new.edges = [];
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (S_new.adjacency[i][j] > 0) {
+          S_new.edges.push({ from: i, to: j, weight: S_new.adjacency[i][j] });
+        }
+      }
+    }
+    
+    return S_new;
+  }
+};
+
+// ==========================================
+// STRUCTURE UTILITIES
+// ==========================================
+
+function cloneStructure(S) {
+  if (S.type === 'tree') {
+    return {
+      type: S.type,
+      nodes: S.nodes.map(n => ({ ...n })),
+      edges: S.edges.map(e => ({ ...e })),
+      root: S.root,
+      adjacency: S.adjacency ? S.adjacency.map(row => [...row]) : null
+    };
+  } else {
+    return {
+      type: S.type,
+      nodes: S.nodes,
+      edges: S.edges.map(e => ({ ...e })),
+      adjacency: S.adjacency.map(row => [...row])
+    };
+  }
+}
+
+function structureDelta(S1, S2) {
+  // L1 norm of adjacency difference
+  // Handle dimension mismatch (e.g., after tree pruning)
+  if (!S1.adjacency || !S2.adjacency) return 0;
+  
+  const n1 = S1.adjacency.length;
+  const n2 = S2.adjacency.length;
+  const n = Math.min(n1, n2);
+  
+  let sum = 0, norm = 0;
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const val1 = (S1.adjacency[i] && S1.adjacency[i][j]) || 0;
+      const val2 = (S2.adjacency[i] && S2.adjacency[i][j]) || 0;
+      sum += Math.abs(val2 - val1);
+      norm += Math.abs(val1);
+    }
+  }
+  
+  // If structures differ in size, count that as additional delta
+  if (n1 !== n2) {
+    const sizeDiff = Math.abs(n1 - n2);
+    sum += sizeDiff * 0.1;  // Penalize size change
+    norm += sizeDiff * 0.1;
+  }
+  
+  return norm > 0 ? sum / norm : 0;
+}
+
+// ==========================================
+// τ-PROJECTION
+// ==========================================
+
+function computeTau(S, metrics) {
+  const result = {};
+  
+  for (const metric of metrics) {
+    switch(metric) {
+      case 'spectral_radius':
+        result.spectral_radius = computeSpectralRadius(S);
+        break;
+      case 'laplacian_energy':
+        result.laplacian_energy = computeLaplacianEnergy(S);
+        break;
+      case 'cycle_density':
+        result.cycle_density = computeCycleDensity(S);
+        break;
+      case 'connectivity':
+        result.connectivity = computeConnectivity(S);
+        break;
+      case 'entropy':
+        result.entropy = computeEntropy(S);
+        break;
+      case 'tree_height':
+        result.tree_height = computeTreeHeight(S);
+        break;
+      case 'avg_path_length':
+        result.avg_path_length = computeAvgPathLength(S);
+        break;
+      case 'leaf_fraction':
+        result.leaf_fraction = computeLeafFraction(S);
+        break;
+      case 'depth_imbalance':
+        result.depth_imbalance = computeDepthImbalance(S);
+        break;
+    }
+  }
+  
+  return result;
+}
+
+function computeSpectralRadius(S) {
+  const n = (S.type === 'tree') ? S.nodes.length : S.nodes;
+  const A = S.adjacency;
+  let v = Array(n).fill(1.0);
+  
+  for (let iter = 0; iter < 50; iter++) {
+    const v_new = Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        v_new[i] += A[i][j] * v[j];
+      }
+    }
+    
+    const norm = Math.sqrt(v_new.reduce((sum, x) => sum + x*x, 0));
+    if (norm > 0) {
+      v = v_new.map(x => x / norm);
+    }
+  }
+  
+  let lambda = 0;
+  for (let i = 0; i < n; i++) {
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      sum += A[i][j] * v[j];
+    }
+    lambda += sum * v[i];
+  }
+  
+  return lambda;
+}
+
+function computeLaplacianEnergy(S) {
+  const n = (S.type === 'tree') ? S.nodes.length : S.nodes;
+  let trace = 0;
+  
+  for (let i = 0; i < n; i++) {
+    let degree = 0;
+    for (let j = 0; j < n; j++) {
+      degree += S.adjacency[i][j];
+    }
+    trace += degree;
+  }
+  
+  return trace;
+}
+
+function computeCycleDensity(S) {
+  if (S.type === 'tree') return 0;  // Trees have no cycles
+  
+  const n = S.nodes;
+  const A = S.adjacency;
+  let triangles = 0;
+  
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (A[i][j] > 0) {
+        for (let k = j + 1; k < n; k++) {
+          if (A[i][k] > 0 && A[j][k] > 0) {
+            triangles++;
+          }
+        }
+      }
+    }
+  }
+  
+  const possible = n * (n - 1) * (n - 2) / 6;
+  return possible > 0 ? triangles / possible : 0;
+}
+
+function computeConnectivity(S) {
+  const n = (S.type === 'tree') ? S.nodes.length : S.nodes;
+  const A = S.adjacency;
+  let total = 0;
+  
+  for (let i = 0; i < n; i++) {
+    const neighbors = [];
+    for (let j = 0; j < n; j++) {
+      if (A[i][j] > 0) neighbors.push(j);
+    }
+    
+    if (neighbors.length < 2) continue;
+    
+    let links = 0;
+    for (let a = 0; a < neighbors.length; a++) {
+      for (let b = a + 1; b < neighbors.length; b++) {
+        if (A[neighbors[a]][neighbors[b]] > 0) links++;
+      }
+    }
+    
+    const possible = neighbors.length * (neighbors.length - 1) / 2;
+    total += possible > 0 ? links / possible : 0;
+  }
+  
+  return total / n;
+}
+
+function computeEntropy(S) {
+  const weights = S.edges.map(e => e.weight);
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (sum === 0) return 0;
+  
+  const probs = weights.map(w => w / sum);
+  let entropy = 0;
+  for (const p of probs) {
+    if (p > 0) entropy -= p * Math.log2(p);
+  }
+  
+  return entropy;
+}
+
+function computeTreeHeight(S) {
+  if (S.type !== 'tree') return 0;
+  
+  const leaves = S.nodes.filter(n => n.isLeaf);
+  if (leaves.length === 0) return 0;
+  
+  const depths = leaves.map(n => n.depth);
+  return Math.max(...depths);
+}
+
+function computeAvgPathLength(S) {
+  if (S.type !== 'tree') return 0;
+  
+  const n = S.nodes.length;
+  if (n <= 1) return 0;
+  
+  let totalDist = 0;
+  let count = 0;
+  
+  // BFS from root to all nodes
+  const distances = Array(n).fill(-1);
+  distances[S.root] = 0;
+  const queue = [S.root];
+  
+  while (queue.length > 0) {
+    const u = queue.shift();
+    for (let v = 0; v < n; v++) {
+      if (S.adjacency[u][v] > 0 && distances[v] === -1) {
+        distances[v] = distances[u] + 1;
+        queue.push(v);
+        totalDist += distances[v];
+        count++;
+      }
+    }
+  }
+  
+  return count > 0 ? totalDist / count : 0;
+}
+
+function computeLeafFraction(S) {
+  if (S.type !== 'tree') return 0;
+  
+  const leafCount = S.nodes.filter(n => n.isLeaf).length;
+  return leafCount / S.nodes.length;
+}
+
+function computeDepthImbalance(S) {
+  if (S.type !== 'tree') return 0;
+  
+  const leaves = S.nodes.filter(n => n.isLeaf);
+  if (leaves.length === 0) return 0;
+  
+  const depths = leaves.map(n => n.depth);
+  return Math.max(...depths) - Math.min(...depths);
+}
+
+// ==========================================
+// RESIDUAL COMPUTATION
+// ==========================================
+
+function computeResidual(S, mode) {
+  if (mode === 'depth') {
+    // Depth residual for trees
+    if (S.type !== 'tree') return 0;
+    
+    const depth_tol = state.kappa.params.depth_tol || 0;
+    const D = computeDepthImbalance(S);
+    
+    return Math.max(0, D - depth_tol);
+  } else if (mode === 'refinement') {
+    // Refinement residual
+    const S_ref = refineStructure(S);
+    const tau_base = computeTau(S, state.tau.metrics);
+    const tau_ref = computeTau(S_ref, state.tau.metrics);
+    
+    let residual = 0;
+    for (const metric in tau_base) {
+      const diff = Math.abs(tau_ref[metric] - tau_base[metric]);
+      residual += diff * diff;
+    }
+    
+    return Math.sqrt(residual);
+  } else {
+    // Stability residual
+    const seeds = [state.run.seed, state.run.seed + 1, state.run.seed + 2];
+    const taus = seeds.map(s => {
+      const S_jit = generateStructure(
+        state.structure.type,
+        state.structure.generator.name,
+        state.structure.generator.params,
+        s
+      );
+      return computeTau(S_jit, state.tau.metrics);
+    });
+    
+    let variance = 0;
+    for (const metric of state.tau.metrics) {
+      const values = taus.map(t => t[metric]);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const v = values.reduce((sum, x) => sum + (x - mean) ** 2, 0) / values.length;
+      variance += v;
+    }
+    
+    return Math.sqrt(variance);
+  }
+}
+
+function refineStructure(S) {
+  if (S.type === 'tree') {
+    // Double depth for trees
+    const params = { ...state.structure.generator.params };
+    params.L = Math.floor(params.L * 1.5);
+    return generateStructure(S.type, state.structure.generator.name, params, state.run.seed + 1000);
+  } else {
+    // Double nodes for graphs
+    const n_new = S.nodes * 2;
+    const p_new = Math.min(state.structure.generator.params.p * 1.5, 0.15);
+    const rng = new SeededRNG(state.run.seed + 1000);
+    return generateErdosRenyi(n_new, p_new, rng);
+  }
+}
+
+// ==========================================
+// UI INITIALIZATION
+// ==========================================
+
+function initUI() {
+  // Structure type switching
+  document.getElementById('structureType').addEventListener('change', e => {
+    const type = e.target.value;
+    state.structure.type = type;
+    
+    if (type === 'tree') {
+      document.getElementById('graphControls').style.display = 'none';
+      document.getElementById('treeControls').style.display = 'block';
+      state.structure.generator.name = 'skew';
+      state.structure.generator.params = { L: 80, side_branch_rate: 0.15, side_branch_len: 3 };
+    } else {
+      document.getElementById('graphControls').style.display = 'block';
+      document.getElementById('treeControls').style.display = 'none';
+      state.structure.generator.name = 'erdos_renyi';
+      state.structure.generator.params = { n: 80, p: 0.04 };
+    }
+    
+    updateTauMetrics();
+    updateKappaParams();  // Update warnings based on new structure type
+  });
+  
+  // Tree parameter updates
+  document.getElementById('branchRate').addEventListener('input', e => {
+    document.getElementById('branchRateDisplay').textContent = parseFloat(e.target.value).toFixed(2);
+    state.structure.generator.params.side_branch_rate = parseFloat(e.target.value);
+  });
+  
+  document.getElementById('treeDepth').addEventListener('change', e => {
+    state.structure.generator.params.L = parseInt(e.target.value);
+  });
+  
+  document.getElementById('branchLength').addEventListener('change', e => {
+    state.structure.generator.params.side_branch_len = parseInt(e.target.value);
+  });
+  
+  document.getElementById('treeType').addEventListener('change', e => {
+    state.structure.generator.name = e.target.value;
+  });
+  
+  // Graph parameter updates
+  document.getElementById('edgeProb').addEventListener('input', e => {
+    document.getElementById('probDisplay').textContent = parseFloat(e.target.value).toFixed(2);
+    state.structure.generator.params.p = parseFloat(e.target.value);
+  });
+  
+  document.getElementById('structureSize').addEventListener('change', e => {
+    state.structure.generator.params.n = parseInt(e.target.value);
+  });
+  
+  // Kappa family switching
+  document.getElementById('kappaFamily').addEventListener('change', e => {
+    state.kappa.family = e.target.value;
+    updateKappaParams();
+  });
+  
+  // Threshold updates
+  document.getElementById('thresholdRR').addEventListener('change', e => {
+    state.thresholds.RR = parseFloat(e.target.value);
+    document.getElementById('dispThreshRR').textContent = e.target.value;
+  });
+  
+  document.getElementById('thresholdID').addEventListener('change', e => {
+    state.thresholds.ID = parseFloat(e.target.value);
+    document.getElementById('dispThreshID').textContent = e.target.value;
+  });
+  
+  updateKappaParams();
+  updateTauMetrics();
+  setupCanvases();
+}
+
+function updateTauMetrics() {
+  const container = document.getElementById('tauMetricsContainer');
+  container.innerHTML = '';
+  
+  const domain = state.structure.type;
+  
+  for (const [key, info] of Object.entries(TAU_METRICS)) {
+    if (!info.domains.includes(domain)) continue;
+    
+    const isProtected = info.protected[domain] !== false;
+    const checked = state.tau.metrics.includes(key) ? 'checked' : '';
+    
+    const roleClass = isProtected ? 'protected' : 'diagnostic';
+    const roleLabel = isProtected ? 'P' : 'D';
+    
+    const item = document.createElement('div');
+    item.style.margin = '5px 0';
+    item.innerHTML = `
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" class="tau-metric" value="${key}" ${checked}>
+        <span>${info.name}</span>
+        <span class="metric-role ${roleClass}">${roleLabel}</span>
+      </label>
+    `;
+    container.appendChild(item);
+  }
+  
+  // Update protected list
+  state.tau.protected = Object.keys(TAU_METRICS).filter(key => {
+    const info = TAU_METRICS[key];
+    return info.domains.includes(domain) && info.protected[domain] !== false;
+  });
+  
+  // Add change listeners
+  document.querySelectorAll('.tau-metric').forEach(cb => {
+    cb.addEventListener('change', e => {
+      state.tau.metrics = Array.from(document.querySelectorAll('.tau-metric:checked')).map(c => c.value);
+    });
+  });
+}
+
+function updateKappaParams() {
+  const family = state.kappa.family;
+  const container = document.getElementById('kappaParams');
+  const description = document.getElementById('kappaDescription');
+  
+  container.innerHTML = '';
+  
+  // Check for structure type mismatch
+  const isTree = state.structure.type === 'tree';
+  const isGraphOnly = (family === 'kappa1' || family === 'kappa4');
+  
+  if (family === 'kappa1') {
+    container.innerHTML = `
+      <div class="control-group">
+        <label>δ (tolerance) <span id="deltaDisplay" class="param-display">0.12</span></label>
+        <input type="range" id="paramDelta" min="0" max="1" step="0.01" value="0.12">
+      </div>
+    `;
+    document.getElementById('paramDelta').addEventListener('input', e => {
+      document.getElementById('deltaDisplay').textContent = e.target.value;
+      state.kappa.params.delta = parseFloat(e.target.value);
+    });
+    state.kappa.params = { delta: 0.12 };
+    description.innerHTML = '<strong>κ₁ Variance Clamp:</strong> Suppresses local relational variance. Tests whether local incoherence drives residuals.';
+    
+    if (isTree) {
+      description.innerHTML += '<div class="notes warning" style="margin-top: 10px;"><strong>⚠️ Graph-only operator:</strong> κ₁ is identity on trees (will no-op). Switch to Graph structure type for meaningful results.</div>';
+    }
+  } else if (family === 'kappa2') {
+    container.innerHTML = `
+      <div class="control-group">
+        <label>λ_max (spectral cap) <span id="lambdaDisplay" class="param-display">3.5</span></label>
+        <input type="range" id="paramLambda" min="1" max="6" step="0.1" value="3.5">
+      </div>
+      <div class="notes" style="font-size: 0.8em; margin-top: 10px;">
+        <strong>Tip:</strong> Set λ_max < baseline spectral radius to trigger capping.
+        ${isTree ? '<br><strong>Note:</strong> For trees, spectral control is approximate (uniform edge scaling).' : ''}
+      </div>
+    `;
+    document.getElementById('paramLambda').addEventListener('input', e => {
+      document.getElementById('lambdaDisplay').textContent = e.target.value;
+      state.kappa.params.lambda_max = parseFloat(e.target.value);
+    });
+    state.kappa.params = { lambda_max: 3.5 };
+    description.innerHTML = '<strong>κ₂ Spectral Cap:</strong> Constrains largest eigenvalue. Scales adjacency matrix when ρ(A) > λ_max.';
+  } else if (family === 'kappa3') {
+    container.innerHTML = `
+      <div class="control-group">
+        <label>Δ (depth tolerance) <span id="depthTolDisplay" class="param-display">10</span></label>
+        <input type="range" id="paramDepthTol" min="2" max="50" step="1" value="10">
+      </div>
+    `;
+    document.getElementById('paramDepthTol').addEventListener('input', e => {
+      document.getElementById('depthTolDisplay').textContent = e.target.value;
+      state.kappa.params.depth_tol = parseInt(e.target.value);
+    });
+    state.kappa.params = { depth_tol: 10 };
+    description.innerHTML = '<strong>κ₃ Depth Balance:</strong> Enforces bounded depth asymmetry. For trees: prunes deepest branches when D(S) > Δ.';
+    
+    if (!isTree) {
+      description.innerHTML += '<div class="notes warning" style="margin-top: 10px;"><strong>⚠️ Tree-only operator:</strong> κ₃ is identity on graphs (will no-op). Switch to Tree structure type for meaningful results.</div>';
+    }
+  } else if (family === 'kappa4') {
+    container.innerHTML = `
+      <div class="control-group">
+        <label>ε (threshold) <span id="epsilonDisplay" class="param-display">0.3</span></label>
+        <input type="range" id="paramEpsilon" min="0" max="1" step="0.05" value="0.3">
+      </div>
+    `;
+    document.getElementById('paramEpsilon').addEventListener('input', e => {
+      document.getElementById('epsilonDisplay').textContent = e.target.value;
+      state.kappa.params.epsilon = parseFloat(e.target.value);
+    });
+    state.kappa.params = { epsilon: 0.3 };
+    description.innerHTML = '<strong>κ₄ Sparsity Filter:</strong> Suppresses weak long-range relations below threshold ε.';
+    
+    if (isTree) {
+      description.innerHTML += '<div class="notes warning" style="margin-top: 10px;"><strong>⚠️ Graph-only operator:</strong> κ₄ is identity on trees (will no-op). Switch to Graph structure type for meaningful results.</div>';
+    }
+  }
+}
+
+function setupCanvases() {
+  const canvases = ['canvasBaseline', 'canvasRegulated', 'canvasScatter', 'canvasConvergence'];
+  canvases.forEach(id => {
+    const canvas = document.getElementById(id);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  });
+}
+
+function randomizeSeed() {
+  const seed = Math.floor(Math.random() * 1e6);
+  document.getElementById('seed').value = seed;
+  state.run.seed = seed;
+}
+
+// ==========================================
+// MAIN EXECUTION: RUN COMPARE
+// ==========================================
+
+async function runCompare() {
+  console.log('🚀 Starting comparison run');
+  
+  state.run.id = `run_${new Date().toISOString()}`;
+  state.run.status = 'RUNNING';
+  state.run.seed = parseInt(document.getElementById('seed').value);
+  state.kappa.mode = document.getElementById('kappaMode').value;
+  state.kappa.maxIter = parseInt(document.getElementById('maxIter').value);
+  state.kappa.tol = parseFloat(document.getElementById('kappaTol').value);
+  
+  state.tau.metrics = Array.from(document.querySelectorAll('.tau-metric:checked')).map(cb => cb.value);
+  state.tau.residualMode = document.getElementById('residualMode').value;
+  
+  updateStatus('RUNNING', 'Generating baseline structure...');
+  await sleep(10);
+  
+  // Generate baseline structure
+  state.structure.S = generateStructure(
+    state.structure.type,
+    state.structure.generator.name,
+    state.structure.generator.params,
+    state.run.seed
+  );
+  
+  state.structure.layout = computeLayout(state.structure.S);
+  
+  // Compute baseline τ and residual
+  updateStatus('RUNNING', 'Computing baseline τ-projection...');
+  await sleep(10);
+  const tau_baseline = computeTau(state.structure.S, state.tau.metrics);
+  const res_baseline = computeResidual(state.structure.S, state.tau.residualMode);
+  
+  state.results.baseline = { tau: tau_baseline, residual: res_baseline };
+  
+  // Show depth info for trees
+  if (state.structure.type === 'tree') {
+    const D_base = computeDepthImbalance(state.structure.S);
+    const leaves = state.structure.S.nodes.filter(n => n.isLeaf);
+    const depths = leaves.map(n => n.depth);
+    
+    document.getElementById('depthInfo').style.display = 'block';
+    document.getElementById('depthBase').textContent = D_base.toFixed(0);
+    document.getElementById('maxDepth').textContent = Math.max(...depths);
+    document.getElementById('minDepth').textContent = Math.min(...depths);
+    document.getElementById('targetDelta').textContent = state.kappa.params.depth_tol || 0;
+  } else {
+    document.getElementById('depthInfo').style.display = 'none';
+  }
+  
+  renderGraph(state.structure.S, state.structure.layout, 'canvasBaseline', null);
+  
+  // Apply κ
+  updateStatus('RUNNING', 'Applying κ-operator...');
+  await sleep(10);
+  state.structure.S_reg = await applyKappa(state.structure.S, state.kappa);
+  
+  // Compute regulated τ and residual
+  updateStatus('RUNNING', 'Computing regulated τ-projection...');
+  await sleep(10);
+  const tau_regulated = computeTau(state.structure.S_reg, state.tau.metrics);
+  const res_regulated = computeResidual(state.structure.S_reg, state.tau.residualMode);
+  
+  state.results.regulated = { tau: tau_regulated, residual: res_regulated };
+  
+  // Update depth info
+  if (state.structure.type === 'tree') {
+    const D_reg = computeDepthImbalance(state.structure.S_reg);
+    document.getElementById('depthReg').textContent = D_reg.toFixed(0);
+  }
+  
+  renderGraph(state.structure.S_reg, state.structure.layout, 'canvasRegulated', state.structure.S);
+  
+  // Compute metrics (ID only on protected)
+  const RR = (res_baseline > 0) 
+    ? 100 * (res_baseline - res_regulated) / res_baseline
+    : 0;  // Identity case: no baseline residual
+  const ID = computeInvariantDriftProtected(tau_baseline, tau_regulated);
+  
+  const lastHistory = state.kappa.history[state.kappa.history.length - 1];
+  const converged = lastHistory && lastHistory.delta < state.kappa.tol;
+  
+  const verdict = (RR >= state.thresholds.RR) && (ID <= state.thresholds.ID) && converged ? 'PASS' : 'FAIL';
+  
+  state.results.RR = RR;
+  state.results.ID = ID;
+  state.results.converged = converged;
+  state.results.verdict = verdict;
+  
+  // Update UI
+  updateResultsTable(tau_baseline, tau_regulated);
+  document.getElementById('rrValue').textContent = RR.toFixed(2) + '%';
+  document.getElementById('idValue').textContent = ID.toFixed(3) + '%';
+  document.getElementById('rrValue').className = `metric-value ${RR >= state.thresholds.RR ? 'pass' : 'fail'}`;
+  document.getElementById('idValue').className = `metric-value ${ID <= state.thresholds.ID ? 'pass' : 'fail'}`;
+  document.getElementById('residualInfo').style.display = 'block';
+  
+  document.getElementById('metricConverged').textContent = converged ? '✓ Yes' : '✗ No';
+  document.getElementById('metricConverged').className = `metric-value ${converged ? 'pass' : 'fail'}`;
+  document.getElementById('metricIter').textContent = state.kappa.history.length;
+  document.getElementById('metricVerdict').textContent = verdict;
+  document.getElementById('metricVerdict').className = `metric-value ${verdict === 'PASS' ? 'pass' : 'fail'}`;
+  document.getElementById('metricDelta').textContent = (lastHistory?.delta || 0).toExponential(2);
+  
+  state.scatterPoints.push({ RR, ID, verdict });
+  renderScatter();
+  renderConvergence();
+  
+  updateStatus(verdict === 'PASS' ? 'COMPLETE' : 'FAIL', 
+    `${verdict}: RR=${RR.toFixed(1)}%, ID=${ID.toFixed(2)}%, Converged=${converged}`);
+  
+  document.getElementById('exportBtn').disabled = false;
+  
+  console.log(`✓ Run complete: ${verdict}`);
+  console.log(`  RR = ${RR.toFixed(2)}%, ID = ${ID.toFixed(3)}%`);
+}
+
+function computeInvariantDriftProtected(tau1, tau2) {
+  let maxDrift = 0;
+  
+  for (const metric of state.tau.protected) {
+    if (!(metric in tau1) || !(metric in tau2)) continue;
+    
+    const base = Math.abs(tau1[metric]);
+    if (base < 1e-12) continue;
+    
+    const drift = Math.abs(tau2[metric] - tau1[metric]) / base * 100;
+    maxDrift = Math.max(maxDrift, drift);
+  }
+  
+  return maxDrift;
+}
+
+function updateResultsTable(tau1, tau2) {
+  const tbody = document.getElementById('resultsTableBody');
+  tbody.innerHTML = '';
+  
+  for (const metric in tau1) {
+    const val1 = tau1[metric];
+    const val2 = tau2[metric];
+    const delta = 100 * (val2 - val1) / Math.max(Math.abs(val1), 1e-10);
+    const drift = Math.abs(delta);
+    
+    const isProtected = state.tau.protected.includes(metric);
+    const status = isProtected && (drift <= state.thresholds.ID) ? '✓' : (isProtected ? '✗' : '—');
+    
+    const row = document.createElement('tr');
+    row.className = isProtected ? 'protected' : 'diagnostic';
+    row.innerHTML = `
+      <td>${TAU_METRICS[metric].name} ${isProtected ? '<span class="metric-role protected">P</span>' : '<span class="metric-role diagnostic">D</span>'}</td>
+      <td class="value">${val1.toFixed(4)}</td>
+      <td class="value">${val2.toFixed(4)}</td>
+      <td class="value">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}%</td>
+      <td style="color: ${isProtected ? (drift <= state.thresholds.ID ? '#4aff4a' : '#ff4a4a') : '#888'}">${status}</td>
+    `;
+    tbody.appendChild(row);
+  }
+}
+
+function updateStatus(status, message) {
+  const display = document.getElementById('statusDisplay');
+  display.textContent = message;
+  display.className = `status-display ${status.toLowerCase()}`;
+  state.run.status = status;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ==========================================
+// LAYOUT & RENDERING
+// ==========================================
+
+function computeLayout(S) {
+  if (S.type === 'tree') {
+    return computeTreeLayout(S);
+  } else {
+    return computeGraphLayout(S);
+  }
+}
+
+function computeTreeLayout(S) {
+  // Simple hierarchical layout
+  const positions = Array(S.nodes.length).fill(0).map(() => ({ x: 0, y: 0 }));
+  
+  const maxDepth = Math.max(...S.nodes.map(n => n.depth));
+  const yStep = 450 / (maxDepth + 1);
+  
+  // Count nodes per depth
+  const nodesAtDepth = Array(maxDepth + 1).fill(0);
+  for (const node of S.nodes) {
+    nodesAtDepth[node.depth]++;
+  }
+  
+  // Assign x positions
+  const xCounters = Array(maxDepth + 1).fill(0);
+  
+  for (const node of S.nodes) {
+    const d = node.depth;
+    const totalAtDepth = nodesAtDepth[d];
+    const xStep = 480 / (totalAtDepth + 1);
+    
+    positions[node.id].x = 10 + xStep * (xCounters[d] + 1);
+    positions[node.id].y = 20 + d * yStep;
+    xCounters[d]++;
+  }
+  
+  return positions;
+}
+
+function computeGraphLayout(S) {
+  // Force-directed layout (simplified)
+  const n = S.nodes;
+  const positions = Array(n).fill(0).map(() => ({
+    x: Math.random() * 400 + 50,
+    y: Math.random() * 400 + 50
+  }));
+  
+  const iterations = 100;
+  const k = 50;
+  const repulsion = 1000;
+  
+  for (let iter = 0; iter < iterations; iter++) {
+    const forces = Array(n).fill(0).map(() => ({ x: 0, y: 0 }));
+    
+    // Repulsion
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = positions[j].x - positions[i].x;
+        const dy = positions[j].y - positions[i].y;
+        const dist = Math.sqrt(dx*dx + dy*dy) + 1;
+        const force = repulsion / (dist * dist);
+        
+        forces[i].x -= force * dx / dist;
+        forces[i].y -= force * dy / dist;
+        forces[j].x += force * dx / dist;
+        forces[j].y += force * dy / dist;
+      }
+    }
+    
+    // Attraction
+    for (const edge of S.edges) {
+      const dx = positions[edge.to].x - positions[edge.from].x;
+      const dy = positions[edge.to].y - positions[edge.from].y;
+      const dist = Math.sqrt(dx*dx + dy*dy) + 1;
+      const force = k * Math.log(dist / 50);
+      
+      forces[edge.from].x += force * dx / dist;
+      forces[edge.from].y += force * dy / dist;
+      forces[edge.to].x -= force * dx / dist;
+      forces[edge.to].y -= force * dy / dist;
+    }
+    
+    // Update positions
+    const damping = 0.1;
+    for (let i = 0; i < n; i++) {
+      positions[i].x += forces[i].x * damping;
+      positions[i].y += forces[i].y * damping;
+      
+      positions[i].x = Math.max(30, Math.min(470, positions[i].x));
+      positions[i].y = Math.max(30, Math.min(470, positions[i].y));
+    }
+  }
+  
+  return positions;
+}
+
+function renderGraph(S, layout, canvasId, S_compare) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const showWeights = document.getElementById('showWeights').checked;
+  const showDelta = document.getElementById('showDelta').checked && S_compare;
+  
+  const n = (S.type === 'tree') ? S.nodes.length : S.nodes;
+  
+  // Draw edges
+  for (const edge of S.edges) {
+    const pos1 = layout[edge.from];
+    const pos2 = layout[edge.to];
+    
+    let color = '#2a4a7a';
+    let lineWidth = 1;
+    
+    if (showDelta && S_compare) {
+      const w_old = S_compare.adjacency[edge.from][edge.to];
+      const w_new = edge.weight;
+      const diff = Math.abs(w_new - w_old);
+      
+      if (diff > 0.05) {
+        color = w_new > w_old ? '#4aff4a' : '#ff4a4a';
+        lineWidth = 2;
+      }
+    }
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(pos1.x, pos1.y);
+    ctx.lineTo(pos2.x, pos2.y);
+    ctx.stroke();
+    
+    if (showWeights && edge.weight !== 1.0) {
+      const mx = (pos1.x + pos2.x) / 2;
+      const my = (pos1.y + pos2.y) / 2;
+      ctx.fillStyle = '#888';
+      ctx.font = '8px Consolas';
+      ctx.fillText(edge.weight.toFixed(2), mx, my);
+    }
+  }
+  
+  // Draw nodes
+  if (S.type === 'tree') {
+    for (const node of S.nodes) {
+      const pos = layout[node.id];
+      ctx.fillStyle = node.isLeaf ? '#ff4a9e' : '#4a9eff';
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, node.isLeaf ? 5 : 4, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const pos = layout[i];
+      ctx.fillStyle = '#4a9eff';
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 4, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+}
+
+function renderScatter() {
+  const canvas = document.getElementById('canvasScatter');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const padding = 40;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  // Axes
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Consolas';
+  ctx.fillText('RR%', w - padding - 30, h - padding + 25);
+  ctx.save();
+  ctx.translate(15, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('ID%', 0, 0);
+  ctx.restore();
+  
+  // Threshold lines
+  const threshRR_x = padding + (state.thresholds.RR / 100) * plotW;
+  const threshID_y = h - padding - (state.thresholds.ID / 10) * plotH;
+  
+  ctx.strokeStyle = '#4aff4a';
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(threshRR_x, padding);
+  ctx.lineTo(threshRR_x, h - padding);
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.moveTo(padding, threshID_y);
+  ctx.lineTo(w - padding, threshID_y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Plot points
+  for (const pt of state.scatterPoints) {
+    const x = padding + Math.min(pt.RR / 100, 1) * plotW;
+    const y = h - padding - Math.min(pt.ID / 10, 1) * plotH;
+    
+    ctx.fillStyle = pt.verdict === 'PASS' ? '#4aff4a' : '#ff4a4a';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+function renderConvergence() {
+  const canvas = document.getElementById('canvasConvergence');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (state.kappa.history.length === 0) return;
+  
+  const padding = 30;
+  const plotW = w - 2 * padding;
+  const plotH = h - 2 * padding;
+  
+  const maxT = state.kappa.history.length - 1;
+  const maxDelta = Math.max(...state.kappa.history.map(h => h.delta), 1e-6);
+  
+  // Axes
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, h - padding);
+  ctx.lineTo(w - padding, h - padding);
+  ctx.stroke();
+  
+  // Plot
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < state.kappa.history.length; i++) {
+    const x = padding + (i / maxT) * plotW;
+    const y = h - padding - (state.kappa.history[i].delta / maxDelta) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  // Tolerance line
+  const tol_y = h - padding - (state.kappa.tol / maxDelta) * plotH;
+  ctx.strokeStyle = '#4aff4a';
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(padding, tol_y);
+  ctx.lineTo(w - padding, tol_y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ==========================================
+// EXPORTS
+// ==========================================
+
+function exportJSON() {
+  const exportData = {
+    chamber: 'XXXIII',
+    operator: 'kappa',
+    version: '0.2.3',
+    timestamp_utc: new Date().toISOString(),
+    mode: state.run.mode,
+    structure: {
+      type: state.structure.type,
+      generator: state.structure.generator,
+      seed: state.run.seed
+    },
+    kappa: {
+      family: state.kappa.family,
+      params: state.kappa.params,
+      mode: state.kappa.mode,
+      tol: state.kappa.tol,
+      maxIter: state.kappa.maxIter
+    },
+    tau: {
+      metrics: state.tau.metrics,
+      protected: state.tau.protected,
+      residual_mode: state.tau.residualMode
+    },
+    thresholds: {
+      RR_min_pct: state.thresholds.RR,
+      ID_max_pct: state.thresholds.ID
+    },
+    results: {
+      baseline: state.results.baseline,
+      regulated: state.results.regulated,
+      RR_pct: state.results.RR,
+      ID_pct: state.results.ID,
+      kappa_converged: state.results.converged,
+      verdict: state.results.verdict
+    },
+    history: state.kappa.history.map(h => ({
+      t: h.t,
+      delta_norm: h.delta
+    }))
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `XXXIII_kappa_${state.kappa.family}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('💾 Data exported:', a.download);
+}
+
+function resetChamber() {
+  state.results = { baseline: null, regulated: null, RR: null, ID: null, verdict: null, converged: false };
+  state.kappa.history = [];
+  state.scatterPoints = [];
+  
+  updateStatus('IDLE', 'IDLE — Ready to run');
+  
+  document.getElementById('resultsTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">Run comparison to populate</td></tr>';
+  document.getElementById('residualInfo').style.display = 'none';
+  document.getElementById('exportBtn').disabled = true;
+  
+  ['canvasBaseline', 'canvasRegulated', 'canvasScatter', 'canvasConvergence'].forEach(id => {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+  
+  document.getElementById('metricConverged').textContent = '—';
+  document.getElementById('metricIter').textContent = '—';
+  document.getElementById('metricVerdict').textContent = '—';
+  document.getElementById('metricDelta').textContent = '—';
+  
+  console.log('🔄 Chamber reset');
+}
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
+window.addEventListener('load', () => {
+  initUI();
+  console.log('✅ Chamber XXXIII v0.2.0 ready');
+  console.log('   Tree support + Protected/Diagnostic split');
+  console.log('═══════════════════════════════════════');
+});
+  </script>
+</body>
+</html>

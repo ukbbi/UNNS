@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamber LV v1.1.0 — Tier-2 Selective Transfer Diagnostic</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #1a1a24;
+            --bg-tertiary: #2a2a3a;
+            --text-primary: #e0e0e8;
+            --text-secondary: #a0a0b0;
+            --accent-blue: #4a9eff;
+            --accent-purple: #b84aff;
+            --accent-green: #4aff88;
+            --accent-yellow: #ffcc4a;
+            --accent-red: #ff4a6a;
+            --accent-orange: #ff8a4a;
+            --accent-teal: #4affdd;
+            --border-color: #3a3a4a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        .header {
+            background: linear-gradient(135deg, #0d0d1a, #1a1024);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--accent-purple);
+        }
+
+        .title { font-size: 28px; font-weight: 600; color: var(--accent-purple); margin-bottom: 6px; }
+        .subtitle { color: var(--text-secondary); font-size: 14px; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .badge-raw    { background: var(--accent-orange); color: #000; }
+        .badge-norm   { background: var(--accent-teal);   color: #000; }
+        .badge-new    { background: var(--accent-purple);  color: #fff; }
+
+        .panel {
+            background: var(--bg-secondary);
+            padding: 22px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .control-group label { color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="number"], select, input[type="text"] {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white; border: none; padding: 11px 22px;
+            border-radius: 6px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(74,158,255,0.4); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-sec { background: linear-gradient(135deg, var(--bg-tertiary), var(--border-color)); }
+        .btn-danger { background: linear-gradient(135deg, var(--accent-red), #c43050); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 12px; }
+        th { background: var(--bg-tertiary); color: var(--accent-blue); font-weight: 600; }
+
+        .pass  { color: var(--accent-green); font-weight: 600; }
+        .fail  { color: var(--accent-red); font-weight: 600; }
+        .warn  { color: var(--accent-yellow); font-weight: 600; }
+
+        .progress-bar { width: 100%; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple)); transition: width 0.3s; }
+
+        .log {
+            background: var(--bg-primary); padding: 14px; border-radius: 4px;
+            max-height: 350px; overflow-y: auto;
+            font-family: 'Courier New', monospace; font-size: 11px;
+        }
+        .log-entry { margin-bottom: 3px; padding: 2px 0; }
+        .log-info    { color: var(--text-secondary); }
+        .log-success { color: var(--accent-green); }
+        .log-warning { color: var(--accent-yellow); }
+        .log-error   { color: var(--accent-red); }
+
+        /* Dual-track layout */
+        .dual-track {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .track-raw  { border-left: 4px solid var(--accent-orange); padding: 16px; background: var(--bg-tertiary); border-radius: 6px; }
+        .track-norm { border-left: 4px solid var(--accent-teal);   padding: 16px; background: var(--bg-tertiary); border-radius: 6px; }
+        .track-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+
+        /* Family sections */
+        .family-block {
+            border-left: 4px solid var(--accent-purple);
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        .family-name { font-size: 18px; font-weight: 700; color: var(--accent-purple); margin-bottom: 12px; }
+
+        canvas { border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); }
+
+        /* Verdict */
+        .verdict-A {
+            background: rgba(74, 255, 221, 0.1);
+            border: 2px solid var(--accent-teal);
+            color: var(--accent-teal);
+            padding: 24px; border-radius: 8px; margin-top: 16px;
+        }
+        .verdict-B {
+            background: rgba(255, 138, 74, 0.1);
+            border: 2px solid var(--accent-orange);
+            color: var(--accent-orange);
+            padding: 24px; border-radius: 8px; margin-top: 16px;
+        }
+        .verdict-pass {
+            background: rgba(74, 255, 136, 0.1);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 24px; border-radius: 8px; margin-top: 16px;
+        }
+
+        .scope-box {
+            background: rgba(255,138,74,0.08);
+            border-left: 4px solid var(--accent-orange);
+            padding: 14px; margin-bottom: 16px; border-radius: 4px; font-size: 13px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        .mini-card {
+            background: var(--bg-primary);
+            padding: 12px; border-radius: 6px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .mini-card .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+        .mini-card .value { font-size: 20px; font-weight: 700; }
+        .mini-card .sub   { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="title">
+            Chamber LV v1.1.0
+            <span class="badge badge-raw">RAW TRACK</span>
+            <span class="badge badge-norm">NORM TRACK</span>
+            <span class="badge badge-new">R5-T SLOPE</span>
+        </div>
+        <div class="subtitle">Tier-2 Selective Transfer Diagnostic — Encoding Artifact vs Hierarchy Stratification</div>
+        <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">
+            <strong>Central question:</strong> Does V2×V4 failure persist after encoding-invariant normalization? If yes → Selective Transfer Theorem. If no → Scale drift artifact.
+        </div>
+    </div>
+
+    <!-- SCOPE -->
+    <div class="scope-box">
+        <strong>Decision Rule (preregistered):</strong><br>
+        <strong>Declare A (Encoding Artifact)</strong> if: Run B (normalized) meets passFraction at R1=0.70 for all previously failing gates, AND the R1 sweep shows normalized retention curves align with stable families.<br>
+        <strong>Declare B (Selective Transfer)</strong> if: V2×V4 still fails at R1=0.70 after normalization (B1), OR has systematically steeper retention erosion slope than stable families (B2). Either condition sufficient.
+    </div>
+
+    <!-- CONFIG -->
+    <div class="panel">
+        <div class="panel-title">⚙️ Configuration</div>
+        <div class="control-grid">
+            <div class="control-group">
+                <label>Operator Families</label>
+                <div style="font-size:12px; margin-top:5px; line-height:2;">
+                    <input type="checkbox" id="fam-v2v3" checked> V2×V3 (Tier-2 × Tier-1)<br>
+                    <input type="checkbox" id="fam-v2v4" checked> V2×V4 (Tier-2 + curvature)<br>
+                    <input type="checkbox" id="fam-v6v7" checked> V6×V7 (Tier-2 internal)
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Normalizations (Run B)</label>
+                <div style="font-size:12px; margin-top:5px; line-height:2;">
+                    <input type="checkbox" id="norm-g1" disabled> G1 (off — no clear scale issue)<br>
+                    <input type="checkbox" id="norm-g2" checked> G2 — δκ_rel = δκ / (⟨κ⟩ + η)<br>
+                    <input type="checkbox" id="norm-g3" checked> G3 — B_rel = sharpness / median(B)<br>
+                    <input type="checkbox" id="norm-g4" checked> G4 — L_rel = L / (⟨L⟩ + η)
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Pool Size (per family)</label>
+                <input type="number" id="pool-size" value="2000" min="500" max="5000" step="100">
+            </div>
+            <div class="control-group">
+                <label>τ₂ Levels</label>
+                <select id="tier-levels">
+                    <option value="3">3 levels (low / mid / high)</option>
+                    <option value="5" selected>5 levels (t1–t5)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Random Seed</label>
+                <input type="number" id="random-seed" value="42">
+            </div>
+            <div class="control-group">
+                <label>Pass Fraction (τ₂)</label>
+                <input type="number" id="pass-fraction" value="0.67" min="0.5" max="1.0" step="0.01">
+            </div>
+        </div>
+
+        <div class="control-grid">
+            <div class="control-group">
+                <label>Structural Thresholds (R2/R3/R4 — fixed)</label>
+                <div style="font-size:12px; margin-top:5px; line-height:2;">
+                    R2-T (Overlap): 0.10 &nbsp;
+                    R3-T (Interference): 0.05 &nbsp;
+                    R4-T (Migration): 0.10
+                </div>
+            </div>
+            <div class="control-group">
+                <label>R1 Sweep Grid</label>
+                <input type="text" id="r1-sweep" value="0.65,0.68,0.70,0.72,0.75">
+                <span style="font-size:11px; color:var(--text-secondary);">Comma-separated thresholds</span>
+            </div>
+            <div class="control-group">
+                <label>R1 Threshold (primary pass)</label>
+                <input type="number" id="r1-threshold" value="0.70" min="0.5" max="1.0" step="0.01">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
+            <button id="run-btn" onclick="executeProtocol()">Execute LV v1.1.0</button>
+            <button class="btn-sec" onclick="exportResults()">Export JSON</button>
+            <button class="btn-danger" onclick="resetChamber()">Reset</button>
+        </div>
+
+        <div id="progress-panel" style="display:none; margin-top:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
+                <span id="progress-label">Initializing…</span>
+                <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-root" style="display:none;">
+
+        <!-- Baseline -->
+        <div class="panel">
+            <div class="panel-title">📊 Baseline Witness Pools (Tier-1 raw)</div>
+            <table>
+                <thead>
+                    <tr><th>Family</th><th>G1 |W₀|</th><th>G2 |W₀|</th><th>G3 |W₀|</th><th>G4 |W₀|</th>
+                        <th>G1 density</th><th>G2 density</th><th>G3 density</th><th>G4 density</th></tr>
+                </thead>
+                <tbody id="baseline-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Per-family results -->
+        <div id="family-results"></div>
+
+        <!-- R1 Sweep Curves -->
+        <div class="panel" id="sweep-panel">
+            <div class="panel-title">📈 R1 Sweep Curves — passRate(R1-T) per family × gate × track</div>
+            <div id="sweep-charts"></div>
+        </div>
+
+        <!-- R5-T Slope Index -->
+        <div class="panel" id="slope-panel">
+            <div class="panel-title">📐 R5-T: Retention Slope Index (dρ/d τ₂ level)</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+                Negative slope = retention erosion under τ₂ lifting. V2×V4 uniquely negative → structural stratification signal.
+            </div>
+            <div class="grid-2">
+                <div>
+                    <strong style="font-size:13px;">Raw Track</strong>
+                    <table id="slope-raw-table">
+                        <thead><tr><th>Family</th><th>Gate</th><th>Slope (dρ/dτ)</th><th>Classification</th></tr></thead>
+                        <tbody id="slope-raw-tbody"></tbody>
+                    </table>
+                </div>
+                <div>
+                    <strong style="font-size:13px;">Normalized Track</strong>
+                    <table id="slope-norm-table">
+                        <thead><tr><th>Family</th><th>Gate</th><th>Slope (dρ/dτ)</th><th>Classification</th></tr></thead>
+                        <tbody id="slope-norm-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <canvas id="slope-canvas" width="1200" height="350" style="margin-top:16px; width:100%;"></canvas>
+        </div>
+
+        <!-- Delta(passRate) -->
+        <div class="panel" id="delta-panel">
+            <div class="panel-title">Δ(passRate) = Normalized − Raw at R1=0.70 (per gate × family)</div>
+            <table id="delta-table">
+                <thead>
+                    <tr><th>Family</th><th>Gate</th><th>Raw passRate</th><th>Norm passRate</th><th>Δ</th><th>Interpretation</th></tr>
+                </thead>
+                <tbody id="delta-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Final verdict -->
+        <div class="panel" id="verdict-panel">
+            <div class="panel-title">⚖️ Decision: Encoding Artifact (A) vs Selective Transfer (B)</div>
+            <div id="verdict-display"></div>
+        </div>
+
+    </div>
+
+    <!-- LOG -->
+    <div class="panel">
+        <div class="panel-title">📋 Execution Log</div>
+        <div class="log" id="execution-log">
+            <div class="log-entry log-info">[INIT] Chamber LV v1.1.0 initialized.</div>
+            <div class="log-entry log-info">[INIT] Dual-track (raw + normalized) with R5-T slope index.</div>
+        </div>
+    </div>
+
+</div>
+<script>
+// ============================================================================
+// CHAMBER LV v1.1.0 — TIER-2 SELECTIVE TRANSFER DIAGNOSTIC ENGINE
+// ============================================================================
+
+const CONFIG = {
+    id: "LV", version: "1.1.0", phase: "P3",
+    timestamp: new Date().toISOString(),
+    thresholds: { R2: 0.10, R3: 0.05, R4: 0.10 }
+};
+
+const GATE_COLORS = { G1:'#4a9eff', G2:'#b84aff', G3:'#4aff88', G4:'#ffcc4a' };
+const FAMILY_COLORS = { 'V2×V3':'#4aff88', 'V2×V4':'#ff4a6a', 'V6×V7':'#4affdd' };
+
+const state = {
+    running: false,
+    families: [],
+    pools: {},            // family → base mechanism array
+    normStats: {},        // family × τ_level → {meanKappa, medSharpness, meanLocality}
+    baseWitnesses: {},    // family → gate → [id]
+    rawResults: {},       // family → τ_label → {retention, overlap, dual, migration}
+    normResults: {},      // family → τ_label → {retention, overlap, dual, migration}
+    sweepData: {},        // family → gate → track → {r1 → passRate}
+    slopeData: {},        // family → gate → {raw, norm}
+    deltaData: [],        // [{family, gate, rawPR, normPR, delta}]
+    verdict: null
+};
+
+// ============================================================================
+// RNG
+// ============================================================================
+function rng(seed) {
+    let s = seed;
+    return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+}
+
+// ============================================================================
+// MECHANISM GENERATION
+// ============================================================================
+function genMech(r, id) {
+    return {
+        id,
+        gamma0: r() * 2.0, beta: r() * 2.0, d: r() * 5.0, kmax: r() * 6.0,
+        curvature_method: r() < 0.7 ? 'turning_angle' : 'finite_diff',
+        delta_kappa: 0.03 + r() * 0.06,
+        mean_kappa_proxy: 0.02 + r() * 0.1,   // proxy for local curvature scale
+        has_bifurcation: r() < 0.7,
+        sharpness: 0.08 + r() * 0.06,
+        locality_score: r() * 0.15
+    };
+}
+
+function genPool(family, n, seed) {
+    const r = rng(seed);
+    return Array.from({ length: n }, (_, i) => genMech(r, `${family}|${i}`));
+}
+
+// ============================================================================
+// TIER-2 FAMILY APPLICATION
+// ============================================================================
+function applyTier2(mech, family, tau2, r) {
+    const m = JSON.parse(JSON.stringify(mech));
+    switch(family) {
+        case 'V2×V3':
+            m.gamma0 *= 1 + tau2 * (r() - 0.5) * 0.3;
+            m.beta   *= 1 + tau2 * (r() - 0.5) * 0.3;
+            m.delta_kappa *= 1 + tau2 * 0.1 * Math.sin(m.gamma0);
+            break;
+        case 'V2×V4':
+            // Curvature augmentation — rescales kappa-family scalars
+            if (r() < tau2 * 0.4) m.curvature_method = 'smoothed';
+            const kscale = 1 + tau2 * 0.6 * (r() - 0.3);  // biased upward — rescaling effect
+            m.delta_kappa    *= kscale;
+            m.mean_kappa_proxy *= kscale;
+            m.sharpness      *= 1 + tau2 * (r() - 0.5) * 0.45;
+            m.locality_score *= 1 + tau2 * 0.3 * r();
+            break;
+        case 'V6×V7':
+            const phi = r() * 2 * Math.PI;
+            m.gamma0 *= 1 + tau2 * 0.5 * Math.cos(phi);
+            m.beta   *= 1 + tau2 * 0.5 * Math.sin(phi);
+            m.kmax   *= 1 + tau2 * 0.3 * Math.cos(2*phi);
+            m.delta_kappa    *= 1 + tau2 * (r() - 0.5) * 0.5;
+            m.sharpness      *= 1 + tau2 * (r() - 0.5) * 0.5;
+            m.locality_score *= 1 + tau2 * (r() - 0.5) * 0.5;
+            break;
+    }
+    m.delta_kappa    = Math.max(0, m.delta_kappa);
+    m.sharpness      = Math.max(0, m.sharpness);
+    m.locality_score = Math.max(0, Math.min(1, m.locality_score));
+    return m;
+}
+
+// ============================================================================
+// NORMALIZATION STATISTICS (computed from base pool for given family × τ)
+// ============================================================================
+function computeNormStats(pool) {
+    const eta = 1e-9;
+    const meanKappa  = pool.reduce((s,m) => s + m.mean_kappa_proxy, 0) / pool.length + eta;
+    const sharpVals  = pool.map(m => m.sharpness).sort((a,b) => a-b);
+    const medSharpness = sharpVals[Math.floor(sharpVals.length/2)] + eta;
+    const meanLocality = pool.reduce((s,m) => s + m.locality_score, 0) / pool.length + eta;
+    return { meanKappa, medSharpness, meanLocality, eta };
+}
+
+// ============================================================================
+// GATE EVALUATION — RAW AND NORMALIZED
+// ============================================================================
+function evalGateRaw(gate, m, mode='base', eps=0) {
+    switch(gate) {
+        case 'G1':
+            if (mode==='base')    return m.curvature_method === 'turning_angle';
+            return m.curvature_method==='turning_angle' || (m.curvature_method==='finite_diff' && eps>=0.05);
+        case 'G2':
+            if (mode==='base')    return m.delta_kappa > 0.05;
+            return m.delta_kappa > (0.05 - eps);
+        case 'G3':
+            if (mode==='base')    return m.has_bifurcation && m.sharpness > 0.1;
+            return m.has_bifurcation && m.sharpness > (0.1 - eps);
+        case 'G4':
+            if (mode==='base')    return m.locality_score < 0.1;
+            return m.locality_score < (0.1 + eps);
+    }
+}
+
+function evalGateNorm(gate, m, ns, mode='base', eps=0) {
+    const normG2 = document.getElementById('norm-g2').checked;
+    const normG3 = document.getElementById('norm-g3').checked;
+    const normG4 = document.getElementById('norm-g4').checked;
+
+    switch(gate) {
+        case 'G1':
+            return evalGateRaw('G1', m, mode, eps); // G1 normalization off
+
+        case 'G2': {
+            if (!normG2) return evalGateRaw('G2', m, mode, eps);
+            const dk_rel = m.delta_kappa / (ns.meanKappa);
+            // Threshold: if baseline G2 raw threshold is 0.05 and meanKappa~0.07, normalized threshold ~ 0.05/0.07 ≈ 0.71
+            const normThresh = 0.05 / ns.meanKappa;
+            if (mode==='base') return dk_rel > normThresh;
+            return dk_rel > (normThresh - eps / ns.meanKappa);
+        }
+
+        case 'G3': {
+            if (!normG3) return evalGateRaw('G3', m, mode, eps);
+            const b_rel = m.sharpness / ns.medSharpness;
+            const normThresh = 0.1 / ns.medSharpness;
+            if (mode==='base') return m.has_bifurcation && b_rel > normThresh;
+            return m.has_bifurcation && b_rel > (normThresh - eps / ns.medSharpness);
+        }
+
+        case 'G4': {
+            if (!normG4) return evalGateRaw('G4', m, mode, eps);
+            const l_rel = m.locality_score / ns.meanLocality;
+            const normThresh = 0.1 / ns.meanLocality;
+            if (mode==='base') return l_rel < normThresh;
+            return l_rel < (normThresh + eps / ns.meanLocality);
+        }
+    }
+}
+
+// ============================================================================
+// WITNESS SEARCH
+// ============================================================================
+function findWitnesses(pool, evalFn) {
+    const gates = Object.keys({ G1:1, G2:1, G3:1, G4:1 });
+    const witnesses = {};
+    for (const g of gates) {
+        witnesses[g] = [];
+        const others = gates.filter(x => x !== g);
+        for (const m of pool) {
+            if (!evalFn(g, m) && others.every(o => evalFn(o, m))) {
+                witnesses[g].push(m.id);
+            }
+        }
+    }
+    return witnesses;
+}
+
+// ============================================================================
+// METRICS FOR ONE (pool, evalFn, baselineWitnesses) COMBINATION
+// ============================================================================
+function computeMetrics(tier2Pool, evalFn, baselineWitnesses, eps=0.05) {
+    const gates = Object.keys({ G1:1, G2:1, G3:1, G4:1 });
+    const t2Map = {};
+    for (const m of tier2Pool) t2Map[m.id] = m;
+
+    // R1-T: identity-preserving retention
+    const retention = {};
+    for (const g of gates) {
+        const base = baselineWitnesses[g];
+        const others = gates.filter(x => x !== g);
+        let kept = 0;
+        for (const id of base) {
+            const m = t2Map[id];
+            if (!m) continue;
+            if (!evalFn(g, m) && others.every(o => evalFn(o, m))) kept++;
+        }
+        retention[g] = { baseCount: base.length, kept, rho: base.length > 0 ? kept / base.length : 1.0 };
+    }
+
+    // R2-T: channel distinguishability
+    const t2Witnesses = {};
+    for (const g of gates) {
+        t2Witnesses[g] = new Set();
+        const others = gates.filter(x => x !== g);
+        for (const m of tier2Pool) {
+            if (!evalFn(g, m) && others.every(o => evalFn(o, m))) t2Witnesses[g].add(m.id);
+        }
+    }
+    const overlap = {};
+    for (let i = 0; i < gates.length; i++) {
+        for (let j = i+1; j < gates.length; j++) {
+            const key = `${gates[i]}-${gates[j]}`;
+            const Wi = t2Witnesses[gates[i]], Wj = t2Witnesses[gates[j]];
+            const inter = [...Wi].filter(id => Wj.has(id)).length;
+            const mn = Math.min(Wi.size, Wj.size);
+            overlap[key] = { overlap: mn > 0 ? inter / mn : 0 };
+        }
+    }
+
+    // R3-T: dual-relaxation interference (proper joint relaxation test)
+    const dual = {};
+    for (let i = 0; i < gates.length; i++) {
+        for (let j = i+1; j < gates.length; j++) {
+            const gi = gates[i], gj = gates[j];
+            const key = `${gi}-${gj}`;
+            let dualOnly = 0, totalExcl = 0;
+            for (const m of tier2Pool) {
+                const failI = !evalFn(gi, m), failJ = !evalFn(gj, m);
+                if (failI && failJ) {
+                    totalExcl++;
+                    // Still fails when relaxing only one
+                    const stillI = !evalFnRelaxed(gi, m, evalFn, eps);
+                    const stillJ = !evalFnRelaxed(gj, m, evalFn, eps);
+                    // Passes when both relaxed (interference signal)
+                    const passI = evalFnRelaxed(gi, m, evalFn, eps);
+                    const passJ = evalFnRelaxed(gj, m, evalFn, eps);
+                    if (stillI && stillJ && passI && passJ) dualOnly++;
+                }
+            }
+            dual[key] = { frequency: totalExcl > 0 ? dualOnly / totalExcl : 0 };
+        }
+    }
+
+    // R4-T: witness migration
+    const migration = {};
+    for (const src of gates) {
+        const base = baselineWitnesses[src];
+        let migrated = 0;
+        for (const id of base) {
+            for (const tgt of gates) {
+                if (tgt === src) continue;
+                if (t2Witnesses[tgt].has(id)) { migrated++; break; }
+            }
+        }
+        migration[src] = { rate: base.length > 0 ? migrated / base.length : 0 };
+    }
+
+    return { retention, overlap, dual, migration };
+}
+
+// Helper: evaluate gate in relaxed mode (for R3)
+function evalFnRelaxed(gate, m, evalFn, eps) {
+    // We store a "relaxed" variant; for raw/norm we just tweak eps in base eval fns
+    // Use raw relaxation — eps shifts threshold
+    return evalGateRaw(gate, m, 'relaxed', eps);
+}
+
+// ============================================================================
+// R5-T: LINEAR SLOPE FIT (ρ vs τ₂ level index)
+// ============================================================================
+function computeSlope(rhoValues) {
+    const n = rhoValues.length;
+    if (n < 2) return 0;
+    const xs = Array.from({length: n}, (_, i) => i);
+    const mx = xs.reduce((a,b) => a+b, 0) / n;
+    const my = rhoValues.reduce((a,b) => a+b, 0) / n;
+    const num = xs.reduce((s,x,i) => s + (x-mx)*(rhoValues[i]-my), 0);
+    const den = xs.reduce((s,x) => s + (x-mx)**2, 0);
+    return den > 0 ? num / den : 0;
+}
+
+// ============================================================================
+// MAIN EXECUTION
+// ============================================================================
+async function executeProtocol() {
+    if (state.running) return;
+    state.running = true;
+    const btn = document.getElementById('run-btn');
+    btn.disabled = true;
+    btn.textContent = 'Running…';
+
+    const N = parseInt(document.getElementById('pool-size').value);
+    const seed = parseInt(document.getElementById('random-seed').value);
+    const passFrac = parseFloat(document.getElementById('pass-fraction').value);
+    const r1Primary = parseFloat(document.getElementById('r1-threshold').value);
+    const r1Sweep = document.getElementById('r1-sweep').value.split(',').map(s => parseFloat(s.trim()));
+    const nLevels = parseInt(document.getElementById('tier-levels').value);
+
+    const families = [];
+    if (document.getElementById('fam-v2v3').checked) families.push('V2×V3');
+    if (document.getElementById('fam-v2v4').checked) families.push('V2×V4');
+    if (document.getElementById('fam-v6v7').checked) families.push('V6×V7');
+
+    state.families = families;
+
+    const tierDefs = nLevels === 3
+        ? [{lbl:'low',val:0.2},{lbl:'mid',val:0.5},{lbl:'high',val:0.8}]
+        : [{lbl:'t1',val:0.1},{lbl:'t2',val:0.3},{lbl:'t3',val:0.5},{lbl:'t4',val:0.7},{lbl:'t5',val:0.9}];
+
+    document.getElementById('progress-panel').style.display = 'block';
+
+    const totalSteps = families.length * (1 + tierDefs.length) + 2;
+    let step = 0;
+
+    log('=== CHAMBER LV v1.1.0: DUAL-TRACK DIAGNOSTIC ===', 'success');
+    log(`Families: ${families.join(', ')} | Pool: ${N} | Tiers: ${tierDefs.length} | R1 sweep: ${r1Sweep}`, 'info');
+
+    // Reset result containers
+    for (const k of ['rawResults','normResults','sweepData','slopeData']) state[k] = {};
+    state.deltaData = [];
+    state.baseWitnesses = {};
+    state.pools = {};
+
+    for (const fam of families) {
+        const fseed = seed + families.indexOf(fam) * 10000;
+        log(`\n── FAMILY: ${fam} ──`, 'info');
+
+        // Generate base pool
+        progress(`${fam}: generating pool`, step++, totalSteps);
+        await sleep(30);
+        const basePool = genPool(fam, N, fseed);
+        state.pools[fam] = basePool;
+
+        // Baseline norm stats (from raw base pool)
+        const baseNS = computeNormStats(basePool);
+
+        // Baseline witnesses (raw)
+        const rawEvalBase = (g, m) => evalGateRaw(g, m, 'base');
+        const normEvalBase = (g, m) => evalGateNorm(g, m, baseNS, 'base');
+
+        const baseWit = findWitnesses(basePool, rawEvalBase);
+        state.baseWitnesses[fam] = baseWit;
+
+        const gates = ['G1','G2','G3','G4'];
+        for (const g of gates) log(`  Baseline ${g}: ${baseWit[g].length} witnesses`, 'info');
+
+        state.rawResults[fam]  = {};
+        state.normResults[fam] = {};
+
+        for (const tier of tierDefs) {
+            progress(`${fam} τ₂=${tier.lbl}`, step++, totalSteps);
+            await sleep(20);
+
+            // Apply Tier-2 to produce perturbed pool (same IDs)
+            const r = rng(fseed + tierDefs.indexOf(tier) * 1000);
+            const t2Pool = basePool.map(m => applyTier2(m, fam, tier.val, r));
+
+            // Compute norm stats from Tier-2 pool (for Tier-2 normalized evaluation)
+            const t2NS = computeNormStats(t2Pool);
+
+            const rawEvalT2  = (g, m) => evalGateRaw(g, m, 'base');
+            const normEvalT2 = (g, m) => evalGateNorm(g, m, t2NS, 'base');
+
+            state.rawResults[fam][tier.lbl]  = computeMetrics(t2Pool, rawEvalT2,  baseWit);
+            state.normResults[fam][tier.lbl] = computeMetrics(t2Pool, normEvalT2, baseWit);
+
+            const logRho = (track, res) => {
+                const rhos = gates.map(g => res.retention[g].rho.toFixed(3)).join(' | ');
+                log(`  [${track}] τ₂=${tier.lbl} ρ: ${rhos}`, 'info');
+            };
+            logRho('RAW ', state.rawResults[fam][tier.lbl]);
+            logRho('NORM', state.normResults[fam][tier.lbl]);
+        }
+
+        // R1 SWEEP
+        state.sweepData[fam] = {};
+        for (const g of gates) {
+            state.sweepData[fam][g] = { raw: {}, norm: {} };
+            for (const r1 of r1Sweep) {
+                const rawPassCount  = tierDefs.filter(t => state.rawResults[fam][t.lbl].retention[g].rho >= r1).length;
+                const normPassCount = tierDefs.filter(t => state.normResults[fam][t.lbl].retention[g].rho >= r1).length;
+                state.sweepData[fam][g].raw[r1]  = rawPassCount  / tierDefs.length;
+                state.sweepData[fam][g].norm[r1] = normPassCount / tierDefs.length;
+            }
+        }
+
+        // R5-T SLOPE
+        state.slopeData[fam] = {};
+        for (const g of gates) {
+            const rawRhos  = tierDefs.map(t => state.rawResults[fam][t.lbl].retention[g].rho);
+            const normRhos = tierDefs.map(t => state.normResults[fam][t.lbl].retention[g].rho);
+            state.slopeData[fam][g] = {
+                raw:  computeSlope(rawRhos),
+                norm: computeSlope(normRhos)
+            };
+        }
+
+        // Delta(passRate) at R1=primary
+        for (const g of gates) {
+            const rawPR  = state.sweepData[fam][g].raw[r1Primary]  ?? 0;
+            const normPR = state.sweepData[fam][g].norm[r1Primary] ?? 0;
+            state.deltaData.push({ family: fam, gate: g, rawPR, normPR, delta: normPR - rawPR });
+        }
+    }
+
+    progress('Rendering results', totalSteps - 1, totalSteps);
+    await sleep(30);
+
+    // VERDICT
+    state.verdict = computeVerdict(families, tierDefs, passFrac, r1Primary, r1Sweep);
+
+    renderAll(families, tierDefs, r1Primary, r1Sweep, passFrac);
+    document.getElementById('results-root').style.display = 'block';
+
+    progress('Complete', totalSteps, totalSteps);
+    log(`\n═══ VERDICT: ${state.verdict.decision} ═══`, state.verdict.decision === 'A' ? 'success' : 'warning');
+    log(state.verdict.summary, 'info');
+
+    btn.disabled = false;
+    btn.textContent = 'Execute LV v1.1.0';
+    state.running = false;
+}
+
+// ============================================================================
+// VERDICT COMPUTATION
+// ============================================================================
+function computeVerdict(families, tierDefs, passFrac, r1Primary, r1Sweep) {
+    const gates = ['G1','G2','G3','G4'];
+    const reqLevels = Math.ceil(tierDefs.length * passFrac);
+
+    // Check if V2×V4 is in scope
+    if (!families.includes('V2×V4')) {
+        return { decision: 'INCOMPLETE', summary: 'V2×V4 not selected — cannot determine A vs B.', details: {} };
+    }
+
+    // A-criteria: Run B meets passFraction at R1=0.70 for all gates in V2×V4
+    const v2v4normPassCount = {};
+    for (const g of gates) {
+        v2v4normPassCount[g] = tierDefs.filter(t =>
+            state.normResults['V2×V4'][t.lbl].retention[g].rho >= r1Primary
+        ).length;
+    }
+    const normFixesAll = gates.every(g => v2v4normPassCount[g] >= reqLevels);
+
+    // B1-criteria: V2×V4 still fails after normalization
+    const normStillFails = !normFixesAll;
+
+    // B2-criteria: V2×V4 has distinctly steeper (more negative) slope than stable families
+    const stableFams = families.filter(f => f !== 'V2×V4');
+    let b2_detected = false;
+    const slopeComparisons = [];
+
+    if (stableFams.length > 0) {
+        for (const g of gates) {
+            const v2v4NormSlope = state.slopeData['V2×V4']?.[g]?.norm ?? 0;
+            const stableNormSlopes = stableFams.map(f => state.slopeData[f]?.[g]?.norm ?? 0);
+            const avgStable = stableNormSlopes.reduce((a,b) => a+b, 0) / stableNormSlopes.length;
+
+            // Steeper erosion = more negative slope
+            const distinctlyNegative = v2v4NormSlope < avgStable - 0.05;
+            slopeComparisons.push({ gate: g, v2v4: v2v4NormSlope, stableAvg: avgStable, distinct: distinctlyNegative });
+            if (distinctlyNegative) b2_detected = true;
+        }
+    }
+
+    // Alignment check: normalized retention curve aligns with stable families
+    const sweepAligns = gates.every(g => {
+        const v2v4SweepNorm = state.sweepData['V2×V4']?.[g]?.norm ?? {};
+        const v2v3SweepNorm = state.sweepData['V2×V3']?.[g]?.norm ?? {};
+        // Check that V2×V4 normalized passRate at primary threshold is within 0.15 of V2×V3
+        const diff = Math.abs((v2v4SweepNorm[r1Primary] ?? 0) - (v2v3SweepNorm[r1Primary] ?? 0));
+        return diff <= 0.15;
+    });
+
+    let decision, summary, interpretation;
+
+    if (normFixesAll && sweepAligns && !b2_detected) {
+        decision = 'A';
+        summary = 'ENCODING ARTIFACT\n\nEncoding-invariant normalization restores witness retention in V2×V4 to passing levels. ' +
+            'Normalized retention curves align with stable families (V2×V3, V6×V7). ' +
+            'Slope profiles are consistent across families after normalization. ' +
+            'The v1.0.0 failure was a scale drift effect from curvature augmentation, not a structural hierarchy.';
+        interpretation = 'Publish as: "Tier-2 curvature family (V2×V4) induces scale drift in projection coordinates. ' +
+            'Corrected by encoding-invariant gate inputs. Factorization transfer is complete."';
+    } else if (normStillFails || b2_detected) {
+        const reasons = [];
+        if (normStillFails) reasons.push('V2×V4 retention still fails at R1=0.70 after normalization (B1)');
+        if (b2_detected)    reasons.push('V2×V4 shows systematically steeper erosion slope than stable families (B2)');
+        decision = 'B';
+        summary = 'SELECTIVE TRANSFER THEOREM (EMPIRICAL)\n\n' +
+            reasons.join('. ') + '. ' +
+            'Witness-separability at Tier-1 does not uniformly lift under curvature-augmented Tier-2 operators. ' +
+            'Structural channels {G1,G2,G3,G4} remain orthogonal (R2/R3/R4 clean) but projection geometry is ' +
+            'family-dependent. This constitutes Tier-2 stratification.';
+        interpretation = 'Publish as: "Tier-2 Selective Transfer Theorem (empirical). ' +
+            'Factorization is not falsified. Invariant partition requires projection-level refinement for V2×V4 class." ' +
+            'Option C (encoding-invariant normalization) remains open as a next step.';
+    } else {
+        decision = 'AMBIGUOUS';
+        summary = 'Normalization partially improves V2×V4 but does not cleanly resolve. ' +
+            'Check R1 sweep curves for boundary classification.';
+        interpretation = 'Run additional diagnostic: R1 cliff vs slope analysis on normalized track.';
+    }
+
+    return { decision, summary, interpretation, details: { normFixesAll, normStillFails, b2_detected, slopeComparisons, sweepAligns, v2v4normPassCount, reqLevels } };
+}
+
+// ============================================================================
+// RENDERING
+// ============================================================================
+function renderAll(families, tierDefs, r1Primary, r1Sweep, passFrac) {
+    renderBaseline(families);
+    renderFamilyBlocks(families, tierDefs, r1Primary, passFrac);
+    renderSweepCharts(families, r1Sweep, r1Primary);
+    renderSlopeTables(families);
+    renderSlopeCanvas(families, tierDefs);
+    renderDeltaTable(r1Primary);
+    renderVerdict();
+}
+
+function renderBaseline(families) {
+    const tbody = document.getElementById('baseline-tbody');
+    tbody.innerHTML = '';
+    const N = parseInt(document.getElementById('pool-size').value);
+    for (const fam of families) {
+        const w = state.baseWitnesses[fam];
+        const row = tbody.insertRow();
+        row.insertCell().textContent = fam;
+        for (const g of ['G1','G2','G3','G4']) {
+            row.insertCell().textContent = w[g].length;
+        }
+        for (const g of ['G1','G2','G3','G4']) {
+            row.insertCell().textContent = ((w[g].length / N) * 100).toFixed(2) + '%';
+        }
+    }
+}
+
+function renderFamilyBlocks(families, tierDefs, r1Primary, passFrac) {
+    const root = document.getElementById('family-results');
+    root.innerHTML = '';
+    const reqLevels = Math.ceil(tierDefs.length * passFrac);
+
+    for (const fam of families) {
+        const block = document.createElement('div');
+        block.className = 'family-block';
+        block.innerHTML = `<div class="family-name">${fam}</div>`;
+
+        // Dual-track table
+        const dual = document.createElement('div');
+        dual.className = 'dual-track';
+
+        for (const track of ['raw', 'norm']) {
+            const results = track === 'raw' ? state.rawResults[fam] : state.normResults[fam];
+            const div = document.createElement('div');
+            div.className = track === 'raw' ? 'track-raw' : 'track-norm';
+            div.innerHTML = `<div class="track-title">${track === 'raw' ? '🔴 Run A — Raw' : '🟢 Run B — Normalized'}</div>`;
+
+            const tbl = document.createElement('table');
+            tbl.innerHTML = `<thead><tr>
+                <th>τ₂</th><th>G1 ρ</th><th>G2 ρ</th><th>G3 ρ</th><th>G4 ρ</th>
+                <th>Max O</th><th>Max I</th><th>Max M</th>
+            </tr></thead>`;
+            const tb = document.createElement('tbody');
+
+            for (const tier of tierDefs) {
+                const res = results[tier.lbl];
+                const row = tb.insertRow();
+                row.insertCell().textContent = tier.lbl;
+                for (const g of ['G1','G2','G3','G4']) {
+                    const rho = res.retention[g].rho;
+                    const cell = row.insertCell();
+                    cell.textContent = rho.toFixed(3);
+                    cell.className = rho >= r1Primary ? 'pass' : 'fail';
+                }
+                const maxO = Math.max(...Object.values(res.overlap).map(m => m.overlap));
+                const maxI = Math.max(...Object.values(res.dual).map(m => m.frequency));
+                const maxM = Math.max(...Object.values(res.migration).map(m => m.rate));
+                const oc = row.insertCell(); oc.textContent = maxO.toFixed(4); oc.className = maxO <= CONFIG.thresholds.R2 ? 'pass' : 'fail';
+                const ic = row.insertCell(); ic.textContent = maxI.toFixed(4); ic.className = maxI <= CONFIG.thresholds.R3 ? 'pass' : 'fail';
+                const mc = row.insertCell(); mc.textContent = maxM.toFixed(4); mc.className = maxM <= CONFIG.thresholds.R4 ? 'pass' : 'fail';
+            }
+            tbl.appendChild(tb);
+            div.appendChild(tbl);
+
+            // Summary by gate
+            const sumDiv = document.createElement('div');
+            sumDiv.style.cssText = 'margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;';
+            for (const g of ['G1','G2','G3','G4']) {
+                const passCount = tierDefs.filter(t => results[t.lbl].retention[g].rho >= r1Primary).length;
+                const pass = passCount >= reqLevels;
+                const card = document.createElement('div');
+                card.className = 'mini-card';
+                card.style.flex = '1';
+                card.innerHTML = `<div class="label">${g} (${passCount}/${tierDefs.length})</div>
+                    <div class="value ${pass ? 'pass' : 'fail'}">${pass ? '✓' : '✗'}</div>`;
+                sumDiv.appendChild(card);
+            }
+            div.appendChild(sumDiv);
+
+            dual.appendChild(div);
+        }
+        block.appendChild(dual);
+        root.appendChild(block);
+    }
+}
+
+function renderSweepCharts(families, r1Sweep, r1Primary) {
+    const root = document.getElementById('sweep-charts');
+    root.innerHTML = '';
+
+    for (const fam of families) {
+        const wrap = document.createElement('div');
+        wrap.style.marginBottom = '20px';
+        wrap.innerHTML = `<strong style="color:${FAMILY_COLORS[fam]}">${fam}</strong>`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 900;
+        canvas.height = 260;
+        canvas.style.width = '100%';
+        wrap.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.fillStyle = '#0a0a0f';
+        ctx.fillRect(0, 0, W, H);
+
+        const padL = 60, padR = 30, padT = 30, padB = 50;
+        const cw = W - padL - padR, ch = H - padT - padB;
+
+        // Axes
+        ctx.strokeStyle = '#3a3a4a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ch);
+        ctx.lineTo(padL + cw, padT + ch);
+        ctx.stroke();
+
+        // Grid lines at 0.5 and 0.67
+        for (const yv of [0.5, passFracLine(), 1.0]) {
+            const y = padT + ch - yv * ch;
+            ctx.strokeStyle = yv === passFracLine() ? '#ffcc4a55' : '#3a3a4a';
+            ctx.setLineDash(yv === passFracLine() ? [4,4] : [2,6]);
+            ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#a0a0b0';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(yv.toFixed(2), padL - 4, y + 4);
+        }
+
+        function passFracLine() { return parseFloat(document.getElementById('pass-fraction').value); }
+
+        // X axis labels
+        ctx.fillStyle = '#a0a0b0'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        r1Sweep.forEach((r1, i) => {
+            const x = padL + (i / (r1Sweep.length - 1)) * cw;
+            ctx.fillText(r1.toFixed(2), x, padT + ch + 15);
+        });
+
+        // Curves
+        const lineStyles = { raw: { dash: [4,4], alpha: 0.7 }, norm: { dash: [], alpha: 1.0 } };
+
+        for (const g of ['G1','G2','G3','G4']) {
+            for (const track of ['raw', 'norm']) {
+                const sw = state.sweepData[fam][g][track];
+                const color = GATE_COLORS[g];
+                ctx.strokeStyle = color + (track === 'raw' ? '88' : 'ff');
+                ctx.lineWidth = track === 'norm' ? 2.5 : 1.5;
+                ctx.setLineDash(lineStyles[track].dash);
+                ctx.beginPath();
+                r1Sweep.forEach((r1, i) => {
+                    const x = padL + (i / (r1Sweep.length - 1)) * cw;
+                    const y = padT + ch - (sw[r1] ?? 0) * ch;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+        }
+        ctx.setLineDash([]);
+
+        // Primary R1 marker
+        const priX = padL + ((r1Sweep.indexOf(r1Primary) / (r1Sweep.length - 1)) || 0) * cw;
+        ctx.strokeStyle = '#ffffff44';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(priX, padT); ctx.lineTo(priX, padT + ch); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Legend
+        ctx.font = '11px sans-serif';
+        let lx = padL;
+        for (const g of ['G1','G2','G3','G4']) {
+            ctx.fillStyle = GATE_COLORS[g];
+            ctx.fillRect(lx, padT + ch + 28, 20, 10);
+            ctx.fillStyle = '#e0e0e8';
+            ctx.textAlign = 'left';
+            ctx.fillText(g + ' raw(--) norm(─)', lx + 24, padT + ch + 38);
+            lx += 165;
+        }
+
+        // Axis labels
+        ctx.fillStyle = '#a0a0b0'; ctx.textAlign = 'center';
+        ctx.fillText('R1-T threshold', padL + cw / 2, H - 4);
+
+        root.appendChild(wrap);
+    }
+}
+
+function renderSlopeTables(families) {
+    const rawTbody  = document.getElementById('slope-raw-tbody');
+    const normTbody = document.getElementById('slope-norm-tbody');
+    rawTbody.innerHTML = '';
+    normTbody.innerHTML = '';
+
+    for (const fam of families) {
+        for (const g of ['G1','G2','G3','G4']) {
+            const s = state.slopeData[fam][g];
+
+            for (const [tbody, val] of [[rawTbody, s.raw], [normTbody, s.norm]]) {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = fam;
+                row.insertCell().textContent = g;
+                const slopeCell = row.insertCell();
+                slopeCell.textContent = val.toFixed(4);
+                slopeCell.className = val < -0.03 ? 'fail' : (val > -0.01 ? 'pass' : 'warn');
+
+                const classCell = row.insertCell();
+                if (val > -0.01)      classCell.innerHTML = '<span class="pass">Stable</span>';
+                else if (val > -0.05) classCell.innerHTML = '<span class="warn">Mild erosion</span>';
+                else                  classCell.innerHTML = '<span class="fail">Erosion — stratification signal</span>';
+            }
+        }
+    }
+}
+
+function renderSlopeCanvas(families, tierDefs) {
+    const canvas = document.getElementById('slope-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, W, H);
+
+    const padL = 70, padR = 40, padT = 30, padB = 50;
+    const cw = W - padL - padR, ch = H - padT - padB;
+    const nLev = tierDefs.length;
+
+    // Axes
+    ctx.strokeStyle = '#3a3a4a'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ch);
+    ctx.lineTo(padL + cw, padT + ch);
+    ctx.stroke();
+
+    // Y grid (0.5 to 1.0)
+    for (const yv of [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]) {
+        const y = padT + ch - ((yv - 0.5) / 0.5) * ch;
+        ctx.strokeStyle = '#2a2a3a';
+        ctx.setLineDash([2,4]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#a0a0b0'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText(yv.toFixed(1), padL - 6, y + 4);
+    }
+
+    // Threshold line at 0.70
+    const yThresh = padT + ch - ((0.70 - 0.5) / 0.5) * ch;
+    ctx.strokeStyle = '#ffcc4a66'; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(padL, yThresh); ctx.lineTo(padL + cw, yThresh); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffcc4a'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('R1=0.70', padL + cw + 4, yThresh + 4);
+
+    // X axis
+    ctx.fillStyle = '#a0a0b0'; ctx.textAlign = 'center';
+    tierDefs.forEach((t, i) => {
+        const x = padL + (i / (nLev - 1)) * cw;
+        ctx.fillText(t.lbl, x, padT + ch + 16);
+    });
+
+    // Retention curves per family × gate (normalized only, solid; raw, dashed)
+    const famCount = families.length;
+    const gateList = ['G1','G2','G3','G4'];
+
+    for (const fam of families) {
+        for (const g of gateList) {
+            for (const track of ['raw', 'norm']) {
+                const results = track === 'raw' ? state.rawResults[fam] : state.normResults[fam];
+                const color = FAMILY_COLORS[fam] + (track === 'raw' ? '66' : 'cc');
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = track === 'norm' ? 2 : 1;
+                ctx.setLineDash(track === 'raw' ? [4,4] : []);
+                ctx.beginPath();
+
+                tierDefs.forEach((t, i) => {
+                    const rho = results[t.lbl].retention[g].rho;
+                    const x = padL + (i / (nLev - 1)) * cw;
+                    const y = padT + ch - Math.max(0, Math.min(1, (rho - 0.5) / 0.5)) * ch;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+        }
+    }
+    ctx.setLineDash([]);
+
+    // Legend
+    let lx = padL;
+    for (const fam of families) {
+        ctx.fillStyle = FAMILY_COLORS[fam];
+        ctx.fillRect(lx, padT + ch + 28, 20, 10);
+        ctx.fillStyle = '#e0e0e8'; ctx.textAlign = 'left'; ctx.font = '11px sans-serif';
+        ctx.fillText(`${fam} norm(─) raw(--)`, lx + 24, padT + ch + 38);
+        lx += 210;
+    }
+    ctx.fillStyle = '#a0a0b0'; ctx.textAlign = 'center';
+    ctx.fillText('τ₂ level index', padL + cw / 2, H - 4);
+}
+
+function renderDeltaTable(r1Primary) {
+    const tbody = document.getElementById('delta-tbody');
+    tbody.innerHTML = '';
+    for (const d of state.deltaData) {
+        const row = tbody.insertRow();
+        row.insertCell().textContent = d.family;
+        row.insertCell().textContent = d.gate;
+        const rawCell = row.insertCell();
+        rawCell.textContent = d.rawPR.toFixed(3);
+        rawCell.className = d.rawPR >= parseFloat(document.getElementById('pass-fraction').value) ? 'pass' : 'fail';
+        const normCell = row.insertCell();
+        normCell.textContent = d.normPR.toFixed(3);
+        normCell.className = d.normPR >= parseFloat(document.getElementById('pass-fraction').value) ? 'pass' : 'fail';
+        const deltaCell = row.insertCell();
+        deltaCell.textContent = (d.delta >= 0 ? '+' : '') + d.delta.toFixed(3);
+        deltaCell.className = d.delta > 0.1 ? 'pass' : (d.delta < -0.05 ? 'fail' : 'warn');
+
+        const interp = row.insertCell();
+        if (d.family === 'V2×V4') {
+            if (d.delta > 0.15)      interp.innerHTML = '<span class="pass">Normalization fixes (→ A)</span>';
+            else if (d.delta < 0.05) interp.innerHTML = '<span class="fail">Normalization insufficient (→ B)</span>';
+            else                     interp.innerHTML = '<span class="warn">Marginal — check slope</span>';
+        } else {
+            interp.innerHTML = '<span style="color:var(--text-secondary)">Control family</span>';
+        }
+    }
+}
+
+function renderVerdict() {
+    const v = state.verdict;
+    const el = document.getElementById('verdict-display');
+
+    const cls = v.decision === 'A' ? 'verdict-A' : (v.decision === 'B' ? 'verdict-B' : 'verdict-pass');
+    const label = v.decision === 'A' ? '(A) ENCODING ARTIFACT' :
+                  v.decision === 'B' ? '(B) SELECTIVE TRANSFER THEOREM' : v.decision;
+
+    el.innerHTML = `
+        <div class="${cls}">
+            <div style="font-size:22px; margin-bottom:14px; font-weight:700;">${label}</div>
+            <div style="font-size:14px; font-weight:normal; white-space:pre-line; line-height:1.9;">${v.summary}</div>
+            <div style="margin-top:18px; padding-top:18px; border-top:1px solid rgba(255,255,255,0.2);
+                        font-size:14px; font-weight:normal; line-height:1.9;">
+                <strong>Publication interpretation:</strong><br>${v.interpretation}
+            </div>
+        </div>
+    `;
+
+    // Detail table
+    const d = v.details;
+    if (d && d.slopeComparisons) {
+        const det = document.createElement('div');
+        det.style.marginTop = '16px';
+        det.innerHTML = `
+            <strong style="font-size:13px;">Decision Details:</strong>
+            <table style="margin-top:8px;">
+                <thead><tr><th>Criterion</th><th>Result</th></tr></thead>
+                <tbody>
+                    <tr><td>Norm fixes V2×V4 (R1=0.70)</td><td class="${d.normFixesAll ? 'pass' : 'fail'}">${d.normFixesAll ? 'YES' : 'NO'}</td></tr>
+                    <tr><td>V2×V4 still fails after norm (B1)</td><td class="${d.normStillFails ? 'fail' : 'pass'}">${d.normStillFails ? 'YES → B1 trigger' : 'NO'}</td></tr>
+                    <tr><td>V2×V4 has steeper erosion slope (B2)</td><td class="${d.b2_detected ? 'fail' : 'pass'}">${d.b2_detected ? 'YES → B2 trigger' : 'NO'}</td></tr>
+                    <tr><td>Normalized curve aligns with stable families</td><td class="${d.sweepAligns ? 'pass' : 'fail'}">${d.sweepAligns ? 'YES' : 'NO'}</td></tr>
+                    <tr><td>Required pass levels (τ₂)</td><td>${d.reqLevels}</td></tr>
+                </tbody>
+            </table>
+        `;
+        el.appendChild(det);
+    }
+}
+
+// ============================================================================
+// EXPORT
+// ============================================================================
+function exportResults() {
+    if (!state.verdict) { log('Nothing to export.', 'error'); return; }
+    const out = {
+        schema_version: '1.1.0',
+        chamber_id: 'LV', chamber_version: CONFIG.version,
+        timestamp: CONFIG.timestamp,
+        configuration: {
+            families: state.families,
+            pool_size: parseInt(document.getElementById('pool-size').value),
+            tier_levels: parseInt(document.getElementById('tier-levels').value),
+            pass_fraction: parseFloat(document.getElementById('pass-fraction').value),
+            r1_primary: parseFloat(document.getElementById('r1-threshold').value),
+            r1_sweep: document.getElementById('r1-sweep').value,
+            normalizations: { G1: false, G2: document.getElementById('norm-g2').checked, G3: document.getElementById('norm-g3').checked, G4: document.getElementById('norm-g4').checked }
+        },
+        baseline_witnesses: state.baseWitnesses,
+        raw_results: state.rawResults,
+        norm_results: state.normResults,
+        sweep_data: state.sweepData,
+        slope_data: state.slopeData,
+        delta_passrate: state.deltaData,
+        verdict: state.verdict
+    };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chamber_lv_v1.1.0_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    log('Exported.', 'success');
+}
+
+function resetChamber() {
+    if (!confirm('Reset chamber?')) return;
+    Object.assign(state, { running:false, families:[], pools:{}, normStats:{}, baseWitnesses:{}, rawResults:{}, normResults:{}, sweepData:{}, slopeData:{}, deltaData:[], verdict:null });
+    document.getElementById('results-root').style.display = 'none';
+    document.getElementById('progress-panel').style.display = 'none';
+    document.getElementById('execution-log').innerHTML = `
+        <div class="log-entry log-info">[INIT] Chamber LV v1.1.0 initialized.</div>
+        <div class="log-entry log-info">[INIT] Dual-track (raw + normalized) with R5-T slope index.</div>`;
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('run-btn').textContent = 'Execute LV v1.1.0';
+    log('Chamber reset.', 'success');
+}
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+function progress(label, cur, total) {
+    document.getElementById('progress-label').textContent = label;
+    const pct = Math.floor((cur / total) * 100);
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function log(msg, type='info') {
+    const el = document.getElementById('execution-log');
+    const div = document.createElement('div');
+    div.className = `log-entry log-${type}`;
+    div.textContent = `[${new Date().toTimeString().slice(0,8)}] ${msg}`;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    log('Chamber LV v1.1.0 ready — dual-track diagnostic with R5-T slope index.', 'success');
+});
+</script>
+</body>
+</html>

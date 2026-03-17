@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive UNNS–MCMC Laboratory exploring recursive curvature sampling and τon dynamics on a recursive substrate.">
+<meta property="og:title" content="UNNS Recursive MCMC Laboratory">
+<meta property="og:description" content="Interactive demonstration of Markov Chain Monte Carlo on a Recursive Substrate with real-time visualization.">
+<meta property="og:image" content="https://ukbbi.github.io/UNNS/images/1a.png">
+<meta property="og:type" content="website">
+<title>Recursive MCMC: Complete UNNS Laboratory</title>
+<link rel="icon" type="image/png" href="https://ukbbi.github.io/UNNS/images/1a.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root { --harmony-accent: hsl(200, 100%, 70%); }
+body { font-family: 'Courier New', monospace; background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%); color: #e2e8f0; min-height: 100vh; padding: 20px; overflow-x: hidden; }
+.container { max-width: 1800px; margin: 0 auto; }
+h1 { font-size: 2.5rem; background: linear-gradient(to right, #22d3ee, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+.header-container { display: flex; align-items: center; gap: 20px; margin-bottom: 8px; }
+.unns-logo { width: 80px; height: 80px; object-fit: contain; animation: logoGlow 3s ease-in-out infinite; }
+@keyframes logoGlow { 0%, 100% { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5)); } 50% { filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8)); } }
+.subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 24px; }
+.main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.side-panel { display: flex; flex-direction: column; gap: 16px; }
+.panel { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 20px; }
+.canvas-container { position: relative; }
+canvas { width: 100%; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.3); display: block; }
+h3 { font-size: 1.2rem; margin-bottom: 16px; }
+h4 { font-size: 1rem; margin-bottom: 12px; color: #a855f7; }
+.cyan { color: #22d3ee; }
+.purple { color: #a855f7; }
+.pink { color: #ff69b4; }
+.gold { color: #ffd700; }
+.violet { color: #8b5cf6; }
+.teal { color: #14b8a6; }
+.controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+button { flex: 1; min-width: 100px; padding: 12px; border: none; border-radius: 8px; font-family: inherit; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+.btn-primary { background: #a855f7; color: white; }
+.btn-primary:hover { background: #9333ea; }
+.btn-secondary { background: #475569; color: white; }
+.btn-secondary:hover { background: #334155; }
+.btn-audio { background: #0891b2; color: white; width: 100%; margin-bottom: 16px; }
+.btn-audio:hover { background: #0e7490; }
+.btn-audio.inactive { background: #475569; }
+.btn-collapse { background: #8b5cf6; color: white; width: 100%; margin-bottom: 12px; }
+.btn-collapse:hover { background: #7c3aed; }
+.btn-export { background: #0891b2; color: white; width: 100%; margin-bottom: 12px; }
+.btn-export:hover { background: #0e7490; }
+.btn-record { background: #ef4444; color: white; width: 100%; margin-bottom: 12px; }
+.btn-record:hover { background: #dc2626; }
+.btn-record.recording { background: #22c55e; animation: recordPulse 1s infinite; }
+@keyframes recordPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.preset-btn { padding: 8px; background: rgba(71, 85, 105, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 6px; color: #cbd5e1; cursor: pointer; font-family: inherit; font-size: 0.8rem; transition: all 0.2s; }
+.preset-btn:hover { background: #475569; border-color: #a855f7; }
+.slider-group { margin-bottom: 16px; }
+.slider-group label { display: block; font-size: 0.85rem; margin-bottom: 8px; color: #cbd5e1; }
+.select-group { margin-bottom: 16px; }
+.select-group label { display: block; font-size: 0.85rem; margin-bottom: 8px; color: #cbd5e1; }
+select { width: 100%; padding: 8px; border-radius: 6px; background: #334155; color: #e2e8f0; border: 1px solid #475569; font-family: inherit; font-size: 0.9rem; }
+input[type="range"] { width: 100%; height: 6px; border-radius: 3px; background: #334155; outline: none; }
+input[type="checkbox"] { margin-right: 8px; }
+.metric-section { margin-bottom: 20px; }
+.metric-title { font-weight: bold; margin-bottom: 8px; }
+.metric-line { font-size: 0.75rem; color: #cbd5e1; line-height: 1.6; }
+.theory-box { font-size: 0.75rem; line-height: 1.6; color: #cbd5e1; }
+.theory-box > div { margin-bottom: 8px; }
+.harmony-bar { height: 8px; border-radius: 4px; margin-top: 8px; transition: all 0.3s; }
+.harmony-balanced { background: linear-gradient(to right, #14b8a6, #8b5cf6); }
+.harmony-diverging { background: linear-gradient(to right, #ffd700, #ff69b4); animation: pulse 0.5s infinite; }
+.drift-sparkline { width: 100%; height: 40px; margin-top: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.2); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes shimmer { 0% { opacity: 0.3; } 50% { opacity: 0.6; } 100% { opacity: 0.3; } }
+.checkbox-label { font-size: 0.85rem; color: #cbd5e1; display: flex; align-items: center; margin-bottom: 8px; }
+.comparison-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+.sampler-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 8px; padding: 12px; }
+.sampler-card h4 { font-size: 0.9rem; margin-bottom: 8px; }
+.sampler-metric { font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab { padding: 8px 16px; background: rgba(71, 85, 105, 0.5); border: none; border-radius: 6px; color: #cbd5e1; cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+.tab.active { background: #8b5cf6; color: white; }
+.tab:hover { background: #475569; }
+.paper-link { display: block; text-align: center; margin-top: 12px; padding: 10px; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 6px; color: #22d3ee; text-decoration: none; font-size: 0.85rem; transition: all 0.2s; }
+.paper-link:hover { background: rgba(34, 211, 238, 0.2); border-color: #22d3ee; }
+.curvature-gauge { position: absolute; top: 90px; right: 20px; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--harmony-accent); background: rgba(139, 92, 246, 0.2); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--harmony-accent); pointer-events: none; transition: all 0.3s; }
+.btn-guide { background: #14b8a6; color: white; width: 100%; margin-bottom: 16px; }
+.btn-guide:hover { background: #0d9488; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+.modal-overlay.active { display: flex; }
+.modal-content { background: linear-gradient(135deg, #1e293b 0%, #581c87 100%); border: 2px solid #a855f7; border-radius: 16px; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 32px; color: #e2e8f0; position: relative; box-shadow: 0 20px 60px rgba(168, 85, 247, 0.4); }
+.modal-close { position: absolute; top: 16px; right: 16px; background: #475569; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem; cursor: pointer; transition: all 0.2s; }
+.modal-close:hover { background: #334155; transform: rotate(90deg); }
+.modal-title { font-size: 2rem; background: linear-gradient(to right, #22d3ee, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 24px; }
+.guide-section { margin-bottom: 24px; }
+.guide-section h3 { color: #22d3ee; font-size: 1.3rem; margin-bottom: 12px; }
+.guide-section h4 { color: #a855f7; font-size: 1.1rem; margin-bottom: 8px; margin-top: 16px; }
+.guide-section p { line-height: 1.6; margin-bottom: 12px; color: #cbd5e1; }
+.guide-section ul { margin-left: 20px; margin-bottom: 12px; }
+.guide-section li { line-height: 1.8; color: #cbd5e1; margin-bottom: 8px; }
+.guide-highlight { color: #ffd700; font-weight: bold; }
+.guide-code { background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; color: #22d3ee; }
+</style>
+</head>
+<body>
+<main>
+<div class="container">
+<div class="header-container">
+<svg width="80" height="80" viewBox="0 0 200 200" class="unns-logo" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialGradient id="bgGlow">
+<stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+<stop offset="100%" style="stop-color:#000000;stop-opacity:1"/>
+</radialGradient>
+<linearGradient id="petalGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#22d3ee;stop-opacity:0.9"/>
+<stop offset="100%" style="stop-color:#0891b2;stop-opacity:0.7"/>
+</linearGradient>
+<linearGradient id="petalGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#a855f7;stop-opacity:0.8"/>
+<stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0.6"/>
+</linearGradient>
+<filter id="glow">
+<feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+<feMerge>
+<feMergeNode in="coloredBlur"/>
+<feMergeNode in="SourceGraphic"/>
+</feMerge>
+</filter>
+</defs>
+<rect width="200" height="200" fill="url(#bgGlow)"/>
+<g transform="translate(100, 100)" filter="url(#glow)">
+<g transform="rotate(0)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<g transform="rotate(30)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<g transform="rotate(60)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<g transform="rotate(90)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<g transform="rotate(120)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<g transform="rotate(150)">
+<ellipse cx="0" cy="-50" rx="20" ry="45" fill="url(#petalGrad1)" opacity="0.7"/>
+<ellipse cx="0" cy="-50" rx="15" ry="40" fill="url(#petalGrad2)" opacity="0.5"/>
+</g>
+<circle cx="0" cy="0" r="15" fill="white" opacity="0.9"/>
+<circle cx="0" cy="0" r="8" fill="url(#petalGrad1)" opacity="0.8"/>
+</g>
+<text x="100" y="180" text-anchor="middle" fill="#22d3ee" font-size="12" font-family="Arial, sans-serif" font-weight="bold" letter-spacing="2">UNNS SUBSTRATE</text>
+</svg>
+<h1>Recursive MCMC: Complete UNNS Laboratory</h1>
+</div>
+<p class="subtitle">Information → Curvature • Computation → Recursion • Mixing → Harmony</p>
+
+<div class="main-grid">
+<div>
+<div class="panel">
+<div class="tabs">
+<button class="tab active" id="tab2d">2D Phase Space</button>
+<button class="tab" id="tab3d">3D Depth Manifold</button>
+</div>
+<div class="select-group">
+<label>Target Distribution:</label>
+<select id="targetSelect">
+<option value="bimodal">Bimodal Gaussian</option>
+<option value="banana">Rosenbrock Banana</option>
+<option value="funnel">Neal's Funnel</option>
+<option value="mixture">4-Mode Mixture</option>
+</select>
+</div>
+<div id="canvas2d" class="canvas-container">
+<canvas id="mainCanvas" width="800" height="600"></canvas>
+<div class="curvature-gauge" id="curvGauge">κ</div>
+</div>
+<div id="canvas3d" class="canvas-container" style="display: none;">
+<canvas id="canvas3D" width="800" height="600"></canvas>
+</div>
+</div>
+
+<div class="panel">
+<h3 class="cyan">Algorithm Comparison</h3>
+<div class="comparison-grid">
+<div class="sampler-card">
+<h4 class="pink">Random Walk</h4>
+<div class="sampler-metric">Accept: <span id="comp-rwm-accept">0</span>%</div>
+<div class="sampler-metric">ESS<sub>κ</sub>: <span id="comp-rwm-essk">0</span></div>
+<div class="sampler-metric">Moves: <span id="comp-rwm-moves">0</span></div>
+</div>
+<div class="sampler-card">
+<h4 class="cyan">τon-RHMC</h4>
+<div class="sampler-metric">Accept: <span id="comp-rhmc-accept">0</span>%</div>
+<div class="sampler-metric">ESS<sub>κ</sub>: <span id="comp-rhmc-essk">0</span></div>
+<div class="sampler-metric">Depth: n=<span id="comp-rhmc-depth">0</span></div>
+</div>
+<div class="sampler-card">
+<h4 class="gold">Klein-Flip</h4>
+<div class="sampler-metric">Accept: <span id="comp-klein-accept">0</span>%</div>
+<div class="sampler-metric">ESS<sub>κ</sub>: <span id="comp-klein-essk">0</span></div>
+<div class="sampler-metric">Flips: <span id="comp-klein-flips">0</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="side-panel">
+<div class="panel">
+<h3 class="cyan">Controls</h3>
+<div class="controls">
+<button id="playBtn" class="btn-primary">▶ Start</button>
+<button id="resetBtn" class="btn-secondary">↻ Reset</button>
+</div>
+<button id="audioBtn" class="btn-audio inactive">🔇 Audio Off</button>
+<button id="guideBtn" class="btn-guide">📖 Guide</button>
+<button id="exportBtn" class="btn-export">💾 Export CSV</button>
+<button id="recordBtn" class="btn-record">⏺ Record Animation</button>
+<button id="collapseBtn" class="btn-collapse">⚡ Collapse—Reseed</button>
+<div style="margin-bottom: 16px;">
+<label style="display: block; font-size: 0.85rem; margin-bottom: 8px; color: #cbd5e1;">Quick Presets:</label>
+<div class="preset-grid">
+<button class="preset-btn" data-preset="default">🎯 Default</button>
+<button class="preset-btn" data-preset="fast">⚡ Fast Mix</button>
+<button class="preset-btn" data-preset="explore">🔍 Deep Explore</button>
+<button class="preset-btn" data-preset="challenge">🔥 Challenge</button>
+</div>
+</div>
+<div class="slider-group">
+<label>Speed: <span id="speedValue">1</span>x</label>
+<input type="range" id="speedSlider" min="1" max="5" value="1">
+</div>
+<label class="checkbox-label">
+<input type="checkbox" id="curvatureView"> Curvature heat map
+</label>
+<label class="checkbox-label">
+<input type="checkbox" id="fieldLines"> τon field lines
+</label>
+<label class="checkbox-label">
+<input type="checkbox" id="depthRings"> Depth rings
+</label>
+<label class="checkbox-label">
+<input type="checkbox" id="flattenMode"> Flatten (classical)
+</label>
+<div style="margin-top: 16px; font-size: 0.9rem;">Iterations: <span class="cyan" id="iterCount">0</span></div>
+</div>
+
+<div class="panel">
+<h3 class="violet">Recursive Harmony</h3>
+<div class="metric-line">ΔH<sub>r</sub> drift: <span id="hr-drift" class="teal">0.000</span></div>
+<div class="metric-line">Curvature κ: <span id="curv-value" class="violet">0.000</span></div>
+<div class="metric-line">Harmony: <span id="harmony" class="cyan">Balanced</span></div>
+<div class="harmony-bar harmony-balanced" id="harmonyBar"></div>
+<canvas id="driftSpark" class="drift-sparkline" width="250" height="40"></canvas>
+</div>
+
+<div class="panel">
+<h3 class="cyan">Full Diagnostics</h3>
+<div class="metric-section">
+<div class="metric-title pink">Random Walk Metropolis</div>
+<div class="metric-line">Accept: <span id="rwm-accept">0</span>%</div>
+<div class="metric-line">ESS: <span id="rwm-ess">0</span>%</div>
+<div class="metric-line">ESS<sub>κ</sub>: <span id="rwm-essk">0</span>%</div>
+<div class="metric-line">Depth n: <span id="rwm-depth">0</span></div>
+</div>
+<div class="metric-section">
+<div class="metric-title cyan">τon-RHMC</div>
+<div class="metric-line">Accept: <span id="rhmc-accept">0</span>%</div>
+<div class="metric-line">ESS: <span id="rhmc-ess">0</span>%</div>
+<div class="metric-line">ESS<sub>κ</sub>: <span id="rhmc-essk">0</span>%</div>
+<div class="metric-line">Depth n: <span id="rhmc-depth">0</span></div>
+</div>
+<div class="metric-section">
+<div class="metric-title gold">Klein-Flip</div>
+<div class="metric-line">Accept: <span id="klein-accept">0</span>%</div>
+<div class="metric-line">ESS: <span id="klein-ess">0</span>%</div>
+<div class="metric-line">ESS<sub>κ</sub>: <span id="klein-essk">0</span>%</div>
+<div class="metric-line">Depth n: <span id="klein-depth">0</span></div>
+<div class="metric-line">Flips: <span id="klein-flips">0</span></div>
+</div>
+</div>
+
+<div class="panel">
+<h3 class="purple">Paper Equations</h3>
+<div class="theory-box" id="theoryBox">
+<div><span class="cyan">Eq (3):</span> G(x,n) = I + α F<sup>(τ)</sup>F<sup>(τ)ᵀ</sup></div>
+<div><span class="gold">Eq (5):</span> π(z)K(z,dz') = π(z')K(z',dz)</div>
+<div><span class="violet">Eq (6):</span> E[H<sub>r</sub>(n') - H<sub>r</sub>(n) | z] = 0</div>
+<div><span class="purple">Eq (7):</span> λ₁(L) ≳ c₁κ → mixing rate</div>
+<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.7rem; color: #94a3b8;">
+<strong>Implementation:</strong> Eq(3) via getMetric() • Eq(5) via detailed balance • Eq(6) via recursive entropy monitor • Eq(7) via curvature-mixing feedback
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+<div class="modal-overlay" id="guideModal">
+<div class="modal-content">
+<button class="modal-close" id="closeGuide">×</button>
+<h2 class="modal-title">📖 Complete Guide</h2>
+
+<div class="guide-section">
+<h3>🎯 Overview</h3>
+<p>This is an interactive laboratory for exploring <span class="guide-highlight">Recursive Markov Chain Monte Carlo (MCMC)</span> sampling algorithms. You'll see three different samplers simultaneously exploring probability distributions in real-time.</p>
+<p>The key innovation: sampling on a <span class="guide-highlight">recursive substrate</span> where depth (n) represents computational recursion levels, creating a 3D manifold (x, y, n) instead of just 2D space.</p>
+</div>
+
+<div class="guide-section">
+<h3>🤖 The Three Samplers</h3>
+
+<h4>🌸 Random Walk Metropolis (RWM) - Pink</h4>
+<ul>
+<li><strong>Classic baseline:</strong> Simple random walk with accept/reject</li>
+<li><strong>Behavior:</strong> Proposes random jumps, accepts based on probability ratio</li>
+<li><strong>Limitation:</strong> Can get stuck in low-density regions, slow mixing</li>
+</ul>
+
+<h4>💠 τon-RHMC (Riemannian HMC) - Cyan</h4>
+<ul>
+<li><strong>Advanced method:</strong> Uses momentum and curved geometry</li>
+<li><strong>The "τon field":</strong> Information-theoretic force field that guides sampling</li>
+<li><strong>Depth recursion:</strong> Occasionally increases depth n to explore higher computational levels</li>
+<li><strong>Advantage:</strong> Efficient exploration, adapts to geometry</li>
+</ul>
+
+<h4>⭐ Klein-Flip - Gold</h4>
+<ul>
+<li><strong>Topological sampler:</strong> Can "flip" through the manifold</li>
+<li><strong>Special moves:</strong> 10% chance to flip coordinates (−x, −y) and change depth</li>
+<li><strong>Advantage:</strong> Can escape local modes by topology-jumping</li>
+<li><strong>Watch the "Flips" counter</strong> to see when it performs these moves</li>
+</ul>
+</div>
+
+<div class="guide-section">
+<h3>🎮 Controls & Features</h3>
+
+<h4>▶ Start/Pause</h4>
+<p>Begin or pause the simulation. Watch all three samplers explore simultaneously.</p>
+
+<h4>↻ Reset</h4>
+<p>Return all samplers to initial positions and clear history.</p>
+
+<h4>🔊 Audio On/Off</h4>
+<p>Enable sonification! Each sampler produces unique tones:</p>
+<ul>
+<li><strong>Pitch:</strong> Changes with position (x, y, n)</li>
+<li><strong>Volume:</strong> Reflects acceptance rate and curvature</li>
+<li><strong>Stereo pan:</strong> Maps to local curvature</li>
+<li><strong>Waveforms:</strong> RWM=sine, RHMC=triangle, Klein=square</li>
+</ul>
+
+<h4>⚡ Collapse—Reseed</h4>
+<p>Performs a "quantum collapse" on τon-RHMC and Klein-Flip:</p>
+<ul>
+<li>Resets depth to n=0</li>
+<li>Slightly randomizes position</li>
+<li>Creates an audio pulse</li>
+<li><strong>Purpose:</strong> Simulates resetting recursion while maintaining locality</li>
+</ul>
+
+<h4>💾 Export CSV</h4>
+<p>Download all sampler data as a CSV file including:</p>
+<ul>
+<li>Position (x, y), depth (n) for every sample</li>
+<li>Acceptance rates and total moves</li>
+<li>Timestamped filename for data analysis</li>
+</ul>
+
+<h4>⏺ Record Animation</h4>
+<p>Capture the visualization as an animation:</p>
+<ul>
+<li>Click once to start recording (button turns green)</li>
+<li>Click again to stop and save frames as JSON</li>
+<li>Use external tools to convert JSON frames to video</li>
+<li>Great for presentations and papers!</li>
+</ul>
+
+<h4>🎯 Quick Presets</h4>
+<p>One-click configurations for different scenarios:</p>
+<ul>
+<li><strong>Default:</strong> Clean start with bimodal distribution</li>
+<li><strong>Fast Mix:</strong> 5x speed with field lines for quick demos</li>
+<li><strong>Deep Explore:</strong> 4-mode mixture with all visualizations</li>
+<li><strong>Challenge:</strong> Neal's Funnel with curvature view (hardest)</li>
+</ul>
+
+<h4>🎚️ Speed Slider</h4>
+<p>Control simulation speed from 1x to 5x. Higher speeds show mixing behavior faster.</p>
+
+<h4>Target Distribution Selector</h4>
+<ul>
+<li><strong>Bimodal Gaussian:</strong> Two peaks, tests mode-switching</li>
+<li><strong>Rosenbrock Banana:</strong> Curved, narrow valley (challenging)</li>
+<li><strong>Neal's Funnel:</strong> Varying scales, hierarchical structure</li>
+<li><strong>4-Mode Mixture:</strong> Four corners, tests multi-modal exploration</li>
+</ul>
+</div>
+
+<div class="guide-section">
+<h3>🔬 Visualization Options</h3>
+
+<h4>✓ Curvature heat map</h4>
+<p>Shows the geometric curvature of the probability distribution:</p>
+<ul>
+<li><strong>Purple regions:</strong> High positive curvature</li>
+<li><strong>Teal regions:</strong> High negative curvature</li>
+<li>Curvature affects mixing efficiency</li>
+</ul>
+
+<h4>✓ τon field lines</h4>
+<p>Visualizes the information-theoretic force field that guides RHMC. Lines show the direction and strength of the τon field.</p>
+
+<h4>✓ Depth rings</h4>
+<p>Concentric circles representing recursion depth levels. Samplers can move between these levels in the 3D view.</p>
+
+<h4>✓ Flatten (classical)</h4>
+<p>Disables the recursive substrate—locks all samplers to n=0. Use this to see the difference between classical and recursive MCMC!</p>
+
+<h4>Shimmer Overlay</h4>
+<p>The subtle animated gradient on the 2D canvas visualizes τon field coupling. The shifting colors represent the dynamic information-theoretic landscape.</p>
+
+<h4>📱 Touch Controls (Mobile/Tablet)</h4>
+<p>On touch devices, the 3D view supports gesture controls:</p>
+<ul>
+<li><strong>Single finger drag:</strong> Rotate the 3D manifold</li>
+<li><strong>Swipe up/down:</strong> Adjust X-axis rotation</li>
+<li><strong>Swipe left/right:</strong> Adjust Z-axis rotation</li>
+<li>All touch gestures work smoothly with 60fps rendering</li>
+</ul>
+</div>
+
+<div class="guide-section">
+<h3>📊 Understanding the Metrics</h3>
+
+<h4>Accept Rate (%)</h4>
+<p>Percentage of proposed moves that are accepted. Ideal: 20-50% for RWM, 60-90% for HMC-style methods.</p>
+
+<h4>ESS (Effective Sample Size)</h4>
+<p>Basic efficiency metric based on acceptance rate. Higher is better.</p>
+
+<h4>ESS<sub>κ</sub> (Curvature-Adjusted ESS)</h4>
+<p>Advanced metric: <span class="guide-code">ESS / (1 + |κ|)</span></p>
+<p>Accounts for local curvature. Shows true mixing efficiency in curved spaces.</p>
+
+<h4>Depth n</h4>
+<p>Current recursion level (0-5). Higher n means deeper computational nesting.</p>
+
+<h4>ΔH<sub>r</sub> drift</h4>
+<p>Change in recursive entropy. Should fluctuate around zero for proper balance.</p>
+
+<h4>Drift Sparkline</h4>
+<p>Mini-graph showing recent entropy drift history. The cyan line traces drift over the last 100 iterations. Purple horizontal line = zero drift (equilibrium).</p>
+
+<h4>Harmony Status</h4>
+<ul>
+<li><strong>Balanced:</strong> System is in equilibrium (good!)</li>
+<li><strong>Diverging:</strong> Entropy drift detected (pulsing animation)</li>
+<li><strong>Color gradient:</strong> Shifts from teal→violet (balanced) to yellow→pink (diverging) based on drift magnitude</li>
+</ul>
+
+<h4>κ Gauge (top-right)</h4>
+<p>Real-time curvature indicator. Size and opacity reflect current system curvature.</p>
+</div>
+
+<div class="guide-section">
+<h3>🎓 Theory & Concepts</h3>
+
+<h4>What is Recursive MCMC?</h4>
+<p>Traditional MCMC samples from probability distributions in flat spaces. Recursive MCMC adds a <span class="guide-highlight">depth dimension</span> representing computational recursion, creating a richer geometry.</p>
+
+<h4>The Equations (from the paper)</h4>
+<ul>
+<li><strong>Eq (3):</strong> Metric tensor uses τon field: G(x,n) = I + α F<sup>(τ)</sup>F<sup>(τ)ᵀ</sup></li>
+<li><strong>Eq (5):</strong> Detailed balance ensures correct sampling</li>
+<li><strong>Eq (6):</strong> Recursive entropy conservation principle</li>
+<li><strong>Eq (7):</strong> Mixing rate depends on curvature κ</li>
+</ul>
+
+<h4>Why 3D View?</h4>
+<p>The "3D Depth Manifold" shows the full (x, y, n) space. Watch how samplers move not just horizontally but also "up and down" through recursion levels!</p>
+
+<h4>Key Insight</h4>
+<p>Curvature κ controls mixing efficiency. High curvature = slow mixing. The recursive substrate and τon field help navigate curved spaces more efficiently.</p>
+</div>
+
+<div class="guide-section">
+<h3>💡 Tips for Exploration</h3>
+<ul>
+<li><strong>Start simple:</strong> Begin with Bimodal distribution, audio off, default settings</li>
+<li><strong>Try presets:</strong> Click preset buttons for pre-configured scenarios</li>
+<li><strong>Compare algorithms:</strong> Watch the Algorithm Comparison panel to see which sampler performs best</li>
+<li><strong>Try challenging distributions:</strong> Switch to Banana or Funnel to see differences amplified</li>
+<li><strong>Enable audio:</strong> Hear the algorithms "sing" their exploration patterns</li>
+<li><strong>Export data:</strong> Download CSV for external analysis in Python/R</li>
+<li><strong>Record demos:</strong> Capture animations for presentations</li>
+<li><strong>Test flattening:</strong> Toggle Flatten mode to see how recursion helps</li>
+<li><strong>Watch the harmony:</strong> When it diverges, click Collapse—Reseed to restore balance</li>
+<li><strong>Switch to 3D:</strong> See the full recursive manifold in action</li>
+<li><strong>Mobile users:</strong> Use touch gestures to rotate the 3D view</li>
+</ul>
+</div>
+
+<div class="guide-section">
+<p style="text-align: center; margin-top: 32px; color: #94a3b8;">
+<strong>📄 For technical details, click the paper link below the equations panel.</strong>
+</p>
+</div>
+</div>
+</div>
+
+<script>
+var isRunning = false;
+var audioEnabled = false;
+var speed = 1;
+var iteration = 0;
+var animationInterval = null;
+var curvatureView = false;
+var fieldLines = false;
+var depthRings = false;
+var flattenMode = false;
+var currentView = '2d';
+var targetType = 'bimodal';
+var prevHr = 0;
+var HrHistory = [];
+
+var state = {
+rwm: { x: -1.5, y: 0, n: 0, samples: [], accepted: 0, total: 0 },
+rhmc: { x: -1.0, y: 0.5, n: 0, samples: [], accepted: 0, total: 0, momentum: { px: 0, py: 0 } },
+klein: { x: 1.5, y: 0, n: 0, samples: [], accepted: 0, total: 0, flipCount: 0 }
+};
+
+var audioContext = null;
+var oscillators = null;
+var gains = null;
+var lfos = null;
+var lfoGains = null;
+var panners = null;
+
+var view3D = {
+rotationX: 0.5,
+rotationZ: 0,
+zoom: 100,
+autoRotate: true
+};
+
+var recording = false;
+var recordedFrames = [];
+var touchStartX = 0;
+var touchStartY = 0;
+
+function targetLogDensity(x, y) {
+if (targetType === 'bimodal') {
+var peak1 = Math.exp(-((x + 1.5) * (x + 1.5) + y * y) / 0.5);
+var peak2 = Math.exp(-((x - 1.5) * (x - 1.5) + y * y) / 0.5);
+return Math.log(peak1 + peak2 + 1e-10);
+} else if (targetType === 'banana') {
+var a = 1;
+var b = 0.1;
+var y_trans = y - b * (x * x - a * a);
+var logp = -0.5 * ((x * x) / (a * a) + (y_trans * y_trans) / (b * b * a * a));
+return logp;
+} else if (targetType === 'funnel') {
+var v = y;
+var log_sigma = v / 3;
+var logp = -0.5 * v * v;
+logp = logp - log_sigma - 0.5 * (x * x) * Math.exp(-2 * log_sigma);
+return logp;
+} else if (targetType === 'mixture') {
+var peak1 = Math.exp(-((x + 1.5) * (x + 1.5) + (y + 1.5) * (y + 1.5)) / 0.3);
+var peak2 = Math.exp(-((x - 1.5) * (x - 1.5) + (y + 1.5) * (y + 1.5)) / 0.3);
+var peak3 = Math.exp(-((x + 1.5) * (x + 1.5) + (y - 1.5) * (y - 1.5)) / 0.3);
+var peak4 = Math.exp(-((x - 1.5) * (x - 1.5) + (y - 1.5) * (y - 1.5)) / 0.3);
+return Math.log(peak1 + peak2 + peak3 + peak4 + 1e-10);
+}
+return 0;
+}
+
+function curvature(x, y, n) {
+var eps = 0.01;
+var phi = -targetLogDensity(x, y);
+var phi_x_plus = -targetLogDensity(x + eps, y);
+var phi_x_minus = -targetLogDensity(x - eps, y);
+var phi_y_plus = -targetLogDensity(x, y + eps);
+var phi_y_minus = -targetLogDensity(x, y - eps);
+var d2phi = (phi_x_plus + phi_x_minus + phi_y_plus + phi_y_minus - 4 * phi) / (eps * eps);
+return Math.tanh(Math.abs(d2phi)) * (1 + 0.05 * n);
+}
+
+function tonField(x, y, n) {
+if (targetType === 'bimodal') {
+var dx1 = -(x + 1.5) / 0.5;
+var dx2 = -(x - 1.5) / 0.5;
+var dy = -y / 0.5;
+return { Fxx: dx1 + dx2, Fyy: dy, Fxy: 0 };
+} else {
+var eps = 0.01;
+var grad_x = (targetLogDensity(x + eps, y) - targetLogDensity(x - eps, y)) / (2 * eps);
+var grad_y = (targetLogDensity(x, y + eps) - targetLogDensity(x, y - eps)) / (2 * eps);
+return { Fxx: grad_x, Fyy: grad_y, Fxy: 0 };
+}
+}
+
+function getMetric(x, y, n, alpha) {
+if (flattenMode) return { gxx: 1, gyy: 1, gxy: 0 };
+if (typeof alpha === 'undefined') alpha = 0.3;
+var F = tonField(x, y, n);
+var FFt = F.Fxx * F.Fxx + F.Fyy * F.Fyy;
+return { gxx: 1 + alpha * FFt, gyy: 1 + alpha * FFt, gxy: 0 };
+}
+
+function recursiveEntropy() {
+var Hr = 0;
+Hr = Hr + Math.abs(curvature(state.rwm.x, state.rwm.y, state.rwm.n));
+Hr = Hr + Math.abs(curvature(state.rhmc.x, state.rhmc.y, state.rhmc.n));
+Hr = Hr + Math.abs(curvature(state.klein.x, state.klein.y, state.klein.n));
+return Hr / 3;
+}
+
+function mapToFreq(x, y, n, base) {
+return base * (1 + x * 0.1 + y * 0.1) * (1 + n * 0.05);
+}
+
+function mapToGain(x, y, n, accepted, total) {
+var baseGain = 0.10;
+var acceptRate = total > 0 ? accepted / total : 0.5;
+var k = curvature(x, y, n);
+var modulation = 0.05 * acceptRate * (1 + k * 0.1);
+return Math.min(baseGain + modulation, 0.18);
+}
+
+function mapToPan(x, y) {
+var k = curvature(x, y, 0);
+return Math.tanh(k * 0.5);
+}
+
+function calcESS(accepted, total) {
+return total > 0 ? (accepted / total) * 100 : 0;
+}
+
+function calcCurvESS(x, y, n, accepted, total) {
+var ess = calcESS(accepted, total);
+var k = curvature(x, y, n);
+return ess / (1 + Math.abs(k));
+}
+
+function toCanvas(x, y, offsetX, offsetY, scale) {
+return { cx: offsetX + x * scale, cy: offsetY + y * scale };
+}
+
+function project3D(x, y, n, canvas) {
+var w = canvas.width;
+var h = canvas.height;
+var scale = view3D.zoom;
+var cosX = Math.cos(view3D.rotationX);
+var sinX = Math.sin(view3D.rotationX);
+var cosZ = Math.cos(view3D.rotationZ);
+var sinZ = Math.sin(view3D.rotationZ);
+var y1 = y * cosX - n * sinX;
+var z1 = y * sinX + n * cosX;
+var x2 = x * cosZ - y1 * sinZ;
+var y2 = x * sinZ + y1 * cosZ;
+var perspective = 300 / (300 + z1 * 50);
+return {
+cx: w / 2 + x2 * scale * perspective,
+cy: h / 2 - y2 * scale * perspective,
+depth: z1
+};
+}
+
+function initAudio() {
+if (audioContext) return;
+try {
+audioContext = new (window.AudioContext || window.webkitAudioContext)();
+oscillators = { rwm: audioContext.createOscillator(), rhmc: audioContext.createOscillator(), klein: audioContext.createOscillator() };
+gains = { rwm: audioContext.createGain(), rhmc: audioContext.createGain(), klein: audioContext.createGain() };
+panners = { rwm: audioContext.createStereoPanner(), rhmc: audioContext.createStereoPanner(), klein: audioContext.createStereoPanner() };
+lfos = { rwm: audioContext.createOscillator(), rhmc: audioContext.createOscillator(), klein: audioContext.createOscillator() };
+lfoGains = { rwm: audioContext.createGain(), rhmc: audioContext.createGain(), klein: audioContext.createGain() };
+oscillators.rwm.type = 'sine';
+oscillators.rhmc.type = 'triangle';
+oscillators.klein.type = 'square';
+oscillators.rwm.frequency.value = 110;
+oscillators.rhmc.frequency.value = 165;
+oscillators.klein.frequency.value = 220;
+lfos.rwm.frequency.value = 0.5;
+lfos.rhmc.frequency.value = 0.7;
+lfos.klein.frequency.value = 0.3;
+lfoGains.rwm.gain.value = 5;
+lfoGains.rhmc.gain.value = 8;
+lfoGains.klein.gain.value = 10;
+var keys = ['rwm', 'rhmc', 'klein'];
+for (var i = 0; i < keys.length; i++) {
+var key = keys[i];
+lfos[key].connect(lfoGains[key]);
+lfoGains[key].connect(oscillators[key].frequency);
+oscillators[key].connect(gains[key]);
+gains[key].connect(panners[key]);
+panners[key].connect(audioContext.destination);
+}
+for (var j = 0; j < keys.length; j++) {
+oscillators[keys[j]].start();
+lfos[keys[j]].start();
+}
+var now = audioContext.currentTime;
+gains.rwm.gain.setValueAtTime(0, now);
+gains.rhmc.gain.setValueAtTime(0, now);
+gains.klein.gain.setValueAtTime(0, now);
+gains.rwm.gain.linearRampToValueAtTime(0.10, now + 0.5);
+gains.rhmc.gain.linearRampToValueAtTime(0.10, now + 0.5);
+gains.klein.gain.linearRampToValueAtTime(0.10, now + 0.5);
+} catch(e) {}
+}
+
+function stopAudio() {
+if (!audioContext) return;
+try {
+var keys = ['rwm', 'rhmc', 'klein'];
+for (var i = 0; i < keys.length; i++) {
+oscillators[keys[i]].stop();
+lfos[keys[i]].stop();
+}
+audioContext.close();
+} catch(e) {}
+audioContext = null;
+}
+
+function updateAudio() {
+if (!audioContext || !oscillators || !gains) return;
+try {
+var now = audioContext.currentTime;
+oscillators.rwm.frequency.setTargetAtTime(mapToFreq(state.rwm.x, state.rwm.y, state.rwm.n, 110), now, 0.05);
+gains.rwm.gain.setTargetAtTime(mapToGain(state.rwm.x, state.rwm.y, state.rwm.n, state.rwm.accepted, state.rwm.total), now, 0.05);
+panners.rwm.pan.setTargetAtTime(mapToPan(state.rwm.x, state.rwm.y), now, 0.1);
+oscillators.rhmc.frequency.setTargetAtTime(mapToFreq(state.rhmc.x, state.rhmc.y, state.rhmc.n, 165), now, 0.05);
+gains.rhmc.gain.setTargetAtTime(mapToGain(state.rhmc.x, state.rhmc.y, state.rhmc.n, state.rhmc.accepted, state.rhmc.total), now, 0.05);
+panners.rhmc.pan.setTargetAtTime(mapToPan(state.rhmc.x, state.rhmc.y), now, 0.1);
+oscillators.klein.frequency.setTargetAtTime(mapToFreq(state.klein.x, state.klein.y, state.klein.n, 220), now, 0.05);
+gains.klein.gain.setTargetAtTime(mapToGain(state.klein.x, state.klein.y, state.klein.n, state.klein.accepted, state.klein.total), now, 0.05);
+panners.klein.pan.setTargetAtTime(mapToPan(state.klein.x, state.klein.y), now, 0.1);
+} catch(e) {}
+}
+
+function collapseReseed() {
+state.rhmc.x = state.rhmc.x + (Math.random() - 0.5) * 0.1;
+state.rhmc.y = state.rhmc.y + (Math.random() - 0.5) * 0.1;
+state.rhmc.n = 0;
+state.klein.x = state.klein.x + (Math.random() - 0.5) * 0.1;
+state.klein.y = state.klein.y + (Math.random() - 0.5) * 0.1;
+state.klein.n = 0;
+if (audioContext && gains) {
+try {
+var now = audioContext.currentTime;
+gains.rhmc.gain.setTargetAtTime(0.25, now, 0.02);
+gains.klein.gain.setTargetAtTime(0.25, now, 0.02);
+gains.rhmc.gain.setTargetAtTime(0.10, now + 0.15, 0.05);
+gains.klein.gain.setTargetAtTime(0.10, now + 0.15, 0.05);
+} catch(e) {}
+}
+if (currentView === '2d') draw2D();
+else draw3D();
+updateMetrics();
+}
+
+function stepRWM() {
+var s = state.rwm;
+var sigma = 0.3;
+var x_new = s.x + (Math.random() - 0.5) * 2 * sigma;
+var y_new = s.y + (Math.random() - 0.5) * 2 * sigma;
+var logAlpha = targetLogDensity(x_new, y_new) - targetLogDensity(s.x, s.y);
+s.total = s.total + 1;
+if (Math.log(Math.random()) < logAlpha) {
+s.x = x_new;
+s.y = y_new;
+s.accepted = s.accepted + 1;
+}
+s.samples.push({ x: s.x, y: s.y, n: s.n });
+if (s.samples.length > 200) s.samples.shift();
+}
+
+function stepRHMC() {
+var s = state.rhmc;
+var epsilon = 0.05;
+var L = 10;
+var G = getMetric(s.x, s.y, s.n, flattenMode ? 0 : 0.2);
+var px = (Math.random() - 0.5) * Math.sqrt(G.gxx);
+var py = (Math.random() - 0.5) * Math.sqrt(G.gyy);
+var H_current = -targetLogDensity(s.x, s.y) + 0.5 * (px * px / G.gxx + py * py / G.gyy);
+var x = s.x;
+var y = s.y;
+for (var i = 0; i < L; i++) {
+var grad_x = (targetLogDensity(x + 0.001, y) - targetLogDensity(x - 0.001, y)) / 0.002;
+var grad_y = (targetLogDensity(x, y + 0.001) - targetLogDensity(x, y - 0.001)) / 0.002;
+px = px + 0.5 * epsilon * grad_x;
+py = py + 0.5 * epsilon * grad_y;
+x = x + epsilon * px / G.gxx;
+y = y + epsilon * py / G.gyy;
+var grad_x2 = (targetLogDensity(x + 0.001, y) - targetLogDensity(x - 0.001, y)) / 0.002;
+var grad_y2 = (targetLogDensity(x, y + 0.001) - targetLogDensity(x, y - 0.001)) / 0.002;
+px = px + 0.5 * epsilon * grad_x2;
+py = py + 0.5 * epsilon * grad_y2;
+}
+var G_new = getMetric(x, y, s.n, flattenMode ? 0 : 0.2);
+var H_new = -targetLogDensity(x, y) + 0.5 * (px * px / G_new.gxx + py * py / G_new.gyy);
+s.total = s.total + 1;
+if (Math.log(Math.random()) < H_current - H_new) {
+s.x = x;
+s.y = y;
+s.momentum = { px: px, py: py };
+s.accepted = s.accepted + 1;
+if (!flattenMode && Math.random() < 0.1) {
+s.n = Math.min(s.n + 1, 5);
+}
+}
+s.samples.push({ x: s.x, y: s.y, n: s.n });
+if (s.samples.length > 200) s.samples.shift();
+}
+
+function stepKlein() {
+var s = state.klein;
+if (Math.random() > 0.1) {
+var sigma = 0.3;
+var x_new = s.x + (Math.random() - 0.5) * 2 * sigma;
+var y_new = s.y + (Math.random() - 0.5) * 2 * sigma;
+var logAlpha = targetLogDensity(x_new, y_new) - targetLogDensity(s.x, s.y);
+s.total = s.total + 1;
+if (Math.log(Math.random()) < logAlpha) {
+s.x = x_new;
+s.y = y_new;
+s.accepted = s.accepted + 1;
+}
+} else {
+var x_flip = -s.x + (Math.random() - 0.5) * 0.5;
+var y_flip = -s.y + (Math.random() - 0.5) * 0.5;
+var n_flip = s.n + (Math.random() > 0.5 ? 1 : -1);
+var logAlpha2 = targetLogDensity(x_flip, y_flip) - targetLogDensity(s.x, s.y);
+var curvPenalty = flattenMode ? 0 : 0.1 * (curvature(x_flip, y_flip, n_flip) - curvature(s.x, s.y, s.n));
+s.total = s.total + 1;
+if (Math.log(Math.random()) < logAlpha2 - curvPenalty) {
+s.x = x_flip;
+s.y = y_flip;
+s.n = Math.max(0, n_flip);
+s.accepted = s.accepted + 1;
+s.flipCount = s.flipCount + 1;
+if (audioContext && gains) {
+try {
+gains.klein.gain.setTargetAtTime(0.3, audioContext.currentTime, 0.01);
+gains.klein.gain.setTargetAtTime(0.1, audioContext.currentTime + 0.1, 0.05);
+} catch(e) {}
+}
+}
+}
+s.samples.push({ x: s.x, y: s.y, n: s.n });
+if (s.samples.length > 200) s.samples.shift();
+}
+
+function draw2D() {
+var canvas = document.getElementById('mainCanvas');
+var ctx = canvas.getContext('2d');
+var w = canvas.width;
+var h = canvas.height;
+ctx.fillStyle = '#0a0a0f';
+ctx.fillRect(0, 0, w, h);
+var scale = 100;
+var offsetX = w / 2;
+var offsetY = h / 2;
+
+if (depthRings) {
+var maxDepth = Math.max(state.rwm.n, state.rhmc.n, state.klein.n, 1);
+for (var d = 1; d <= maxDepth + 2; d++) {
+ctx.strokeStyle = 'rgba(139, 92, 246, ' + (0.2 / d) + ')';
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.arc(offsetX, offsetY, d * 30, 0, Math.PI * 2);
+ctx.stroke();
+}
+}
+
+for (var i = 0; i < w; i = i + 4) {
+for (var j = 0; j < h; j = j + 4) {
+var x = (i - offsetX) / scale;
+var y = (j - offsetY) / scale;
+var density = Math.exp(targetLogDensity(x, y));
+var alpha = Math.min(density * 0.3, 0.5);
+if (curvatureView) {
+var k = curvature(x, y, 0);
+var r = k > 0 ? 139 : 20;
+var g = k > 0 ? 92 : 184;
+var b = k > 0 ? 246 : 166;
+alpha = Math.min(Math.abs(k) * 0.5, 0.6);
+ctx.fillStyle = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+} else {
+ctx.fillStyle = 'rgba(100, 100, 150, ' + alpha + ')';
+}
+ctx.fillRect(i, j, 4, 4);
+}
+}
+
+if (fieldLines) {
+ctx.strokeStyle = 'rgba(34, 211, 238, 0.3)';
+ctx.lineWidth = 0.5;
+for (var fx = -3; fx <= 3; fx = fx + 0.5) {
+for (var fy = -3; fy <= 3; fy = fy + 0.5) {
+var F = tonField(fx, fy, 0);
+var pos = toCanvas(fx, fy, offsetX, offsetY, scale);
+var endx = pos.cx + F.Fxx * 8;
+var endy = pos.cy + F.Fyy * 8;
+ctx.beginPath();
+ctx.moveTo(pos.cx, pos.cy);
+ctx.lineTo(endx, endy);
+ctx.stroke();
+}
+}
+}
+
+ctx.strokeStyle = 'rgba(255, 105, 180, 0.4)';
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+for (var m = 0; m < state.rwm.samples.length; m++) {
+var samp = state.rwm.samples[m];
+var pos = toCanvas(samp.x, samp.y, offsetX, offsetY, scale);
+if (m === 0) ctx.moveTo(pos.cx, pos.cy);
+else ctx.lineTo(pos.cx, pos.cy);
+}
+ctx.stroke();
+var rwmCur = toCanvas(state.rwm.x, state.rwm.y, offsetX, offsetY, scale);
+ctx.fillStyle = 'rgba(255, 105, 180, 0.9)';
+ctx.beginPath();
+ctx.arc(rwmCur.cx, rwmCur.cy, 5, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+for (var n = 0; n < state.rhmc.samples.length; n++) {
+var samp2 = state.rhmc.samples[n];
+var pos2 = toCanvas(samp2.x, samp2.y, offsetX, offsetY, scale);
+if (n === 0) ctx.moveTo(pos2.cx, pos2.cy);
+else ctx.lineTo(pos2.cx, pos2.cy);
+}
+ctx.stroke();
+var rhmcCur = toCanvas(state.rhmc.x, state.rhmc.y, offsetX, offsetY, scale);
+ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+ctx.beginPath();
+ctx.arc(rhmcCur.cx, rhmcCur.cy, 5, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+for (var p = 0; p < state.klein.samples.length; p++) {
+var samp3 = state.klein.samples[p];
+var pos3 = toCanvas(samp3.x, samp3.y, offsetX, offsetY, scale);
+if (p === 0) ctx.moveTo(pos3.cx, pos3.cy);
+else ctx.lineTo(pos3.cx, pos3.cy);
+}
+ctx.stroke();
+var kleinCur = toCanvas(state.klein.x, state.klein.y, offsetX, offsetY, scale);
+ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+ctx.beginPath();
+ctx.arc(kleinCur.cx, kleinCur.cy, 5, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.font = '14px monospace';
+ctx.fillStyle = 'rgba(255, 105, 180, 0.9)';
+ctx.fillText('● RWM', 10, 25);
+ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+ctx.fillText('● τon-RHMC', 10, 45);
+ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+ctx.fillText('● Klein-Flip', 10, 65);
+}
+
+function draw3D() {
+var canvas = document.getElementById('canvas3D');
+var ctx = canvas.getContext('2d');
+var w = canvas.width;
+var h = canvas.height;
+ctx.fillStyle = '#0a0a0f';
+ctx.fillRect(0, 0, w, h);
+
+if (view3D.autoRotate) {
+view3D.rotationZ = view3D.rotationZ + 0.005;
+}
+
+if (depthRings) {
+for (var d = 0; d <= 5; d++) {
+ctx.strokeStyle = 'rgba(139, 92, 246, ' + (0.3 / (d + 1)) + ')';
+ctx.lineWidth = 1;
+ctx.beginPath();
+var numPoints = 20;
+for (var p = 0; p <= numPoints; p++) {
+var angle = (p / numPoints) * Math.PI * 2;
+var px = Math.cos(angle) * 2;
+var py = Math.sin(angle) * 2;
+var proj = project3D(px, py, d, canvas);
+if (p === 0) ctx.moveTo(proj.cx, proj.cy);
+else ctx.lineTo(proj.cx, proj.cy);
+}
+ctx.closePath();
+ctx.stroke();
+}
+}
+
+if (fieldLines) {
+ctx.strokeStyle = 'rgba(34, 211, 238, 0.2)';
+ctx.lineWidth = 0.5;
+for (var fx = -2; fx <= 2; fx = fx + 1) {
+for (var fy = -2; fy <= 2; fy = fy + 1) {
+for (var fn = 0; fn <= 3; fn = fn + 1) {
+var F = tonField(fx, fy, fn);
+var start = project3D(fx, fy, fn, canvas);
+var end = project3D(fx + F.Fxx * 0.3, fy + F.Fyy * 0.3, fn, canvas);
+ctx.beginPath();
+ctx.moveTo(start.cx, start.cy);
+ctx.lineTo(end.cx, end.cy);
+ctx.stroke();
+}
+}
+}
+}
+
+var particles = [];
+for (var m = 0; m < state.rwm.samples.length; m = m + 5) {
+var s = state.rwm.samples[m];
+particles.push({ x: s.x, y: s.y, n: s.n, color: 'rgba(255, 105, 180, 0.6)', sampler: 'rwm' });
+}
+for (var n = 0; n < state.rhmc.samples.length; n = n + 5) {
+var s2 = state.rhmc.samples[n];
+particles.push({ x: s2.x, y: s2.y, n: s2.n, color: 'rgba(0, 255, 255, 0.6)', sampler: 'rhmc' });
+}
+for (var p = 0; p < state.klein.samples.length; p = p + 5) {
+var s3 = state.klein.samples[p];
+particles.push({ x: s3.x, y: s3.y, n: s3.n, color: 'rgba(255, 215, 0, 0.6)', sampler: 'klein' });
+}
+
+particles.sort(function(a, b) {
+var pa = project3D(a.x, a.y, a.n, canvas);
+var pb = project3D(b.x, b.y, b.n, canvas);
+return pa.depth - pb.depth;
+});
+
+for (var i = 0; i < particles.length; i++) {
+var part = particles[i];
+var proj = project3D(part.x, part.y, part.n, canvas);
+var k = curvature(part.x, part.y, part.n);
+var size = 2 + Math.abs(k) * 3;
+
+if (curvatureView) {
+var r = k > 0 ? 139 : 20;
+var g = k > 0 ? 92 : 184;
+var b = k > 0 ? 246 : 166;
+var alpha = Math.min(Math.abs(k) * 0.8 + 0.3, 0.9);
+ctx.fillStyle = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+} else {
+ctx.fillStyle = part.color;
+}
+
+ctx.beginPath();
+ctx.arc(proj.cx, proj.cy, size, 0, Math.PI * 2);
+ctx.fill();
+}
+
+var cur_rwm = project3D(state.rwm.x, state.rwm.y, state.rwm.n, canvas);
+var cur_rhmc = project3D(state.rhmc.x, state.rhmc.y, state.rhmc.n, canvas);
+var cur_klein = project3D(state.klein.x, state.klein.y, state.klein.n, canvas);
+
+ctx.shadowBlur = 15;
+ctx.shadowColor = 'rgba(255, 105, 180, 0.8)';
+ctx.fillStyle = 'rgba(255, 105, 180, 0.9)';
+ctx.beginPath();
+ctx.arc(cur_rwm.cx, cur_rwm.cy, 8, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
+ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+ctx.beginPath();
+ctx.arc(cur_rhmc.cx, cur_rhmc.cy, 8, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+ctx.beginPath();
+ctx.arc(cur_klein.cx, cur_klein.cy, 8, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.shadowBlur = 0;
+
+ctx.font = '14px monospace';
+ctx.fillStyle = '#e2e8f0';
+ctx.fillText('3D Depth Manifold (x, y, n)', 10, 25);
+ctx.fillText('n=0 (flat) → n=' + Math.max(state.rwm.n, state.rhmc.n, state.klein.n), 10, 45);
+
+if (flattenMode) {
+ctx.fillStyle = '#ffd700';
+ctx.fillText('⚠ Classical Mode: n locked at 0', 10, 65);
+}
+}
+
+function updateMetrics() {
+var Hr = recursiveEntropy();
+var HrDrift = Hr - prevHr;
+prevHr = Hr;
+HrHistory.push(HrDrift);
+if (HrHistory.length > 100) HrHistory.shift();
+
+var avgDrift = 0;
+for (var i = 0; i < HrHistory.length; i++) {
+avgDrift = avgDrift + HrHistory[i];
+}
+avgDrift = avgDrift / HrHistory.length;
+
+document.getElementById('hr-drift').textContent = HrDrift.toFixed(3);
+document.getElementById('curv-value').textContent = Hr.toFixed(3);
+
+var harmonyBar = document.getElementById('harmonyBar');
+var harmonyText = document.getElementById('harmony');
+
+var hue = 200 - Math.min(Math.abs(avgDrift) * 600, 120);
+var hue2 = hue + 60;
+harmonyBar.style.background = 'linear-gradient(to right, hsl(' + hue + ',100%,65%), hsl(' + hue2 + ',100%,65%))';
+
+if (Math.abs(avgDrift) < 0.05) {
+harmonyText.textContent = 'Balanced';
+harmonyBar.style.animation = 'none';
+} else {
+harmonyText.textContent = 'Diverging';
+harmonyBar.style.animation = 'pulse 0.5s infinite';
+}
+
+document.getElementById('rwm-accept').textContent = (state.rwm.total > 0 ? ((state.rwm.accepted / state.rwm.total) * 100).toFixed(1) : 0);
+document.getElementById('rwm-ess').textContent = calcESS(state.rwm.accepted, state.rwm.total).toFixed(1);
+document.getElementById('rwm-essk').textContent = calcCurvESS(state.rwm.x, state.rwm.y, state.rwm.n, state.rwm.accepted, state.rwm.total).toFixed(1);
+document.getElementById('rwm-depth').textContent = state.rwm.n;
+
+document.getElementById('rhmc-accept').textContent = (state.rhmc.total > 0 ? ((state.rhmc.accepted / state.rhmc.total) * 100).toFixed(1) : 0);
+document.getElementById('rhmc-ess').textContent = calcESS(state.rhmc.accepted, state.rhmc.total).toFixed(1);
+document.getElementById('rhmc-essk').textContent = calcCurvESS(state.rhmc.x, state.rhmc.y, state.rhmc.n, state.rhmc.accepted, state.rhmc.total).toFixed(1);
+document.getElementById('rhmc-depth').textContent = state.rhmc.n;
+
+document.getElementById('klein-accept').textContent = (state.klein.total > 0 ? ((state.klein.accepted / state.klein.total) * 100).toFixed(1) : 0);
+document.getElementById('klein-ess').textContent = calcESS(state.klein.accepted, state.klein.total).toFixed(1);
+document.getElementById('klein-essk').textContent = calcCurvESS(state.klein.x, state.klein.y, state.klein.n, state.klein.accepted, state.klein.total).toFixed(1);
+document.getElementById('klein-depth').textContent = state.klein.n;
+document.getElementById('klein-flips').textContent = state.klein.flipCount;
+
+document.getElementById('comp-rwm-accept').textContent = (state.rwm.total > 0 ? ((state.rwm.accepted / state.rwm.total) * 100).toFixed(0) : 0);
+document.getElementById('comp-rwm-essk').textContent = calcCurvESS(state.rwm.x, state.rwm.y, state.rwm.n, state.rwm.accepted, state.rwm.total).toFixed(1);
+document.getElementById('comp-rwm-moves').textContent = state.rwm.total;
+
+document.getElementById('comp-rhmc-accept').textContent = (state.rhmc.total > 0 ? ((state.rhmc.accepted / state.rhmc.total) * 100).toFixed(0) : 0);
+document.getElementById('comp-rhmc-essk').textContent = calcCurvESS(state.rhmc.x, state.rhmc.y, state.rhmc.n, state.rhmc.accepted, state.rhmc.total).toFixed(1);
+document.getElementById('comp-rhmc-depth').textContent = state.rhmc.n;
+
+document.getElementById('comp-klein-accept').textContent = (state.klein.total > 0 ? ((state.klein.accepted / state.klein.total) * 100).toFixed(0) : 0);
+document.getElementById('comp-klein-essk').textContent = calcCurvESS(state.klein.x, state.klein.y, state.klein.n, state.klein.accepted, state.klein.total).toFixed(1);
+document.getElementById('comp-klein-flips').textContent = state.klein.flipCount;
+
+document.getElementById('iterCount').textContent = iteration;
+
+updateHarmonyAccent(avgDrift);
+updateCurvatureGauge(Hr);
+drawDriftSpark();
+}
+
+function drawDriftSpark() {
+var canvas = document.getElementById('driftSpark');
+if (!canvas) return;
+var ctx = canvas.getContext('2d');
+var w = canvas.width;
+var h = canvas.height;
+ctx.clearRect(0, 0, w, h);
+
+if (HrHistory.length < 2) return;
+
+ctx.strokeStyle = '#22d3ee';
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+
+var maxHistory = 100;
+var step = w / maxHistory;
+
+for (var i = 0; i < HrHistory.length; i++) {
+var x = i * step;
+var drift = HrHistory[i];
+var y = h / 2 - drift * 200;
+y = Math.max(0, Math.min(h, y));
+
+if (i === 0) ctx.moveTo(x, y);
+else ctx.lineTo(x, y);
+}
+ctx.stroke();
+
+ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.moveTo(0, h / 2);
+ctx.lineTo(w, h / 2);
+ctx.stroke();
+}
+
+function animate() {
+for (var i = 0; i < speed; i++) {
+stepRWM();
+stepRHMC();
+stepKlein();
+}
+if (audioEnabled) updateAudio();
+iteration = iteration + speed;
+if (currentView === '2d') {
+draw2D();
+} else {
+draw3D();
+}
+updateMetrics();
+captureFrame();
+}
+
+function reset() {
+state.rwm = { x: -1.5, y: 0, n: 0, samples: [], accepted: 0, total: 0 };
+state.rhmc = { x: -1.0, y: 0.5, n: 0, samples: [], accepted: 0, total: 0, momentum: { px: 0, py: 0 } };
+state.klein = { x: 1.5, y: 0, n: 0, samples: [], accepted: 0, total: 0, flipCount: 0 };
+iteration = 0;
+HrHistory = [];
+prevHr = 0;
+if (currentView === '2d') draw2D();
+else draw3D();
+updateMetrics();
+}
+
+document.getElementById('playBtn').addEventListener('click', function() {
+isRunning = !isRunning;
+if (isRunning) {
+document.getElementById('playBtn').innerHTML = '⏸ Pause';
+animationInterval = setInterval(animate, 50);
+} else {
+document.getElementById('playBtn').innerHTML = '▶ Start';
+clearInterval(animationInterval);
+}
+});
+
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('collapseBtn').addEventListener('click', collapseReseed);
+
+document.getElementById('guideBtn').addEventListener('click', function() {
+document.getElementById('guideModal').classList.add('active');
+});
+
+document.getElementById('closeGuide').addEventListener('click', function() {
+document.getElementById('guideModal').classList.remove('active');
+});
+
+document.getElementById('guideModal').addEventListener('click', function(e) {
+if (e.target === this) {
+this.classList.remove('active');
+}
+});
+
+document.addEventListener('keydown', function(e) {
+if (e.key === 'Escape') {
+document.getElementById('guideModal').classList.remove('active');
+}
+});
+
+document.getElementById('audioBtn').addEventListener('click', function() {
+audioEnabled = !audioEnabled;
+if (audioEnabled) {
+initAudio();
+document.getElementById('audioBtn').innerHTML = '🔊 Audio On';
+document.getElementById('audioBtn').classList.remove('inactive');
+} else {
+stopAudio();
+document.getElementById('audioBtn').innerHTML = '🔇 Audio Off';
+document.getElementById('audioBtn').classList.add('inactive');
+}
+});
+
+document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+
+var presetButtons = document.querySelectorAll('.preset-btn');
+for (var i = 0; i < presetButtons.length; i++) {
+presetButtons[i].addEventListener('click', function(e) {
+var preset = e.target.getAttribute('data-preset');
+applyPreset(preset);
+});
+}
+
+document.getElementById('speedSlider').addEventListener('input', function(e) {
+speed = parseInt(e.target.value);
+document.getElementById('speedValue').textContent = speed;
+});
+
+document.getElementById('curvatureView').addEventListener('change', function(e) {
+curvatureView = e.target.checked;
+if (!isRunning) {
+if (currentView === '2d') draw2D();
+else draw3D();
+}
+});
+
+document.getElementById('fieldLines').addEventListener('change', function(e) {
+fieldLines = e.target.checked;
+if (!isRunning) {
+if (currentView === '2d') draw2D();
+else draw3D();
+}
+});
+
+document.getElementById('depthRings').addEventListener('change', function(e) {
+depthRings = e.target.checked;
+if (!isRunning) {
+if (currentView === '2d') draw2D();
+else draw3D();
+}
+});
+
+document.getElementById('flattenMode').addEventListener('change', function(e) {
+flattenMode = e.target.checked;
+if (!isRunning) {
+if (currentView === '2d') draw2D();
+else draw3D();
+}
+});
+
+document.getElementById('targetSelect').addEventListener('change', function(e) {
+targetType = e.target.value;
+reset();
+});
+
+document.getElementById('tab2d').addEventListener('click', function() {
+currentView = '2d';
+document.getElementById('canvas2d').style.display = 'block';
+document.getElementById('canvas3d').style.display = 'none';
+document.getElementById('tab2d').classList.add('active');
+document.getElementById('tab3d').classList.remove('active');
+draw2D();
+});
+
+document.getElementById('tab3d').addEventListener('click', function() {
+currentView = '3d';
+document.getElementById('canvas2d').style.display = 'none';
+document.getElementById('canvas3d').style.display = 'block';
+document.getElementById('tab2d').classList.remove('active');
+document.getElementById('tab3d').classList.add('active');
+draw3D();
+});
+
+draw2D();
+updateMetrics();
+initTouchControls();
+
+/* === UNNS—MCMC Paper Integration Layer === */
+
+var paperLink = document.createElement('a');
+paperLink.href = "https://ukbbi.github.io/UNNS/docs/markov_chain/Markov%20Chain%20Monte%20Carlo%20on%20a%20Recursive%20Substrate%20A%20UNNS%20Interpretation%20of%20Kernels%20Balance%20and%20Mixing.pdf";
+paperLink.textContent = "📄 Read the full UNNS-MCMC Paper";
+paperLink.target = "_blank";
+paperLink.className = "paper-link";
+document.getElementById('theoryBox').appendChild(paperLink);
+
+function updateHarmonyAccent(avgDrift) {
+var root = document.documentElement;
+var hue = Math.max(180 - Math.min(120 * Math.abs(avgDrift), 90), 0);
+root.style.setProperty('--harmony-accent', 'hsl(' + hue + ', 100%, 70%)');
+}
+
+var shimmerCanvas = document.createElement('canvas');
+shimmerCanvas.id = "shimmerOverlay";
+shimmerCanvas.width = 800;
+shimmerCanvas.height = 600;
+shimmerCanvas.style.position = "absolute";
+shimmerCanvas.style.top = "0";
+shimmerCanvas.style.left = "0";
+shimmerCanvas.style.pointerEvents = "none";
+shimmerCanvas.style.borderRadius = "8px";
+shimmerCanvas.style.opacity = "0.4";
+document.getElementById("canvas2d").appendChild(shimmerCanvas);
+
+function drawShimmer() {
+var ctx = shimmerCanvas.getContext('2d');
+ctx.clearRect(0, 0, shimmerCanvas.width, shimmerCanvas.height);
+var time = Date.now() * 0.001;
+var grad = ctx.createLinearGradient(0, 0, shimmerCanvas.width, shimmerCanvas.height);
+var hue1 = (time * 60) % 360;
+var hue2 = (time * 60 + 180) % 360;
+grad.addColorStop(0, 'hsla(' + hue1 + ', 100%, 70%, 0.07)');
+grad.addColorStop(1, 'hsla(' + hue2 + ', 100%, 70%, 0.07)');
+ctx.fillStyle = grad;
+ctx.fillRect(0, 0, shimmerCanvas.width, shimmerCanvas.height);
+requestAnimationFrame(drawShimmer);
+}
+drawShimmer();
+
+function updateCurvatureGauge(Hr) {
+var gauge = document.getElementById('curvGauge');
+var scale = 1 + Math.min(Hr * 0.5, 0.5);
+gauge.style.transform = 'scale(' + scale + ')';
+gauge.style.opacity = 0.7 + Math.min(Hr * 0.3, 0.3);
+gauge.textContent = 'κ=' + Hr.toFixed(2);
+}
+
+function exportToCSV() {
+var csvContent = 'sampler,iteration,x,y,n,accepted,total,acceptance_rate\n';
+var samplers = ['rwm', 'rhmc', 'klein'];
+
+for (var s = 0; s < samplers.length; s++) {
+var sampler = samplers[s];
+var samples = state[sampler].samples;
+for (var i = 0; i < samples.length; i++) {
+var samp = samples[i];
+var acceptRate = state[sampler].total > 0 ? (state[sampler].accepted / state[sampler].total) : 0;
+csvContent += sampler + ',' + i + ',' + samp.x + ',' + samp.y + ',' + samp.n + ',' + 
+state[sampler].accepted + ',' + state[sampler].total + ',' + acceptRate + '\n';
+}
+}
+
+var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+var link = document.createElement('a');
+var url = URL.createObjectURL(blob);
+link.setAttribute('href', url);
+link.setAttribute('download', 'unns_mcmc_samples_' + Date.now() + '.csv');
+link.style.visibility = 'hidden';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}
+
+function toggleRecording() {
+recording = !recording;
+var btn = document.getElementById('recordBtn');
+if (recording) {
+recordedFrames = [];
+btn.innerHTML = '⏹ Stop Recording';
+btn.classList.add('recording');
+} else {
+btn.innerHTML = '⏺ Record Animation';
+btn.classList.remove('recording');
+if (recordedFrames.length > 0) {
+saveAnimation();
+}
+}
+}
+
+function captureFrame() {
+if (!recording) return;
+var canvas = currentView === '2d' ? document.getElementById('mainCanvas') : document.getElementById('canvas3D');
+try {
+var dataUrl = canvas.toDataURL('image/png');
+recordedFrames.push(dataUrl);
+} catch(e) {}
+}
+
+function saveAnimation() {
+var animData = {
+frames: recordedFrames,
+metadata: {
+duration: recordedFrames.length,
+targetType: targetType,
+timestamp: Date.now()
+}
+};
+var jsonContent = JSON.stringify(animData);
+var blob = new Blob([jsonContent], { type: 'application/json' });
+var link = document.createElement('a');
+var url = URL.createObjectURL(blob);
+link.setAttribute('href', url);
+link.setAttribute('download', 'unns_mcmc_animation_' + Date.now() + '.json');
+link.style.visibility = 'hidden';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+alert('Animation saved! ' + recordedFrames.length + ' frames captured.\nNote: To create video, use a JSON-to-video converter tool.');
+}
+
+function applyPreset(presetName) {
+reset();
+if (presetName === 'default') {
+speed = 1;
+targetType = 'bimodal';
+curvatureView = false;
+fieldLines = false;
+depthRings = false;
+flattenMode = false;
+} else if (presetName === 'fast') {
+speed = 5;
+targetType = 'bimodal';
+curvatureView = false;
+fieldLines = true;
+depthRings = true;
+flattenMode = false;
+} else if (presetName === 'explore') {
+speed = 2;
+targetType = 'mixture';
+curvatureView = true;
+fieldLines = true;
+depthRings = true;
+flattenMode = false;
+} else if (presetName === 'challenge') {
+speed = 3;
+targetType = 'funnel';
+curvatureView = true;
+fieldLines = false;
+depthRings = true;
+flattenMode = false;
+}
+document.getElementById('speedSlider').value = speed;
+document.getElementById('speedValue').textContent = speed;
+document.getElementById('targetSelect').value = targetType;
+document.getElementById('curvatureView').checked = curvatureView;
+document.getElementById('fieldLines').checked = fieldLines;
+document.getElementById('depthRings').checked = depthRings;
+document.getElementById('flattenMode').checked = flattenMode;
+if (currentView === '2d') draw2D();
+else draw3D();
+updateMetrics();
+}
+
+function initTouchControls() {
+var canvas2d = document.getElementById('mainCanvas');
+var canvas3d = document.getElementById('canvas3D');
+
+canvas2d.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas2d.addEventListener('touchmove', handleTouchMove, { passive: false });
+canvas3d.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas3d.addEventListener('touchmove', handleTouchMove, { passive: false });
+}
+
+function handleTouchStart(e) {
+if (e.touches.length === 1) {
+touchStartX = e.touches[0].clientX;
+touchStartY = e.touches[0].clientY;
+e.preventDefault();
+}
+}
+
+function handleTouchMove(e) {
+if (e.touches.length === 1 && currentView === '3d') {
+var deltaX = e.touches[0].clientX - touchStartX;
+var deltaY = e.touches[0].clientY - touchStartY;
+view3D.rotationZ += deltaX * 0.01;
+view3D.rotationX += deltaY * 0.01;
+view3D.rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, view3D.rotationX));
+touchStartX = e.touches[0].clientX;
+touchStartY = e.touches[0].clientY;
+if (!isRunning) draw3D();
+e.preventDefault();
+}
+}
+
+</script>
+</body>
+</html>

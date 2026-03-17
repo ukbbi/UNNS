@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS NP-Hardness Explorer v2.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2a 100%);
+            color: #00ff88;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Grid Layout */
+        .app-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 3px solid #00ff88;
+            padding: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .title {
+            font-size: 2.2em;
+            background: linear-gradient(90deg, #00ff88, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .subtitle {
+            color: #8a2be2;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: rgba(0, 20, 40, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-title {
+            color: #ff00ff;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .problem-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .problem-btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .problem-btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: translateX(5px);
+        }
+
+        .problem-btn.active {
+            background: rgba(255, 0, 255, 0.3);
+            border-color: #ff00ff;
+            color: #ff00ff;
+        }
+
+        /* Slider Controls */
+        .slider-control {
+            margin: 15px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .slider-value {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 255, 136, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        /* Comparison View */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .view-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            min-height: 400px;
+        }
+
+        .view-panel.classical {
+            border-color: #ff4444;
+        }
+
+        .view-panel.unns {
+            border-color: #00ff88;
+        }
+
+        .panel-header {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .classical .panel-header {
+            color: #ff4444;
+        }
+
+        .unns .panel-header {
+            color: #00ff88;
+        }
+
+        .visualization-area {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Metrics Display */
+        .metrics-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* Algorithm Panel */
+        .algorithm-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #8a2be2;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .algorithm-header {
+            color: #8a2be2;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .code-container {
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid #8a2be2;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            padding: 2px 0;
+            transition: all 0.3s;
+        }
+
+        .code-line.active {
+            background: rgba(138, 43, 226, 0.3);
+            padding-left: 10px;
+            border-left: 3px solid #ff00ff;
+        }
+
+        .keyword {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        .function {
+            color: #00ffff;
+        }
+
+        .variable {
+            color: #ffff00;
+        }
+
+        .comment {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Step Indicator */
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #333;
+            margin: 0 5px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .step.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .step.completed {
+            background: rgba(138, 43, 226, 0.2);
+            border-color: #8a2be2;
+        }
+
+        .step-number {
+            display: block;
+            font-size: 1.5em;
+            color: #ff00ff;
+            margin-bottom: 5px;
+        }
+
+        .step-name {
+            font-size: 0.9em;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(255, 0, 255, 0.2));
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Theory Popup */
+        .theory-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .theory-popup.active {
+            display: block;
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #ff00ff;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .theory-content {
+            color: #00ff88;
+            line-height: 1.6;
+        }
+
+        .theory-content h3 {
+            color: #ff00ff;
+            margin: 20px 0 10px;
+        }
+
+        .reference-link {
+            color: #00ffff;
+            text-decoration: none;
+        }
+
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff88;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 2px solid #8a2be2;
+            padding: 15px;
+            text-align: center;
+            color: #666;
+        }
+
+        .footer a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        /* Animations */
+        @keyframes collapse {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: scale(0.1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes expand {
+            from {
+                transform: scale(0.1);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .collapsing {
+            animation: collapse 0.5s ease-out;
+        }
+
+        .expanding {
+            animation: expand 0.5s ease-in;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel {
+                position: static;
+            }
+            
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="title">UNNS NP-Hardness Explorer v2.0</div>
+            <div class="subtitle">Visualizing Complexity Collapse Through Recursive Grammar</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="control-section">
+                    <div class="control-title">Select Problem</div>
+                    <div class="problem-selector">
+                        <button class="problem-btn active" data-problem="sat">Boolean SAT</button>
+                        <button class="problem-btn" data-problem="hamiltonian">Hamiltonian Path</button>
+                        <button class="problem-btn" data-problem="tsp">Traveling Salesman</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="control-title">Parameters</div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Problem Size (n)</span>
+                            <span class="slider-value" id="size-value">8</span>
+                        </div>
+                        <input type="range" id="size-slider" min="4" max="12" value="8">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Normalization Strength</span>
+                            <span class="slider-value" id="norm-value">50%</span>
+                        </div>
+                        <input type="range" id="norm-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Animation Speed</span>
+                            <span class="slider-value" id="speed-value">1x</span>
+                        </div>
+                        <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="control-title">Actions</div>
+                    <div class="action-buttons">
+                        <button class="action-btn" id="run-btn">Run Algorithm</button>
+                        <button class="action-btn" id="reset-btn">Reset</button>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="action-btn" id="theory-btn">View Theory</button>
+                        <button class="action-btn" id="compare-btn">Toggle View</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="visualization-content">
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-name">Embed</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-name">Repair</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-name">Normalize</span>
+                    </div>
+                    <div class="step" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-name">Collapse</span>
+                    </div>
+                    <div class="step" data-step="5">
+                        <span class="step-number">5</span>
+                        <span class="step-name">Verify</span>
+                    </div>
+                </div>
+
+                <!-- Comparison View -->
+                <div class="comparison-container">
+                    <div class="view-panel classical">
+                        <div class="panel-header">Classical Exponential Search</div>
+                        <div class="visualization-area">
+                            <canvas id="classical-canvas"></canvas>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-item">
+                                <div class="metric-label">Branches</div>
+                                <div class="metric-value" id="classical-branches" style="color: #ff4444;">2^n</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Time</div>
+                                <div class="metric-value" id="classical-time" style="color: #ff4444;">O(2^n)</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Space</div>
+                                <div class="metric-value" id="classical-space" style="color: #ff4444;">O(2^n)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="view-panel unns">
+                        <div class="panel-header">UNNS Collapsed Search</div>
+                        <div class="visualization-area">
+                            <canvas id="unns-canvas"></canvas>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-item">
+                                <div class="metric-label">Attractors</div>
+                                <div class="metric-value" id="unns-attractors" style="color: #00ff88;">n^k</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Time</div>
+                                <div class="metric-value" id="unns-time" style="color: #00ff88;">O(n^k)</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Space</div>
+                                <div class="metric-value" id="unns-space" style="color: #00ff88;">O(n^2)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Algorithm Panel -->
+                <div class="algorithm-panel">
+                    <div class="algorithm-header">Algorithm Execution</div>
+                    <div class="code-container" id="code-display">
+                        <div class="code-line" data-line="1">
+                            <span class="keyword">function</span> <span class="function">UNNSCollapse</span>(<span class="variable">problem</span>) {
+                        </div>
+                        <div class="code-line" data-line="2">
+                            &nbsp;&nbsp;<span class="comment">// Step 1: Embed into recursive lattice</span>
+                        </div>
+                        <div class="code-line" data-line="3">
+                            &nbsp;&nbsp;<span class="variable">lattice</span> = <span class="function">RecursiveEmbed</span>(<span class="variable">problem</span>);
+                        </div>
+                        <div class="code-line" data-line="4">
+                            &nbsp;&nbsp;<span class="comment">// Step 2: Apply repair operator</span>
+                        </div>
+                        <div class="code-line" data-line="5">
+                            &nbsp;&nbsp;<span class="variable">repaired</span> = <span class="function">RepairOperator</span>(<span class="variable">lattice</span>);
+                        </div>
+                        <div class="code-line" data-line="6">
+                            &nbsp;&nbsp;<span class="comment">// Step 3: Normalize equivalence classes</span>
+                        </div>
+                        <div class="code-line" data-line="7">
+                            &nbsp;&nbsp;<span class="variable">normalized</span> = <span class="function">Normalize</span>(<span class="variable">repaired</span>);
+                        </div>
+                        <div class="code-line" data-line="8">
+                            &nbsp;&nbsp;<span class="comment">// Step 4: Collapse to attractors</span>
+                        </div>
+                        <div class="code-line" data-line="9">
+                            &nbsp;&nbsp;<span class="variable">attractors</span> = <span class="function">CollapseToAttractors</span>(<span class="variable">normalized</span>);
+                        </div>
+                        <div class="code-line" data-line="10">
+                            &nbsp;&nbsp;<span class="comment">// Step 5: Verify solution</span>
+                        </div>
+                        <div class="code-line" data-line="11">
+                            &nbsp;&nbsp;<span class="keyword">return</span> <span class="function">VerifySolution</span>(<span class="variable">attractors</span>);
+                        </div>
+                        <div class="code-line" data-line="12">
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/UNNS_on_NP_Hardness/A%20UNNS%20Note%20on%20NP-Hardness.pdf" target="_blank">📚 UNNS NP-Hardness Paper</a>
+            |
+            <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/UNNS_on_NP_Hardness/NP-Hardness%20in%20the%20UNNS%20Substrate.pdf" target="_blank">📚 NP-Hardness in UNNS Substrate</a>
+        </div>
+    </div>
+
+    <!-- Theory Popup -->
+    <div class="theory-popup" id="theory-popup">
+        <button class="popup-close" id="popup-close">×</button>
+        <div class="theory-content">
+            <h2 style="color: #00ff88;">UNNS Complexity Theory</h2>
+            
+            <h3>Core Principle</h3>
+            <p>
+                NP-hardness is not an absolute property of problems, but rather a property relative to the computational substrate. 
+                In the UNNS framework, problems that appear exponentially complex in classical computation can collapse to polynomial 
+                complexity through recursive embedding and normalization.
+            </p>
+
+            <h3>The Collapse Mechanism</h3>
+            <p>
+                1. <strong>Recursive Embedding:</strong> Problems are mapped into nested lattice structures<br>
+                2. <strong>Repair Operations:</strong> Identify and merge equivalent states<br>
+                3. <strong>Normalization:</strong> Collapse exponential branches into polynomial attractors<br>
+                4. <strong>Verification:</strong> Check solutions in the collapsed space
+            </p>
+
+            <h3>Mathematical Foundation</h3>
+            <p>
+                Given a problem P with classical complexity O(2^n), the UNNS transformation:<br>
+                <code>T: P → L → N → A</code><br>
+                where L is the lattice embedding, N is the normalized form, and A is the attractor set with |A| = O(n^k).
+            </p>
+
+            <h3>References</h3>
+            <p>
+                <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/UNNS_on_NP_Hardness/A%20UNNS%20Note%20on%20NP-Hardness.pdf" 
+                   class="reference-link" target="_blank">
+                    → UNNS Note on NP-Hardness (PDF)
+                </a><br>
+                <a href="https://ukbbi.github.io/UNNS/docs/UNNS_Operational_Grammar/UNNS_on_NP_Hardness/NP-Hardness%20in%20the%20UNNS%20Substrate.pdf" 
+                   class="reference-link" target="_blank">
+                    → NP-Hardness in UNNS Substrate (PDF)
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // State Management
+        class ExplorerState {
+            constructor() {
+                this.problem = 'sat';
+                this.size = 8;
+                this.normStrength = 50;
+                this.animSpeed = 1;
+                this.currentStep = 1;
+                this.isRunning = false;
+                this.showComparison = true;
+                this.animationFrame = 0;
+            }
+
+            reset() {
+                this.currentStep = 1;
+                this.isRunning = false;
+            }
+        }
+
+        const state = new ExplorerState();
+
+        // Canvas Setup - Get references after DOM loads
+        let classicalCanvas, classicalCtx, unnsCanvas, unnsCtx;
+        
+        function initCanvases() {
+            classicalCanvas = document.getElementById('classical-canvas');
+            classicalCtx = classicalCanvas.getContext('2d');
+            unnsCanvas = document.getElementById('unns-canvas');
+            unnsCtx = unnsCanvas.getContext('2d');
+            
+            // Set initial dimensions
+            classicalCanvas.width = 400;
+            classicalCanvas.height = 300;
+            unnsCanvas.width = 400;
+            unnsCanvas.height = 300;
+        }
+
+        function resizeCanvases() {
+            if (!classicalCanvas || !unnsCanvas) return;
+            
+            // Force dimensions regardless of parent visibility
+            const width = 500; // Fixed width for reliability
+            const height = 300;
+            
+            classicalCanvas.width = width;
+            classicalCanvas.height = height;
+            unnsCanvas.width = width;
+            unnsCanvas.height = height;
+            
+            // Try to get parent width if available
+            const classicalParent = classicalCanvas.parentElement;
+            const unnsParent = unnsCanvas.parentElement;
+            
+            if (classicalParent && classicalParent.offsetWidth > 0) {
+                classicalCanvas.width = classicalParent.offsetWidth - 2;
+            }
+            
+            if (unnsParent && unnsParent.offsetWidth > 0) {
+                unnsCanvas.width = unnsParent.offsetWidth - 2;
+            }
+            
+            // Always redraw after resize
+            drawClassical();
+            drawUNNS();
+        }
+
+        // Cached positions for performance
+        let cachedPositions = {
+            sat: { classical: [], unns: [] },
+            hamiltonian: { classical: [], unns: [] },
+            tsp: { classical: [], unns: [] }
+        };
+
+        // Problem-specific visualizations (optimized)
+        function drawProblemSpecific(ctx, canvas, problem, isClassical) {
+            if (!ctx || !canvas) return;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Clear canvas and draw background to verify rendering
+            ctx.fillStyle = isClassical ? 'rgba(50, 0, 0, 0.2)' : 'rgba(0, 50, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw a simple test shape to verify canvas is working
+            if (canvas.width === 0 || canvas.height === 0) {
+                console.error('Canvas has zero dimensions!', canvas.id);
+                return;
+            }
+            
+            if (problem === 'sat') {
+                drawSATVisualization(ctx, centerX, centerY, isClassical);
+            } else if (problem === 'hamiltonian') {
+                drawHamiltonianVisualization(ctx, centerX, centerY, isClassical);
+            } else if (problem === 'tsp') {
+                drawTSPVisualization(ctx, centerX, centerY, isClassical);
+            }
+        }
+        
+        function drawSATVisualization(ctx, cx, cy, isClassical) {
+            const variables = Math.min(state.size, 4);
+            
+            if (isClassical) {
+                // Draw static exponential branches (no animation for performance)
+                ctx.strokeStyle = '#ff4444';
+                ctx.fillStyle = '#ff4444';
+                
+                const nodeCount = Math.min(Math.pow(2, variables), 16);
+                for (let i = 0; i < nodeCount; i++) {
+                    const angle = (i / nodeCount) * Math.PI * 2;
+                    const radius = 80;
+                    const x = cx + Math.cos(angle) * radius;
+                    const y = cy + Math.sin(angle) * radius;
+                    
+                    // Draw assignment node
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw connections to center
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(x, y);
+                    ctx.globalAlpha = 0.2;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+                
+                // Central node
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText('2^' + variables + ' assignments', cx - 40, cy + 100);
+            } else {
+                // Draw static collapsed equivalence classes
+                const attractorCount = Math.max(3, Math.floor(variables * 2 * (1 - state.normStrength / 100)));
+                
+                for (let i = 0; i < attractorCount; i++) {
+                    const angle = (i / attractorCount) * Math.PI * 2;
+                    const radius = 60;
+                    const x = cx + Math.cos(angle) * radius;
+                    const y = cy + Math.sin(angle) * radius;
+                    
+                    // Draw attractor
+                    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#00ff88';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText(attractorCount + ' eq. classes', cx - 35, cy + 100);
+            }
+        }
+        
+        function drawHamiltonianVisualization(ctx, cx, cy, isClassical) {
+            const nodes = Math.min(state.size, 8);
+            
+            // Cache or generate positions
+            const key = isClassical ? 'classical' : 'unns';
+            if (!cachedPositions.hamiltonian[key].length || cachedPositions.hamiltonian[key].length !== nodes) {
+                cachedPositions.hamiltonian[key] = [];
+                for (let i = 0; i < nodes; i++) {
+                    const angle = (i / nodes) * Math.PI * 2;
+                    const radius = 70;
+                    cachedPositions.hamiltonian[key].push({
+                        x: cx + Math.cos(angle) * radius,
+                        y: cy + Math.sin(angle) * radius
+                    });
+                }
+            }
+            const positions = cachedPositions.hamiltonian[key];
+            
+            if (isClassical) {
+                ctx.strokeStyle = '#ff4444';
+                ctx.fillStyle = '#ff4444';
+                
+                // Draw subset of possible paths (not all for performance)
+                ctx.globalAlpha = 0.1;
+                for (let i = 0; i < nodes; i++) {
+                    for (let j = i + 1; j < Math.min(i + 3, nodes); j++) {
+                        ctx.beginPath();
+                        ctx.moveTo(positions[i].x, positions[i].y);
+                        ctx.lineTo(positions[j].x, positions[j].y);
+                        ctx.stroke();
+                    }
+                }
+                ctx.globalAlpha = 1;
+                
+                // Draw nodes
+                for (const pos of positions) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText(nodes + '! paths', cx - 25, cy + 100);
+            } else {
+                ctx.strokeStyle = '#00ff88';
+                ctx.fillStyle = '#00ff88';
+                
+                // Draw collapsed path
+                ctx.beginPath();
+                ctx.lineWidth = 2;
+                for (let i = 0; i <= nodes; i++) {
+                    const pos = positions[i % nodes];
+                    if (i === 0) {
+                        ctx.moveTo(pos.x, pos.y);
+                    } else {
+                        ctx.lineTo(pos.x, pos.y);
+                    }
+                }
+                ctx.stroke();
+                ctx.lineWidth = 1;
+                
+                // Draw nodes
+                for (const pos of positions) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText('O(n^2) cycles', cx - 35, cy + 100);
+            }
+        }
+        
+        function drawTSPVisualization(ctx, cx, cy, isClassical) {
+            const cities = Math.min(state.size, 7);
+            
+            // Cache or generate positions
+            const key = isClassical ? 'classical' : 'unns';
+            if (!cachedPositions.tsp[key].length || cachedPositions.tsp[key].length !== cities) {
+                cachedPositions.tsp[key] = [];
+                for (let i = 0; i < cities; i++) {
+                    const angle = (i / cities) * Math.PI * 2 + Math.sin(i);
+                    const radius = 60 + Math.cos(i * 2) * 20;
+                    cachedPositions.tsp[key].push({
+                        x: cx + Math.cos(angle) * radius,
+                        y: cy + Math.sin(angle) * radius
+                    });
+                }
+            }
+            const positions = cachedPositions.tsp[key];
+            
+            if (isClassical) {
+                ctx.strokeStyle = '#ff4444';
+                ctx.fillStyle = '#ff4444';
+                
+                // Draw 3 possible routes (not animated for performance)
+                ctx.globalAlpha = 0.2;
+                for (let route = 0; route < 3; route++) {
+                    ctx.beginPath();
+                    const offset = route * 2;
+                    for (let i = 0; i <= cities; i++) {
+                        const idx = (i + offset) % cities;
+                        const pos = positions[idx];
+                        if (i === 0) {
+                            ctx.moveTo(pos.x, pos.y);
+                        } else {
+                            ctx.lineTo(pos.x, pos.y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+                
+                // Draw cities
+                for (const pos of positions) {
+                    ctx.fillRect(pos.x - 4, pos.y - 4, 8, 8);
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText('(n-1)!/2 routes', cx - 40, cy + 100);
+            } else {
+                ctx.strokeStyle = '#00ff88';
+                ctx.fillStyle = '#00ff88';
+                
+                // Draw optimized route
+                ctx.beginPath();
+                ctx.lineWidth = 3;
+                for (let i = 0; i <= cities; i++) {
+                    const pos = positions[i % cities];
+                    if (i === 0) {
+                        ctx.moveTo(pos.x, pos.y);
+                    } else {
+                        ctx.lineTo(pos.x, pos.y);
+                    }
+                }
+                ctx.stroke();
+                ctx.lineWidth = 1;
+                
+                // Draw cities
+                for (const pos of positions) {
+                    // Simple glow effect
+                    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+                    ctx.fillRect(pos.x - 8, pos.y - 8, 16, 16);
+                    
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fillRect(pos.x - 4, pos.y - 4, 8, 8);
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText('O(n^2.5) search', cx - 40, cy + 100);
+            }
+        }
+
+        function drawClassical() {
+            if (!classicalCtx || !classicalCanvas) return;
+            
+            // Ensure canvas has valid dimensions
+            if (classicalCanvas.width === 0 || classicalCanvas.height === 0) {
+                classicalCanvas.width = 400;
+                classicalCanvas.height = 300;
+            }
+            
+            drawProblemSpecific(classicalCtx, classicalCanvas, state.problem, true);
+            
+            // Update metrics based on problem
+            if (state.problem === 'sat') {
+                const vars = Math.min(state.size, 4);
+                document.getElementById('classical-branches').textContent = `2^${vars}`;
+                document.getElementById('classical-time').textContent = `O(2^n)`;
+                document.getElementById('classical-space').textContent = `O(2^n)`;
+            } else if (state.problem === 'hamiltonian') {
+                document.getElementById('classical-branches').textContent = `${state.size}!`;
+                document.getElementById('classical-time').textContent = `O(n!)`;
+                document.getElementById('classical-space').textContent = `O(n!)`;
+            } else if (state.problem === 'tsp') {
+                document.getElementById('classical-branches').textContent = `(n-1)!/2`;
+                document.getElementById('classical-time').textContent = `O(n!)`;
+                document.getElementById('classical-space').textContent = `O(n^2)`;
+            }
+        }
+
+        function drawUNNS() {
+            if (!unnsCtx || !unnsCanvas) return;
+            
+            // Ensure canvas has valid dimensions
+            if (unnsCanvas.width === 0 || unnsCanvas.height === 0) {
+                unnsCanvas.width = 400;
+                unnsCanvas.height = 300;
+            }
+            
+            drawProblemSpecific(unnsCtx, unnsCanvas, state.problem, false);
+            
+            // Update metrics based on problem
+            if (state.problem === 'sat') {
+                const attractors = Math.max(3, Math.floor(state.size * 2 * (1 - state.normStrength / 100)));
+                document.getElementById('unns-attractors').textContent = attractors.toString();
+                document.getElementById('unns-time').textContent = `O(n^2)`;
+                document.getElementById('unns-space').textContent = `O(n)`;
+            } else if (state.problem === 'hamiltonian') {
+                document.getElementById('unns-attractors').textContent = `${state.size}`;
+                document.getElementById('unns-time').textContent = `O(n^3)`;
+                document.getElementById('unns-space').textContent = `O(n^2)`;
+            } else if (state.problem === 'tsp') {
+                document.getElementById('unns-attractors').textContent = `~√n`;
+                document.getElementById('unns-time').textContent = `O(n^2.5)`;
+                document.getElementById('unns-space').textContent = `O(n^2)`;
+            }
+        }
+
+        // Animation Functions
+        async function runAlgorithm() {
+            if (state.isRunning) return;
+            state.isRunning = true;
+            
+            await animateToStep(5); // Run all steps
+            
+            state.isRunning = false;
+        }
+        
+        async function animateToStep(targetStep) {
+            const steps = [
+                { line: 3, step: 1, delay: 800, action: 'embed' },
+                { line: 5, step: 2, delay: 800, action: 'repair' },
+                { line: 7, step: 3, delay: 800, action: 'normalize' },
+                { line: 9, step: 4, delay: 800, action: 'collapse' },
+                { line: 11, step: 5, delay: 800, action: 'verify' }
+            ];
+            
+            for (const stepInfo of steps) {
+                if (!state.isRunning && stepInfo.step !== targetStep) continue;
+                if (stepInfo.step > targetStep) break;
+                
+                state.currentStep = stepInfo.step;
+                
+                // Update step indicator
+                document.querySelectorAll('.step').forEach(s => {
+                    const sStep = parseInt(s.dataset.step);
+                    if (sStep < stepInfo.step) {
+                        s.classList.add('completed');
+                        s.classList.remove('active');
+                    } else if (sStep === stepInfo.step) {
+                        s.classList.add('active');
+                        s.classList.remove('completed');
+                    } else {
+                        s.classList.remove('active', 'completed');
+                    }
+                });
+                
+                // Highlight code line
+                document.querySelectorAll('.code-line').forEach(line => {
+                    line.classList.toggle('active', parseInt(line.dataset.line) === stepInfo.line);
+                });
+                
+                // Draw once per step
+                drawClassical();
+                drawUNNS();
+                
+                if (state.isRunning) {
+                    await new Promise(resolve => setTimeout(resolve, stepInfo.delay / state.animSpeed));
+                }
+            }
+        }
+
+        // Event Handlers
+        document.querySelectorAll('.problem-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.problem-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.problem = btn.dataset.problem;
+                state.reset();
+                // Clear cache when problem changes
+                cachedPositions[state.problem] = { classical: [], unns: [] };
+                triggerRedraw();
+            });
+        });
+        
+        // Make step indicators clickable
+        document.querySelectorAll('.step').forEach(step => {
+            step.addEventListener('click', async () => {
+                if (state.isRunning) return;
+                const targetStep = parseInt(step.dataset.step);
+                state.isRunning = true;
+                await animateToStep(targetStep);
+                state.isRunning = false;
+            });
+        });
+
+        document.getElementById('size-slider').addEventListener('input', (e) => {
+            state.size = parseInt(e.target.value);
+            document.getElementById('size-value').textContent = state.size;
+            state.reset();
+            // Clear cache when size changes
+            cachedPositions[state.problem] = { classical: [], unns: [] };
+            triggerRedraw();
+        });
+
+        document.getElementById('norm-slider').addEventListener('input', (e) => {
+            state.normStrength = parseInt(e.target.value);
+            document.getElementById('norm-value').textContent = state.normStrength + '%';
+            triggerRedraw();
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            state.animSpeed = parseFloat(e.target.value);
+            document.getElementById('speed-value').textContent = state.animSpeed + 'x';
+        });
+
+        document.getElementById('run-btn').addEventListener('click', runAlgorithm);
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            state.reset();
+            state.isRunning = false;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'completed'));
+            document.querySelectorAll('.code-line').forEach(l => l.classList.remove('active'));
+            document.querySelector('.step[data-step="1"]').classList.add('active');
+            triggerRedraw();
+        });
+
+        document.getElementById('theory-btn').addEventListener('click', () => {
+            document.getElementById('theory-popup').classList.add('active');
+        });
+
+        document.getElementById('popup-close').addEventListener('click', () => {
+            document.getElementById('theory-popup').classList.remove('active');
+        });
+
+        document.getElementById('compare-btn').addEventListener('click', () => {
+            state.showComparison = !state.showComparison;
+            const container = document.querySelector('.comparison-container');
+            const classicalPanel = document.querySelector('.view-panel.classical');
+            const unnsPanel = document.querySelector('.view-panel.unns');
+            
+            if (state.showComparison) {
+                container.style.gridTemplateColumns = '1fr 1fr';
+                classicalPanel.style.display = 'block';
+                unnsPanel.style.display = 'block';
+                document.getElementById('compare-btn').textContent = 'Single View';
+            } else {
+                container.style.gridTemplateColumns = '1fr';
+                classicalPanel.style.display = 'none';
+                unnsPanel.style.display = 'block';
+                document.getElementById('compare-btn').textContent = 'Compare View';
+            }
+            
+            // Force resize and redraw after layout change
+            setTimeout(() => {
+                resizeCanvases();
+            }, 50);
+        });
+
+        // Animation Loop (optimized - no continuous redraw)
+        let needsRedraw = true;
+        
+        function animate() {
+            if (needsRedraw && !state.isRunning) {
+                drawClassical();
+                drawUNNS();
+                needsRedraw = false;
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        // Helper to trigger redraw
+        function triggerRedraw() {
+            needsRedraw = true;
+        }
+
+        // Initialize everything when DOM is ready
+        window.addEventListener('load', () => {
+            // Get canvas elements
+            classicalCanvas = document.getElementById('classical-canvas');
+            unnsCanvas = document.getElementById('unns-canvas');
+            
+            if (!classicalCanvas || !unnsCanvas) {
+                console.error('Canvases not found!');
+                return;
+            }
+            
+            // Get contexts
+            classicalCtx = classicalCanvas.getContext('2d');
+            unnsCtx = unnsCanvas.getContext('2d');
+            
+            // Set initial dimensions
+            classicalCanvas.width = 500;
+            classicalCanvas.height = 300;
+            unnsCanvas.width = 500;
+            unnsCanvas.height = 300;
+            
+            // Initial draw to verify canvases work
+            console.log('Initializing canvases...');
+            
+            // Draw test rectangles to verify rendering
+            classicalCtx.fillStyle = '#ff4444';
+            classicalCtx.fillRect(10, 10, 50, 50);
+            
+            unnsCtx.fillStyle = '#00ff88';
+            unnsCtx.fillRect(10, 10, 50, 50);
+            
+            // Now draw actual visualizations
+            setTimeout(() => {
+                resizeCanvases();
+                drawClassical();
+                drawUNNS();
+                
+                // Start animation loop
+                animate();
+            }, 100);
+            
+            // Set up event listeners
+            window.addEventListener('resize', () => {
+                setTimeout(resizeCanvases, 100);
+            });
+        });
+
+        // Tooltip functionality
+        const tooltip = document.getElementById('tooltip');
+        
+        document.querySelectorAll('.step').forEach(step => {
+            step.addEventListener('mouseenter', (e) => {
+                const descriptions = {
+                    '1': 'Embed problem into recursive lattice structure',
+                    '2': 'Apply repair operator to identify equivalences',
+                    '3': 'Normalize equivalent states into classes',
+                    '4': 'Collapse exponential branches to polynomial attractors',
+                    '5': 'Verify solution in collapsed space'
+                };
+                tooltip.textContent = descriptions[step.dataset.step];
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.pageX + 'px';
+                tooltip.style.top = (e.pageY - 30) + 'px';
+            });
+            
+            step.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

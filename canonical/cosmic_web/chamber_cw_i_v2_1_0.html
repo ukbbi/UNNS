@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER CW-I v2.1.0 — Cosmic Web Structural Persistence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #040810;
+  --bg2:     #050b14;
+  --panel:   #070e1a;
+  --panel2:  #091220;
+  --border:  #0d1c2e;
+  --border2: #0a1624;
+  --accent:  #00c8f0;
+  --accent2: #b050f0;
+  --green:   #00dd88;
+  --gold:    #f0a030;
+  --red:     #e04040;
+  --blue:    #4ab0f0;
+  --text:    #a8bfd0;
+  --text2:   #456070;
+  --dim:     #213345;
+  --pass:    #00dd88;
+  --fail:    #e04040;
+  --warn:    #f0a030;
+  --mono:   'IBM Plex Mono','Courier New',monospace;
+  --sans:   'IBM Plex Sans',sans-serif;
+  --disp:   'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1420px;margin:0 auto;padding:20px 18px 60px}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--disp);font-size:11px;color:var(--accent2);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:14px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;border:1px solid;padding:2px 8px;letter-spacing:0.12em;font-weight:600}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.run{color:var(--warn);border-color:var(--warn);animation:blink .9s infinite}
+.htag.done{color:var(--pass);border-color:var(--pass)}
+.htag.err{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:.1em}
+
+/* PROTO */
+.proto{background:var(--panel);border:1px solid var(--border2);border-left:3px solid var(--accent2);padding:8px 14px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:3px 18px;font-size:10.5px}
+.pi{display:flex;gap:7px}
+.pk{color:var(--text2)}
+.pv{color:var(--text)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:234px 1fr 218px;gap:12px;margin-bottom:12px}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:13px 15px}
+.ptitle{font-size:8px;color:var(--accent2);letter-spacing:0.26em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:6px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:7.5px}
+
+/* CONTROLS */
+.ctrl-group{margin-bottom:10px}
+.ctrl-label{font-size:8.5px;color:var(--text2);letter-spacing:.13em;display:block;margin-bottom:3px}
+.ctrl-input{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;outline:none;transition:border-color .2s}
+.ctrl-input:focus{border-color:var(--accent2)}
+.ctrl-select{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;outline:none;cursor:pointer}
+.tog-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.tog-row label{font-size:9.5px;color:var(--text2);cursor:pointer}
+input[type=checkbox]{accent-color:var(--accent2);cursor:pointer;width:12px;height:12px}
+.scale-pills{display:flex;flex-wrap:wrap;gap:4px}
+.sp{font-size:8.5px;color:var(--dim);border:1px solid var(--dim);padding:2px 6px;letter-spacing:.08em;cursor:pointer;user-select:none;transition:color .15s,border-color .15s,background .15s,opacity .15s}
+.sp.on{color:var(--accent);border-color:var(--accent);background:rgba(0,200,240,.04)}
+.sp.off{color:var(--dim);border-color:var(--dim);background:none;opacity:.35;text-decoration:line-through}
+.btn-run{width:100%;background:var(--accent2);color:#fff;border:none;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;padding:9px 0;cursor:pointer;margin-top:10px;transition:background .15s}
+.btn-run:hover{background:#c060ff}
+.btn-run:disabled{background:var(--dim);color:var(--text2);cursor:not-allowed}
+.file-zone{border:1px dashed var(--border2);padding:10px 8px;text-align:center;cursor:pointer;font-size:9.5px;color:var(--text2);margin-bottom:10px;transition:border-color .2s,color .2s;user-select:none}
+.file-zone:hover,.file-zone.drag{border-color:var(--accent2);color:var(--accent2)}
+.file-zone.loaded{border-color:var(--pass);color:var(--pass)}
+
+/* VIZ PANEL */
+.viz-panel{background:var(--panel);border:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden}
+.viz-tabs{display:flex;border-bottom:1px solid var(--border2);background:var(--bg2)}
+.vtab{flex:1;padding:6px 0;text-align:center;font-size:8.5px;letter-spacing:.1em;color:var(--text2);cursor:pointer;border:none;background:none;font-family:var(--mono);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.vtab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.vtab:hover:not(.on){color:var(--text)}
+.viz-canvas-wrap{flex:1;position:relative;min-height:360px;background:#030710}
+canvas.vc{display:block;width:100%;height:100%;position:absolute;top:0;left:0;cursor:crosshair}
+.scale-bar{display:flex;align-items:center;gap:9px;padding:7px 12px;border-top:1px solid var(--border2);background:var(--bg2)}
+.scale-bar label{font-size:8.5px;color:var(--text2);flex-shrink:0}
+.scale-bar input[type=range]{flex:1;accent-color:var(--accent)}
+.scale-bar .sv{font-size:10px;color:var(--accent);min-width:68px;font-family:var(--disp)}
+
+/* RIGHT PANEL */
+.verdict-card{background:var(--panel);border:1px solid var(--border2);padding:16px;margin-bottom:9px}
+.vc-label{font-size:7.5px;color:var(--text2);letter-spacing:.2em;margin-bottom:6px}
+.vc-text{font-family:var(--disp);font-size:13px;font-weight:700;line-height:1.3;color:var(--pass)}
+.vc-text.warn{color:var(--warn)}
+.vc-text.fail{color:var(--fail)}
+.vc-text.idle{color:var(--dim)}
+
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.sc{background:var(--panel);border:1px solid var(--border2);padding:10px 11px}
+.sc-lbl{font-size:7.5px;color:var(--text2);letter-spacing:.16em;margin-bottom:2px}
+.sc-val{font-family:var(--disp);font-size:17px;font-weight:700;color:var(--accent);line-height:1}
+.sc-sub{font-size:8px;color:var(--text2);margin-top:1px}
+
+.div-line{font-size:7.5px;color:var(--dim);letter-spacing:.28em;padding:4px 0 8px;border-top:1px solid var(--border2);margin:4px 0 9px;display:flex;align-items:center;gap:10px}
+.div-line::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+.mlist{background:var(--panel);border:1px solid var(--border2);margin-bottom:9px}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:4px 11px;border-bottom:1px solid var(--border2)}
+.mrow:last-child{border-bottom:none}
+.mk{font-size:9px;color:var(--text2)}
+.mv{font-size:9.5px;color:var(--text);font-family:var(--disp)}
+.mv.pass{color:var(--pass)}
+.mv.fail{color:var(--fail)}
+.mv.warn{color:var(--warn)}
+
+.fbox{background:var(--panel);border:1px solid var(--border2);padding:10px 12px;margin-bottom:9px}
+.fb-hd{font-size:7.5px;color:var(--accent2);letter-spacing:.2em;margin-bottom:7px}
+.fb-item{display:flex;align-items:center;gap:7px;margin:3px 0;font-size:9px;color:var(--text2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+.dot.pass{background:var(--pass)}
+.dot.fail{background:var(--fail)}
+
+.btn-export{background:transparent;border:1px solid var(--dim);color:var(--text2);font-family:var(--mono);font-size:9px;padding:5px 12px;cursor:pointer;letter-spacing:.1em;transition:border-color .2s,color .2s}
+.btn-export:hover{border-color:var(--accent);color:var(--accent)}
+.btn-export:disabled{cursor:not-allowed;opacity:.4}
+
+/* PROGRESS */
+.prog-wrap{background:var(--panel);border:1px solid var(--border2);padding:9px 14px;margin-bottom:10px}
+.prog-lbl{font-size:8.5px;color:var(--text2);margin-bottom:5px}
+.prog-bar{height:2px;background:var(--border2)}
+.prog-fill{height:100%;background:var(--accent2);width:0%;transition:width .25s}
+.prog-pct{font-size:8.5px;color:var(--accent2);margin-top:3px}
+.logbox{background:var(--panel);border:1px solid var(--border2);padding:8px 12px;font-size:9px;color:var(--text2);max-height:90px;overflow-y:auto;line-height:1.5}
+.logbox .le{padding:0}
+
+/* BOTTOM PLOTS */
+.plots-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.plot-panel{background:var(--panel);border:1px solid var(--border2);padding:11px 12px}
+.plot-hd{font-size:8px;color:var(--accent);letter-spacing:.18em;margin-bottom:8px}
+canvas.pc{display:block;width:100%}
+
+/* ============================================================
+   CW-I v2.1.0 — VERDICT STATES
+   ============================================================ */
+.verdict-deep     { color: #00ff9c; }
+.verdict-boundary { color: #ffd166; }
+.verdict-geometry { color: #7aa6ff; }
+.verdict-control  { color: #ff9f43; }
+.verdict-collapse { color: #ff4d4d; }
+
+.vc-sub {
+  font-size: 9px;
+  color: var(--text2);
+  margin-top: 5px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   CW-I v2.1.0 — STRUCTURE MAP
+   ============================================================ */
+.structure-map {
+  width: 100%;
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    #ff4d4d  0%,
+    #ff9f43 25%,
+    #7aa6ff 50%,
+    #ffd166 75%,
+    #00ff9c 100%
+  );
+  position: relative;
+}
+.structure-pointer {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: -1px;
+  left: 0%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 6px rgba(0,0,0,0.7);
+  transition: left 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+.structure-map-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  color: var(--text2);
+  margin-top: 3px;
+  letter-spacing: 0.04em;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <span class="hid">CHAMBER CW-I</span>
+  <span class="htitle">Cosmic Web Structural Persistence</span>
+  <span class="htag idle" id="st">IDLE</span>
+  <span class="hver">v2.1.0</span>
+</div>
+
+<!-- PROTOCOL STRIP -->
+<div class="proto">
+  <span class="pi"><span class="pk">operator</span><span class="pv">O_R — Gaussian coarse-graining</span></span>
+  <span class="pi"><span class="pk">carrier candidates</span><span class="pv">axis · frame · topology · skeleton</span></span>
+  <span class="pi"><span class="pk">scales</span><span class="pv">R = [5,10,20,40,80,160] Mpc</span></span>
+  <span class="pi"><span class="pk">grid</span><span class="pv" id="proto-grid">96³</span></span>
+  <span class="pi"><span class="pk">threshold</span><span class="pv">top 10% density voxels</span></span>
+  <span class="pi"><span class="pk">connectivity</span><span class="pv">26-neighbor</span></span>
+  <span class="pi"><span class="pk">corrections</span><span class="pv">selection-fn + ZoA</span></span>
+  <span class="pi"><span class="pk">controls</span><span class="pv">shuffle · survey_radial · field_shuffle · poisson</span></span>
+</div>
+
+<div class="layout">
+
+<!-- ═══ LEFT PANEL ═══════════════════════════════════════════════ -->
+<div style="display:flex;flex-direction:column;gap:9px">
+
+  <div class="panel">
+    <div class="ptitle">INPUT DATA</div>
+    <div class="file-zone" id="fz" onclick="document.getElementById('cfi').click()">
+      <div id="fl">Click to load CSV<br><span style="font-size:8px;opacity:.55">cw_2mrs_xyz_full.csv</span></div>
+      <input type="file" id="cfi" accept=".csv" style="display:none" onchange="loadCSV(this.files[0])">
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text2)">
+      <span>N galaxies</span><span id="ngal" style="color:var(--text)">—</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text2);margin-top:3px">
+      <span>volume (Mpc³)</span><span id="bbox-vol" style="color:var(--text)">—</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text2);margin-top:3px">
+      <span>dataset</span><span id="ds-label" style="color:var(--accent2);letter-spacing:.06em">—</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">PARAMETERS</div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">GRID RESOLUTION</span>
+      <select class="ctrl-select" id="grid-sel" onchange="document.getElementById('proto-grid').textContent=this.value+'³'">
+        <option value="64">64³  — fast</option>
+        <option value="96" selected>96³</option>
+        <option value="128">128³ — slow</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">THRESHOLD PERCENTILE</span>
+      <input class="ctrl-input" id="thresh" type="number" value="90" min="70" max="99" step="1">
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">SCALE LADDER (MPC)</span>
+      <div class="scale-pills">
+        <span class="sp on" data-scale="5"   onclick="toggleScale(this)">5</span><span class="sp on" data-scale="10"  onclick="toggleScale(this)">10</span><span class="sp on" data-scale="20"  onclick="toggleScale(this)">20</span>
+        <span class="sp on" data-scale="40"  onclick="toggleScale(this)">40</span><span class="sp on" data-scale="80"  onclick="toggleScale(this)">80</span><span class="sp on" data-scale="160" onclick="toggleScale(this)">160</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">CORRECTIONS</div>
+    <div class="tog-row"><input type="checkbox" id="sel-on" checked><label for="sel-on">Selection fn weighting</label></div>
+    <div class="tog-row"><input type="checkbox" id="zoa-on" checked><label for="zoa-on">Zone of Avoidance mask</label></div>
+    <div style="font-size:8.5px;color:var(--dim);margin-bottom:8px;margin-top:2px;padding-left:19px">auto-detect normal, 30 Mpc half-thickness</div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">SYNTHETIC CONTROLS</span>
+      <div class="tog-row" style="margin-bottom:0"><input type="checkbox" id="ctrl-on" checked><label for="ctrl-on">Run controls</label></div>
+    </div>
+    <div class="ctrl-group" style="margin-top:4px">
+      <span class="ctrl-label">N CONTROLS</span>
+      <input class="ctrl-input" id="nctrl" type="number" value="20" min="1" max="20" step="1">
+    </div>
+    <button class="btn-run" id="run-btn" disabled onclick="runChamber()">▶ RUN CHAMBER</button>
+  </div>
+
+  <div id="prog-wrap" style="display:none" class="prog-wrap">
+    <div class="prog-lbl" id="prog-lbl">Initializing...</div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-pct" id="prog-pct">0%</div>
+  </div>
+
+  <div class="logbox" id="logbox"><div class="le" style="color:var(--dim)">Waiting for data...</div></div>
+</div>
+
+<!-- ═══ CENTER VIZ ═══════════════════════════════════════════════ -->
+<div class="viz-panel">
+  <div class="viz-tabs">
+    <button class="vtab on"  onclick="setTab('scatter',this)">SCATTER XY</button>
+    <button class="vtab"     onclick="setTab('density',this)">DENSITY SLICE</button>
+    <button class="vtab"     onclick="setTab('excursion',this)">EXCURSION SET</button>
+    <button class="vtab"     onclick="setTab('frame',this)">FRAME PATHS</button>
+  </div>
+  <div class="viz-canvas-wrap" id="vcw">
+    <canvas class="vc" id="vc"></canvas>
+  </div>
+  <div class="scale-bar">
+    <label>SCALE</label>
+    <input type="range" id="scslider" min="0" max="5" value="2" step="1" oninput="onSlider()">
+    <span class="sv" id="slval">R = 20 Mpc</span>
+  </div>
+</div>
+
+<!-- ═══ RIGHT PANEL ═══════════════════════════════════════════════ -->
+<div style="display:flex;flex-direction:column;gap:0">
+
+  <div class="verdict-card">
+    <div class="vc-label">STRUCTURAL VERDICT</div>
+    <div class="vc-text idle" id="verdict">AWAITING<br>COMPUTATION</div>
+    <div class="vc-sub" id="verdict-sub"></div>
+    <div class="structure-map" id="struct-map" style="display:none">
+      <div class="structure-pointer" id="struct-ptr"></div>
+    </div>
+    <div class="structure-map-labels" id="struct-labels" style="display:none">
+      <span>COLLAPSE</span>
+      <span>CTRL</span>
+      <span>GEO</span>
+      <span>BOUNDARY</span>
+      <span>DEEP</span>
+    </div>
+  </div>
+
+  <div class="div-line">LAYER 1 — GEOMETRY</div>
+
+  <div class="score-grid">
+    <div class="sc"><div class="sc-lbl">S_STRUCT</div><div class="sc-val" id="s-tot">—</div><div class="sc-sub">verdict score</div></div>
+    <div class="sc"><div class="sc-lbl">S_AXIS</div><div class="sc-val" id="s-ax">—</div><div class="sc-sub">axis stability</div></div>
+    <div class="sc"><div class="sc-lbl">S_TOPO</div><div class="sc-val" id="s-tp">—</div><div class="sc-sub">topology</div></div>
+    <div class="sc"><div class="sc-lbl">S_ANISO</div><div class="sc-val" id="s-an">—</div><div class="sc-sub">anisotropy</div></div>
+  </div>
+
+  <div class="div-line">LAYER 2 — STABILITY</div>
+
+  <div class="mlist">
+    <div class="mrow"><span class="mk">axis_total_path</span><span class="mv" id="m-atp">—</span></div>
+    <div class="mrow"><span class="mk">axis_max_step</span><span class="mv" id="m-ams">—</span></div>
+    <div class="mrow"><span class="mk">frame_total_path</span><span class="mv" id="m-ftp">—</span></div>
+    <div class="mrow"><span class="mk">J_max (LCF)</span><span class="mv" id="m-jmx">—</span></div>
+    <div class="mrow"><span class="mk">first_unstable_R</span><span class="mv" id="m-fus">—</span></div>
+    <div class="mrow"><span class="mk">control_beat</span><span class="mv" id="m-cb">—</span></div>
+  </div>
+
+  <div class="fbox">
+    <div class="fb-hd">FALSIFIER STATUS → STRUCTURE COLLAPSE if any fails</div>
+    <div class="fb-item"><span class="dot" id="f1"></span>J_max ≤ J_crit (0.30)</div>
+    <div class="fb-item"><span class="dot" id="f2"></span>S_topo ≥ T_crit (0.30)</div>
+    <div class="fb-item"><span class="dot" id="f3"></span>axis_max ≤ A_crit (30°)</div>
+    <div class="fb-item"><span class="dot" id="f4"></span>ctrl: S_topo · J_max · S_axis · LCF_std (≥3/4 pooled)</div>
+  </div>
+
+  <button class="btn-export" id="exp-btn" disabled onclick="exportJSON()">EXPORT cw_i_v2_1_0_result.json</button>
+
+</div>
+</div><!-- layout -->
+
+<!-- ═══ BOTTOM PLOTS ══════════════════════════════════════════════ -->
+<div class="plots-row">
+  <div class="plot-panel"><div class="plot-hd">AXIS DRIFT vs SCALE</div><canvas id="plt-ax" class="pc" height="130"></canvas></div>
+  <div class="plot-panel"><div class="plot-hd">LARGEST COMPONENT FRACTION</div><canvas id="plt-lcf" class="pc" height="130"></canvas></div>
+  <div class="plot-panel"><div class="plot-hd">COMPONENT COUNT vs SCALE</div><canvas id="plt-nc" class="pc" height="130"></canvas></div>
+  <div class="plot-panel"><div class="plot-hd">ANISOTROPY A1 vs SCALE</div><canvas id="plt-an" class="pc" height="130"></canvas></div>
+</div>
+
+</div><!-- shell -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SCALE PILL TOGGLE
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleScale(el) {
+  const pills = document.querySelectorAll('.sp');
+  const onCount = [...pills].filter(p => p.classList.contains('on')).length;
+  if (el.classList.contains('on') && onCount <= 1) return; // keep at least one
+  el.classList.toggle('on');
+  el.classList.toggle('off');
+}
+
+function activeScales() {
+  return [...document.querySelectorAll('.sp.on')]
+    .map(p => parseInt(p.dataset.scale))
+    .filter(v => !isNaN(v))
+    .sort((a,b) => a-b);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+const SCALES   = [5, 10, 20, 40, 80, 160];
+const J_CRIT   = 0.30;
+const T_CRIT   = 0.30;
+const A_CRIT   = 30;       // degrees
+const SIG_AXIS = 45;       // degrees — normalization for S_axis
+const ALPHA    = 5;        // normalization for S_comp (n_components std)
+const BETA     = 0.10;     // normalization for S_lcf
+const GAMMA    = 0.05;     // normalization for S_aniso
+const W_AXIS   = 0.60;
+const W_TOPO   = 0.20;
+const W_ANISO  = 0.20;
+
+// ---- structural verdict constants ----
+const DEEP_S_STRUCT_MIN          = 0.75;
+const DEEP_AXIS_TOTAL_MAX        = 8.0;
+const DEEP_AXIS_MAX_STEP_MAX     = 8.0;
+const DEEP_CTRL_BEAT_MIN         = 0.75;
+const DEEP_S_AXIS_ADVANTAGE_MIN  = 0.05;
+const DEEP_AXIS_TOTAL_RATIO_MAX  = 0.50;
+
+const BOUNDARY_S_STRUCT_MIN      = 0.45;
+const BOUNDARY_AXIS_TOTAL_MAX    = 20.0;
+const BOUNDARY_AXIS_MAX_STEP_MAX = 15.0;
+const ZOA_HALF = 30;       // Mpc half-thickness for ZoA slab
+const W_MAX    = 10;       // max selection weight cap
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let gal = null;     // {xs, ys, zs, N}
+let result = null;  // chamberResult
+let datasetLabel = 'unknown';
+let vizTab = 'scatter';
+let scIdx  = 2;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function log(msg) {
+  const b = document.getElementById('logbox');
+  const d = document.createElement('div');
+  d.className = 'le';
+  d.textContent = '› ' + msg;
+  b.appendChild(d);
+  b.scrollTop = b.scrollHeight;
+}
+
+function setProgress(pct, lbl) {
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent  = Math.round(pct) + '%';
+  if (lbl) document.getElementById('prog-lbl').textContent = lbl;
+}
+
+function setTag(cls, txt) {
+  const e = document.getElementById('st');
+  e.className = 'htag ' + cls;
+  e.textContent = txt;
+}
+
+function f3(v) { return (typeof v === 'number' && isFinite(v)) ? v.toFixed(3) : '—'; }
+function f1(v) { return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) : '—'; }
+
+function arrStd(a) {
+  if (!a || a.length === 0) return 0;
+  const m = a.reduce((s,x) => s+x, 0) / a.length;
+  return Math.sqrt(a.reduce((s,x) => s+(x-m)*(x-m), 0) / a.length);
+}
+
+function arrMedian(a) {
+  if (!a || a.length === 0) return 0;
+  const s = [...a].sort((x,y)=>x-y);
+  const m = Math.floor(s.length/2);
+  return s.length % 2 === 0 ? (s[m-1]+s[m])/2 : s[m];
+}
+
+function arrMax(a) {
+  let m = -Infinity;
+  for (const v of a) if (v > m) m = v;
+  return m;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CSV LOADER
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadCSV(file) {
+  const fz = document.getElementById('fz');
+  const fl = document.getElementById('fl');
+  fl.textContent = 'Parsing...';
+
+  const text = await file.text();
+  const lines = text.trim().split(/\r?\n/);
+
+  let start = 0;
+  const h = lines[0].toLowerCase();
+  if (h.includes('x') || h.startsWith('#') || isNaN(parseFloat(h.split(',')[0]))) start = 1;
+
+  const xs = [], ys = [], zs = [];
+  for (let i = start; i < lines.length; i++) {
+    const p = lines[i].trim().split(',');
+    if (p.length < 3) continue;
+    const x = parseFloat(p[0].trim()), y = parseFloat(p[1].trim()), z = parseFloat(p[2].trim());
+    if (isNaN(x)||isNaN(y)||isNaN(z)) continue;
+    xs.push(x); ys.push(y); zs.push(z);
+  }
+
+  const N = xs.length;
+  if (N === 0) { fl.textContent = '⚠ No valid rows'; fz.className='file-zone err'; return; }
+
+  gal = { xs: new Float32Array(xs), ys: new Float32Array(ys), zs: new Float32Array(zs), N };
+
+  datasetLabel = file.name
+    .replace(/\.csv$/i, '')
+    .replace(/^cw_/i, '')
+    .replace(/_xyz.*$/i, '')
+    .toUpperCase() || 'UNKNOWN';
+
+  fz.className = 'file-zone loaded';
+  fl.textContent = `✓  ${N.toLocaleString()} galaxies`;
+  document.getElementById('ds-label').textContent = datasetLabel;
+
+  let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity,zmin=Infinity,zmax=-Infinity;
+  for (let i=0;i<N;i++){
+    if(xs[i]<xmin)xmin=xs[i]; if(xs[i]>xmax)xmax=xs[i];
+    if(ys[i]<ymin)ymin=ys[i]; if(ys[i]>ymax)ymax=ys[i];
+    if(zs[i]<zmin)zmin=zs[i]; if(zs[i]>zmax)zmax=zs[i];
+  }
+  document.getElementById('ngal').textContent = N.toLocaleString();
+  const vol = ((xmax-xmin)*(ymax-ymin)*(zmax-zmin));
+  document.getElementById('bbox-vol').textContent = (vol/1e6).toFixed(2)+'×10⁶';
+  document.getElementById('run-btn').disabled = false;
+
+  log(`Loaded ${N.toLocaleString()} galaxies from ${file.name}`);
+  log(`Bounding box: x[${xmin.toFixed(0)},${xmax.toFixed(0)}]  y[${ymin.toFixed(0)},${ymax.toFixed(0)}]  z[${zmin.toFixed(0)},${zmax.toFixed(0)}] Mpc`);
+  renderViz();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SELECTION FUNCTION (empirical radial shells)
+// ─────────────────────────────────────────────────────────────────────────────
+function selectionWeights(xs, ys, zs, N) {
+  const DR = 25, RMAX = 700;
+  const nb = Math.ceil(RMAX / DR);
+  const cnt = new Float64Array(nb);
+  const rs  = new Float32Array(N);
+
+  for (let i=0;i<N;i++){
+    const r = Math.sqrt(xs[i]*xs[i]+ys[i]*ys[i]+zs[i]*zs[i]);
+    rs[i] = r;
+    const b = Math.floor(r/DR);
+    if (b >= 0 && b < nb) cnt[b]++;
+  }
+
+  // Density per shell
+  const dens = new Float64Array(nb);
+  for (let b=0;b<nb;b++){
+    const r0=b*DR, r1=r0+DR;
+    const vol = (4/3)*Math.PI*(r1**3 - r0**3);
+    dens[b] = cnt[b] / vol;
+  }
+
+  // Reference = max density at r < 150 Mpc (survey most complete)
+  let ref = 0;
+  for (let b=0; b < Math.min(6, nb); b++) if (dens[b] > ref) ref = dens[b];
+  if (ref === 0) return new Float32Array(N).fill(1);
+
+  const w = new Float32Array(N);
+  for (let i=0;i<N;i++){
+    const b = Math.floor(rs[i]/DR);
+    if (b < 0 || b >= nb || dens[b] === 0) { w[i] = W_MAX; continue; }
+    w[i] = Math.min(ref / dens[b], W_MAX);
+  }
+  return w;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZONE OF AVOIDANCE  — detect minimum-density normal, build galaxy mask
+// ─────────────────────────────────────────────────────────────────────────────
+function detectZoA(xs, ys, zs, N) {
+  // Test a grid of directions, find slab with fewest galaxies relative to volume
+  const testDirs = [];
+  for (let ti=0; ti<=8; ti++) for (let pi=0; pi<=16; pi++){
+    const t = (ti/8)*Math.PI/2;
+    const p = (pi/16)*2*Math.PI;
+    testDirs.push([Math.sin(t)*Math.cos(p), Math.sin(t)*Math.sin(p), Math.cos(t)]);
+  }
+
+  let minFrac = Infinity, best = [0,0,1];
+  for (const [nx,ny,nz] of testDirs){
+    let inside = 0;
+    for (let i=0;i<N;i++){
+      if (Math.abs(xs[i]*nx+ys[i]*ny+zs[i]*nz) < ZOA_HALF) inside++;
+    }
+    const frac = inside / N;
+    if (frac < minFrac) { minFrac = frac; best = [nx,ny,nz]; }
+  }
+  return best;
+}
+
+function applyZoA(xs, ys, zs, weights, N, normal) {
+  const [nx,ny,nz] = normal;
+  const w = new Float32Array(weights);
+  let masked = 0;
+  for (let i=0;i<N;i++){
+    if (Math.abs(xs[i]*nx+ys[i]*ny+zs[i]*nz) < ZOA_HALF) { w[i]=0; masked++; }
+  }
+  return { weights: w, masked };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GALAXY SPLATTING
+// ─────────────────────────────────────────────────────────────────────────────
+function splat(xs, ys, zs, weights, N, nx, ny, nz, ox, oy, oz, bx, by, bz) {
+  const f = new Float64Array(nx*ny*nz);
+  const vx=bx/nx, vy=by/ny, vz=bz/nz;
+  for (let i=0;i<N;i++){
+    const ix=Math.floor((xs[i]-ox)/vx);
+    const iy=Math.floor((ys[i]-oy)/vy);
+    const iz=Math.floor((zs[i]-oz)/vz);
+    if(ix<0||ix>=nx||iy<0||iy>=ny||iz<0||iz>=nz) continue;
+    f[iz*nx*ny+iy*nx+ix] += weights[i];
+  }
+  return f;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEPARABLE GAUSSIAN SMOOTHING
+// ─────────────────────────────────────────────────────────────────────────────
+function kernel1D(sigma, maxR) {
+  const r = Math.max(2, Math.min(Math.ceil(4*sigma), maxR));
+  const k = new Float64Array(2*r+1);
+  let s = 0;
+  for (let i=0;i<k.length;i++){ const d=i-r; k[i]=Math.exp(-d*d/(2*sigma*sigma)); s+=k[i]; }
+  for (let i=0;i<k.length;i++) k[i]/=s;
+  return {k, r};
+}
+
+function convX(src, nx, ny, nz, k, r) {
+  const dst = new Float64Array(nx*ny*nz);
+  for (let iz=0;iz<nz;iz++) for (let iy=0;iy<ny;iy++) for (let ix=0;ix<nx;ix++){
+    let acc=0;
+    for (let m=-r;m<=r;m++){
+      const sx=ix+m;
+      if (sx<0||sx>=nx) continue;
+      acc += src[iz*nx*ny+iy*nx+sx]*k[m+r];
+    }
+    dst[iz*nx*ny+iy*nx+ix]=acc;
+  }
+  return dst;
+}
+
+function convY(src, nx, ny, nz, k, r) {
+  const dst = new Float64Array(nx*ny*nz);
+  for (let iz=0;iz<nz;iz++) for (let iy=0;iy<ny;iy++) for (let ix=0;ix<nx;ix++){
+    let acc=0;
+    for (let m=-r;m<=r;m++){
+      const sy=iy+m;
+      if (sy<0||sy>=ny) continue;
+      acc += src[iz*nx*ny+sy*nx+ix]*k[m+r];
+    }
+    dst[iz*nx*ny+iy*nx+ix]=acc;
+  }
+  return dst;
+}
+
+function convZ(src, nx, ny, nz, k, r) {
+  const dst = new Float64Array(nx*ny*nz);
+  for (let iz=0;iz<nz;iz++) for (let iy=0;iy<ny;iy++) for (let ix=0;ix<nx;ix++){
+    let acc=0;
+    for (let m=-r;m<=r;m++){
+      const sz=iz+m;
+      if (sz<0||sz>=nz) continue;
+      acc += src[sz*nx*ny+iy*nx+ix]*k[m+r];
+    }
+    dst[iz*nx*ny+iy*nx+ix]=acc;
+  }
+  return dst;
+}
+
+function gaussSmooth(field, nx, ny, nz, sigma_vox) {
+  if (sigma_vox < 1e-3) return new Float64Array(field);
+  const {k, r} = kernel1D(sigma_vox, 32);
+  let f = new Float64Array(field);
+  f = convX(f, nx, ny, nz, k, r);
+  f = convY(f, nx, ny, nz, k, r);
+  f = convZ(f, nx, ny, nz, k, r);
+  return f;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONNECTED COMPONENTS  (26-neighbor, stack-based DFS)
+// ─────────────────────────────────────────────────────────────────────────────
+function connComp(mask, nx, ny, nz) {
+  const n = nx*ny*nz;
+  const labels = new Int32Array(n).fill(-1);
+  const sizes  = [];
+  let   nc     = 0;
+
+  // Precompute 26-neighbor offsets and bounds checks
+  const offs=[], dbnd=[];
+  for (let dz=-1;dz<=1;dz++) for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+    if(dx===0&&dy===0&&dz===0) continue;
+    offs.push(dz*nx*ny+dy*nx+dx);
+    dbnd.push([dx,dy,dz]);
+  }
+
+  for (let v0=0; v0<n; v0++){
+    if (!mask[v0] || labels[v0]>=0) continue;
+    const stk = [v0];
+    labels[v0] = nc;
+    let sz = 0;
+    while (stk.length){
+      const v = stk.pop(); sz++;
+      const iz=Math.floor(v/(nx*ny));
+      const iy=Math.floor((v%(nx*ny))/nx);
+      const ix=v%nx;
+      for (let d=0;d<26;d++){
+        const [dx,dy,dz]=dbnd[d];
+        const nx2=ix+dx, ny2=iy+dy, nz2=iz+dz;
+        if (nx2<0||nx2>=nx||ny2<0||ny2>=ny||nz2<0||nz2>=nz) continue;
+        const j=nz2*nx*ny+ny2*nx+nx2;
+        if (mask[j]&&labels[j]<0){ labels[j]=nc; stk.push(j); }
+      }
+    }
+    sizes.push(sz); nc++;
+  }
+  return {nc, sizes, labels};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JACOBI 3×3 EIGENSOLVER  (symmetric matrix)
+// ─────────────────────────────────────────────────────────────────────────────
+function jacobi3(A) {
+  let a=[...A];
+  // eigenvectors as rows of V (will rotate)
+  let V=[1,0,0, 0,1,0, 0,0,1];
+
+  for (let it=0;it<60;it++){
+    let mx=0, p=0, q=1;
+    for (let i=0;i<3;i++) for (let j=i+1;j<3;j++){
+      if (Math.abs(a[i*3+j])>mx){ mx=Math.abs(a[i*3+j]); p=i; q=j; }
+    }
+    if (mx<1e-14) break;
+    const app=a[p*3+p], aqq=a[q*3+q], apq=a[p*3+q];
+    const th=0.5*Math.atan2(2*apq, app-aqq);
+    const c=Math.cos(th), s=Math.sin(th);
+    const na=[...a];
+    na[p*3+p]=c*c*app+2*s*c*apq+s*s*aqq;
+    na[q*3+q]=s*s*app-2*s*c*apq+c*c*aqq;
+    na[p*3+q]=na[q*3+p]=0;
+    for (let r=0;r<3;r++){
+      if(r===p||r===q) continue;
+      na[p*3+r]=na[r*3+p]=c*a[p*3+r]+s*a[q*3+r];
+      na[q*3+r]=na[r*3+q]=-s*a[p*3+r]+c*a[q*3+r];
+    }
+    a=na;
+    for (let r=0;r<3;r++){
+      const vp=V[r*3+p], vq=V[r*3+q];
+      V[r*3+p]=c*vp+s*vq; V[r*3+q]=-s*vp+c*vq;
+    }
+  }
+
+  // Sort descending by eigenvalue; eigenvectors are columns
+  const ev=[{l:a[0],v:[V[0],V[3],V[6]]},{l:a[4],v:[V[1],V[4],V[7]]},{l:a[8],v:[V[2],V[5],V[8]]}];
+  ev.sort((a,b)=>b.l-a.l);
+  return { evals: ev.map(e=>e.l), evecs: ev.map(e=>e.v) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DENSITY-WEIGHTED PCA
+// ─────────────────────────────────────────────────────────────────────────────
+function computePCA(field, nx, ny, nz, ox, oy, oz, bx, by, bz) {
+  const vx=bx/nx, vy=by/ny, vz=bz/nz;
+  let sw=0,sx=0,sy=0,sz_=0;
+  for (let iz=0;iz<nz;iz++) for(let iy=0;iy<ny;iy++) for(let ix=0;ix<nx;ix++){
+    const w=field[iz*nx*ny+iy*nx+ix]; if(w<=0) continue;
+    const x=ox+(ix+.5)*vx, y=oy+(iy+.5)*vy, z=oz+(iz+.5)*vz;
+    sw+=w; sx+=w*x; sy+=w*y; sz_+=w*z;
+  }
+  if (sw===0) return null;
+  const cx=sx/sw, cy=sy/sw, cz=sz_/sw;
+
+  let c00=0,c01=0,c02=0,c11=0,c12=0,c22=0;
+  for (let iz=0;iz<nz;iz++) for(let iy=0;iy<ny;iy++) for(let ix=0;ix<nx;ix++){
+    const w=field[iz*nx*ny+iy*nx+ix]; if(w<=0) continue;
+    const x=ox+(ix+.5)*vx-cx, y=oy+(iy+.5)*vy-cy, z=oz+(iz+.5)*vz-cz;
+    c00+=w*x*x; c01+=w*x*y; c02+=w*x*z;
+    c11+=w*y*y; c12+=w*y*z; c22+=w*z*z;
+  }
+  const C=[c00/sw,c01/sw,c02/sw, c01/sw,c11/sw,c12/sw, c02/sw,c12/sw,c22/sw];
+  const {evals, evecs} = jacobi3(C);
+  return { centroid:[cx,cy,cz], evals, evecs };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE-SCALE PIPELINE
+// ─────────────────────────────────────────────────────────────────────────────
+function processScale(base, nx, ny, nz, ox, oy, oz, bx, by, bz, R, tp) {
+  const dx = bx/nx, dy = by/ny, dz = bz/nz;
+  const dvox = Math.cbrt(dx * dy * dz);   // isotropic voxel size
+  const sigV = R / dvox;                   // σ_vox = R / dvox  (spec §6.2)
+
+  const field = gaussSmooth(base, nx, ny, nz, sigV);
+
+  // Percentile threshold
+  const tau = pctile(field, tp);
+  const mask = new Uint8Array(nx*ny*nz);
+  let excN = 0;
+  for (let j=0;j<field.length;j++){ if(field[j]>=tau){ mask[j]=1; excN++; } }
+
+  // Connected components
+  const cc = connComp(mask, nx, ny, nz);
+  let maxSz = 0;
+  for (const s of cc.sizes) if (s > maxSz) maxSz = s;
+  const lcf = excN > 0 ? maxSz/excN : 0;
+
+  // Component entropy
+  let H = 0;
+  for (const s of cc.sizes){ const p=s/excN; if(p>0) H-=p*Math.log(p); }
+
+  // PCA
+  const pca = computePCA(field, nx, ny, nz, ox, oy, oz, bx, by, bz);
+
+  let A1=0, A2=0, aniso=0;
+  if (pca){
+    const [l1,l2,l3] = pca.evals;
+    const tot = l1+l2+l3;
+    aniso = tot>0 ? l1/tot : 0;
+    A1    = l1>0 ? (l1-l2)/l1 : 0;
+    A2    = l1>0 ? (l2-l3)/l1 : 0;
+  }
+
+  return { R, field, mask, excN, ncomp:cc.nc, sizes:cc.sizes, lcf, entropy:H, pca, aniso, A1, A2 };
+}
+
+function pctile(arr, p) {
+  const s = Float64Array.from(arr).sort();
+  return s[Math.min(Math.floor(p/100*s.length), s.length-1)];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SYNTHETIC CONTROLS
+// ─────────────────────────────────────────────────────────────────────────────
+function ctrlShuffle(xs, ys, zs, N) {
+  const idx=[...Array(N).keys()];
+  for(let i=N-1;i>0;i--){const j=0|Math.random()*(i+1);[idx[i],idx[j]]=[idx[j],idx[i]];}
+  const idx2=[...Array(N).keys()];
+  for(let i=N-1;i>0;i--){const j=0|Math.random()*(i+1);[idx2[i],idx2[j]]=[idx2[j],idx2[i]];}
+  const idx3=[...Array(N).keys()];
+  for(let i=N-1;i>0;i--){const j=0|Math.random()*(i+1);[idx3[i],idx3[j]]=[idx3[j],idx3[i]];}
+  const sx=new Float32Array(N), sy=new Float32Array(N), sz=new Float32Array(N);
+  for(let i=0;i<N;i++){ sx[i]=xs[idx[i]]; sy[i]=ys[idx2[i]]; sz[i]=zs[idx3[i]]; }
+  return {xs:sx,ys:sy,zs:sz};
+}
+
+// Survey-matched radial null: samples radii from the empirical radial CDF of the
+// real galaxy positions, then assigns uniformly random directions on the sphere.
+// This preserves the radial selection signature without any filamentary structure.
+function ctrlRadial(xs, ys, zs, N) {
+  const rs = new Float32Array(N);
+  for (let i=0;i<N;i++) rs[i] = Math.sqrt(xs[i]*xs[i]+ys[i]*ys[i]+zs[i]*zs[i]);
+  const sortedR = Float32Array.from(rs).sort();
+  const oxs=new Float32Array(N), oys=new Float32Array(N), ozs=new Float32Array(N);
+  for (let i=0;i<N;i++){
+    const ri = sortedR[0|Math.random()*N];          // sample from empirical CDF
+    const costh = 2*Math.random()-1;
+    const sinth = Math.sqrt(Math.max(0,1-costh*costh));
+    const phi   = 2*Math.PI*Math.random();
+    oxs[i]=ri*sinth*Math.cos(phi); oys[i]=ri*sinth*Math.sin(phi); ozs[i]=ri*costh;
+  }
+  return {xs:oxs,ys:oys,zs:ozs};
+}
+
+// Phase scramble: Fisher-Yates shuffle all voxel values of the corrected base field.
+// Preserves the density histogram exactly; destroys all spatial correlations.
+// Returns a Float64Array field directly (bypasses point-cloud → splat).
+function ctrlPhaseScramble(base) {
+  const n = base.length;
+  const cb = new Float64Array(base);
+  for (let i=n-1; i>0; i--) {
+    const j = 0|Math.random()*(i+1);
+    const tmp=cb[i]; cb[i]=cb[j]; cb[j]=tmp;
+  }
+  return cb;
+}
+
+// Poisson: uniform random positions within bounding sphere radius Rmax centred on centroid.
+// Pure spatial null — no filaments, no radial bias from box corners.
+function ctrlPoisson(N, cx, cy, cz, Rmax) {
+  const xs=new Float32Array(N),ys=new Float32Array(N),zs=new Float32Array(N);
+  let i=0;
+  while (i<N) {
+    const x=(Math.random()*2-1)*Rmax, y=(Math.random()*2-1)*Rmax, z=(Math.random()*2-1)*Rmax;
+    if (x*x+y*y+z*z<=Rmax*Rmax){ xs[i]=cx+x; ys[i]=cy+y; zs[i]=cz+z; i++; }
+  }
+  return {xs,ys,zs};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EIGENVECTOR SIGN STABILIZATION
+// Enforce consistent orientation across the scale ladder: for each eigenvector k,
+// if the dot product with the previous scale's vector is negative, flip the sign.
+// This prevents 180° phantom jumps in the exported scale-path eigenvectors.
+// Must be called on scaleRes before computeDrifts / export.
+// ─────────────────────────────────────────────────────────────────────────────
+function signStabilize(scaleRes) {
+  for (let i=1; i<scaleRes.length; i++) {
+    const p0 = scaleRes[i-1].pca, p1 = scaleRes[i].pca;
+    if (!p0 || !p1) continue;
+    for (let k=0; k<3; k++) {
+      const v0 = p0.evecs[k], v1 = p1.evecs[k];
+      const dot = v0[0]*v1[0] + v0[1]*v1[1] + v0[2]*v1[2];
+      if (dot < 0) p1.evecs[k] = [-v1[0], -v1[1], -v1[2]];
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRIFT COMPUTATION
+// ─────────────────────────────────────────────────────────────────────────────
+function computeDrifts(scaleRes) {
+  const axisDrift=[], frameDrift=[];
+  for (let i=1;i<scaleRes.length;i++){
+    const p0=scaleRes[i-1].pca, p1=scaleRes[i].pca;
+    if (!p0||!p1){ axisDrift.push(0); frameDrift.push(0); continue; }
+    // axis drift: angle between primary eigenvectors (sign-insensitive, spec §10.2)
+    const e0=p0.evecs[0], e1=p1.evecs[0];
+    const d=Math.abs(e0[0]*e1[0]+e0[1]*e1[1]+e0[2]*e1[2]);
+    axisDrift.push(Math.acos(Math.min(1,d))*180/Math.PI);
+    // frame drift: proper rotation-matrix trace method (spec §10.3)
+    // M = Q0^T * Q1 where columns of Q are eigenvectors
+    // M[r][s] = dot(evec_r from p0, evec_s from p1)
+    // trace(M) = sum_k dot(evec_k_p0, evec_k_p1)
+    let tr = 0;
+    for (let k=0;k<3;k++){
+      const ek0=p0.evecs[k], ek1=p1.evecs[k];
+      tr += ek0[0]*ek1[0] + ek0[1]*ek1[1] + ek0[2]*ek1[2];
+    }
+    const phi = Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2)));
+    frameDrift.push(phi * 180 / Math.PI);
+  }
+  return {axisDrift, frameDrift};
+}
+
+function computeScores(scaleRes) {
+  const {axisDrift, frameDrift} = computeDrifts(scaleRes);
+  const axis_total = axisDrift.reduce((a,b)=>a+b,0);
+  const axis_max   = axisDrift.length ? arrMax(axisDrift) : 0;
+  const frame_total= frameDrift.reduce((a,b)=>a+b,0);
+
+  const ncomps  = scaleRes.map(r=>r.ncomp);
+  const lcfs    = scaleRes.map(r=>r.lcf);
+  const anisos  = scaleRes.map(r=>r.aniso);
+
+  const S_axis  = Math.exp(-axis_total / SIG_AXIS);
+  const compJumps = [];
+  for (let i=1; i<ncomps.length; i++) compJumps.push(Math.abs(ncomps[i]-ncomps[i-1]));
+  const S_comp  = Math.exp(-arrStd(compJumps) / ALPHA);
+  const S_lcf   = Math.exp(-arrStd(lcfs)   / BETA);
+  const S_topo  = (S_comp + S_lcf) / 2;
+  const S_aniso = Math.exp(-arrStd(anisos)  / GAMMA);
+  const S_total = W_AXIS*S_axis + W_TOPO*S_topo + W_ANISO*S_aniso;
+
+  // Regime jumps on LCF
+  const jvals=[];
+  for(let i=1;i<scaleRes.length;i++) jvals.push(Math.abs(scaleRes[i].lcf-scaleRes[i-1].lcf));
+  const J_max = jvals.length ? arrMax(jvals) : 0;
+  let first_unstable=null;
+  for(let i=0;i<jvals.length;i++) if(jvals[i]>J_CRIT){ first_unstable=scaleRes[i+1].R; break; }
+
+  return { axisDrift, frameDrift, axis_total, axis_max, frame_total,
+           ncomps, lcfs, anisos, S_axis, S_comp, S_lcf, S_topo, S_aniso, S_total,
+           jvals, J_max, first_unstable };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN CHAMBER RUN
+// ─────────────────────────────────────────────────────────────────────────────
+async function runChamber() {
+  if (!gal) return;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  setTag('run','RUNNING');
+  document.getElementById('prog-wrap').style.display = 'block';
+  document.getElementById('logbox').innerHTML = '';
+
+  const {xs,ys,zs,N} = gal;
+  const GN    = parseInt(document.getElementById('grid-sel').value);
+  const nx=GN, ny=GN, nz=GN;
+  const tp    = parseFloat(document.getElementById('thresh').value);
+  const doSel = document.getElementById('sel-on').checked;
+  const doZoA = document.getElementById('zoa-on').checked;
+  const doCtrl= document.getElementById('ctrl-on').checked;
+  const nCtrl = Math.min(parseInt(document.getElementById('nctrl').value), 20);
+
+  // Bounding box with 5% padding
+  let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity,zmin=Infinity,zmax=-Infinity;
+  for(let i=0;i<N;i++){
+    if(xs[i]<xmin)xmin=xs[i]; if(xs[i]>xmax)xmax=xs[i];
+    if(ys[i]<ymin)ymin=ys[i]; if(ys[i]>ymax)ymax=ys[i];
+    if(zs[i]<zmin)zmin=zs[i]; if(zs[i]>zmax)zmax=zs[i];
+  }
+  const px=(xmax-xmin)*.05, py=(ymax-ymin)*.05, pz=(zmax-zmin)*.05;
+  const ox=xmin-px, oy=ymin-py, oz=zmin-pz;
+  const bx=(xmax-xmin)+2*px, by=(ymax-ymin)+2*py, bz=(zmax-zmin)+2*pz;
+  const dvox=Math.cbrt((bx/nx)*(by/ny)*(bz/nz));
+
+  log(`Grid ${nx}³ | dvox=${dvox.toFixed(1)} Mpc | box ${bx.toFixed(0)}×${by.toFixed(0)}×${bz.toFixed(0)} Mpc`);
+  setProgress(3, 'Selection function...');
+  await sleep(20);
+
+  // ── Weights ─────────────────────────────────────────────────────────────
+  let weights = new Float32Array(N).fill(1);
+  if (doSel) {
+    weights = selectionWeights(xs,ys,zs,N);
+    const wMean=(weights.reduce((a,b)=>a+b,0)/N).toFixed(2);
+    log(`Selection weighting applied  mean_w=${wMean}`);
+  }
+
+  // ── ZoA ─────────────────────────────────────────────────────────────────
+  let zoaNorm = null;
+  if (doZoA) {
+    setProgress(6,'ZoA detection...');
+    await sleep(10);
+    zoaNorm = detectZoA(xs,ys,zs,N);
+    const {weights:w2, masked} = applyZoA(xs,ys,zs,weights,N,zoaNorm);
+    weights = w2;
+    log(`ZoA normal=(${zoaNorm.map(v=>v.toFixed(2)).join(',')})  masked=${masked} galaxies`);
+  }
+
+  // ── Splat ────────────────────────────────────────────────────────────────
+  setProgress(10,'Splatting galaxies...');
+  await sleep(10);
+  const base = splat(xs,ys,zs,weights,N,nx,ny,nz,ox,oy,oz,bx,by,bz);
+  // § 5.2 — convert raw counts to density: ρ[j] = C[j] / V_vox
+  const Vvox = (bx/nx) * (by/ny) * (bz/nz);
+  for (let j = 0; j < base.length; j++) base[j] /= Vvox;
+  log(`Splatted to ${nx}³ grid  (${(nx*ny*nz).toLocaleString()} voxels)  V_vox=${Vvox.toFixed(2)} Mpc³`);
+
+  // ── Real data: loop over scales ──────────────────────────────────────────
+  const realRes = [];
+  const runScales = activeScales();
+  const total = runScales.length * (1 + (doCtrl ? nCtrl : 0));
+  let step = 0;
+
+  for (const R of runScales) {
+    setProgress(10+60*(step/total), `Real data  R=${R} Mpc`);
+    await sleep(0);
+    const r = processScale(base, nx,ny,nz, ox,oy,oz, bx,by,bz, R, tp);
+    realRes.push(r);
+    log(`R=${R.toString().padStart(3)} | ncomp=${r.ncomp.toString().padStart(5)} | LCF=${r.lcf.toFixed(3)} | A1=${r.A1.toFixed(3)}`);
+    step++;
+  }
+  signStabilize(realRes);
+
+  // ── Synthetic controls ───────────────────────────────────────────────────
+  // Centroid and Rmax for Poisson sphere null
+  let cx_=0, cy_=0, cz_=0;
+  for(let i=0;i<N;i++){ cx_+=xs[i]; cy_+=ys[i]; cz_+=zs[i]; }
+  cx_/=N; cy_/=N; cz_/=N;
+  let Rmax_=0;
+  for(let i=0;i<N;i++){
+    const dr=Math.sqrt((xs[i]-cx_)**2+(ys[i]-cy_)**2+(zs[i]-cz_)**2);
+    if(dr>Rmax_) Rmax_=dr;
+  }
+
+  const ctrlRes = [];
+  if (doCtrl) {
+    const CTRL_TYPES = ['shuffle', 'survey_radial', 'field_shuffle', 'poisson'];
+    for (let ci=0; ci<nCtrl; ci++) {
+      const type = CTRL_TYPES[ci % CTRL_TYPES.length];
+      let cb;
+      if (type === 'field_shuffle') {
+        // Field-level operation on corrected base — no point-cloud stage
+        cb = ctrlPhaseScramble(base);
+      } else {
+        let cg;
+        if      (type==='shuffle')       cg = ctrlShuffle(xs,ys,zs,N);
+        else if (type==='poisson')       cg = ctrlPoisson(N, cx_, cy_, cz_, Rmax_);
+        else /* survey_radial */         cg = ctrlRadial(xs,ys,zs,N);
+        // apply same corrections as real data
+        let ctrlWeights = new Float32Array(N).fill(1);
+        if (doSel) {
+          ctrlWeights = selectionWeights(cg.xs, cg.ys, cg.zs, N);
+        }
+        if (doZoA && zoaNorm) {
+          const maskedCtrl = applyZoA(cg.xs, cg.ys, cg.zs, ctrlWeights, N, zoaNorm);
+          ctrlWeights = maskedCtrl.weights;
+        }
+        cb = splat(cg.xs,cg.ys,cg.zs,ctrlWeights,N,nx,ny,nz,ox,oy,oz,bx,by,bz);
+      }
+      const csr  = [];
+      for (const R of SCALES) {
+        setProgress(10+60*(step/total), `Control ${ci+1} (${type})  R=${R} Mpc`);
+        await sleep(0);
+        csr.push(processScale(cb, nx,ny,nz, ox,oy,oz, bx,by,bz, R, tp));
+        step++;
+      }
+      signStabilize(csr);  // Bug-5 fix: sign-stabilize controls symmetrically with real pipeline
+      ctrlRes.push({type, scaleRes:csr, ...computeScores(csr)});
+    }
+  }
+
+  setProgress(78, 'Computing persistence scores...');
+  await sleep(10);
+
+  // ── Scores ───────────────────────────────────────────────────────────────
+  const sc = computeScores(realRes);
+
+  // ── Control comparison ───────────────────────────────────────────────────
+  const ctrl_stopo  = ctrlRes.map(c=>c.S_topo);
+  const ctrl_sjmax  = ctrlRes.map(c=>c.J_max);
+  const ctrl_saxis  = ctrlRes.map(c=>c.S_axis);
+  const ctrl_lcf_std = ctrlRes.map(c=>arrStd(c.lcfs));
+  const med_stopo   = arrMedian(ctrl_stopo);
+  const med_jmax    = arrMedian(ctrl_sjmax);
+  const med_saxis   = arrMedian(ctrl_saxis);
+  const med_lcf_std = arrMedian(ctrl_lcf_std);
+  const real_lcf_std = arrStd(sc.lcfs);
+
+  // Keep med_stot for export diagnostics only (not used in gate)
+  const ctrl_stot = ctrlRes.map(c=>c.S_total);
+  const med_stot  = arrMedian(ctrl_stot);
+
+  // ── Control axis diagnostics (pooled — for export/display only) ──────────
+  const ctrl_axis_total = ctrlRes.map(c => c.axis_total);
+  const ctrl_axis_max   = ctrlRes.map(c => c.axis_max);
+  const med_axis_total  = arrMedian(ctrl_axis_total);
+  const med_axis_max    = arrMedian(ctrl_axis_max);
+
+  const axis_total_ratio_vs_ctrl =
+    med_axis_total > 0 ? sc.axis_total / med_axis_total : 0;
+  const axis_max_ratio_vs_ctrl =
+    med_axis_max   > 0 ? sc.axis_max   / med_axis_max   : 0;
+
+  // ── Per-family medians (v1.2.0+: decouple heterogeneous families) ────────
+  // All four score metrics computed per family so beats can be evaluated on a
+  // coherent per-family basis (v1.3.0).
+  const perFamily = {};
+  for (const fam of ['shuffle','survey_radial','field_shuffle','poisson']) {
+    const fc = ctrlRes.filter(c=>c.type===fam);
+    if (fc.length===0) continue;
+    perFamily[fam] = {
+      n:              fc.length,
+      med_saxis:      arrMedian(fc.map(c=>c.S_axis)),
+      med_stopo:      arrMedian(fc.map(c=>c.S_topo)),
+      med_jmax:       arrMedian(fc.map(c=>c.J_max)),
+      med_lcf_std:    arrMedian(fc.map(c=>arrStd(c.lcfs))),
+      med_axis_total: arrMedian(fc.map(c=>c.axis_total)),
+      med_axis_max:   arrMedian(fc.map(c=>c.axis_max)),
+    };
+  }
+
+  // Axis-advantage reference: shuffle + field_shuffle (structural families).
+  const structFams = ctrlRes.filter(c=>c.type==='shuffle'||c.type==='field_shuffle');
+  const med_saxis_structural =
+    structFams.length > 0 ? arrMedian(structFams.map(c=>c.S_axis)) : sc.S_axis;
+
+  // ── Per-family beats (v1.3.0) ─────────────────────────────────────────────
+  // For each present family, evaluate all 4 metrics independently.
+  // ctrl_beat_rate = total wins / (families_present × 4 metrics).
+  // Replaces the pooled-median beats that mixed fundamentally different null
+  // models (shuffle ~11°, field_shuffle ~0.3°, poisson ~0.005°) into one
+  // meaningless scalar.
+  const BEAT_METRICS = ['stopo','jmax','saxis','lcf'];
+  const per_family_beats = {};
+  let beat_wins = 0, beat_cells = 0;
+
+  for (const [fam, fv] of Object.entries(perFamily)) {
+    const fb = {
+      stopo: sc.S_topo    > fv.med_stopo   + 0.02,
+      jmax:  sc.J_max     < fv.med_jmax    - 0.01,
+      saxis: sc.S_axis    > fv.med_saxis   + 0.02,
+      lcf:   real_lcf_std < fv.med_lcf_std - 0.01,
+    };
+    per_family_beats[fam] = fb;
+    for (const k of BEAT_METRICS) { beat_cells++; if (fb[k]) beat_wins++; }
+  }
+
+  // Legacy pooled beats retained for backwards-compatible export field only.
+  const beats = {
+    stopo: ctrlRes.length===0 || sc.S_topo  > med_stopo  + 0.02,
+    jmax:  ctrlRes.length===0 || sc.J_max   < med_jmax   - 0.01,
+    saxis: ctrlRes.length===0 || sc.S_axis  > med_saxis  + 0.02,
+    lcf:   ctrlRes.length===0 || real_lcf_std < med_lcf_std - 0.01,
+  };
+
+  // v1.3.1: ctrl_beat_rate drives f4 via the original 4-metric pooled test.
+  // per_family_beats is diagnostics only — it must NOT feed the falsifier gate.
+  // v1.3.0 incorrectly used beat_wins/beat_cells (16 cells) for f4, which made
+  // the gate ~4× stricter and caused strong real data (DESI) to fail falsification.
+  const ctrl_beat_rate = ctrlRes.length===0 ? 1 : Object.values(beats).filter(Boolean).length/4;
+
+  // ── Structural score (unchanged from v2.0.0) ─────────────────────────────
+  const S_struct =
+      0.60 * sc.S_axis
+    + 0.20 * sc.S_topo
+    + 0.20 * sc.S_aniso;
+
+  // ── v2.1.0 Five-State Verdict Classifier ─────────────────────────────────
+  // deep_axis_advantage: S_axis advantage over structural-family ctrl median
+  const deep_axis_advantage =
+    ctrlRes.length === 0 ||
+    (sc.S_axis > med_saxis_structural + DEEP_S_AXIS_ADVANTAGE_MIN);
+
+  // INTRINSIC falsifier — collapse of persistence itself (ctrl NOT included)
+  const intrinsic_falsifier =
+    (sc.J_max    >  J_CRIT) ||
+    (sc.S_topo   <  T_CRIT) ||
+    (sc.axis_max >  A_CRIT);
+
+  // f1–f4 retained for export / UI dots (f4 drives CONTROL_INDETERMINATE)
+  const f1 = sc.J_max    <= J_CRIT;
+  const f2 = sc.S_topo   >= T_CRIT;
+  const f3_ = sc.axis_max <= A_CRIT;
+  const f4 = ctrl_beat_rate >= 0.75;
+  const falsified = intrinsic_falsifier; // v2.1.0: collapse = intrinsic only
+
+  // Geometry bands
+  const strong_geometry =
+    (S_struct     >= DEEP_S_STRUCT_MIN)      &&
+    (sc.axis_total <= DEEP_AXIS_TOTAL_MAX)   &&
+    (sc.axis_max   <= DEEP_AXIS_MAX_STEP_MAX);
+
+  const boundary_geometry =
+    (S_struct     >= BOUNDARY_S_STRUCT_MIN)      &&
+    (sc.axis_total <= BOUNDARY_AXIS_TOTAL_MAX)   &&
+    (sc.axis_max   <= BOUNDARY_AXIS_MAX_STEP_MAX);
+
+  // State flags
+  const deep_pass =
+    !intrinsic_falsifier &&
+    strong_geometry &&
+    (sc.S_topo  >= T_CRIT) &&
+    (sc.J_max   <= J_CRIT) &&
+    (ctrl_beat_rate >= DEEP_CTRL_BEAT_MIN) &&
+    deep_axis_advantage;
+
+  const control_fail =
+    !intrinsic_falsifier &&
+    strong_geometry &&
+    (ctrl_beat_rate < 0.75);
+
+  const boundary_pass =
+    !intrinsic_falsifier &&
+    boundary_geometry;
+
+  // Decision tree
+  let verdict, vclass;
+
+  if (intrinsic_falsifier) {
+    verdict = 'STRUCTURE\nCOLLAPSE';
+    vclass  = 'collapse';
+  } else if (deep_pass) {
+    verdict = 'DEEP STRUCTURAL\nSTABILITY';
+    vclass  = 'deep';
+  } else if (control_fail) {
+    verdict = 'CONTROL\nINDETERMINATE';
+    vclass  = 'control';
+  } else if (boundary_pass) {
+    verdict = 'STRUCTURAL\nBOUNDARY';
+    vclass  = 'boundary';
+  } else {
+    verdict = 'GEOMETRIC\nPERSISTENCE ONLY';
+    vclass  = 'geometry';
+  }
+
+  log(`S_struct=${S_struct.toFixed(3)}  S_axis=${sc.S_axis.toFixed(3)}  S_topo=${sc.S_topo.toFixed(3)}  S_aniso=${sc.S_aniso.toFixed(3)}`);
+  log(`axis_total=${sc.axis_total.toFixed(1)}°  axis_max=${sc.axis_max.toFixed(1)}°  J_max=${sc.J_max.toFixed(3)}`);
+  log(`ctrl_beat=${(ctrl_beat_rate*100).toFixed(0)}%  deep_axis_adv=${deep_axis_advantage}  verdict: ${verdict.replace('\n',' ')}`);
+
+  // ── Store ────────────────────────────────────────────────────────────────
+  result = {
+    realRes, ctrlRes,
+    ...sc,
+    S_struct,
+
+    ctrl_stot, med_stot,
+    ctrl_stopo, med_stopo,
+    ctrl_sjmax, med_jmax,
+    ctrl_saxis, med_saxis,
+
+    ctrl_axis_total, ctrl_axis_max,
+    med_axis_total, med_axis_max,
+    axis_total_ratio_vs_ctrl,
+    axis_max_ratio_vs_ctrl,
+
+    ctrl_lcf_std, med_lcf_std, real_lcf_std,
+    ctrl_beat_rate, beats,
+
+    // v1.2.0 additions
+    perFamily,
+    med_saxis_structural,
+    deep_axis_advantage,
+    deep_pass,
+    boundary_pass,
+    // v1.3.0 additions
+    per_family_beats,
+    beat_wins, beat_cells,
+
+    f1, f2, f3:f3_, f4, falsified,
+    intrinsic_falsifier, strong_geometry, boundary_geometry,
+    control_fail,
+
+    verdict, vclass,
+    nx, ny, nz, ox, oy, oz, bx, by, bz, zoaNorm
+  };
+
+  setProgress(95, 'Rendering...');
+  await sleep(20);
+
+  updateRight();
+  renderAllPlots();
+  renderViz();
+
+  setProgress(100,'Complete');
+  setTag('done','DONE');
+  btn.disabled = false;
+  document.getElementById('exp-btn').disabled = false;
+  document.getElementById('prog-wrap').style.display='none';
+
+  // Sync slider range to actual number of scales run
+  const sl = document.getElementById('scslider');
+  sl.max = result.realRes.length - 1;
+  scIdx = Math.min(scIdx, result.realRes.length - 1);
+  sl.value = scIdx;
+  document.getElementById('slval').textContent = `R = ${result.realRes[scIdx].R} Mpc`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI UPDATE
+// ─────────────────────────────────────────────────────────────────────────────
+function scoreColor(v) {
+  return v>=0.60 ? 'var(--pass)' : v>=0.35 ? 'var(--warn)' : 'var(--fail)';
+}
+
+function updateRight() {
+  const r = result;
+
+  const vEl = document.getElementById('verdict');
+  vEl.innerHTML = r.verdict.replace('\n','<br>');
+
+  // Five-state color classes
+  const VERDICT_CLASS_MAP = {
+    'deep':     'verdict-deep',
+    'boundary': 'verdict-boundary',
+    'geometry': 'verdict-geometry',
+    'control':  'verdict-control',
+    'collapse': 'verdict-collapse'
+  };
+  vEl.className = 'vc-text';
+  const vc = VERDICT_CLASS_MAP[r.vclass];
+  if (vc) vEl.classList.add(vc);
+
+  // Subtitle
+  const VERDICT_DESCRIPTIONS = {
+    'deep':     'Persistent carrier across scales; controls rejected.',
+    'boundary': 'Strong persistence present but not fully separated from controls.',
+    'geometry': 'Orientation coherence exists but structural persistence is weak.',
+    'control':  'Persistence observed but reproduced by survey/control geometry.',
+    'collapse': 'Intrinsic persistence conditions fail under coarse-graining.'
+  };
+  document.getElementById('verdict-sub').textContent =
+    VERDICT_DESCRIPTIONS[r.vclass] || '';
+
+  // Structure map pointer
+  const STRUCT_POSITIONS = {
+    'collapse': 5,
+    'control':  25,
+    'geometry': 50,
+    'boundary': 75,
+    'deep':     95
+  };
+  const mapEl = document.getElementById('struct-map');
+  const labelsEl = document.getElementById('struct-labels');
+  const ptrEl = document.getElementById('struct-ptr');
+  mapEl.style.display = 'block';
+  labelsEl.style.display = 'flex';
+  ptrEl.style.left = (STRUCT_POSITIONS[r.vclass] || 5) + '%';
+
+  const setScore = (id, v) => {
+    const el = document.getElementById(id);
+    el.textContent = f3(v);
+    el.style.color = scoreColor(v);
+  };
+  setScore('s-tot', r.S_struct);
+  setScore('s-ax',  r.S_axis);
+  setScore('s-tp',  r.S_topo);
+  setScore('s-an',  r.S_aniso);
+
+  const setMV = (id, txt, cls) => { const e=document.getElementById(id); e.textContent=txt; e.className='mv '+cls; };
+  setMV('m-atp', f1(r.axis_total)+'°', r.axis_total<45?'pass':'warn');
+  setMV('m-ams', f1(r.axis_max)+'°',   r.axis_max<=A_CRIT?'pass':'fail');
+  setMV('m-ftp', f1(r.frame_total)+'°','');
+  setMV('m-jmx', f3(r.J_max),          r.J_max<=J_CRIT?'pass':'fail');
+  setMV('m-fus', r.first_unstable ? r.first_unstable+' Mpc':'NONE', r.first_unstable?'warn':'pass');
+  setMV('m-cb',  (r.ctrl_beat_rate*100).toFixed(0)+'%', r.ctrl_beat_rate>=0.5?'pass':'fail');
+
+  const setDot = (id, pass) => { document.getElementById(id).className='dot '+(pass?'pass':'fail'); };
+  setDot('f1', r.f1); setDot('f2', r.f2); setDot('f3', r.f3); setDot('f4', r.f4);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISUALIZATION
+// ─────────────────────────────────────────────────────────────────────────────
+function setTab(tab, el) {
+  vizTab = tab;
+  document.querySelectorAll('.vtab').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  renderViz();
+}
+
+function onSlider() {
+  const maxIdx = result ? result.realRes.length - 1 : SCALES.length - 1;
+  scIdx = Math.min(parseInt(document.getElementById('scslider').value), maxIdx);
+  const R = result ? result.realRes[scIdx].R : SCALES[scIdx];
+  document.getElementById('slval').textContent = `R = ${R} Mpc`;
+  renderViz();
+}
+
+function renderViz() {
+  const canvas = document.getElementById('vc');
+  const wrap   = document.getElementById('vcw');
+  canvas.width  = wrap.clientWidth  || 680;
+  canvas.height = wrap.clientHeight || 360;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#030710';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if      (vizTab==='scatter')   drawScatter(canvas,ctx);
+  else if (vizTab==='density')   drawDensity(canvas,ctx);
+  else if (vizTab==='excursion') drawExcursion(canvas,ctx);
+  else if (vizTab==='frame')     drawFrame(canvas,ctx);
+}
+
+function drawScatter(canvas, ctx) {
+  const W=canvas.width, H=canvas.height;
+  if (!gal) {
+    ctx.fillStyle='#213345'; ctx.font='12px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText('Load cw_2mrs_xyz_full.csv to begin',W/2,H/2);
+    ctx.fillStyle='#18283a'; ctx.fillText('44,599 galaxies  ·  6 coarse-graining scales',W/2,H/2+22);
+    return;
+  }
+  const {xs,ys,N}=gal;
+  let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+  for(let i=0;i<N;i++){if(xs[i]<xmin)xmin=xs[i];if(xs[i]>xmax)xmax=xs[i];if(ys[i]<ymin)ymin=ys[i];if(ys[i]>ymax)ymax=ys[i];}
+  const mx=W/(xmax-xmin), my=H/(ymax-ymin), m=Math.min(mx,my)*0.86;
+  const offx=W/2-(xmin+xmax)/2*m, offy=H/2+(ymin+ymax)/2*m;
+
+  const step=Math.max(1,Math.floor(N/10000));
+  ctx.fillStyle='rgba(0,180,220,0.30)';
+  for(let i=0;i<N;i+=step){
+    ctx.fillRect(xs[i]*m+offx-0.7,(H-ys[i]*m-offy)-0.7,1.4,1.4);
+  }
+
+  // principal frame overlay
+  if (result){
+    const sr=result.realRes[scIdx];
+    if (sr&&sr.pca){
+      const {centroid,evecs,evals}=sr.pca;
+      const pcx=centroid[0]*m+offx, pcy=H-centroid[1]*m-offy;
+      const cols=['#f0a030','#00dd88','#9880ff'];
+      const lens=[150,100,70];
+      for(let k=0;k<3;k++){
+        const ev=evecs[k];
+        const sc_=lens[k]*(evals[k]/(evals[0]||1));
+        ctx.strokeStyle=cols[k]; ctx.lineWidth=k===0?2:1;
+        ctx.beginPath();
+        ctx.moveTo(pcx-ev[0]*sc_, pcy+ev[1]*sc_);
+        ctx.lineTo(pcx+ev[0]*sc_, pcy-ev[1]*sc_);
+        ctx.stroke();
+      }
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pcx,pcy,3,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.fillStyle='#213345'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='left';
+  ctx.fillText(`XY projection  |  ${N.toLocaleString()} galaxies  |  R=${result.realRes[scIdx].R} Mpc`, 9, H-9);
+}
+
+function drawDensity(canvas, ctx) {
+  if (!result){ stub(ctx,canvas,'Run chamber to view density slice'); return; }
+  const {nx,ny,nz}=result;
+  const sr=result.realRes[scIdx];
+  const {W,H}=sizeFit(canvas); const cw=W/nx, ch=H/ny;
+  const iz=Math.floor(nz/2);
+  let fmax=0;
+  for(let iy=0;iy<ny;iy++) for(let ix=0;ix<nx;ix++){
+    const v=sr.field[iz*nx*ny+iy*nx+ix]; if(v>fmax) fmax=v;
+  }
+  for(let iy=0;iy<ny;iy++) for(let ix=0;ix<nx;ix++){
+    const t=fmax>0?Math.min(sr.field[iz*nx*ny+iy*nx+ix]/fmax,1):0;
+    const rr=Math.floor(t*30+t*t*150), g=Math.floor(t*70+t*t*120), b=Math.floor(t*180+t*t*55);
+    ctx.fillStyle=`rgb(${rr},${g},${b})`;
+    ctx.fillRect(Math.floor(ix*cw),Math.floor((ny-iy-1)*ch),Math.ceil(cw)+1,Math.ceil(ch)+1);
+  }
+  ctx.fillStyle='rgba(0,200,240,.7)'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='left';
+  ctx.fillText(`Density ρ_R(x) — z-slice (mid)  |  R=${result.realRes[scIdx].R} Mpc`,7,14);
+}
+
+function drawExcursion(canvas, ctx) {
+  if (!result){ stub(ctx,canvas,'Run chamber to view excursion set'); return; }
+  const {nx,ny,nz}=result;
+  const sr=result.realRes[scIdx];
+  const {W,H}=sizeFit(canvas); const cw=W/nx, ch=H/ny;
+  const iz=Math.floor(nz/2);
+  for(let iy=0;iy<ny;iy++) for(let ix=0;ix<nx;ix++){
+    const v=sr.mask[iz*nx*ny+iy*nx+ix];
+    ctx.fillStyle=v?'rgba(0,200,240,.82)':'#030810';
+    ctx.fillRect(Math.floor(ix*cw),Math.floor((ny-iy-1)*ch),Math.ceil(cw)+1,Math.ceil(ch)+1);
+  }
+  ctx.fillStyle='rgba(0,200,240,.7)'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='left';
+  ctx.fillText(`E_R(τ)  top ${(100-parseFloat(document.getElementById('thresh').value)).toFixed(0)}%  |  R=${result.realRes[scIdx].R} Mpc  |  ncomp=${sr.ncomp}  |  LCF=${sr.lcf.toFixed(3)}`,7,14);
+}
+
+function drawFrame(canvas, ctx) {
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H/2, radius=Math.min(W,H)*0.36;
+  ctx.strokeStyle='#0d1c2e'; ctx.lineWidth=.5;
+  ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,radius*.66,0,Math.PI*2); ctx.stroke();
+
+  if (!result){ stub(ctx,canvas,'Run chamber to view frame paths'); return; }
+  const cols=['#f0a030','#00dd88','#9880ff'];
+  result.realRes.forEach((sr,si)=>{
+    if(!sr.pca) return;
+    const t=si/(SCALES.length-1);
+    sr.pca.evecs.forEach((ev,ki)=>{
+      const alpha=ki===0?(0.3+0.7*t):(0.15+0.3*t);
+      ctx.globalAlpha=alpha;
+      ctx.strokeStyle=cols[ki];
+      ctx.lineWidth=ki===0?1.8:.8;
+      const len=radius*(sr.pca.evals[ki]/(sr.pca.evals[0]||1));
+      ctx.beginPath();
+      ctx.moveTo(cx-ev[0]*len*.8, cy+ev[1]*len*.8);
+      ctx.lineTo(cx+ev[0]*len*.8, cy-ev[1]*len*.8);
+      ctx.stroke();
+    });
+  });
+  ctx.globalAlpha=1;
+  const lbl=['e1 (primary)','e2','e3'];
+  cols.forEach((c,i)=>{
+    ctx.fillStyle=c; ctx.fillRect(10,10+i*15,9,8);
+    ctx.fillStyle='#456070'; ctx.font='8.5px IBM Plex Mono'; ctx.textAlign='left';
+    ctx.fillText(lbl[i],23,18+i*15);
+  });
+  ctx.fillStyle='#213345'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='center';
+  ctx.fillText('Principal frame evolution across scales  (XY projection)',cx,H-9);
+  // Axis drift label
+  if (result){
+    ctx.fillStyle='rgba(240,160,48,.8)'; ctx.textAlign='right';
+    ctx.fillText(`axis_total=${result.axis_total.toFixed(1)}°  max_step=${result.axis_max.toFixed(1)}°`,W-10,H-9);
+  }
+}
+
+function stub(ctx, canvas, msg) {
+  ctx.fillStyle='#213345'; ctx.font='11px IBM Plex Mono'; ctx.textAlign='center';
+  ctx.fillText(msg, canvas.width/2, canvas.height/2);
+}
+
+function sizeFit(canvas) { return {W:canvas.width, H:canvas.height}; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOTTOM PLOTS
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAllPlots() {
+  if (!result) return;
+  const r = result;
+
+  // Axis drift — N-1 values (between N scales)
+  const adLabels = [];
+  for(let i=1;i<r.realRes.length;i++) adLabels.push(r.realRes[i-1].R+'→'+r.realRes[i].R);
+  linePlot('plt-ax', r.axisDrift, adLabels, '#f0a030', 0, 45,
+    r.ctrlRes.length ? r.ctrlRes[0].axisDrift : null,
+    '°','Axis drift (°)');
+
+  // LCF
+  const sclabels = r.realRes.map(s=>s.R+'M');
+  linePlot('plt-lcf', r.lcfs, sclabels, '#00c8f0', 0, 1,
+    r.ctrlRes.length ? r.ctrlRes[0].lcfs : null,
+    '','LCF');
+
+  // N components
+  linePlot('plt-nc', r.ncomps, sclabels, '#00dd88', 0, null,
+    r.ctrlRes.length ? r.ctrlRes[0].ncomps : null,
+    '','Ncomp');
+
+  // Anisotropy A1
+  linePlot('plt-an', r.realRes.map(s=>s.A1), sclabels, '#9880ff', 0, 1,
+    r.ctrlRes.length ? r.ctrlRes[0].scaleRes.map(s=>s.A1) : null,
+    '','A1');
+}
+
+function linePlot(id, vals, xLabels, color, yMin, yMax, ctrlVals, unit, yLbl) {
+  const canvas = document.getElementById(id);
+  const W = canvas.width  = canvas.offsetWidth  || 260;
+  const H = canvas.height = 130;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#070e1a'; ctx.fillRect(0,0,W,H);
+  if (!vals||!vals.length) return;
+
+  const pad = {l:32, r:10, t:8, b:26};
+  const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+
+  const vmin = yMin!==null ? yMin : Math.min(...vals)*.92;
+  const vmax = yMax!==null ? yMax : Math.max(...vals)*1.1;
+  const rng  = (vmax-vmin)||1;
+
+  const px = i => pad.l + (i/(vals.length-1||1))*pw;
+  const py = v => pad.t + ph*(1-(Math.max(vmin,Math.min(vmax,v))-vmin)/rng);
+
+  // Grid lines
+  ctx.strokeStyle='#0d1c2e'; ctx.lineWidth=.5;
+  for(let g=0;g<=4;g++){
+    const y=pad.t+g*ph/4;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+    const v=vmax-g*(rng/4);
+    ctx.fillStyle='#213345'; ctx.font='7px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(v<10?1:0)+unit, pad.l-3, y+3);
+  }
+
+  // Control line (dashed)
+  if (ctrlVals && ctrlVals.length===vals.length){
+    ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctrlVals.forEach((v,i)=>{ i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v)); });
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Real line
+  ctx.strokeStyle=color; ctx.lineWidth=1.8;
+  ctx.beginPath();
+  vals.forEach((v,i)=>{ i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v)); });
+  ctx.stroke();
+
+  // Dots
+  vals.forEach((v,i)=>{
+    ctx.fillStyle=color; ctx.beginPath();
+    ctx.arc(px(i),py(v),2.5,0,Math.PI*2); ctx.fill();
+  });
+
+  // X labels
+  xLabels.forEach((lbl,i)=>{
+    ctx.fillStyle='#213345'; ctx.font='7px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(lbl, px(i), H-pad.b+10);
+  });
+
+  // Axis
+  ctx.strokeStyle='#0d1c2e'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JSON EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
+function exportJSON() {
+  if (!result) return;
+  const r = result;
+
+  const scale_path = r.realRes.map((sr,i)=>({
+    R: sr.R,
+    sigma_vox: (sr.R / Math.cbrt((r.bx/r.nx)*(r.by/r.ny)*(r.bz/r.nz))).toFixed(3),
+    n_components: sr.ncomp,
+    largest_component_fraction: +sr.lcf.toFixed(6),
+    component_entropy: +sr.entropy.toFixed(6),
+    anisotropy_A: +sr.aniso.toFixed(6),
+    A1: +sr.A1.toFixed(6),
+    A2: +sr.A2.toFixed(6),
+    eigenvalues: sr.pca ? sr.pca.evals.map(v=>+v.toFixed(6)) : null,
+    eigenvector_e1: sr.pca ? sr.pca.evecs[0].map(v=>+v.toFixed(6)) : null,
+    eigenvector_e2: sr.pca ? sr.pca.evecs[1].map(v=>+v.toFixed(6)) : null,
+    eigenvector_e3: sr.pca ? sr.pca.evecs[2].map(v=>+v.toFixed(6)) : null,
+    centroid_Mpc: sr.pca ? sr.pca.centroid.map(v=>+v.toFixed(3)) : null,
+    axis_drift_from_prev_deg: i>0 ? +r.axisDrift[i-1].toFixed(4) : null,
+    frame_drift_from_prev_deg: i>0 ? +r.frameDrift[i-1].toFixed(4) : null
+  }));
+
+  const out = {
+    chamber: 'CW-I',
+    version: '2.1.0',
+    dataset_label: datasetLabel,
+    input_mode: 'point_cloud',
+    n_galaxies: gal.N,
+    grid_resolution: result.nx,
+    threshold_percentile: parseFloat(document.getElementById('thresh').value),
+    corrections_applied: {
+      selection_function: document.getElementById('sel-on').checked,
+      zone_of_avoidance: document.getElementById('zoa-on').checked,
+      zoa_normal: result.zoaNorm ? result.zoaNorm.map(v=>+v.toFixed(4)) : null,
+      zoa_half_thickness_Mpc: ZOA_HALF
+    },
+    scale_path,
+    transition_count: r.first_unstable ? 1 : 0,
+    first_unstable_scale: r.first_unstable,
+    largest_regime_jump: +r.J_max.toFixed(6),
+    falsifier_triggered: r.falsified,
+    intrinsic_falsifier: r.intrinsic_falsifier,
+    control_indeterminate: r.control_fail,
+    axis_total_path_deg: +r.axis_total.toFixed(4),
+    axis_max_step_deg:   +r.axis_max.toFixed(4),
+    frame_total_path_deg: +r.frame_total.toFixed(4),
+    structural_score: +r.S_struct.toFixed(6),
+    topology_persistence_score: +r.S_topo.toFixed(6),
+    n_components_by_scale: r.ncomps,
+    largest_component_fraction_by_scale: r.lcfs.map(v=>+v.toFixed(6)),
+    stability_scores: {
+      axis:     +r.S_axis.toFixed(6),
+      comp:     +r.S_comp.toFixed(6),
+      lcf:      +r.S_lcf.toFixed(6),
+      topology: +r.S_topo.toFixed(6),
+      anisotropy: +r.S_aniso.toFixed(6),
+      total:    +r.S_total.toFixed(6)
+    },
+    score_parameters: {
+      sigma_axis: SIG_AXIS, alpha: ALPHA, beta: BETA, gamma: GAMMA,
+      w_axis: W_AXIS, w_topo: W_TOPO, w_aniso: W_ANISO
+    },
+    falsifier_thresholds: { J_crit: J_CRIT, T_crit: T_CRIT, A_crit: A_CRIT },
+    falsifier_status: { J_max_pass: r.f1, S_topo_pass: r.f2, axis_max_pass: r.f3, ctrl_pass: r.f4 },
+    verdict_gates: {
+      intrinsic_falsifier:   r.intrinsic_falsifier,
+      strong_geometry:       r.strong_geometry,
+      boundary_geometry:     r.boundary_geometry,
+      control_indeterminate: r.control_fail,
+      deep_axis_advantage:   r.deep_axis_advantage,
+      deep_pass:             r.deep_pass,
+      boundary_pass:         r.boundary_pass,
+      med_saxis_structural:  +r.med_saxis_structural.toFixed(6),
+      deep_s_struct_min:     DEEP_S_STRUCT_MIN,
+      deep_axis_total_max:   DEEP_AXIS_TOTAL_MAX,
+      deep_axis_max_step_max: DEEP_AXIS_MAX_STEP_MAX,
+      deep_ctrl_beat_min:    DEEP_CTRL_BEAT_MIN,
+      deep_s_axis_advantage_min: DEEP_S_AXIS_ADVANTAGE_MIN,
+      note: 'v2.1.0: five-state verdict; intrinsic_falsifier separates STRUCTURE COLLAPSE from CONTROL INDETERMINATE'
+    },
+    synthetic_control_comparison: {
+      n_controls: result.ctrlRes.length,
+      control_types: result.ctrlRes.map(c=>c.type),
+      ctrl_s_total_values: r.ctrl_stot.map(v=>+v.toFixed(6)),
+      ctrl_median_s_total:  +r.med_stot.toFixed(6),
+      ctrl_median_s_topo:   +r.med_stopo.toFixed(6),
+      ctrl_median_j_max:    +r.med_jmax.toFixed(6),
+      ctrl_median_s_axis_pooled: +r.med_saxis.toFixed(6),
+      ctrl_median_lcf_std:  +r.med_lcf_std.toFixed(6),
+      real_lcf_std:         +r.real_lcf_std.toFixed(6),
+      ctrl_median_axis_total_path_deg:       +r.med_axis_total.toFixed(4),
+      ctrl_median_axis_max_step_deg:         +r.med_axis_max.toFixed(4),
+      axis_total_path_ratio_vs_ctrl_median:  +r.axis_total_ratio_vs_ctrl.toFixed(6),
+      axis_max_step_ratio_vs_ctrl_median:    +r.axis_max_ratio_vs_ctrl.toFixed(6),
+      per_family_medians: Object.fromEntries(
+        Object.entries(r.perFamily).map(([fam,v])=>[fam, {
+          n:              v.n,
+          med_saxis:      +v.med_saxis.toFixed(6),
+          med_stopo:      +v.med_stopo.toFixed(6),
+          med_jmax:       +v.med_jmax.toFixed(6),
+          med_lcf_std:    +v.med_lcf_std.toFixed(6),
+          med_axis_total: +v.med_axis_total.toFixed(4),
+          med_axis_max:   +v.med_axis_max.toFixed(4),
+        }])
+      ),
+      per_family_beats: Object.fromEntries(
+        Object.entries(r.per_family_beats).map(([fam,fb])=>[fam, {
+          beats_stopo: fb.stopo,
+          beats_jmax:  fb.jmax,
+          beats_saxis: fb.saxis,
+          beats_lcf:   fb.lcf,
+          wins: [fb.stopo,fb.jmax,fb.saxis,fb.lcf].filter(Boolean).length,
+          of: 4
+        }])
+      ),
+      beat_wins_total:  r.beat_wins,
+      beat_cells_total: r.beat_cells,
+      ctrl_beat_rate_note: 'v2.0.0: ctrl_beat_rate is 4-metric pooled test (S_topo, J_max, S_axis, LCF_std); per_family_beats is diagnostics only and does NOT feed f4. field_shuffle replaces phase_scramble (voxel-value shuffle, not Fourier phase randomization).',
+      real_beats_controls_pooled_legacy: {
+        S_topo: r.beats.stopo,
+        J_max:  r.beats.jmax,
+        S_axis: r.beats.saxis,
+        LCF_stability: r.beats.lcf
+      },
+      ctrl_beat_rate: +r.ctrl_beat_rate.toFixed(4)
+    },
+    verdict: r.verdict.replace('\n',' '),
+    verdict_state: r.vclass,
+    verdict_subtitle: {
+      deep:     'Persistent carrier across scales; controls rejected.',
+      boundary: 'Strong persistence present but not fully separated from controls.',
+      geometry: 'Orientation coherence exists but structural persistence is weak.',
+      control:  'Persistence observed but reproduced by survey/control geometry.',
+      collapse: 'Intrinsic persistence conditions fail under coarse-graining.'
+    }[r.vclass] || '',
+    v2_corrections: [
+      'sigma_vox = R / dvox where dvox = cbrt(dx*dy*dz) — physically correct Gaussian scale conversion',
+      'density field: rho = counts / Vvox — normalized by voxel volume before all downstream ops',
+      'kernel truncation: max(2, ceil(4*sigma_vox)) — replaces ceil(3*sigma_vox)',
+      'smoothing bypass threshold: sigma_vox < 1e-3 — replaces 0.01',
+      'frame drift: rotation-matrix trace method phi = arccos(clamp((trace(M)-1)/2,-1,1))',
+      'field_shuffle replaces phase_scramble (accurate naming: voxel-value Fisher-Yates shuffle)',
+      'W_AXIS=0.60 W_TOPO=0.20 W_ANISO=0.20 — S_struct weights now consistent with constants'
+    ],
+    v2_1_corrections: [
+      'Five-state verdict classifier: DEEP STRUCTURAL STABILITY / STRUCTURAL BOUNDARY / GEOMETRIC PERSISTENCE ONLY / CONTROL INDETERMINATE / STRUCTURE COLLAPSE',
+      'intrinsic_falsifier separates structural collapse from control non-uniqueness',
+      'CONTROL INDETERMINATE: strong geometry but ctrl_beat_rate < 0.75',
+      'STRUCTURE COLLAPSE: J_max > J_crit OR S_topo < T_crit OR axis_max > A_crit (ctrl NOT included)',
+      'Verdict color encoding and structure-map indicator added to UI'
+    ],
+    notes: []
+  };
+
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cw_i_v2_1_0_result.json';
+  a.click();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRAG & DROP + INIT
+// ─────────────────────────────────────────────────────────────────────────────
+const fzEl = document.getElementById('fz');
+fzEl.addEventListener('dragover', e=>{e.preventDefault();fzEl.classList.add('drag');});
+fzEl.addEventListener('dragleave',()=>fzEl.classList.remove('drag'));
+fzEl.addEventListener('drop', e=>{
+  e.preventDefault(); fzEl.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadCSV(e.dataTransfer.files[0]);
+});
+
+window.addEventListener('resize',()=>{ if(gal||result) renderViz(); });
+
+window.addEventListener('load',()=>{
+  const canvas=document.getElementById('vc');
+  const wrap=document.getElementById('vcw');
+  canvas.width=wrap.clientWidth||680; canvas.height=wrap.clientHeight||360;
+  renderViz();
+});
+</script>
+</body>
+</html>

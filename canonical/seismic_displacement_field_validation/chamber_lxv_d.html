@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER LXV-D — TOPOLOGY PROBE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #080c10;
+    --panel:   #0d1520;
+    --border:  #1a2a3a;
+    --border2: #0f1e2e;
+    --accent:  #00c8a0;
+    --accent2: #f0a040;
+    --blue:    #4ab0e8;
+    --violet:  #c878e8;
+    --text:    #b8ccd8;
+    --dim:     #4a6a84;
+    --pass:    #00cc88;
+    --warn:    #f0a040;
+    --fail:    #e05858;
+    --mono:    'IBM Plex Mono', 'Courier New', monospace;
+    --sans:    'IBM Plex Sans', sans-serif;
+    /* topology class colours */
+    --ts: #4ab0e8; --tb: #00cc88; --ti: #f0a040; --tm: #c878e8; --tu: #e05858;
+    /* lobe colours */
+    --l0: #00c8a0; --l1: #f0a040; --l2: #c878e8;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.6; min-height: 100vh; }
+  .shell { max-width: 1440px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── Header ── */
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 18px; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .hdr-id    { font-size: 11px; color: var(--accent); letter-spacing: 0.2em; font-weight: 600; }
+  .hdr-title { font-family: var(--sans); font-size: 18px; font-weight: 300; }
+  .hdr-sub   { font-size: 10px; color: var(--dim); }
+  .hdr-ver   { margin-left: auto; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+  /* ── Profile tabs ── */
+  .profile-tabs { display: flex; margin-bottom: 14px; border: 1px solid var(--border); }
+  .ptab { flex: 1; padding: 10px 14px; cursor: pointer; background: var(--panel); border-right: 1px solid var(--border); text-align: center; transition: background 0.2s; }
+  .ptab:last-child { border-right: none; }
+  .ptab:hover { background: #0e1f30; }
+  .ptab.active { background: #091828; border-bottom: 2px solid var(--accent); }
+  .ptab-pid  { font-size: 9px; color: var(--dim); letter-spacing: 0.12em; margin-bottom: 2px; }
+  .ptab.active .ptab-pid { color: var(--accent); }
+  .ptab-n    { font-size: 15px; font-weight: 600; color: var(--text); }
+  .ptab.active .ptab-n { color: var(--accent); }
+  .ptab-label{ font-size: 10px; color: var(--dim); }
+  .ptab.active .ptab-label { color: var(--text); }
+
+  /* ── Config bar ── */
+  .config-bar { background: var(--panel); border: 1px solid var(--border2); border-left: 3px solid var(--accent); padding: 9px 14px; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 5px 22px; font-size: 11px; }
+  .cfg-k { color: var(--dim); }
+  .cfg-v { color: var(--accent2); }
+
+  /* ── Drop zone ── */
+  .drop-zone { border: 1px dashed var(--border); background: var(--panel); padding: 22px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; margin-bottom: 12px; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: #0e1f30; }
+  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .dz-title { font-size: 11px; color: var(--dim); letter-spacing: 0.1em; margin-bottom: 6px; }
+  .dz-hint  { font-size: 10px; color: var(--dim); }
+  .dz-files { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; }
+  .dz-chip  { font-size: 10px; padding: 2px 8px; border: 1px solid; }
+  .dz-ok    { border-color: var(--accent); color: var(--accent); background: #081e18; }
+  .dz-extra { border-color: var(--dim);    color: var(--dim);    background: #0a1020; }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .btn { background: #0a1828; border: 1px solid var(--border); color: var(--text); padding: 7px 18px; font-family: var(--mono); font-size: 12px; cursor: pointer; letter-spacing: 0.08em; transition: border-color 0.15s, color 0.15s; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: 0.32; cursor: default; }
+  .btn-primary { border-color: var(--accent); color: var(--accent); }
+  #btnDownload { display: none; }
+
+  /* ── Status ── */
+  .status-bar { padding: 6px 12px; font-size: 11px; background: var(--panel); border: 1px solid var(--border); letter-spacing: 0.05em; min-height: 28px; margin-bottom: 14px; }
+  .status-bar.running { color: var(--accent2); border-color: var(--accent2); }
+  .status-bar.error   { color: var(--fail);    border-color: var(--fail);    }
+
+  #results { display: none; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 20px; background: var(--panel); border: 1px solid var(--border2); }
+  .sec-hdr  { padding: 8px 14px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 12px; }
+  .sec-tag  { font-size: 10px; color: var(--dim); letter-spacing: 0.12em; }
+  .sec-title{ font-size: 12px; font-weight: 600; letter-spacing: 0.08em; }
+  .sec-body { padding: 14px; }
+
+  /* ── Topology verdict ── */
+  .topo-verdict { display: inline-flex; align-items: center; gap: 14px; padding: 11px 22px; border: 2px solid; font-size: 15px; font-weight: 600; letter-spacing: 0.16em; margin-bottom: 10px; }
+  .tv-TOPO_SINGLE            { color: var(--ts); border-color: var(--ts); background: rgba(74,176,232,0.07); }
+  .tv-TOPO_BILOBE            { color: var(--tb); border-color: var(--tb); background: rgba(0,204,136,0.07); }
+  .tv-TOPO_BILOBE_INTERWOVEN { color: var(--ti); border-color: var(--ti); background: rgba(240,160,64,0.07); }
+  .tv-TOPO_MULTILOBE         { color: var(--tm); border-color: var(--tm); background: rgba(200,120,232,0.07); }
+  .tv-TOPO_UNTRUSTED         { color: var(--tu); border-color: var(--tu); background: rgba(224,88,88,0.07); }
+
+  .reasons { margin-top: 8px; font-size: 11px; }
+  .reasons li { list-style: none; padding: 2px 0; color: var(--warn); }
+  .reasons li::before { content: '  ↳ '; color: var(--dim); }
+
+  /* ── Gates ── */
+  .gates-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .gate-chip { padding: 4px 12px; font-size: 10px; border: 1px solid; letter-spacing: 0.07em; }
+  .g-pass { border-color: var(--pass); color: var(--pass); background: rgba(0,204,136,0.07); }
+  .g-fail { border-color: var(--fail); color: var(--fail); background: rgba(224,88,88,0.07); }
+  .g-warn { border-color: var(--warn); color: var(--warn); background: rgba(240,160,64,0.07); }
+  .g-na   { border-color: var(--border); color: var(--dim); }
+
+  /* ── Window tabs ── */
+  .win-tabs { display: flex; gap: 0; margin-bottom: 12px; }
+  .win-tab { padding: 4px 14px; font-size: 11px; cursor: pointer; border: 1px solid var(--border2); background: #080e18; color: var(--dim); margin-right: -1px; letter-spacing: 0.06em; }
+  .win-tab:hover { color: var(--text); }
+  .win-tab.active { background: #091828; color: var(--accent); border-color: var(--accent); z-index: 1; }
+  .win-tab.invalid { opacity: 0.35; cursor: default; }
+
+  /* ── Two-col / Three-col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  @media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Data table ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .data-table th { background: #0a1520; padding: 4px 10px; text-align: right; font-weight: 400; color: var(--dim); border-bottom: 1px solid var(--border2); white-space: nowrap; }
+  .data-table th:first-child { text-align: left; }
+  .data-table td { padding: 4px 10px; text-align: right; border-bottom: 1px solid #08111a; }
+  .data-table td:first-child { text-align: left; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #09131e; }
+  .val-pass { color: var(--pass); }
+  .val-warn { color: var(--warn); }
+  .val-fail { color: var(--fail); }
+
+  /* ── Metric boxes ── */
+  .metric-box { background: #080e18; border: 1px solid var(--border2); padding: 10px 14px; }
+  .metric-label { font-size: 10px; color: var(--dim); letter-spacing: 0.08em; margin-bottom: 4px; }
+  .metric-val { font-size: 20px; font-weight: 300; }
+  .mv-pass { color: var(--pass); }
+  .mv-warn { color: var(--warn); }
+  .mv-fail { color: var(--fail); }
+  .mv-na   { color: var(--dim); font-size: 14px; }
+
+  /* ── Lobe membership ── */
+  .lobe-badge { display: inline-block; padding: 1px 7px; font-size: 10px; font-weight: 600; border: 1px solid; letter-spacing: 0.05em; }
+  .lb-0 { border-color: var(--l0); color: var(--l0); background: rgba(0,200,160,0.12); }
+  .lb-1 { border-color: var(--l1); color: var(--l1); background: rgba(240,160,64,0.12); }
+  .lb-2 { border-color: var(--l2); color: var(--l2); background: rgba(200,120,232,0.12); }
+
+  /* ── Eligibility grid ── */
+  .elig-wrap { overflow-x: auto; }
+  .elig-table { border-collapse: collapse; font-size: 10px; white-space: nowrap; }
+  .elig-table th { padding: 3px 8px; color: var(--dim); font-weight: 400; background: #0a1520; border: 1px solid var(--border2); }
+  .elig-table td { padding: 3px 8px; text-align: center; border: 1px solid var(--border2); }
+  .elig-yes { background: rgba(0,200,160,0.18); color: var(--accent); font-weight: 600; }
+  .elig-no  { background: rgba(10,20,40,0.5);   color: var(--dim); }
+
+  /* ── Hashes ── */
+  .hash-block { font-size: 10px; }
+  .hash-row { display: flex; gap: 12px; padding: 2px 0; border-bottom: 1px solid #0a1420; }
+  .hash-key { color: var(--dim); min-width: 200px; flex-shrink: 0; }
+  .hash-val { color: var(--text); word-break: break-all; font-size: 9px; }
+
+  /* ── Plot title ── */
+  .plot-title { font-size: 10px; color: var(--dim); letter-spacing: 0.1em; margin-bottom: 8px; text-align: center; }
+
+  /* ── Cosine matrix ── */
+  .cosmat-station { font-size: 10px; color: var(--dim); }
+  .tbl-wrap { overflow-x: auto; }
+
+  /* ── Window detail panel ── */
+  .win-detail { font-size: 11px; }
+  .win-detail-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--border2); }
+  .win-detail-row:last-child { border-bottom: none; }
+  .wdk { color: var(--dim); }
+  .wdv { color: var(--text); }
+  .center-pill { display: inline-block; padding: 1px 7px; font-size: 10px; border: 1px solid; margin: 1px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="hdr-id">CHAMBER LXV-D</span>
+  <span class="hdr-title" style="font-family:var(--sans)">Topology Probe — Coseismic Step-Fields</span>
+  <span class="hdr-sub">v1.0.0 · protocol_locked · IGS20 tenv3 only · three preregistered profiles</span>
+  <span class="hdr-ver">TOPO_SINGLE / TOPO_BILOBE / TOPO_BILOBE_INTERWOVEN / TOPO_MULTILOBE / TOPO_UNTRUSTED</span>
+</div>
+
+<!-- ── Profile selector ── -->
+<div class="profile-tabs" id="profileTabs">
+  <div class="ptab active" data-pid="KUMAMOTO_JP_2016">
+    <div class="ptab-pid">PROFILE A</div>
+    <div class="ptab-n">13</div>
+    <div class="ptab-label">KUMAMOTO 2016</div>
+  </div>
+  <div class="ptab" data-pid="RIDGECREST_CAL_USA_2019">
+    <div class="ptab-pid">PROFILE B</div>
+    <div class="ptab-n">16</div>
+    <div class="ptab-label">RIDGECREST 2019</div>
+  </div>
+  <div class="ptab" data-pid="EL_MAYOR_CUCAPAH_2010">
+    <div class="ptab-pid">PROFILE C</div>
+    <div class="ptab-n">13</div>
+    <div class="ptab-label">EL MAYOR 2010</div>
+  </div>
+</div>
+
+<!-- ── Config bar ── -->
+<div class="config-bar" id="configBar"></div>
+
+<!-- ── Drop zone ── -->
+<div class="drop-zone" id="dropZone">
+  <input type="file" id="fileInput" multiple accept=".txt">
+  <div class="dz-title">DROP TENV3 FILES  ·  OR CLICK TO SELECT</div>
+  <div class="dz-hint" id="dzHint"></div>
+  <div class="dz-files" id="dzFiles"></div>
+</div>
+
+<!-- ── Controls ── -->
+<div class="btn-row">
+  <button class="btn btn-primary" id="btnRun" disabled>▶ RUN TOPOLOGY PROBE</button>
+  <button class="btn" id="btnDownload">↓ DOWNLOAD JSON</button>
+  <button class="btn" id="btnClear">✕ CLEAR</button>
+</div>
+
+<div class="status-bar" id="statusBar">Select a profile and load tenv3 files to enable pipeline.</div>
+
+<!-- ── Results ── -->
+<div id="results">
+
+  <!-- Verdict -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">VERDICT</span><span class="sec-title">TOPOLOGY CLASSIFICATION</span></div>
+    <div class="sec-body" id="verdictBody"></div>
+  </div>
+
+  <!-- Gates -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">G0–G4</span><span class="sec-title">INVARIANCE GATE STATUS</span></div>
+    <div class="sec-body" id="gatesBody"></div>
+  </div>
+
+  <!-- G_pre: Step extraction diagnostics -->
+  <div class="section">
+    <div class="sec-hdr">
+      <span class="sec-tag">G_pre</span>
+      <span class="sec-title">STEP EXTRACTION DIAGNOSTICS</span>
+      <span id="gpreStatus" style="font-size:10px;margin-left:10px;font-weight:600"></span>
+    </div>
+    <div class="sec-body" id="gpreBody"></div>
+  </div>
+
+  <!-- Topology per window -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">T1</span><span class="sec-title">TOPOLOGY PER SMOOTHING WINDOW</span></div>
+    <div class="sec-body">
+      <div class="win-tabs" id="winTabs"></div>
+      <div class="two-col">
+        <div id="winDetail"></div>
+        <div id="compassPlot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stability -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">S1–S4</span><span class="sec-title">TOPOLOGY STABILITY ACROSS SMOOTHING</span></div>
+    <div class="sec-body" id="stabilityBody"></div>
+  </div>
+
+  <!-- Cosine matrix -->
+  <div class="section">
+    <div class="sec-hdr">
+      <span class="sec-tag">T2</span>
+      <span class="sec-title">COSINE SIMILARITY MATRIX</span>
+      <span id="cosLabel" style="font-size:10px;color:var(--dim);margin-left:8px"></span>
+    </div>
+    <div class="sec-body">
+      <div class="cosine-heatmap tbl-wrap" id="cosHeatmap"></div>
+    </div>
+  </div>
+
+  <!-- Per-station vectors -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">M4</span><span class="sec-title">PER-STATION STEP VECTORS</span></div>
+    <div class="sec-body tbl-wrap">
+      <table class="data-table" id="perStationTable"></table>
+    </div>
+  </div>
+
+  <!-- Eligibility grid -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">M5</span><span class="sec-title">ELIGIBILITY MATRIX (snr_h ≥ 5 AND horiz ≥ 10 mm)</span></div>
+    <div class="sec-body elig-wrap" id="eligBody"></div>
+  </div>
+
+  <!-- Hashes -->
+  <div class="section">
+    <div class="sec-hdr"><span class="sec-tag">HASH</span><span class="sec-title">REPRODUCIBILITY SEALS</span></div>
+    <div class="sec-body"><div class="hash-block" id="hashBlock"></div></div>
+  </div>
+
+</div><!-- /results -->
+
+</div><!-- /shell -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILES (hardcoded per spec)
+// ═══════════════════════════════════════════════════════════════
+const PROFILES = {
+  KUMAMOTO_JP_2016: {
+    dataset_id: 'KUMAMOTO_JP_2016',
+    break_date: '2016-04-16',
+    stations: ['G071','G169','J093','J461','J464','J465','J466','J694','J696','J700','J702','J773','J775'],
+    excluded: ['G225'],
+    label: 'Kumamoto 2016'
+  },
+  RIDGECREST_CAL_USA_2019: {
+    dataset_id: 'RIDGECREST_CAL_USA_2019',
+    break_date: '2019-07-06',
+    stations: ['CALS','P470','P553','P556','P568','P569','P579','P583','P586','P590','P591','P808','P811','P812','TPOG','VINZ'],
+    excluded: [],
+    label: 'Ridgecrest 2019'
+  },
+  EL_MAYOR_CUCAPAH_2010: {
+    dataset_id: 'EL_MAYOR_CUCAPAH_2010',
+    break_date: '2010-04-04',
+    stations: ['MONP','P066','P480','P481','P483','P485','P486','P491','P492','P493','P497','P503','POTR'],
+    excluded: ['CMPO','PB2Y','YUHG'],
+    label: 'El Mayor 2010'
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// WORKER  SOURCE
+// ═══════════════════════════════════════════════════════════════
+const WORKER_SRC = `
+'use strict';
+
+const ENGINE_VERSION = 'LXV-D-1.0.0';
+
+// ── Profiles ──────────────────────────────────────────────────
+const PROFILES = {
+  KUMAMOTO_JP_2016: { dataset_id:'KUMAMOTO_JP_2016', break_date:'2016-04-16', stations:['G071','G169','J093','J461','J464','J465','J466','J694','J696','J700','J702','J773','J775'], excluded:['G225'] },
+  RIDGECREST_CAL_USA_2019: { dataset_id:'RIDGECREST_CAL_USA_2019', break_date:'2019-07-06', stations:['CALS','P470','P553','P556','P568','P569','P579','P583','P586','P590','P591','P808','P811','P812','TPOG','VINZ'], excluded:[] },
+  EL_MAYOR_CUCAPAH_2010: { dataset_id:'EL_MAYOR_CUCAPAH_2010', break_date:'2010-04-04', stations:['MONP','P066','P480','P481','P483','P485','P486','P491','P492','P493','P497','P503','POTR'], excluded:['CMPO','PB2Y','YUHG'] }
+};
+
+// ── Constants & date helpers ──────────────────────────────────
+const MONTHS = {JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+
+function tenv3DateToISO(s) {
+  const yy=parseInt(s.slice(0,2),10), mon=s.slice(2,5).toUpperCase(), dd=parseInt(s.slice(5,7),10);
+  const yr=yy+(yy>=80?1900:2000), mm=MONTHS[mon];
+  if(!mm) throw new Error('Unknown month token: '+s.slice(2,5));
+  return yr+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+}
+
+function dateToMJD(iso) {
+  return new Date(iso+'T00:00:00Z').getTime()/86400000+40587;
+}
+
+function isoToDays(iso) { return new Date(iso).getTime()/86400000; }
+
+function addDaysToISO(iso,n) {
+  const d=new Date(iso+'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate()+n);
+  return d.toISOString().slice(0,10);
+}
+
+async function sha256(str) {
+  const buf=new TextEncoder().encode(str);
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function round4(x){ return isFinite(x)?Math.round(x*10000)/10000:NaN; }
+
+// ── tenv3 parser ──────────────────────────────────────────────
+function parseTenv3(text, filename) {
+  const lines = text.split('\\n');
+  let hdrIdx = -1;
+  for(let i=0;i<Math.min(lines.length,10);i++){
+    if(lines[i].trimStart().startsWith('site ') || /YYMMMDD/.test(lines[i])){ hdrIdx=i; break; }
+  }
+  if(hdrIdx<0) throw new Error('No tenv3 header in '+filename);
+
+  const headers=lines[hdrIdx].trim().split(/\\s+/);
+  const gc=(name)=>{ const i=headers.indexOf(name); if(i<0) throw new Error('Missing column "'+name+'" in '+filename); return i; };
+  const go=(name)=>headers.indexOf(name);
+
+  const iDate=gc('YYMMMDD');
+  const iE=gc('__east(m)'), iN=gc('_north(m)'), iU=go('____up(m)');
+  const iLat=go('_latitude(deg)'), iLon=go('_longitude(deg)'), iH=go('__height(m)');
+  const iSE=go('sig_e(m)'), iSN=go('sig_n(m)');
+
+  let epochs=[],E_mm=[],N_mm=[],sE_mm=[],sN_mm=[];
+  let lat=null,lon=null,h=null,station_id=null;
+  const epochSeen={}; // date→index for dedup
+
+  for(let i=hdrIdx+1;i<lines.length;i++){
+    const line=lines[i].trim();
+    if(!line) continue;
+    const cols=line.split(/\\s+/);
+    if(cols.length<=Math.max(iE,iN)+1) continue;
+    if(!station_id && cols[0] && /^[A-Z0-9]{4}$/i.test(cols[0])) station_id=cols[0].toUpperCase();
+
+    let iso;
+    try{ iso=tenv3DateToISO(cols[iDate]); } catch(e){ continue; }
+
+    const e=parseFloat(cols[iE])*1000, n=parseFloat(cols[iN])*1000;
+    if(!isFinite(e)||!isFinite(n)) continue;
+
+    const se=iSE>=0?parseFloat(cols[iSE])*1000:NaN;
+    const sn=iSN>=0?parseFloat(cols[iSN])*1000:NaN;
+
+    // Duplicate epoch: keep lowest combined sigma; if no sigma keep first
+    if(iso in epochSeen){
+      const prev=epochSeen[iso];
+      const prevSig=sE_mm[prev]**2+sN_mm[prev]**2;
+      const curSig=se**2+sn**2;
+      if(isFinite(curSig)&&(!isFinite(prevSig)||curSig<prevSig)){
+        E_mm[prev]=e; N_mm[prev]=n; sE_mm[prev]=se; sN_mm[prev]=sn;
+      }
+      continue;
+    }
+    epochSeen[iso]=epochs.length;
+    epochs.push(iso); E_mm.push(e); N_mm.push(n); sE_mm.push(se); sN_mm.push(sn);
+
+    if(iLat>=0&&cols[iLat]) lat=parseFloat(cols[iLat]);
+    if(iLon>=0&&cols[iLon]){ let lo=parseFloat(cols[iLon]); lo=((lo%360)+360)%360; if(lo>180)lo-=360; lon=lo; }
+    if(iH>=0&&cols[iH]) h=parseFloat(cols[iH]);
+  }
+
+  if(!station_id||epochs.length===0) throw new Error('No data rows in '+filename);
+  return { station_id, epochs, E_mm, N_mm, sE_mm, sN_mm, coords:(lat!==null)?{lat,lon,h_m:h}:null };
+}
+
+// ── Epoch alignment ───────────────────────────────────────────
+function alignEpochs(stations){
+  let common=new Set(stations[0].epochs);
+  for(let i=1;i<stations.length;i++){
+    const s=new Set(stations[i].epochs);
+    common=new Set([...common].filter(e=>s.has(e)));
+  }
+  const sorted=[...common].sort();
+  return stations.map(st=>{
+    const idxMap=new Map(st.epochs.map((e,i)=>[e,i]));
+    const pick=(arr)=>arr?sorted.map(e=>{ const idx=idxMap.get(e); return idx!==undefined?arr[idx]:NaN; }):undefined;
+    return {...st, epochs:sorted, E_mm:pick(st.E_mm), N_mm:pick(st.N_mm), sE_mm:pick(st.sE_mm), sN_mm:pick(st.sN_mm)};
+  });
+}
+
+// ── Detrend ───────────────────────────────────────────────────
+function linfit(xs,ys){
+  const n=xs.length; if(n<2) return {a:(ys[0]||0),b:0};
+  let sx=0,sy=0,sxx=0,sxy=0;
+  for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];}
+  const D=n*sxx-sx*sx;
+  if(D===0) return {a:sy/n,b:0};
+  const b=(n*sxy-sx*sy)/D;
+  return {a:(sy-b*sx)/n,b};
+}
+
+function detrend(station,breakDate,preFitDays,guardDays){
+  const t0=dateToMJD(station.epochs[0]);
+  const ts=station.epochs.map(e=>dateToMJD(e)-t0);
+  const fitStart=addDaysToISO(breakDate,-preFitDays);
+  const fitEnd=addDaysToISO(breakDate,-guardDays);
+  const preIdx=station.epochs.reduce((a,e,i)=>{if(e>=fitStart&&e<=fitEnd)a.push(i);return a;},[]);
+  const preTs=preIdx.map(i=>ts[i]);
+  const sub=(arr)=>{
+    if(preIdx.length<2) return arr.slice();
+    const {a,b}=linfit(preTs,preIdx.map(i=>arr[i]));
+    return arr.map((v,i)=>v-(a+b*ts[i]));
+  };
+  return {...station, E_mm:sub(station.E_mm), N_mm:sub(station.N_mm)};
+}
+
+// ── Smoothing ─────────────────────────────────────────────────
+function centeredMA(arr,w){
+  if(w===1) return arr.slice();
+  const half=Math.floor(w/2), n=arr.length, out=new Array(n).fill(NaN);
+  for(let i=0;i<n;i++){
+    const lo=Math.max(0,i-half), hi=Math.min(n-1,i+half);
+    let sum=0,cnt=0;
+    for(let j=lo;j<=hi;j++){if(isFinite(arr[j])){sum+=arr[j];cnt++;}}
+    if(cnt>=half) out[i]=sum/cnt;
+  }
+  return out;
+}
+
+// ── Step extraction (E,N only; median + sigma SNR w/ MAD fallback) ──
+function median(arr){
+  const f=arr.filter(v=>isFinite(v)); if(!f.length) return NaN;
+  f.sort((a,b)=>a-b); const n=f.length;
+  return n%2===1?f[(n-1)/2]:(f[n/2-1]+f[n/2])/2;
+}
+function mad(arr){ const m=median(arr); return median(arr.map(x=>Math.abs(x-m))); }
+
+function rmsWin(sigArr,idxArr){
+  const vals=idxArr.map(i=>sigArr?sigArr[i]:NaN).filter(v=>isFinite(v)&&v>0);
+  return vals.length?Math.sqrt(vals.reduce((s,v)=>s+v*v,0)/vals.length):NaN;
+}
+
+function computeStep(sE,sN,sigE,sigN,epochs,breakDate,ev){
+  // ── null sentinel ──────────────────────────────────────────
+  const NULL_STEP = (n_pre,n_post,has_cols) => ({
+    dE_mm:null, dN_mm:null, horiz_mm:null, snr_h:null, theta_deg:null,
+    n_pre_points:n_pre, n_post_points:n_post, sigma_h:null, has_columns:has_cols
+  });
+
+  if(!sE||!sN||!epochs||!sE.length) return NULL_STEP(0,0,false);
+
+  const has_columns = Array.isArray(sE) && sE.length>0;
+
+  const preS =addDaysToISO(breakDate,-(ev.pre_step_days+ev.guard_days));
+  const preE2=addDaysToISO(breakDate,-ev.guard_days);
+  const posS =addDaysToISO(breakDate, ev.guard_days);
+  const posE =addDaysToISO(breakDate, ev.post_step_days+ev.guard_days);
+
+  const preIdx=[], posIdx=[];
+  for(let i=0;i<epochs.length;i++){
+    const e=epochs[i];
+    if(e>=preS&&e<=preE2) preIdx.push(i);
+    if(e> posS&&e<=posE)  posIdx.push(i);
+  }
+
+  const n_pre_points=preIdx.length, n_post_points=posIdx.length;
+  if(n_pre_points<3||n_post_points<3) return NULL_STEP(n_pre_points,n_post_points,has_columns);
+
+  const pE=preIdx.map(i=>sE[i]).filter(v=>isFinite(v));
+  const pN=preIdx.map(i=>sN[i]).filter(v=>isFinite(v));
+  const qE=posIdx.map(i=>sE[i]).filter(v=>isFinite(v));
+  const qN=posIdx.map(i=>sN[i]).filter(v=>isFinite(v));
+
+  if(!pE.length||!pN.length||!qE.length||!qN.length)
+    return NULL_STEP(n_pre_points,n_post_points,has_columns);
+
+  const dE=median(qE)-median(pE), dN=median(qN)-median(pN);
+  const horiz=Math.sqrt(dE*dE+dN*dN);
+  const theta_deg=Math.atan2(dN,dE)*180/Math.PI;
+
+  // SNR: sigma-column path
+  let snr_h=null, sigma_h=null;
+  const rse_pre=rmsWin(sigE,preIdx), rse_pos=rmsWin(sigE,posIdx);
+  const rsn_pre=rmsWin(sigN,preIdx), rsn_pos=rmsWin(sigN,posIdx);
+  if(isFinite(rse_pre)&&isFinite(rse_pos)&&isFinite(rsn_pre)&&isFinite(rsn_pos)){
+    const sdE=Math.sqrt(rse_pre**2+rse_pos**2), sdN=Math.sqrt(rsn_pre**2+rsn_pos**2);
+    const sh=Math.sqrt(sdE**2+sdN**2);
+    if(sh>0){ sigma_h=round4(sh); snr_h=round4(horiz/sh); }
+  }
+  // MAD fallback (always provides an SNR even if sigma cols missing)
+  if(snr_h===null){
+    const mE=median(pE),mN=median(pN);
+    const preH=preIdx.map(i=>{ const e=sE[i],n=sN[i]; return isFinite(e)&&isFinite(n)?Math.sqrt((e-mE)**2+(n-mN)**2):NaN; }).filter(v=>isFinite(v));
+    const madVal=1.4826*mad(preH);
+    if(madVal>0){ sigma_h=round4(madVal); snr_h=round4(horiz/madVal); }
+    else {
+      // SPEC NOTE — MAD=0 edge case (design choice, not a bug):
+      // MAD=0 means all pre-window horizontal residuals are identical after detrend.
+      // This can occur with very short windows, synthetic/constant data, or extreme smoothing.
+      // We set sigma_h=0, snr_h=0 — this is safe because snr_h=0 < snr_h_min=5
+      // ensures the station is correctly marked ineligible without producing a NaN/null step.
+      // The step vector (dE_mm, dN_mm) is still valid and emitted; only SNR is unusable.
+      snr_h=0; sigma_h=0;
+    }
+  }
+
+  return {
+    dE_mm:round4(dE), dN_mm:round4(dN), horiz_mm:round4(horiz),
+    snr_h, theta_deg:round4(theta_deg),
+    n_pre_points, n_post_points, sigma_h, has_columns
+  };
+}
+
+// ── Circular k-means (deterministic, k∈{1,2,3}) ──────────────
+function angDistRad(a,b){ let d=((a-b)%(2*Math.PI)+2*Math.PI)%(2*Math.PI); return d>Math.PI?2*Math.PI-d:d; }
+function angDistDeg(a,b){ let d=Math.abs(a-b)%360; return d>180?360-d:d; }
+
+function circularMean(rads){
+  const ss=rads.reduce((s,r)=>s+Math.sin(r),0)/rads.length;
+  const cc=rads.reduce((s,r)=>s+Math.cos(r),0)/rads.length;
+  return Math.atan2(ss,cc);
+}
+
+function clusterMRL(rads){
+  if(!rads.length) return 0;
+  const ss=rads.reduce((s,r)=>s+Math.sin(r),0)/rads.length;
+  const cc=rads.reduce((s,r)=>s+Math.cos(r),0)/rads.length;
+  return Math.sqrt(ss*ss+cc*cc);
+}
+
+function circularKMeans(angles_deg, k, maxIter){
+  maxIter=maxIter||100;
+  const n=angles_deg.length;
+  if(n<k) return null;
+  const rads=angles_deg.map(a=>a*Math.PI/180);
+  const sorted=[...rads].sort((a,b)=>a-b);
+
+  // Deterministic quantile init
+  let centers;
+  if(k===1){
+    centers=[circularMean(rads)];
+  } else if(k===2){
+    centers=[sorted[Math.floor(n*0.25)], sorted[Math.floor(n*0.75)]];
+  } else {
+    centers=[sorted[Math.floor(n*0.20)], sorted[Math.floor(n*0.50)], sorted[Math.floor(n*0.80)]];
+  }
+  // Guard identical centers
+  for(let j=1;j<k;j++){
+    if(angDistRad(centers[j],centers[j-1])<0.01) centers[j]=centers[j-1]+2*Math.PI/k;
+  }
+
+  let labels=new Array(n).fill(0);
+  for(let iter=0;iter<maxIter;iter++){
+    const newL=rads.map(r=>{ let d=Infinity,b=0; for(let j=0;j<k;j++){const dd=angDistRad(r,centers[j]);if(dd<d){d=dd;b=j;}} return b; });
+    if(newL.every((l,i)=>l===labels[i])) break;
+    labels=newL;
+    for(let j=0;j<k;j++){
+      const cr=rads.filter((_,i)=>labels[i]===j);
+      if(cr.length>0) centers[j]=circularMean(cr);
+    }
+  }
+
+  // WCCD
+  let wccd=0;
+  for(let j=0;j<k;j++){
+    const cr=rads.filter((_,i)=>labels[i]===j);
+    if(cr.length>0) wccd+=cr.length*(1-clusterMRL(cr));
+  }
+
+  return {k,labels,centers_rad:centers,centers_deg:centers.map(c=>round4(c*180/Math.PI)),wccd};
+}
+
+// ── BIC-like k selection ──────────────────────────────────────
+function selectK(angles_deg){
+  const n=angles_deg.length;
+  let bestK=1,bestScore=Infinity,bestResult=null;
+  for(const k of [1,2,3]){
+    if(k>n) continue;
+    const res=circularKMeans(angles_deg,k);
+    if(!res) continue;
+    const penalty=k*0.5*Math.log(n)/n;
+    const score=res.wccd/n+penalty;
+    if(score<bestScore){ bestScore=score; bestK=k; bestResult=res; }
+  }
+  return {k:bestK,score:round4(bestScore),result:bestResult};
+}
+
+// ── Adjusted Rand Index ──────────────────────────────────────
+function computeARI(labels1,labels2){
+  const n=labels1.length; if(n===0) return 1;
+  const c2=x=>x*(x-1)/2;
+  const table={};
+  for(let i=0;i<n;i++){const k=labels1[i]+'_'+labels2[i]; table[k]=(table[k]||0)+1;}
+  const rows={},cols={};
+  for(const [k,v] of Object.entries(table)){
+    const [r,c]=k.split('_'); rows[r]=(rows[r]||0)+v; cols[c]=(cols[c]||0)+v;
+  }
+  const sCij=Object.values(table).reduce((s,v)=>s+c2(v),0);
+  const sAi =Object.values(rows).reduce((s,v)=>s+c2(v),0);
+  const sBj =Object.values(cols).reduce((s,v)=>s+c2(v),0);
+  const N2=c2(n); if(N2===0) return 1;
+  const exp=sAi*sBj/N2, maxRI=(sAi+sBj)/2;
+  if(Math.abs(maxRI-exp)<1e-10) return 1;
+  return round4((sCij-exp)/(maxRI-exp));
+}
+
+// ── Center drift ──────────────────────────────────────────────
+function computeCenterDrift(centersByW,validWs){
+  if(validWs.length<2) return {center_drift_deg_max:null,center_drift_deg_mean:null};
+  const refW=validWs[0];
+  const refCenters=centersByW[refW];
+  const k=refCenters.length;
+  const drifts=[];
+  for(const w of validWs.slice(1)){
+    const wC=centersByW[w];
+    if(!wC||wC.length!==k) return {center_drift_deg_max:180,center_drift_deg_mean:180};
+    const avail=[...Array(k).keys()];
+    for(const rc of refCenters){
+      let min=Infinity,best=-1;
+      for(const j of avail){ const d=angDistDeg(rc,wC[j]); if(d<min){min=d;best=j;} }
+      if(best>=0){ avail.splice(avail.indexOf(best),1); drifts.push(min); }
+    }
+  }
+  if(!drifts.length) return {center_drift_deg_max:0,center_drift_deg_mean:0};
+  return {
+    center_drift_deg_max:round4(Math.max(...drifts)),
+    center_drift_deg_mean:round4(drifts.reduce((s,v)=>s+v,0)/drifts.length)
+  };
+}
+
+// ── Cosine similarity ─────────────────────────────────────────
+function cosSim2D(dE1,dN1,dE2,dN2){
+  const h1=Math.sqrt(dE1**2+dN1**2), h2=Math.sqrt(dE2**2+dN2**2);
+  if(h1===0||h2===0) return NaN;
+  return round4((dE1*dE2+dN1*dN2)/(h1*h2));
+}
+
+// ── Separability score ────────────────────────────────────────
+function lda2D(pts){ // pts: [{e,n,lobe}] lobe∈{0,1}
+  const g0=pts.filter(p=>p.lobe===0), g1=pts.filter(p=>p.lobe===1);
+  if(!g0.length||!g1.length) return null;
+  const c0=[g0.reduce((s,p)=>s+p.e,0)/g0.length, g0.reduce((s,p)=>s+p.n,0)/g0.length];
+  const c1=[g1.reduce((s,p)=>s+p.e,0)/g1.length, g1.reduce((s,p)=>s+p.n,0)/g1.length];
+  const d=[c1[0]-c0[0],c1[1]-c0[1]], dl=Math.sqrt(d[0]**2+d[1]**2);
+  if(dl<1) return 0.5;
+  const proj=p=>(p.e*d[0]+p.n*d[1])/dl;
+  const p0=g0.map(proj), p1=g1.map(proj);
+  const m0=p0.reduce((s,v)=>s+v,0)/p0.length, m1=p1.reduce((s,v)=>s+v,0)/p1.length;
+  const thr=(m0+m1)/2, below=m0<m1;
+  const c=(g0.filter(p=>(below?proj(p)<thr:proj(p)>thr)).length+g1.filter(p=>(below?proj(p)>thr:proj(p)<thr)).length);
+  return round4(c/(g0.length+g1.length));
+}
+
+function computeSepScore(eligIds, membershipMap, coordMap, k){
+  if(k===1) return null;
+  const withCoord=eligIds.filter(s=>{ const c=coordMap[s]; return c&&isFinite(c.lat)&&isFinite(c.lon); });
+  if(withCoord.length<3) return null;
+  const mLat=withCoord.reduce((s,st)=>s+coordMap[st].lat,0)/withCoord.length;
+  const mLon=withCoord.reduce((s,st)=>s+coordMap[st].lon,0)/withCoord.length;
+  const R=6371000, cosLat=Math.cos(mLat*Math.PI/180);
+  const pts=withCoord.map(s=>{
+    const c=coordMap[s];
+    return {e:(c.lon-mLon)*Math.PI/180*R*cosLat, n:(c.lat-mLat)*Math.PI/180*R, lobe:membershipMap[s]};
+  });
+  if(k===2) return lda2D(pts);
+  // k=3: one-vs-rest
+  const accs=[];
+  for(let t=0;t<3;t++){
+    const bin=pts.map(p=>({...p,lobe:p.lobe===t?0:1}));
+    const acc=lda2D(bin); if(acc!==null) accs.push(acc);
+  }
+  return accs.length?round4(accs.reduce((s,v)=>s+v,0)/accs.length):null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPUTE
+// ═══════════════════════════════════════════════════════════════
+async function computeLXVD(files, profileId){
+  const profile=PROFILES[profileId];
+  if(!profile) throw new Error('Unknown profile: '+profileId);
+
+  const GATES_DEF = {
+    n_input_min: 12, min_common_epochs_days: 365,
+    snr_h_min: 5.0, h_min_mm: 10.0,
+    n_eligible_min: 6, n_windows_valid_min: 3,
+    ari_mean_min: 0.90, center_drift_deg_max: 10.0,
+    sep_score_mean_min: 0.70, sep_score_min_min: 0.60
+  };
+
+  const EV = {
+    event_id: profile.dataset_id,
+    break_date: profile.break_date,
+    pre_fit_days: 60, pre_step_days: 20, post_step_days: 20, guard_days: 2
+  };
+
+  const WS = [1,3,7,14,21];
+
+  // Config hash
+  const configHash = await sha256(JSON.stringify({
+    chamber:'LXV-D', version:'1.0.0',
+    profile: { dataset_id:profile.dataset_id, break_date:profile.break_date, stations:[...profile.stations].sort() },
+    ev: EV, gates: GATES_DEF, smoothing_days: WS
+  }));
+
+  // Parse files
+  const rawMap = {}; // station_id → station
+  const inputMeta = [];
+  const parseErrors = [];
+
+  for(const f of files){
+    try {
+      const h=await sha256(f.content);
+      const st=parseTenv3(f.content,f.name);
+      st.input_sha256=h;
+      rawMap[st.station_id]=st;
+      inputMeta.push({station_id:st.station_id,source_file:f.name,input_sha256:h});
+    } catch(e){ parseErrors.push({file:f.name,error:e.message}); }
+  }
+
+  // Filter to profile stations (lexicographic order)
+  const profileSet=new Set(profile.stations);
+  const matched=profile.stations.filter(id=>id in rawMap).map(id=>rawMap[id]);
+  // Sort by station_id (already lexicographic from profile order, which is already sorted)
+  matched.sort((a,b)=>a.station_id<b.station_id?-1:1);
+
+  const nInput=matched.length;
+  const reasons=[];
+  const gateStatus={G_pre:'?',G0:'?',G1:'?',G2:'?',G3:'?',G4:'N/A'};
+
+  // G0: profile completeness
+  gateStatus.G0 = nInput>=GATES_DEF.n_input_min ? 'PASS' : 'FAIL: '+nInput+'/'+GATES_DEF.n_input_min;
+  if(nInput<GATES_DEF.n_input_min){
+    reasons.push('PROFILE_INCOMPLETE_N_INPUT: '+nInput+' < '+GATES_DEF.n_input_min);
+  }
+
+  // ── Common epoch intersection (G1 gate only) ──────────────
+  // Note: LXV-D does NOT use the aligned epoch grid for step extraction.
+  // Each station's own epoch grid is used for detrend + step, so that
+  // a gap in one station cannot eliminate window points for another.
+  // Common epoch alignment is computed here solely to evaluate G1.
+  let commonEpochs=[], overlapDays=0;
+  if(matched.length>0){
+    try{
+      const aligned=alignEpochs(matched); // temporary, G1 only
+      commonEpochs=aligned[0].epochs;
+      const nc=commonEpochs.length;
+      overlapDays=nc>1?(isoToDays(commonEpochs[nc-1])-isoToDays(commonEpochs[0])):0;
+    } catch(e){ reasons.push('ALIGNMENT_ERROR: '+e.message); }
+  }
+
+  // G1: overlap
+  gateStatus.G1 = overlapDays>=GATES_DEF.min_common_epochs_days ? 'PASS' : 'FAIL: '+Math.round(overlapDays)+'d < 365d';
+  if(overlapDays<GATES_DEF.min_common_epochs_days) reasons.push('OVERLAP_INSUFFICIENT: '+Math.round(overlapDays)+'d');
+
+  // ── Detrend each station on its OWN epoch grid ─────────────
+  // This preserves each station's window points around the break date
+  // regardless of inter-station data gaps.
+  const detrended = matched.map(st=>detrend(st,EV.break_date,EV.pre_fit_days,EV.guard_days));
+
+  // ── Coordinate map ──
+  const coordMap={};
+  for(const st of matched){ if(st.coords) coordMap[st.station_id]=st.coords; }
+
+  // ── Per-station, per-smoothing step extraction ──
+  const perStation={};
+  for(const st of detrended){
+    const eps=st.epochs||[];
+    perStation[st.station_id]={
+      coords: coordMap[st.station_id]||null,
+      epoch_span: eps.length>0?{count:eps.length,start:eps[0],end:eps[eps.length-1]}:null,
+      by_w:{}
+    };
+  }
+
+  for(const w of WS){
+    for(const st of detrended){
+      const smE=centeredMA(st.E_mm,w), smN=centeredMA(st.N_mm,w);
+      const step=computeStep(smE,smN,st.sE_mm,st.sN_mm,st.epochs,EV.break_date,EV);
+      perStation[st.station_id].by_w[String(w)]=step;
+
+      // ── G_pre: STEP_ESTIMATE_DEFINED diagnostics ────────────
+      const n_pre  = step?.n_pre_points  ?? 0;
+      const n_post = step?.n_post_points ?? 0;
+      let null_reason = null;
+      if(step?.dE_mm===null||step?.dN_mm===null||!isFinite(step?.dE_mm)||!isFinite(step?.dN_mm)){
+        if(!step){
+          null_reason='STEP_OBJECT_NULL';
+        } else if(!step.has_columns){
+          null_reason='MISSING_COLUMNS';
+        } else if(n_pre<3||n_post<3){
+          null_reason='INSUFFICIENT_WINDOW_POINTS';
+        } else if(step.sigma_h===null||step.sigma_h===0){
+          null_reason='SNR_UNDEFINED_SIGMA';
+        } else {
+          null_reason='UNKNOWN_NUMERIC_FAILURE';
+        }
+      }
+      perStation[st.station_id].by_w[String(w)].g_pre={
+        defined: null_reason===null,
+        n_pre_points: n_pre,
+        n_post_points: n_post,
+        null_reason
+      };
+    }
+  }
+
+  // ── G_pre summary (per window) ──────────────────────────────
+  const gPreSummary={};
+  for(const w of WS){
+    let definedCount=0, total=0;
+    const reasons_count={};
+    for(const id of Object.keys(perStation).sort()){
+      const g=perStation[id].by_w[String(w)]?.g_pre;
+      if(!g) continue;
+      total++;
+      if(g.defined){ definedCount++; }
+      else if(g.null_reason){ reasons_count[g.null_reason]=(reasons_count[g.null_reason]||0)+1; }
+    }
+    gPreSummary[String(w)]={n_total:total,n_defined:definedCount,n_undefined:total-definedCount,null_reason_counts:reasons_count};
+  }
+  // G_pre gate status
+  const gPrePass=WS.some(w=>gPreSummary[String(w)].n_defined>=GATES_DEF.n_eligible_min);
+  gateStatus.G_pre=gPrePass?'PASS':'FAIL: no window reached n_defined >= '+GATES_DEF.n_eligible_min;
+
+  // ── Eligibility per window ──
+  const eligByW={}, nEligByW={}, validWs=[], invalidWs=[];
+  for(const w of WS){
+    const elig=[];
+    for(const id of Object.keys(perStation).sort()){
+      const d=perStation[id].by_w[String(w)];
+      if(d.snr_h!==null&&isFinite(d.snr_h)&&d.snr_h>=GATES_DEF.snr_h_min&&d.horiz_mm!==null&&isFinite(d.horiz_mm)&&d.horiz_mm>=GATES_DEF.h_min_mm)
+        elig.push(id);
+    }
+    eligByW[String(w)]=elig;
+    nEligByW[String(w)]=elig.length;
+    if(elig.length>=GATES_DEF.n_eligible_min) validWs.push(w); else invalidWs.push(w);
+  }
+
+  // G2: valid windows
+  gateStatus.G2 = validWs.length>=GATES_DEF.n_windows_valid_min ? 'PASS' : 'FAIL: '+validWs.length+' valid windows < '+GATES_DEF.n_windows_valid_min;
+  if(validWs.length<GATES_DEF.n_windows_valid_min) reasons.push('INSUFFICIENT_VALID_WINDOWS: '+validWs.length);
+
+  // ── Topology inference per valid window ──
+  const topoByW={};
+  for(const w of validWs){
+    const eligIds=eligByW[String(w)]; // already sorted
+    const angles=eligIds.map(id=>perStation[id].by_w[String(w)].theta_deg).filter(v=>isFinite(v));
+    if(angles.length<GATES_DEF.n_eligible_min){ invalidWs.push(w); continue; }
+
+    const {k,result}=selectK(angles);
+    const membership={};
+    eligIds.forEach((id,i)=>{ membership[id]=result.labels[i]; });
+
+    // Cosine matrix (lexicographic order = eligIds already sorted)
+    const cmStations=[...eligIds];
+    const cmMatrix=cmStations.map(s1=>cmStations.map(s2=>{
+      const d1=perStation[s1].by_w[String(w)], d2=perStation[s2].by_w[String(w)];
+      return cosSim2D(d1.dE_mm,d1.dN_mm,d2.dE_mm,d2.dN_mm);
+    }));
+
+    // Sep score
+    const sepScore=computeSepScore(eligIds,membership,coordMap,k);
+
+    topoByW[String(w)]={
+      k_lobes:k,
+      centers_deg:result.centers_deg,
+      membership,
+      sep_score:isFinite(sepScore)?round4(sepScore):null,
+      cosine_matrix:{stations:cmStations,matrix:cmMatrix}
+    };
+  }
+
+  // ── Stability across smoothing ──
+  const vwsWithTopo=validWs.filter(w=>topoByW[String(w)]);
+  const kValsByW={};
+  vwsWithTopo.forEach(w=>{ kValsByW[String(w)]=topoByW[String(w)].k_lobes; });
+  const kValues=Object.values(kValsByW);
+  const kConstant=kValues.length>0&&kValues.every(k=>k===kValues[0]);
+
+  // ARI pairwise
+  const ariPairwise=[];
+  for(let i=0;i<vwsWithTopo.length;i++){
+    for(let j=i+1;j<vwsWithTopo.length;j++){
+      const wa=vwsWithTopo[i], wb=vwsWithTopo[j];
+      const ma=topoByW[String(wa)].membership, mb=topoByW[String(wb)].membership;
+      const common=Object.keys(ma).filter(id=>id in mb);
+      if(!common.length){ ariPairwise.push({w_a:wa,w_b:wb,ari:0}); continue; }
+      const l1=common.map(id=>ma[id]), l2=common.map(id=>mb[id]);
+      ariPairwise.push({w_a:wa,w_b:wb,ari:computeARI(l1,l2)});
+    }
+  }
+  const ariMean=ariPairwise.length?round4(ariPairwise.reduce((s,x)=>s+x.ari,0)/ariPairwise.length):null;
+  const ariMin=ariPairwise.length?round4(Math.min(...ariPairwise.map(x=>x.ari))):null;
+
+  // Center drift
+  const centersByW={};
+  vwsWithTopo.forEach(w=>{ centersByW[w]=topoByW[String(w)].centers_deg; });
+  const {center_drift_deg_max,center_drift_deg_mean}=computeCenterDrift(centersByW,vwsWithTopo);
+
+  // Sep stability
+  const sepScores=vwsWithTopo.map(w=>topoByW[String(w)].sep_score).filter(v=>v!==null&&isFinite(v));
+  const sepScoreMean=sepScores.length?round4(sepScores.reduce((s,v)=>s+v,0)/sepScores.length):null;
+  const sepScoreMin=sepScores.length?round4(Math.min(...sepScores)):null;
+
+  const stability={
+    k_values_by_w: kValsByW,
+    k_constant: kConstant,
+    ari_pairwise: ariPairwise.map(x=>({...x,ari:round4(x.ari)})),
+    ari_mean: ariMean, ari_min: ariMin,
+    center_drift_deg_max, center_drift_deg_mean,
+    sep_score_mean: sepScoreMean, sep_score_min: sepScoreMin
+  };
+
+  // ── G3: stability gate ──
+  const ariOK  = ariMean!==null&&ariMean>=GATES_DEF.ari_mean_min;
+  const driftOK= center_drift_deg_max!==null&&center_drift_deg_max<=GATES_DEF.center_drift_deg_max;
+  gateStatus.G3 = (ariOK&&driftOK)?'PASS':('FAIL: ari='+ariMean+', drift='+center_drift_deg_max+'°');
+  if(!ariOK)  reasons.push('ARI_UNSTABLE: ari_mean='+ariMean+' < '+GATES_DEF.ari_mean_min);
+  if(!driftOK)reasons.push('CENTER_DRIFT_EXCEEDED: '+center_drift_deg_max+'° > '+GATES_DEF.center_drift_deg_max+'°');
+
+  // ── Trusted determination ──
+  const trusted=reasons.length===0&&nInput>=GATES_DEF.n_input_min;
+
+  // ── G4 + Topology classification ──
+  let topoClass='TOPO_UNTRUSTED';
+  if(!trusted){
+    topoClass='TOPO_UNTRUSTED';
+    gateStatus.G4='N/A';
+  } else {
+    const finalK=kConstant&&kValues.length?kValues[0]:null;
+    if(finalK===1){
+      topoClass='TOPO_SINGLE'; gateStatus.G4='N/A';
+    } else if(finalK===2){
+      const g4Pass=sepScoreMean!==null&&sepScoreMean>=GATES_DEF.sep_score_mean_min&&sepScoreMin!==null&&sepScoreMin>=GATES_DEF.sep_score_min_min;
+      gateStatus.G4=sepScoreMean===null?'N/A (no coords)':g4Pass?'PASS':'FAIL: sep_mean='+sepScoreMean+', sep_min='+sepScoreMin;
+      topoClass=g4Pass?'TOPO_BILOBE':'TOPO_BILOBE_INTERWOVEN';
+    } else if(finalK===3){
+      topoClass='TOPO_MULTILOBE'; gateStatus.G4='N/A';
+    } else {
+      topoClass='TOPO_UNTRUSTED';
+      if(!reasons.includes('K_INCONSISTENT'))
+        reasons.push('K_INCONSISTENT_ACROSS_WINDOWS');
+    }
+  }
+
+  // ── Build artifact ──
+  const now=new Date().toISOString().replace(/\\.\\d{3}Z$/,'Z');
+  return {
+    chamber: 'LXV-D',
+    version: '1.0.0',
+    engine_version: ENGINE_VERSION,
+    created_utc: now,
+    config_hash: configHash,
+
+    dataset_profile: {
+      dataset_id: profile.dataset_id,
+      break_date: profile.break_date,
+      stations: profile.stations,
+      excluded: profile.excluded||[]
+    },
+
+    inputs: inputMeta,
+    parse_errors: parseErrors,
+
+    event: {
+      event_id: EV.event_id,
+      break_date: EV.break_date,
+      pre_fit_days: EV.pre_fit_days,
+      pre_step_days: EV.pre_step_days,
+      post_step_days: EV.post_step_days,
+      guard_days: EV.guard_days
+    },
+
+    common_epochs: commonEpochs.length?{count:commonEpochs.length,start:commonEpochs[0],end:commonEpochs[commonEpochs.length-1],note:'intersection_for_G1_only'}:{count:0,start:null,end:null,note:'no_intersection'},
+    smoothing_days: WS,
+    per_station: perStation,
+    g_pre_summary: gPreSummary,
+
+    gates: {
+      n_input_min: GATES_DEF.n_input_min,
+      min_common_epochs_days: GATES_DEF.min_common_epochs_days,
+      snr_h_min: GATES_DEF.snr_h_min,
+      h_min_mm: GATES_DEF.h_min_mm,
+      n_eligible_min: GATES_DEF.n_eligible_min,
+      n_windows_valid_min: GATES_DEF.n_windows_valid_min,
+      ari_mean_min: GATES_DEF.ari_mean_min,
+      center_drift_deg_max: GATES_DEF.center_drift_deg_max,
+      sep_score_mean_min: GATES_DEF.sep_score_mean_min,
+      sep_score_min_min: GATES_DEF.sep_score_min_min,
+      status: gateStatus
+    },
+
+    topology: {
+      eligibility: { eligible_by_w:eligByW, n_eligible_by_w:nEligByW, valid_ws:validWs, invalid_ws:invalidWs },
+      by_w: topoByW,
+      stability
+    },
+
+    trusted,
+    topo_class: topoClass,
+    reasons,
+    rule_path: 'chamber_LXV_D/tenv3_topology_probe'
+  };
+}
+
+onmessage = async function(e){
+  try{
+    const result=await computeLXVD(e.data.files, e.data.profileId);
+    postMessage({type:'result',data:result});
+  } catch(err){
+    postMessage({type:'error',message:err.message});
+  }
+};
+`;
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN  THREAD
+// ═══════════════════════════════════════════════════════════════
+let loadedFiles = {};
+let lastArtifact = null;
+let selectedProfile = 'KUMAMOTO_JP_2016';
+let activeWindow = null;
+
+function makeWorker(){
+  const blob=new Blob([WORKER_SRC],{type:'application/javascript'});
+  return new Worker(URL.createObjectURL(blob));
+}
+
+// ── Profile selection ─────────────────────────────────────────
+function selectProfile(pid){
+  selectedProfile=pid;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.toggle('active',t.dataset.pid===pid));
+  updateConfigBar();
+  updateDropUI();
+}
+
+function updateConfigBar(){
+  const p=PROFILES[selectedProfile];
+  const bar=document.getElementById('configBar');
+  bar.innerHTML=`
+    <span class="cfg-k">dataset_id</span><span class="cfg-v">${p.dataset_id}</span>
+    <span class="cfg-k">break_date</span><span class="cfg-v">${p.break_date}</span>
+    <span class="cfg-k">n_stations</span><span class="cfg-v">${p.stations.length}</span>
+    <span class="cfg-k">pre_fit</span><span class="cfg-v">60d</span>
+    <span class="cfg-k">pre_step</span><span class="cfg-v">20d</span>
+    <span class="cfg-k">post_step</span><span class="cfg-v">20d</span>
+    <span class="cfg-k">guard</span><span class="cfg-v">2d</span>
+    <span class="cfg-k">smoothing</span><span class="cfg-v">[1,3,7,14,21]</span>
+    <span class="cfg-k">snr_min</span><span class="cfg-v">5.0</span>
+    <span class="cfg-k">h_min</span><span class="cfg-v">10 mm</span>
+    <span class="cfg-k">n_elig_min</span><span class="cfg-v">6</span>
+    <span class="cfg-k">n_input_min</span><span class="cfg-v">12</span>
+  `;
+  // update drop hint
+  const p2=PROFILES[selectedProfile];
+  document.getElementById('dzHint').textContent='Expected: '+p2.stations.join('  ·  ')+' (.tenv3.txt)';
+}
+
+// ── File handling ─────────────────────────────────────────────
+function updateDropUI(){
+  const p=PROFILES[selectedProfile];
+  const chips=document.getElementById('dzFiles');
+  const btnRun=document.getElementById('btnRun');
+  chips.innerHTML='';
+  const loaded=Object.keys(loadedFiles);
+  loaded.forEach(name=>{
+    // Try to match station id from filename
+    const stId=name.split('.')[0].toUpperCase();
+    const matched=p.stations.includes(stId);
+    const d=document.createElement('div');
+    d.className='dz-chip '+(matched?'dz-ok':'dz-extra');
+    d.textContent=name;
+    chips.appendChild(d);
+  });
+  btnRun.disabled=loaded.length<1;
+  setStatus(loaded.length===0?'Select a profile and load tenv3 files.':
+    'Files loaded: '+loaded.length+' (matched: '+loaded.filter(n=>p.stations.includes(n.split('.')[0].toUpperCase())).length+' / '+p.stations.length+')','');
+}
+
+function readFiles(fileList){
+  for(const f of fileList){
+    const reader=new FileReader();
+    reader.onload=e=>{ loadedFiles[f.name]=e.target.result; updateDropUI(); };
+    reader.readAsText(f);
+  }
+}
+
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');readFiles(e.dataTransfer.files);});
+fileInput.addEventListener('change',e=>readFiles(e.target.files));
+
+document.querySelectorAll('.ptab').forEach(t=>t.addEventListener('click',()=>selectProfile(t.dataset.pid)));
+
+document.getElementById('btnClear').addEventListener('click',()=>{
+  loadedFiles={}; lastArtifact=null; activeWindow=null;
+  document.getElementById('dzFiles').innerHTML='';
+  document.getElementById('results').style.display='none';
+  document.getElementById('btnDownload').style.display='none';
+  document.getElementById('btnRun').disabled=true;
+  setStatus('Cleared.','');
+});
+
+// ── Run ───────────────────────────────────────────────────────
+document.getElementById('btnRun').addEventListener('click',()=>{
+  if(!Object.keys(loadedFiles).length) return;
+  setStatus('Running topology probe…','running');
+  document.getElementById('results').style.display='none';
+  document.getElementById('btnDownload').style.display='none';
+  const w=makeWorker();
+  const files=Object.entries(loadedFiles).map(([name,content])=>({name,content}));
+  w.postMessage({files,profileId:selectedProfile});
+  w.onmessage=e=>{ w.terminate(); if(e.data.type==='error'){setStatus('ERROR: '+e.data.message,'error');return;} lastArtifact=e.data.data; renderResults(lastArtifact); document.getElementById('btnDownload').style.display='inline-block'; setStatus('Pipeline complete · '+lastArtifact.topo_class,''); };
+  w.onerror=err=>{ w.terminate(); setStatus('Worker error: '+err.message,'error'); };
+});
+
+// ── Download ──────────────────────────────────────────────────
+document.getElementById('btnDownload').addEventListener('click',()=>{
+  if(!lastArtifact) return;
+  const blob=new Blob([JSON.stringify(lastArtifact,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='LXV-D.'+lastArtifact.dataset_profile.dataset_id+'.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+// ── Status ────────────────────────────────────────────────────
+function setStatus(msg,cls){ const el=document.getElementById('statusBar'); el.textContent=msg; el.className='status-bar '+(cls||''); }
+
+// ── Helpers ───────────────────────────────────────────────────
+function fmt(n,d=2){ if(n===undefined||n===null||!isFinite(n)) return '—'; return Number(n).toFixed(d); }
+
+// ─────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────
+function renderResults(art){
+  document.getElementById('results').style.display='block';
+  renderVerdict(art);
+  renderGates(art);
+  renderGPre(art);
+  renderTopoWindows(art);
+  renderStability(art);
+  renderCosMatrix(art);
+  renderPerStation(art);
+  renderElig(art);
+  renderHashes(art);
+}
+
+// ── Verdict ───────────────────────────────────────────────────
+function renderVerdict(art){
+  const tc=art.topo_class;
+  const icons={TOPO_SINGLE:'◉',TOPO_BILOBE:'◑',TOPO_BILOBE_INTERWOVEN:'◒',TOPO_MULTILOBE:'◈',TOPO_UNTRUSTED:'✗'};
+  let html=`<div class="topo-verdict tv-${tc}">${icons[tc]||'?'}  ${tc}</div>`;
+  html+=`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">trusted: <span style="color:${art.trusted?'var(--pass)':'var(--fail)'}">${art.trusted?'TRUE':'FALSE'}</span>  ·  dataset: <span style="color:var(--accent2)">${art.dataset_profile.dataset_id}</span>  ·  n_input: <span style="color:var(--text)">${art.inputs.length}</span>  ·  valid_ws: <span style="color:var(--text)">${(art.topology.eligibility.valid_ws||[]).length}</span></div>`;
+  if(art.reasons&&art.reasons.length){
+    html+='<ul class="reasons">'+art.reasons.map(r=>'<li>'+r+'</li>').join('')+'</ul>';
+  }
+  document.getElementById('verdictBody').innerHTML=html;
+}
+
+// ── Gates ─────────────────────────────────────────────────────
+function renderGates(art){
+  const gs=art.gates&&art.gates.status?art.gates.status:{};
+  const items=[
+    ['G_pre','Step estimates defined'],['G0','Profile completeness'],['G1','Epoch overlap ≥ 365d'],
+    ['G2','Valid windows ≥ 3'],['G3','ARI + center drift'],['G4','Separability (bilobe)']
+  ];
+  const html='<div class="gates-row">'+items.map(([g,label])=>{
+    const v=gs[g]||'?';
+    const cls=v==='PASS'?'g-pass':v==='N/A'||v.startsWith('N/A')?'g-na':'g-fail';
+    return `<div class="gate-chip ${cls}"><strong>${g}</strong> ${label}<br><span style="font-size:9px">${v}</span></div>`;
+  }).join('')+'</div>';
+  document.getElementById('gatesBody').innerHTML=html;
+}
+
+// ── G_pre section ─────────────────────────────────────────────
+function renderGPre(art){
+  const sum=art.g_pre_summary||{};
+  const gs=art.gates?.status||{};
+  const pass=gs.G_pre==='PASS';
+  const statusEl=document.getElementById('gpreStatus');
+  if(statusEl) statusEl.innerHTML=pass?'<span style="color:var(--pass)">PASS</span>':'<span style="color:var(--fail)">FAIL — topology inference blocked</span>';
+
+  const WS=art.smoothing_days||[1,3,7,14,21];
+  const stIds=Object.keys(art.per_station||{}).sort();
+
+  // Summary table by window
+  let html=`<div style="margin-bottom:14px">
+    <table class="data-table">
+      <thead><tr><th>window</th><th>n_total</th><th>n_defined</th><th>n_undefined</th><th>null_reason breakdown</th></tr></thead><tbody>`;
+  for(const w of WS){
+    const s=sum[String(w)]||{n_total:0,n_defined:0,n_undefined:0,null_reason_counts:{}};
+    const defCls=s.n_defined>=6?'val-pass':s.n_defined>0?'val-warn':'val-fail';
+    const rcStr=Object.entries(s.null_reason_counts||{}).map(([r,c])=>`${r}:${c}`).join('  ') || '—';
+    html+=`<tr><td style="color:var(--dim)">w=${w}</td><td>${s.n_total}</td><td class="${defCls}">${s.n_defined}</td><td class="${s.n_undefined>0?'val-warn':''}">${s.n_undefined}</td><td style="font-size:10px;color:var(--warn)">${rcStr}</td></tr>`;
+  }
+  html+=`</tbody></table></div>`;
+
+  // Per-station per-window g_pre detail
+  html+=`<div class="elig-wrap"><table class="elig-table"><thead><tr><th>station</th><th>epoch span</th>`;
+  WS.forEach(w=>html+=`<th>w=${w}<br><span style="font-weight:300;font-size:9px">pre·post</span></th>`);
+  html+=`</tr></thead><tbody>`;
+
+  for(const id of stIds){
+    html+=`<tr><td style="color:var(--accent)">${id}</td>`;
+    const span=art.per_station[id]?.epoch_span;
+    html+=span?`<td style="font-size:9px;color:var(--dim)">${span.start}<br>${span.end}<br><span style="color:var(--text)">${span.count}d</span></td>`:`<td style="color:var(--dim)">—</td>`;
+    WS.forEach(w=>{
+      const g=art.per_station[id]?.by_w[String(w)]?.g_pre;
+      if(!g){ html+=`<td class="elig-no">—</td>`; return; }
+      const cls=g.defined?'elig-yes':'elig-no';
+      const label=g.defined?`✓ ${g.n_pre_points}·${g.n_post_points}`:`${g.n_pre_points}·${g.n_post_points}`;
+      const reason=(!g.defined&&g.null_reason)?`<br><span style="font-size:8px;color:var(--warn)">${g.null_reason.replace('_',' ').replace('_',' ')}</span>`:'';
+      html+=`<td class="${cls}">${label}${reason}</td>`;
+    });
+    html+=`</tr>`;
+  }
+  html+=`</tbody></table></div>`;
+  html+=`<div style="margin-top:6px;font-size:10px;color:var(--dim)">Cells show: ✓ = step defined | pre·post = window sample counts | reason = null classification</div>`;
+
+  document.getElementById('gpreBody').innerHTML=html;
+}
+
+// ── Topology windows ──────────────────────────────────────────
+const LOBE_COLORS=['#00c8a0','#f0a040','#c878e8'];
+
+function renderTopoWindows(art){
+  const validWs=art.topology.eligibility.valid_ws||[];
+  const allWs=art.smoothing_days||[1,3,7,14,21];
+  const tabs=document.getElementById('winTabs');
+  tabs.innerHTML=allWs.map(w=>{
+    const isValid=validWs.includes(w);
+    const isActive=(activeWindow===null&&isValid&&w===validWs[0])||activeWindow===w;
+    return `<div class="win-tab${isValid?'':' invalid'}${isActive?' active':''}" data-w="${w}" onclick="selectWindow(${w})">w=${w}</div>`;
+  }).join('');
+  const defaultW=activeWindow!==null&&validWs.includes(activeWindow)?activeWindow:(validWs[0]||null);
+  if(defaultW!==null){ activeWindow=defaultW; renderWindowDetail(art,defaultW); }
+  else { document.getElementById('winDetail').innerHTML='<span style="color:var(--dim);font-size:11px">No valid windows.</span>'; document.getElementById('compassPlot').innerHTML=''; }
+}
+
+function selectWindow(w){
+  activeWindow=w;
+  if(!lastArtifact) return;
+  document.querySelectorAll('.win-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.w)===w));
+  renderWindowDetail(lastArtifact,w);
+  // Update cosine matrix for this window
+  renderCosMatrixForWindow(lastArtifact,w);
+}
+
+function renderWindowDetail(art,w){
+  const topo=art.topology.by_w[String(w)];
+  const nElig=art.topology.eligibility.n_eligible_by_w[String(w)]||0;
+  const detail=document.getElementById('winDetail');
+  if(!topo){ detail.innerHTML=`<div style="color:var(--dim);font-size:11px">w=${w}: insufficient eligible stations (${nElig} < 6)</div>`; document.getElementById('compassPlot').innerHTML=''; return; }
+
+  const k=topo.k_lobes;
+  const centerPills=topo.centers_deg.map((c,i)=>{
+    const col=LOBE_COLORS[i%LOBE_COLORS.length];
+    return `<span class="center-pill" style="border-color:${col};color:${col}">${fmt(c,1)}°</span>`;
+  }).join(' ');
+
+  // Membership table
+  const ids=Object.keys(topo.membership).sort();
+  const memRows=ids.map(id=>{
+    const lobe=topo.membership[id];
+    const col=LOBE_COLORS[lobe%LOBE_COLORS.length];
+    const d=art.per_station[id]?.by_w[String(w)];
+    return `<tr>
+      <td style="color:var(--accent)">${id}</td>
+      <td><span class="lobe-badge lb-${lobe}">L${lobe}</span></td>
+      <td>${fmt(d?.dE_mm,1)}</td>
+      <td>${fmt(d?.dN_mm,1)}</td>
+      <td>${fmt(d?.horiz_mm,1)}</td>
+      <td>${fmt(d?.theta_deg,1)}°</td>
+      <td class="${d?.snr_h>=5?'val-pass':'val-warn'}">${fmt(d?.snr_h,1)}</td>
+    </tr>`;
+  }).join('');
+
+  detail.innerHTML=`
+    <div style="margin-bottom:10px">
+      <div class="win-detail-row"><span class="wdk">k_lobes</span><span class="wdv" style="font-size:16px;font-weight:600">${k}</span></div>
+      <div class="win-detail-row"><span class="wdk">centers</span><span class="wdv">${centerPills}</span></div>
+      <div class="win-detail-row"><span class="wdk">eligible</span><span class="wdv">${nElig}</span></div>
+      <div class="win-detail-row"><span class="wdk">sep_score</span><span class="wdv">${topo.sep_score!==null?fmt(topo.sep_score,3):'—'}</span></div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>station</th><th>lobe</th><th>ΔE mm</th><th>ΔN mm</th><th>horiz</th><th>θ</th><th>SNR</th></tr></thead>
+      <tbody>${memRows}</tbody>
+    </table>`;
+
+  renderCompass(art,w,topo);
+}
+
+function renderCompass(art,w,topo){
+  const ids=Object.keys(topo.membership).sort();
+  const PAD=55,SIZE=260;
+  const vecs=ids.map(id=>{
+    const d=art.per_station[id]?.by_w[String(w)];
+    return {id,dE:d?.dE_mm||0,dN:d?.dN_mm||0,h:d?.horiz_mm||0,lobe:topo.membership[id]};
+  });
+  const maxH=Math.max(...vecs.map(v=>v.h),1);
+  const scale=(SIZE/2-20)/maxH;
+  const cx=SIZE/2+PAD, cy=SIZE/2+PAD, W=SIZE+2*PAD, H=SIZE+2*PAD;
+  const gridStep=maxH>200?100:maxH>50?20:maxH>10?5:2;
+
+  let svg=`<div><div class="plot-title">EN COMPASS  ·  w=${w}  ·  colored by lobe membership</div><svg width="${W}" height="${H}" style="display:block;overflow:visible;margin:0 auto">`;
+  // Grid
+  for(let g=gridStep;g<=maxH*1.3;g+=gridStep){
+    const r=g*scale;
+    svg+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2,3"/>`;
+    svg+=`<text x="${cx+r+2}" y="${cy-2}" fill="var(--dim)" font-size="8" font-family="IBM Plex Mono,monospace">${g}mm</text>`;
+  }
+  svg+=`<line x1="${cx-SIZE/2}" y1="${cy}" x2="${cx+SIZE/2}" y2="${cy}" stroke="var(--border)" stroke-width="0.7"/>`;
+  svg+=`<line x1="${cx}" y1="${cy-SIZE/2}" x2="${cx}" y2="${cy+SIZE/2}" stroke="var(--border)" stroke-width="0.7"/>`;
+  svg+=`<text x="${cx+SIZE/2-10}" y="${cy+14}" fill="var(--dim)" font-size="9" font-family="IBM Plex Mono,monospace">E+</text>`;
+  svg+=`<text x="${cx+4}" y="${cy-SIZE/2+10}" fill="var(--dim)" font-size="9" font-family="IBM Plex Mono,monospace">N+</text>`;
+
+  // Cluster center rays (dashed)
+  topo.centers_deg.forEach((cd,ci)=>{
+    const col=LOBE_COLORS[ci%LOBE_COLORS.length];
+    const rad=cd*Math.PI/180;
+    const len=SIZE/2-10;
+    svg+=`<line x1="${cx}" y1="${cy}" x2="${cx+len*Math.cos(rad)}" y2="${cy-len*Math.sin(rad)}" stroke="${col}" stroke-width="1" stroke-dasharray="4,4" opacity="0.5"/>`;
+    svg+=`<text x="${cx+len*Math.cos(rad)+4}" y="${cy-len*Math.sin(rad)}" fill="${col}" font-size="9" font-family="IBM Plex Mono">L${ci} ${fmt(cd,0)}°</text>`;
+  });
+
+  // Vectors
+  vecs.forEach(v=>{
+    if(!isFinite(v.dE)||!isFinite(v.dN)) return;
+    const px=cx+v.dE*scale, py=cy-v.dN*scale;
+    const col=LOBE_COLORS[v.lobe%LOBE_COLORS.length];
+    svg+=`<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>`;
+    const ang=Math.atan2(py-cy,px-cx), ah=8;
+    const ax1=px-ah*Math.cos(ang-0.38), ay1=py-ah*Math.sin(ang-0.38);
+    const ax2=px-ah*Math.cos(ang+0.38), ay2=py-ah*Math.sin(ang+0.38);
+    svg+=`<polygon points="${px},${py} ${ax1},${ay1} ${ax2},${ay2}" fill="${col}"/>`;
+    svg+=`<text x="${px+4}" y="${py-3}" fill="${col}" font-size="10" font-family="IBM Plex Mono" font-weight="500">${v.id}</text>`;
+  });
+
+  svg+=`</svg></div>`;
+  document.getElementById('compassPlot').innerHTML=svg;
+}
+
+// ── Stability ─────────────────────────────────────────────────
+function renderStability(art){
+  const stab=art.topology.stability;
+  const g3Pass=art.gates?.status?.G3==='PASS';
+
+  const ariCls=stab.ari_mean===null?'mv-na':stab.ari_mean>=0.90?'mv-pass':stab.ari_mean>=0.70?'mv-warn':'mv-fail';
+  const driftCls=stab.center_drift_deg_max===null?'mv-na':stab.center_drift_deg_max<=10?'mv-pass':stab.center_drift_deg_max<=20?'mv-warn':'mv-fail';
+  const kCls=stab.k_constant?'mv-pass':'mv-warn';
+
+  let html=`<div class="three-col" style="margin-bottom:14px">
+    <div class="metric-box"><div class="metric-label">ARI MEAN</div><div class="metric-val ${ariCls}">${stab.ari_mean!==null?fmt(stab.ari_mean,3):'—'}</div><div style="font-size:9px;color:var(--dim);margin-top:2px">threshold ≥ 0.90</div></div>
+    <div class="metric-box"><div class="metric-label">CENTER DRIFT MAX</div><div class="metric-val ${driftCls}">${stab.center_drift_deg_max!==null?fmt(stab.center_drift_deg_max,1)+'°':'—'}</div><div style="font-size:9px;color:var(--dim);margin-top:2px">threshold ≤ 10°</div></div>
+    <div class="metric-box"><div class="metric-label">k CONSTANT</div><div class="metric-val ${kCls}">${stab.k_constant?'YES':'NO'}</div><div style="font-size:9px;color:var(--dim);margin-top:2px">k values: ${Object.entries(stab.k_values_by_w||{}).map(([w,k])=>'w='+w+':'+k).join('  ')}</div></div>
+  </div>`;
+
+  if(stab.sep_score_mean!==null){
+    const sc=stab.sep_score_mean>=0.70?'mv-pass':stab.sep_score_mean>=0.55?'mv-warn':'mv-fail';
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="metric-box"><div class="metric-label">SEP SCORE MEAN</div><div class="metric-val ${sc}">${fmt(stab.sep_score_mean,3)}</div><div style="font-size:9px;color:var(--dim)">threshold ≥ 0.70</div></div>
+      <div class="metric-box"><div class="metric-label">SEP SCORE MIN</div><div class="metric-val ${stab.sep_score_min>=0.60?'mv-pass':'mv-fail'}">${fmt(stab.sep_score_min,3)}</div><div style="font-size:9px;color:var(--dim)">threshold ≥ 0.60</div></div>
+    </div>`;
+  }
+
+  // ARI pairwise table
+  if(stab.ari_pairwise&&stab.ari_pairwise.length){
+    html+=`<table class="data-table"><thead><tr><th>w_a vs w_b</th><th>ARI</th></tr></thead><tbody>`;
+    html+=stab.ari_pairwise.map(p=>`<tr><td style="color:var(--dim)">w=${p.w_a} vs w=${p.w_b}</td><td class="${p.ari>=0.90?'val-pass':p.ari>=0.70?'val-warn':'val-fail'}">${fmt(p.ari,4)}</td></tr>`).join('');
+    html+=`</tbody></table>`;
+  }
+
+  document.getElementById('stabilityBody').innerHTML=html;
+}
+
+// ── Cosine matrix ─────────────────────────────────────────────
+function renderCosMatrix(art){
+  const validWs=art.topology.eligibility.valid_ws||[];
+  const w=activeWindow!==null&&validWs.includes(activeWindow)?activeWindow:(validWs[0]||null);
+  if(w) renderCosMatrixForWindow(art,w);
+}
+
+function renderCosMatrixForWindow(art,w){
+  const topo=art.topology.by_w[String(w)];
+  document.getElementById('cosLabel').textContent='w='+w;
+  const el=document.getElementById('cosHeatmap');
+  if(!topo||!topo.cosine_matrix){ el.innerHTML='<span style="color:var(--dim)">No data.</span>'; return; }
+
+  const {stations,matrix}=topo.cosine_matrix;
+  const n=stations.length;
+  const membership=topo.membership;
+  const CELL=36;
+
+  let svg=`<svg width="${CELL*(n+1)+10}" height="${CELL*(n+1)+10}" font-family="IBM Plex Mono,monospace" font-size="9">`;
+  // Column headers
+  stations.forEach((s,j)=>{
+    const lobe=membership[s]; const col=LOBE_COLORS[lobe%LOBE_COLORS.length];
+    svg+=`<text x="${CELL*(j+1)+CELL/2}" y="${CELL*0.7}" text-anchor="middle" fill="${col}">${s}</text>`;
+  });
+  // Row headers + cells
+  stations.forEach((si,i)=>{
+    const lobeI=membership[si]; const colI=LOBE_COLORS[lobeI%LOBE_COLORS.length];
+    svg+=`<text x="${CELL*0.9}" y="${CELL*(i+1)+CELL/2+3}" text-anchor="end" fill="${colI}">${si}</text>`;
+    stations.forEach((sj,j)=>{
+      const v=matrix[i][j];
+      let fill;
+      if(i===j){ fill='#1a2a3a'; }
+      else if(!isFinite(v)){ fill='#0d1520'; }
+      else {
+        const t=Math.max(-1,Math.min(1,v));
+        if(t>=0){ const r=Math.round(0*(1-t)+0*t),g=Math.round(100*(1-t)+204*t),b=Math.round(100*(1-t)+136*t); fill=`rgb(${r},${g},${b})`; }
+        else { const tt=-t; const r=Math.round(0*(1-tt)+224*tt),g=Math.round(100*(1-tt)+88*tt),b=Math.round(100*(1-tt)+88*tt); fill=`rgb(${r},${g},${b})`; }
+      }
+      const x=CELL*(j+1), y=CELL*(i+1);
+      svg+=`<rect x="${x}" y="${y}" width="${CELL-2}" height="${CELL-2}" fill="${fill}" opacity="0.85"/>`;
+      if(i!==j) svg+=`<text x="${x+CELL/2-1}" y="${y+CELL/2+3}" text-anchor="middle" fill="rgba(255,255,255,0.7)">${isFinite(v)?fmt(v,2):'—'}</text>`;
+      else       svg+=`<text x="${x+CELL/2-1}" y="${y+CELL/2+3}" text-anchor="middle" fill="rgba(255,255,255,0.3)">1.00</text>`;
+    });
+  });
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+// ── Per-station table ─────────────────────────────────────────
+function renderPerStation(art){
+  const WS=art.smoothing_days||[1,3,7,14,21];
+  const ids=Object.keys(art.per_station).sort();
+  const elig=art.topology.eligibility;
+  let html=`<thead><tr><th>station</th><th>component</th>${WS.map(w=>`<th>w=${w}</th>`).join('')}</tr></thead><tbody>`;
+  for(const id of ids){
+    const by_w=art.per_station[id].by_w;
+    for(const [cmp,key] of [['ΔE mm','dE_mm'],['ΔN mm','dN_mm'],['horiz','horiz_mm'],['SNR_h','snr_h'],['θ°','theta_deg']]){
+      html+=`<tr>`;
+      if(key==='dE_mm') html+=`<td rowspan="5" style="color:var(--accent);font-weight:600;vertical-align:top;border-right:1px solid var(--border2)">${id}</td>`;
+      html+=`<td style="color:var(--dim)">${cmp}</td>`;
+      WS.forEach(w=>{
+        const v=by_w[String(w)]?.[key];
+        const isElig=(elig.eligible_by_w[String(w)]||[]).includes(id);
+        const style=isElig&&(key==='horiz_mm'||key==='snr_h')?'style="color:var(--accent)"':'';
+        html+=`<td ${style}>${fmt(v,key==='theta_deg'?1:2)}</td>`;
+      });
+      html+=`</tr>`;
+    }
+  }
+  html+=`</tbody>`;
+  document.getElementById('perStationTable').innerHTML=html;
+}
+
+// ── Eligibility grid ──────────────────────────────────────────
+function renderElig(art){
+  const WS=art.smoothing_days||[1,3,7,14,21];
+  const elig=art.topology.eligibility;
+  const ids=Object.keys(art.per_station).sort();
+  let html=`<table class="elig-table"><thead><tr><th>station</th>`;
+  WS.forEach(w=>html+=`<th>w=${w} (${elig.n_eligible_by_w[w]||0})</th>`);
+  html+=`</tr></thead><tbody>`;
+  ids.forEach(id=>{
+    html+=`<tr><td style="color:var(--accent)">${id}</td>`;
+    WS.forEach(w=>{
+      const e=(elig.eligible_by_w[String(w)]||[]).includes(id);
+      const valid=elig.valid_ws.includes(w);
+      html+=`<td class="${e?'elig-yes':'elig-no'}">${e?'✓':'·'}</td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+  html+=`<div style="margin-top:8px;font-size:10px;color:var(--dim)">Valid windows (n_elig ≥ 6): <span style="color:var(--accent)">${(elig.valid_ws||[]).map(w=>'w='+w).join('  ')}</span></div>`;
+  document.getElementById('eligBody').innerHTML=html;
+}
+
+// ── Hashes ────────────────────────────────────────────────────
+function renderHashes(art){
+  let html=`<div class="hash-row"><span class="hash-key">config_hash</span><span class="hash-val">${art.config_hash}</span></div>`;
+  (art.inputs||[]).forEach(inp=>{
+    html+=`<div class="hash-row"><span class="hash-key">${inp.source_file}</span><span class="hash-val">${inp.input_sha256}</span></div>`;
+  });
+  if(art.parse_errors&&art.parse_errors.length){
+    art.parse_errors.forEach(e=>{
+      html+=`<div class="hash-row"><span class="hash-key" style="color:var(--fail)">${e.file}</span><span class="hash-val" style="color:var(--fail)">${e.error}</span></div>`;
+    });
+  }
+  document.getElementById('hashBlock').innerHTML=html;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+selectProfile('KUMAMOTO_JP_2016');
+</script>
+</body>
+</html>

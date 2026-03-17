@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS Echo Visualizer - Exponential Convergence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6f1;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .formula-display {
+            font-size: 1.4em;
+            color: #64ffda;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.9em;
+            color: #a0b0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slider {
+            width: 150px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(100, 200, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle, #00ffff, #0080ff);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+        }
+
+        button {
+            padding: 10px 25px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
+        }
+
+        button.active {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+        }
+
+        .visualization-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .viz-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viz-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+            border-radius: 15px;
+            opacity: 0;
+            z-index: -1;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.3; }
+        }
+
+        .panel-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            background: rgba(0, 50, 100, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(100, 200, 255, 0.3);
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #a0b0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .metric-value.good { color: #00ff88; }
+        .metric-value.warning { color: #ffaa00; }
+        .metric-value.critical { color: #ff0066; }
+
+        .application-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            background: rgba(0, 50, 100, 0.3);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: rgba(0, 100, 200, 0.4);
+        }
+
+        .tab.active {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            color: white;
+            font-weight: bold;
+        }
+
+        .info-panel {
+            background: rgba(0, 30, 60, 0.4);
+            border-left: 3px solid #00ffff;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 5px;
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .convergence-spiral {
+            position: relative;
+            height: 350px;
+        }
+
+        .attractor-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #00ffff, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .echo-trail {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ff00ff;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .visualization-container {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UNNS Echo Visualizer</h1>
+        <div class="formula-display">
+            lim(n→∞) (1 + 1/n)^n = e | Residual: -e/2
+        </div>
+        <div style="color: #a0b0c0; margin-top: 10px;">
+            Recursive Attractors • Symbolic Echoes • Convergence Spirals
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Speed</label>
+            <input type="range" class="slider" id="speedSlider" min="1" max="100" value="50">
+            <span id="speedValue">50</span>
+        </div>
+        <div class="control-group">
+            <label>Recursion Depth</label>
+            <input type="range" class="slider" id="depthSlider" min="10" max="1000" value="100">
+            <span id="depthValue">100</span>
+        </div>
+        <div class="control-group">
+            <label>UPI Threshold</label>
+            <input type="range" class="slider" id="upiSlider" min="1" max="100" value="30">
+            <span id="upiValue">30%</span>
+        </div>
+        <button id="playBtn" class="active">▶ PLAY</button>
+        <button id="resetBtn">↺ RESET</button>
+        <button id="modeBtn">MODE: ECHO</button>
+    </div>
+
+    <div class="application-tabs">
+        <div class="tab active" data-app="computation">Computation</div>
+        <div class="tab" data-app="physics">Physics</div>
+        <div class="tab" data-app="finance">Finance</div>
+        <div class="tab" data-app="ai">AI/Cognition</div>
+    </div>
+
+    <div class="visualization-container">
+        <div class="viz-panel">
+            <div class="panel-title">Convergence Field</div>
+            <canvas id="convergenceCanvas"></canvas>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Current n</div>
+                    <div class="metric-value" id="currentN">1</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Approximation</div>
+                    <div class="metric-value" id="currentApprox">2.0000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Error</div>
+                    <div class="metric-value" id="currentError">0.7183</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Convergence Rate</div>
+                    <div class="metric-value" id="convergenceRate">0.00%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div class="panel-title">Echo Resonance</div>
+            <canvas id="echoCanvas"></canvas>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Residual Echo</div>
+                    <div class="metric-value" id="residualEcho">0.0000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Morphism Strength</div>
+                    <div class="metric-value" id="morphismStrength">0%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Symbolic Weight</div>
+                    <div class="metric-value" id="symbolicWeight">1.0000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Echo Decay</div>
+                    <div class="metric-value" id="echoDecay">∞</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div class="panel-title">Attractor Spiral</div>
+            <div class="convergence-spiral" id="spiralContainer">
+                <canvas id="spiralCanvas"></canvas>
+            </div>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Spiral Radius</div>
+                    <div class="metric-value" id="spiralRadius">1.0000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Angular Velocity</div>
+                    <div class="metric-value" id="angularVelocity">0.00</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Attractor Distance</div>
+                    <div class="metric-value" id="attractorDist">0.7183</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Phase Lock</div>
+                    <div class="metric-value" id="phaseLock">NO</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div class="panel-title">UPI Monitor</div>
+            <canvas id="upiCanvas"></canvas>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">UPI Index</div>
+                    <div class="metric-value" id="upiIndex">0.00</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Semantic Tension</div>
+                    <div class="metric-value" id="semanticTension">LOW</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Stability</div>
+                    <div class="metric-value" id="stability">100%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Warning Level</div>
+                    <div class="metric-value good" id="warningLevel">SAFE</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-panel" id="appInfo">
+        <h3 style="color: #00ffff; margin-bottom: 10px;">Computational Precision</h3>
+        <p>Understanding error decay in exponential approximations. UNNS maps echo distortion between recursive attractors and ideal morphisms, optimizing algorithms through semantic weight embedding.</p>
+    </div>
+
+    <script>
+        // UNNS Echo Visualizer Engine
+        class UNNSEchoVisualizer {
+            constructor() {
+                this.e = Math.E;
+                this.phi = (1 + Math.sqrt(5)) / 2;
+                this.currentN = 1;
+                this.maxN = 1000;
+                this.speed = 50;
+                this.isPlaying = true;
+                this.mode = 'echo';
+                this.currentApp = 'computation';
+                this.upiThreshold = 0.3;
+                
+                this.history = {
+                    approximations: [],
+                    errors: [],
+                    echoes: [],
+                    spiralPoints: []
+                };
+                
+                this.initCanvases();
+                this.initControls();
+                this.initApplicationTabs();
+                this.animate();
+            }
+            
+            initCanvases() {
+                this.convergenceCtx = this.setupCanvas('convergenceCanvas');
+                this.echoCtx = this.setupCanvas('echoCanvas');
+                this.spiralCtx = this.setupCanvas('spiralCanvas');
+                this.upiCtx = this.setupCanvas('upiCanvas');
+            }
+            
+            setupCanvas(id) {
+                const canvas = document.getElementById(id);
+                const ctx = canvas.getContext('2d');
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * 2;
+                canvas.height = rect.height * 2;
+                ctx.scale(2, 2);
+                return ctx;
+            }
+            
+            initControls() {
+                // Speed control
+                const speedSlider = document.getElementById('speedSlider');
+                speedSlider.addEventListener('input', (e) => {
+                    this.speed = parseInt(e.target.value);
+                    document.getElementById('speedValue').textContent = this.speed;
+                });
+                
+                // Depth control
+                const depthSlider = document.getElementById('depthSlider');
+                depthSlider.addEventListener('input', (e) => {
+                    this.maxN = parseInt(e.target.value);
+                    document.getElementById('depthValue').textContent = this.maxN;
+                });
+                
+                // UPI threshold
+                const upiSlider = document.getElementById('upiSlider');
+                upiSlider.addEventListener('input', (e) => {
+                    this.upiThreshold = parseInt(e.target.value) / 100;
+                    document.getElementById('upiValue').textContent = e.target.value + '%';
+                });
+                
+                // Play/Pause
+                document.getElementById('playBtn').addEventListener('click', () => {
+                    this.isPlaying = !this.isPlaying;
+                    document.getElementById('playBtn').textContent = this.isPlaying ? '⏸ PAUSE' : '▶ PLAY';
+                    document.getElementById('playBtn').classList.toggle('active', this.isPlaying);
+                });
+                
+                // Reset
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.reset();
+                });
+                
+                // Mode toggle
+                document.getElementById('modeBtn').addEventListener('click', () => {
+                    const modes = ['echo', 'spiral', 'field', 'quantum'];
+                    const currentIndex = modes.indexOf(this.mode);
+                    this.mode = modes[(currentIndex + 1) % modes.length];
+                    document.getElementById('modeBtn').textContent = `MODE: ${this.mode.toUpperCase()}`;
+                });
+            }
+            
+            initApplicationTabs() {
+                const tabs = document.querySelectorAll('.tab');
+                const appInfo = {
+                    computation: {
+                        title: 'Computational Precision',
+                        desc: 'Understanding error decay in exponential approximations. UNNS maps echo distortion between recursive attractors and ideal morphisms, optimizing algorithms through semantic weight embedding.'
+                    },
+                    physics: {
+                        title: 'Physics & Engineering',
+                        desc: 'Modeling exponential systems: radioactive decay, thermal diffusion, capacitor discharge. UNNS embeds φ-scaled convergence constants and uses UPI to flag instability in recursive mesh propagation.'
+                    },
+                    finance: {
+                        title: 'Finance & Compound Interest',
+                        desc: 'Discrete compounding approximates continuous growth. UNNS visualizes this as a spiral attractor field, revealing the semantic structure of growth including risk zones and echo effects.'
+                    },
+                    ai: {
+                        title: 'AI & Cognitive Modeling',
+                        desc: 'Recursive approximation in neural networks and reinforcement learning. The residual becomes a semantic echo—a memory of imperfect recursion. UNNS traces learning paths as attractor spirals.'
+                    }
+                };
+                
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this.currentApp = tab.dataset.app;
+                        
+                        const info = appInfo[this.currentApp];
+                        document.getElementById('appInfo').innerHTML = `
+                            <h3 style="color: #00ffff; margin-bottom: 10px;">${info.title}</h3>
+                            <p>${info.desc}</p>
+                        `;
+                    });
+                });
+            }
+            
+            calculateApproximation(n) {
+                return Math.pow(1 + 1/n, n);
+            }
+            
+            calculateResidual(n) {
+                const approx = this.calculateApproximation(n);
+                const ideal = this.e;
+                const residual = approx - ideal;
+                const theoreticalResidual = -this.e / (2 * n); // First-order residual
+                return {
+                    actual: residual,
+                    theoretical: theoreticalResidual,
+                    echo: residual - theoreticalResidual
+                };
+            }
+            
+            drawConvergenceField(ctx, width, height) {
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw grid
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.1)';
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i < width; i += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, height);
+                    ctx.stroke();
+                }
+                for (let j = 0; j < height; j += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, j);
+                    ctx.lineTo(width, j);
+                    ctx.stroke();
+                }
+                
+                // Draw e line
+                const eLine = height - (this.e / 3) * height;
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(0, eLine);
+                ctx.lineTo(width, eLine);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw approximation curve
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const points = Math.min(this.history.approximations.length, 100);
+                for (let i = 0; i < points; i++) {
+                    const x = (i / points) * width;
+                    const y = height - (this.history.approximations[this.history.approximations.length - points + i] / 3) * height;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                
+                // Draw current point with glow
+                if (this.history.approximations.length > 0) {
+                    const currentApprox = this.history.approximations[this.history.approximations.length - 1];
+                    const x = width - 10;
+                    const y = height - (currentApprox / 3) * height;
+                    
+                    // Glow effect
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 20);
+                    gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+                    gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - 20, y - 20, 40, 40);
+                    
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            drawEchoResonance(ctx, width, height) {
+                ctx.clearRect(0, 0, width, height);
+                
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Draw echo waves
+                const time = Date.now() / 1000;
+                const residual = this.calculateResidual(this.currentN);
+                
+                for (let i = 0; i < 5; i++) {
+                    const radius = 30 + i * 20 + (Math.sin(time + i) * 10);
+                    const opacity = 0.3 - i * 0.05;
+                    
+                    ctx.strokeStyle = `rgba(255, 0, 255, ${opacity})`;
+                    ctx.lineWidth = 2 - i * 0.3;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Draw echo traces
+                if (this.history.echoes.length > 1) {
+                    ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    
+                    for (let i = 0; i < Math.min(this.history.echoes.length, 50); i++) {
+                        const echo = this.history.echoes[this.history.echoes.length - 1 - i];
+                        const angle = (i / 50) * Math.PI * 2;
+                        const r = 80 + echo * 10000;
+                        const x = centerX + Math.cos(angle) * r;
+                        const y = centerY + Math.sin(angle) * r;
+                        
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    // Fill with gradient
+                    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 100);
+                    gradient.addColorStop(0, 'rgba(255, 0, 255, 0.1)');
+                    gradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+                
+                // Central attractor
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                gradient.addColorStop(0.5, 'rgba(255, 0, 255, 0.5)');
+                gradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(centerX - 30, centerY - 30, 60, 60);
+            }
+            
+            drawSpiralAttractor(ctx, width, height) {
+                ctx.clearRect(0, 0, width, height);
+                
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Draw spiral path
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                
+                const points = this.history.spiralPoints;
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    const progress = i / this.maxN;
+                    const radius = 100 * (1 - progress * 0.7);
+                    const angle = progress * Math.PI * 8;
+                    
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    
+                    // Draw attractor points
+                    if (i % 10 === 0) {
+                        ctx.fillStyle = `rgba(0, 255, 255, ${0.5 + progress * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw convergence target
+                const targetGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 20);
+                targetGradient.addColorStop(0, 'rgba(0, 255, 136, 0.9)');
+                targetGradient.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                ctx.fillStyle = targetGradient;
+                ctx.fillRect(centerX - 20, centerY - 20, 40, 40);
+                
+                // Current position
+                if (this.currentN > 0) {
+                    const progress = this.currentN / this.maxN;
+                    const radius = 100 * (1 - progress * 0.7);
+                    const angle = progress * Math.PI * 8;
+                    
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    // Pulsing current position
+                    const pulseSize = 5 + Math.sin(Date.now() / 200) * 2;
+                    const pulseGradient = ctx.createRadialGradient(x, y, 0, x, y, pulseSize * 3);
+                    pulseGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    pulseGradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                    ctx.fillStyle = pulseGradient;
+                    ctx.beginPath();
+                    ctx.arc(x, y, pulseSize * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            drawUPIMonitor(ctx, width, height) {
+                ctx.clearRect(0, 0, width, height);
+                
+                const residual = this.calculateResidual(this.currentN);
+                const upiValue = Math.abs(residual.echo) * 100;
+                const normalized = Math.min(upiValue / this.upiThreshold, 1);
+                
+                // Draw threshold zones
+                const zoneHeight = height / 3;
+                
+                // Safe zone
+                ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+                ctx.fillRect(0, zoneHeight * 2, width, zoneHeight);
+                
+                // Warning zone
+                ctx.fillStyle = 'rgba(255, 170, 0, 0.1)';
+                ctx.fillRect(0, zoneHeight, width, zoneHeight);
+                
+                // Critical zone
+                ctx.fillStyle = 'rgba(255, 0, 102, 0.1)';
+                ctx.fillRect(0, 0, width, zoneHeight);
+                
+                // Draw UPI gauge
+                const gaugeX = 30;
+                const gaugeWidth = width - 60;
+                const gaugeY = height - 40;
+                
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(gaugeX, gaugeY - 20, gaugeWidth, 20);
+                
+                // Fill gauge
+                const fillColor = normalized < 0.33 ? '#00ff88' : 
+                                 normalized < 0.66 ? '#ffaa00' : '#ff0066';
+                ctx.fillStyle = fillColor;
+                ctx.fillRect(gaugeX, gaugeY - 20, gaugeWidth * normalized, 20);
+                
+                // Draw semantic tension waves
+                ctx.strokeStyle = `rgba(${normalized * 255}, ${(1 - normalized) * 255}, 255, 0.5)`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                
+                for (let x = 0; x < width; x += 2) {
+                    const y = height/2 + Math.sin(x * 0.05 + Date.now() * 0.001) * 30 * normalized;
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            
+            updateMetrics() {
+                const approx = this.calculateApproximation(this.currentN);
+                const error = Math.abs(approx - this.e);
+                const residual = this.calculateResidual(this.currentN);
+                const convergenceRate = (1 - error / this.e) * 100;
+                
+                // Update display values
+                document.getElementById('currentN').textContent = this.currentN;
+                document.getElementById('currentApprox').textContent = approx.toFixed(4);
+                document.getElementById('currentError').textContent = error.toFixed(4);
+                document.getElementById('convergenceRate').textContent = convergenceRate.toFixed(2) + '%';
+                
+                // Echo metrics
+                document.getElementById('residualEcho').textContent = residual.echo.toFixed(6);
+                document.getElementById('morphismStrength').textContent = (convergenceRate).toFixed(1) + '%';
+                document.getElementById('symbolicWeight').textContent = (1 / (1 + Math.abs(residual.echo) * 10)).toFixed(4);
+                document.getElementById('echoDecay').textContent = this.currentN > 10 ? 
+                    (1 / Math.abs(residual.echo)).toFixed(0) : '∞';
+                
+                // Spiral metrics
+                const progress = this.currentN / this.maxN;
+                const radius = 1 - progress * 0.7;
+                const angularVel = (8 * Math.PI / this.maxN) * this.speed;
+                
+                document.getElementById('spiralRadius').textContent = radius.toFixed(4);
+                document.getElementById('angularVelocity').textContent = angularVel.toFixed(2);
+                document.getElementById('attractorDist').textContent = error.toFixed(4);
+                document.getElementById('phaseLock').textContent = error < 0.01 ? 'YES' : 'NO';
+                
+                // UPI metrics
+                const upiValue = Math.abs(residual.echo) * 100;
+                const normalized = Math.min(upiValue / this.upiThreshold, 1);
+                
+                document.getElementById('upiIndex').textContent = upiValue.toFixed(2);
+                document.getElementById('semanticTension').textContent = 
+                    normalized < 0.33 ? 'LOW' : normalized < 0.66 ? 'MEDIUM' : 'HIGH';
+                document.getElementById('stability').textContent = 
+                    ((1 - normalized) * 100).toFixed(0) + '%';
+                
+                const warningEl = document.getElementById('warningLevel');
+                if (normalized < 0.33) {
+                    warningEl.textContent = 'SAFE';
+                    warningEl.className = 'metric-value good';
+                } else if (normalized < 0.66) {
+                    warningEl.textContent = 'WARNING';
+                    warningEl.className = 'metric-value warning';
+                } else {
+                    warningEl.textContent = 'CRITICAL';
+                    warningEl.className = 'metric-value critical';
+                }
+                
+                // Color code convergence rate
+                const rateEl = document.getElementById('convergenceRate');
+                if (convergenceRate > 99) {
+                    rateEl.className = 'metric-value good';
+                } else if (convergenceRate > 95) {
+                    rateEl.className = 'metric-value warning';
+                } else {
+                    rateEl.className = 'metric-value';
+                }
+            }
+            
+            reset() {
+                this.currentN = 1;
+                this.history = {
+                    approximations: [],
+                    errors: [],
+                    echoes: [],
+                    spiralPoints: []
+                };
+                this.updateMetrics();
+            }
+            
+            animate() {
+                if (this.isPlaying && this.currentN < this.maxN) {
+                    this.currentN += Math.max(1, Math.floor(this.speed / 10));
+                    if (this.currentN > this.maxN) this.currentN = this.maxN;
+                    
+                    // Update history
+                    const approx = this.calculateApproximation(this.currentN);
+                    const residual = this.calculateResidual(this.currentN);
+                    
+                    this.history.approximations.push(approx);
+                    this.history.errors.push(Math.abs(approx - this.e));
+                    this.history.echoes.push(residual.echo);
+                    this.history.spiralPoints.push(this.currentN);
+                    
+                    // Keep history bounded
+                    const maxHistory = 200;
+                    if (this.history.approximations.length > maxHistory) {
+                        this.history.approximations.shift();
+                        this.history.errors.shift();
+                        this.history.echoes.shift();
+                        this.history.spiralPoints.shift();
+                    }
+                    
+                    this.updateMetrics();
+                }
+                
+                // Draw visualizations
+                const convergenceCanvas = document.getElementById('convergenceCanvas');
+                const echoCanvas = document.getElementById('echoCanvas');
+                const spiralCanvas = document.getElementById('spiralCanvas');
+                const upiCanvas = document.getElementById('upiCanvas');
+                
+                this.drawConvergenceField(this.convergenceCtx, 
+                    convergenceCanvas.clientWidth, convergenceCanvas.clientHeight);
+                this.drawEchoResonance(this.echoCtx, 
+                    echoCanvas.clientWidth, echoCanvas.clientHeight);
+                this.drawSpiralAttractor(this.spiralCtx, 
+                    spiralCanvas.clientWidth, spiralCanvas.clientHeight);
+                this.drawUPIMonitor(this.upiCtx, 
+                    upiCanvas.clientWidth, upiCanvas.clientHeight);
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const visualizer = new UNNSEchoVisualizer();
+        });
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            const canvases = ['convergenceCanvas', 'echoCanvas', 'spiralCanvas', 'upiCanvas'];
+            canvases.forEach(id => {
+                const canvas = document.getElementById(id);
+                const ctx = canvas.getContext('2d');
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * 2;
+                canvas.height = rect.height * 2;
+                ctx.scale(2, 2);
+            });
+        });
+    </script>
+</body>
+</html>
