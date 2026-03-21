@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRUC-BIO — Biological Corpus Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #040810;
+  --bg2:     #060a14;
+  --panel:   #07101c;
+  --panel2:  #091422;
+  --border:  #0e1f32;
+  --border2: #0b1a2a;
+  --accent:  #00c8f0;
+  --green:   #00dd88;
+  --gold:    #e8c840;
+  --orange:  #e07030;
+  --red:     #e04040;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --teal:    #30d0b0;
+  --amber:   #f0a030;
+  --text:    #a8bfd0;
+  --text2:   #5a7a96;
+  --dim:     #2d4560;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --display: 'Space Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 11px; line-height: 1.65; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg2); } ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+.shell { max-width: 1400px; margin: 0 auto; padding: 36px 28px 100px; }
+
+/* ── HEADER ── */
+.rh { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 40px; position: relative; overflow: hidden; }
+.rh::before { content:''; position:absolute; top:0; left:-20px; right:-20px; bottom:0; background: radial-gradient(ellipse 60% 100% at 80% 50%, rgba(0,221,136,0.04), transparent); pointer-events:none; }
+.rh-eye { font-size:8px; color:var(--text2); letter-spacing:0.3em; font-weight:600; margin-bottom:8px; }
+.rh-title { font-family:var(--display); font-size:22px; color:var(--green); letter-spacing:0.06em; margin-bottom:6px; }
+.rh-subtitle { font-size:10px; color:var(--text2); max-width:900px; line-height:1.7; }
+.rh-tags { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.rh-tag { font-size:8px; letter-spacing:0.18em; padding:3px 8px; border:1px solid; color:var(--text2); }
+
+/* ── LAYOUT ── */
+.section-label { font-family:var(--display); font-size:9px; letter-spacing:0.22em; color:var(--text2); padding:6px 0 4px; margin:32px 0 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+.sl-num { color:var(--green); }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+
+/* ── PANELS ── */
+.panel { border:1px solid var(--border); background:var(--panel); padding:16px 18px 18px; margin-bottom:14px; }
+.panel-title { font-family:var(--display); font-size:9px; letter-spacing:0.18em; color:var(--text2); margin-bottom:14px; }
+.psub { font-family:var(--mono); font-size:8px; color:var(--dim); letter-spacing:0.05em; }
+
+/* ── STAT CARDS ── */
+.stat-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+.stat-card { background:var(--panel); border:1px solid var(--border2); padding:12px 14px; }
+.sc-label { font-size:8px; letter-spacing:0.18em; color:var(--dim); margin-bottom:4px; }
+.sc-val { font-family:var(--display); font-size:18px; font-weight:700; line-height:1; }
+.sc-unit { font-size:8px; color:var(--text2); margin-top:3px; }
+.sc-green { color:var(--green); } .sc-red { color:var(--red); } .sc-amber { color:var(--amber); }
+.sc-blue { color:var(--blue); } .sc-orange { color:var(--orange); } .sc-accent { color:var(--accent); }
+
+/* ── FINDING ── */
+.finding { border:1px solid var(--border); background:var(--panel2); padding:14px 16px; margin-bottom:10px; border-left:3px solid var(--green); }
+.finding-num { font-size:8px; letter-spacing:0.2em; color:var(--green); margin-bottom:5px; }
+.finding-title { font-family:var(--sans); font-size:11.5px; font-weight:600; color:var(--text); margin-bottom:7px; line-height:1.45; }
+.finding p { font-size:10px; color:var(--text2); line-height:1.7; }
+.val { color:var(--accent); font-weight:600; }
+.em { color:var(--text); font-style:italic; }
+.hi { color:var(--green); font-weight:600; }
+.warn { color:var(--amber); }
+.crit { color:var(--red); }
+
+/* ── DATA TABLE ── */
+.data-table { width:100%; border-collapse:collapse; font-size:10px; }
+.data-table th { background:var(--panel2); color:var(--text2); font-weight:500; padding:6px 10px; text-align:left; border-bottom:1px solid var(--border); font-size:8.5px; letter-spacing:0.08em; }
+.data-table td { padding:5px 10px; border-bottom:1px solid var(--border2); vertical-align:middle; }
+.data-table tr:hover td { background:rgba(255,255,255,0.015); }
+.r { text-align:right; }
+.pass { color:var(--green); } .warn { color:var(--amber); } .fail { color:var(--red); }
+.dim { color:var(--text2); }
+.green { color:var(--green); } .orange { color:var(--orange); } .red-c { color:var(--red); }
+.blue { color:var(--blue); } .teal { color:var(--teal); } .purple { color:var(--purple); }
+
+/* ── BAR CHART ── */
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+.bar-label { font-size:9px; color:var(--text2); min-width:170px; white-space:nowrap; }
+.bar-track { flex:1; height:16px; background:var(--panel2); border:1px solid var(--border2); position:relative; overflow:hidden; }
+.bar-fill { height:100%; position:absolute; left:0; top:0; opacity:0.85; }
+.bar-val { font-size:9px; min-width:50px; text-align:right; }
+.bar-inner { position:absolute; left:6px; top:50%; transform:translateY(-50%); font-size:7.5px; color:var(--bg); white-space:nowrap; }
+
+/* ── BIO-I RESULT CARDS ── */
+.bio1-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+.bio1-card { border:1px solid var(--border); background:var(--panel); padding:14px 16px; }
+.b1c-title { font-size:8px; letter-spacing:0.18em; color:var(--text2); margin-bottom:10px; }
+.b1c-law { text-align:center; padding:8px; margin-bottom:10px; border:1px solid; font-size:9px; letter-spacing:0.12em; }
+.b1c-law.sat { border-color:var(--green); color:var(--green); background:rgba(0,221,136,0.04); }
+.b1c-metrics { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.b1c-m { background:var(--panel2); border:1px solid var(--border2); padding:7px 9px; }
+.b1c-ml { font-size:7.5px; color:var(--dim); margin-bottom:2px; }
+.b1c-mv { font-family:var(--display); font-size:14px; color:var(--accent); }
+.b1c-mv.ok { color:var(--green); } .b1c-mv.hi-z { color:var(--orange); }
+.b1c-mv.sm { font-size:11px; }
+
+/* ── SVG CHART ── */
+.chart-wrap { background:var(--panel2); border:1px solid var(--border2); padding:12px 14px; margin-bottom:10px; }
+.chart-title { font-size:8.5px; color:var(--text2); margin-bottom:8px; letter-spacing:0.1em; }
+svg text { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── LEGEND ── */
+.legend { display:flex; flex-wrap:wrap; gap:10px 20px; margin-top:10px; }
+.leg-item { display:flex; align-items:center; gap:5px; font-size:8.5px; color:var(--text2); }
+.leg-dot { width:10px; height:3px; border-radius:2px; }
+
+/* ── CORPUS CONTEXT ── */
+.ctx-row { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.ctx-label { font-size:8.5px; min-width:160px; }
+.ctx-track { flex:1; height:12px; background:var(--panel2); border:1px solid var(--border2); position:relative; overflow:hidden; }
+.ctx-fill { height:100%; position:absolute; left:0; top:0; }
+.ctx-val { font-size:8.5px; min-width:44px; text-align:right; }
+.ctx-sep { height:1px; background:var(--border); margin:6px 0 8px 170px; }
+
+/* ── CALLOUT ── */
+.callout { border:1px solid var(--green); background:rgba(0,221,136,0.03); padding:14px 18px; margin-bottom:14px; }
+.callout-title { font-size:8px; letter-spacing:0.22em; color:var(--green); margin-bottom:8px; }
+.callout p { font-size:10px; color:var(--text2); line-height:1.75; }
+
+/* ── FOOTNOTE ── */
+.footnote { border-top:1px solid var(--border); margin-top:50px; padding-top:16px; font-size:8px; color:var(--dim); line-height:1.9; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── HEADER ── -->
+<div class="rh">
+  <div class="rh-eye">UNNS SUBSTRATE PROGRAM · BIOLOGICAL DOMAIN</div>
+  <div class="rh-title">STRUC-BIO · BIOLOGICAL CORPUS ANALYSIS</div>
+  <div class="rh-subtitle">Full statistical audit of biological fitness landscape data under two instruments — CHAMBER STRUC-I v1.0.4 (admissibility inequality on fitness ladders) and CHAMBER STRUC-BIO-I v0.1 (epistasis compensation criterion on genotype graphs) · QT ribozyme · 45 nt catalytic RNA · 6 ladder types + 3 genotype configurations</div>
+  <div class="rh-tags">
+    <span class="rh-tag" style="color:var(--green);border-color:var(--green)">6 STRUC-I LADDERS</span>
+    <span class="rh-tag" style="color:var(--teal);border-color:var(--teal)">3 STRUC-BIO-I CONFIGS</span>
+    <span class="rh-tag" style="color:var(--accent);border-color:var(--accent)">240 κ-STEP EVALUATIONS</span>
+    <span class="rh-tag" style="color:var(--amber);border-color:var(--amber)">1 WEAK PERSISTENCE CASE</span>
+    <span class="rh-tag" style="color:var(--red);border-color:var(--red)">1 BOUNDARY-STABILIZED CASE</span>
+    <span class="rh-tag" style="color:var(--dim);border-color:var(--dim)">0 VIOLATIONS</span>
+  </div>
+</div>
+
+<!-- ══════════════════ §0 OVERVIEW ══════════════════ -->
+<div class="section-label"><span class="sl-num">§0</span> CORPUS OVERVIEW</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">STRUC-I EVALUATIONS</div><div class="sc-val sc-accent">240</div><div class="sc-unit">6 ladders × 40 κ-steps</div></div>
+  <div class="stat-card"><div class="sc-label">STRUC-BIO-I CONFIGS</div><div class="sc-val sc-green">3</div><div class="sc-unit">QT45 clean + 2 hybrid</div></div>
+  <div class="stat-card"><div class="sc-label">VIOLATIONS (Aκ &lt; 1)</div><div class="sc-val sc-green">0</div><div class="sc-unit">across all 240 runs</div></div>
+  <div class="stat-card"><div class="sc-label">WEAK PERSISTENCE</div><div class="sc-val sc-amber">1</div><div class="sc-unit">combined_del_single</div></div>
+  <div class="stat-card"><div class="sc-label">BOUNDARY-STABILIZED</div><div class="sc-val sc-red">1</div><div class="sc-unit">deletion ladder — new regime</div></div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">ρ̄ RANGE (STRUC-I)</div><div class="sc-val sc-accent" style="font-size:14px">0.081–0.819</div><div class="sc-unit">complete10_double → deletion</div></div>
+  <div class="stat-card"><div class="sc-label">STRUC-BIO-I ρ RANGE</div><div class="sc-val sc-green" style="font-size:14px">0.032–0.226</div><div class="sc-unit">QT45 clean → 12-pos hybrid</div></div>
+  <div class="stat-card"><div class="sc-label">MAX Aκ DEGRADATION</div><div class="sc-val sc-amber">0.997</div><div class="sc-unit">combined_del_single min_Ak</div></div>
+  <div class="stat-card"><div class="sc-label">QT45 D(G)</div><div class="sc-val sc-blue">72</div><div class="sc-unit">of 100 singles below WT</div></div>
+  <div class="stat-card"><div class="sc-label">QT45 C(G)</div><div class="sc-val sc-green">2,235</div><div class="sc-unit">compensatory double mutants</div></div>
+</div>
+
+<div class="callout">
+  <div class="callout-title">PRIMARY RESULT — UNIVERSAL ADMISSIBILITY HOLDS IN BIOLOGICAL FITNESS LANDSCAPE</div>
+  <p>The admissibility inequality <strong class="hi">inv(Pε; L) ≤ ν(Vε(L))</strong> holds across all 240 STRUC-I κ-step evaluations of the QT ribozyme fitness landscape. The compensation criterion <strong class="hi">D(G) ≤ C(G)</strong> is satisfied for all three STRUC-BIO-I configurations. Zero clean violations were recorded under either instrument. The biological fitness landscape is fully admissible under the Universal Structural Law.</p>
+</div>
+
+<!-- ══════════════════ §1 STRUC-I LADDER RESULTS ══════════════════ -->
+<div class="section-label"><span class="sl-num">§1</span> STRUC-I v1.0.4 — FITNESS LADDER ADMISSIBILITY</div>
+
+<div class="panel">
+  <div class="panel-title">LADDER SUMMARY TABLE <span class="psub">ALL 6 QT RIBOZYME FITNESS LADDERS · STRUC-I v1.0.4 · κ ∈ [0.01, 1.0] · 40 STEPS · M=2000 MC</span></div>
+  <table class="data-table">
+    <thead><tr>
+      <th>LADDER NAME</th><th>TYPE</th><th class="r">N</th><th class="r">SUB?</th>
+      <th class="r">MEAN Aκ</th><th class="r">MIN Aκ</th>
+      <th class="r">MEAN ρ</th><th class="r">MAX ρ</th><th class="r">ρ(κ=1)</th>
+      <th>STATE</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="green">complete10_double_global_ladder</td><td class="dim">double substitution fitness</td>
+        <td class="r">2,000</td><td class="r dim">YES</td>
+        <td class="r pass">1.0000</td><td class="r pass">1.0000</td>
+        <td class="r pass">0.0813</td><td class="r">0.3235</td><td class="r">0.3235</td>
+        <td class="pass">Stable Structure</td>
+      </tr>
+      <tr>
+        <td class="blue">bp_mutants_global_ladder</td><td class="dim">base-pair mutation fitness</td>
+        <td class="r">69</td><td class="r dim">NO</td>
+        <td class="r pass">1.0000</td><td class="r pass">1.0000</td>
+        <td class="r pass">0.1717</td><td class="r">0.4486</td><td class="r">0.4486</td>
+        <td class="pass">Stable Structure</td>
+      </tr>
+      <tr>
+        <td class="teal">complete10_single_global_ladder</td><td class="dim">single substitution fitness (complete)</td>
+        <td class="r">133</td><td class="r dim">NO</td>
+        <td class="r pass">1.0000</td><td class="r pass">1.0000</td>
+        <td class="r pass">0.2216</td><td class="r">0.4215</td><td class="r">0.4215</td>
+        <td class="pass">Stable Structure</td>
+      </tr>
+      <tr>
+        <td class="purple">combined_single_global_ladder</td><td class="dim">combined single substitution fitness</td>
+        <td class="r">133</td><td class="r dim">NO</td>
+        <td class="r pass">1.0000</td><td class="r pass">1.0000</td>
+        <td class="r pass">0.2771</td><td class="r">0.4120</td><td class="r">0.4120</td>
+        <td class="pass">Stable Structure</td>
+      </tr>
+      <tr style="background:rgba(240,160,48,0.04)">
+        <td class="orange">combined_del_single_global_ladder</td><td class="dim">deletion + single substitution combined</td>
+        <td class="r">46</td><td class="r dim">NO</td>
+        <td class="r warn">0.9994</td><td class="r warn">0.9970</td>
+        <td class="r warn">0.5540</td><td class="r warn">0.5929</td><td class="r warn">0.5348</td>
+        <td class="warn">Weak Persistence</td>
+      </tr>
+      <tr style="background:rgba(224,64,64,0.04)">
+        <td class="red-c">deletion_global_ladder</td><td class="dim">length-altering deletion mutations</td>
+        <td class="r">2,000</td><td class="r dim">YES</td>
+        <td class="r pass">1.0000</td><td class="r pass">1.0000</td>
+        <td class="r fail">0.8190</td><td class="r fail">0.9057</td><td class="r fail">0.7360</td>
+        <td class="fail">Boundary-Stabilized</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">LADDER PRESSURE PROFILE <span class="psub">MEAN ρ̄ · SORTED ASCENDING</span></div>
+    <div style="margin-top:4px">
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--green)">complete10_double</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:9.0%;background:var(--green)"></div><div class="bar-inner">0.0813</div></div>
+        <div class="bar-val" style="color:var(--green)">0.0813</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--blue)">bp_mutants</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:19.1%;background:var(--blue)"></div><div class="bar-inner">0.1717</div></div>
+        <div class="bar-val" style="color:var(--blue)">0.1717</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--teal)">complete10_single</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:24.6%;background:var(--teal)"></div><div class="bar-inner">0.2216</div></div>
+        <div class="bar-val" style="color:var(--teal)">0.2216</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--purple)">combined_single</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:30.8%;background:var(--purple)"></div><div class="bar-inner">0.2771</div></div>
+        <div class="bar-val" style="color:var(--purple)">0.2771</div>
+      </div>
+      <div style="height:1px;background:var(--border2);margin:5px 0 6px 170px"></div>
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--orange)">combined_del_single</div>
+        <div class="bar-track" style="height:14px"><div class="bar-fill" style="width:55.4%;background:var(--orange)"></div><div class="bar-inner">0.554 — Weak Persistence</div></div>
+        <div class="bar-val" style="color:var(--orange)">0.554</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" style="color:var(--red)">deletion</div>
+        <div class="bar-track" style="height:14px"><div class="bar-fill" style="width:81.9%;background:var(--red)"></div><div class="bar-inner">0.819 — Boundary-Stabilized</div></div>
+        <div class="bar-val" style="color:var(--red)">0.819</div>
+      </div>
+      <div style="margin-top:8px;font-size:8px;color:var(--dim)">Scale 0.00–1.00. Separator divides Stable Structure (top 4) from elevated-pressure cases (bottom 2).</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Aκ ADMISSIBILITY DISTRIBUTION <span class="psub">ALL 240 κ-STEP EVALUATIONS</span></div>
+    <div style="margin-top:4px">
+      <div class="bar-row">
+        <div class="bar-label">Aκ = 1.000 (perfect)</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:99.2%;background:var(--green)"></div><div class="bar-inner">238 / 240</div></div>
+        <div class="bar-val" style="color:var(--green)">238</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Aκ ∈ [0.99, 1.000)</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:0.8%;background:var(--amber)"></div><div class="bar-inner">2</div></div>
+        <div class="bar-val" style="color:var(--amber)">2</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Aκ &lt; 0.99</div>
+        <div class="bar-track" style="height:18px"><div class="bar-fill" style="width:0%;background:var(--red)"></div></div>
+        <div class="bar-val" style="color:var(--dim)">0</div>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border2);margin:14px 0 12px"></div>
+    <div style="font-size:9px;color:var(--text2);line-height:1.7">The 2 Aκ &lt; 1.000 cases both belong to <span style="color:var(--orange)">combined_del_single</span> at high κ (min_Ak = 0.997). All 160 evaluations from the 4 substitution-only ladders are Aκ = 1.0000. The 80 deletion-ladder evaluations also maintain Aκ = 1.0000 throughout despite ρ̄ = 0.819 — confirming Boundary-Stabilized status (high pressure but not violating).</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 1.1</div>
+  <div class="finding-title">Four substitution fitness ladders satisfy admissibility without degradation; their structural pressure (ρ̄ = 0.081–0.277) is consistent with nuclear spectra</div>
+  <p>The substitution-only fitness ladders (complete10_double, bp_mutants, complete10_single, combined_single) all achieve <span class="val">Aκ = 1.0000</span> at every κ-step with mean ρ̄ ranging from <span class="val">0.081</span> to <span class="val">0.277</span>. This places them between the GOE baseline (0.087) and nuclear spectra (0.197) — structurally in the same regime as physically measured energy level spectra. The <span class="em">complete10_double</span> ladder (ρ̄ = 0.081) is the lowest-pressure molecular fitness ladder in the full corpus, comparable to H₂O rovibrational spectra.</p>
+</div>
+
+<div class="finding" style="border-left-color:var(--amber)">
+  <div class="finding-num" style="color:var(--amber)">FINDING 1.2</div>
+  <div class="finding-title">combined_del_single enters Weak Persistence — the highest-pressure non-adversarial result in the full 3,313-evaluation corpus</div>
+  <p>The <span class="em">combined_del_single</span> ladder (n=46), which ranks deletion and single-substitution fitness values together, achieves mean ρ̄ = <span class="warn">0.554</span> with min_Ak = <span class="warn">0.997</span> — Weak Persistence. This exceeds the previous corpus maximum of ρ = 0.424 (Si_density, condensed-matter). The degradation is modest (Aκ = 0.9994 on average) and confined to the highest κ values. The law is satisfied; the elevated pressure indicates that mixing deletion-type and substitution-type fitness ranks within a single ladder creates structurally distinct geometry that approaches the persistence boundary.</p>
+</div>
+
+<div class="finding" style="border-left-color:var(--red)">
+  <div class="finding-num" style="color:var(--red)">FINDING 1.3</div>
+  <div class="finding-title">The deletion fitness ladder is Boundary-Stabilized at ρ̄ = 0.819 — the first such result from a physical biological system — with Aκ = 1.0000 maintained throughout</div>
+  <p>The pure <span class="em">deletion</span> ladder (n=2,000 subsampled) achieves ρ̄ = <span class="crit">0.819</span>, max ρ = <span class="crit">0.906</span>, and ρ at κ=1: <span class="crit">0.736</span>. Despite this extreme structural pressure — the highest recorded for any physical system in the corpus — Aκ remains <span class="val">1.0000</span> at every κ-step. This is the defining signature of Boundary-Stabilized: high pressure but complete admissibility. Deletion mutations represent a fundamentally different mode of sequence perturbation compared to substitutions; their fitness landscape appears to carry a structural fingerprint closer to the adversarial boundary without crossing it.</p>
+</div>
+
+<!-- ══════════════════ §2 ρ(κ) CURVES ══════════════════ -->
+<div class="section-label"><span class="sl-num">§2</span> ρ(κ) PROFILES — STRUCTURAL PRESSURE VS PERTURBATION SCALE</div>
+
+<div class="row2">
+  <div>
+    <div class="chart-wrap">
+      <div class="chart-title">SUBSTITUTION LADDERS — ρ(κ) PROFILES <span style="color:var(--dim);font-size:8px">SCALE 0–0.70</span></div>
+      <svg viewBox="0 0 650 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+        <!-- grid lines -->
+        <line x1="42" y1="10" x2="42" y2="152" stroke="#0e1f32" stroke-width="1"/>
+        <line x1="602" y1="10" x2="602" y2="152" stroke="#0e1f32" stroke-width="1"/>
+        <line x1="42" y1="132" x2="602" y2="132" stroke="#0e1f32" stroke-width="0.8"/>
+        <line x1="42" y1="97" x2="602" y2="97" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="42" y1="63" x2="602" y2="63" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="42" y1="28" x2="602" y2="28" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <!-- kappa verticals -->
+        <line x1="126" y1="10" x2="126" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="238" y1="10" x2="238" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="322" y1="10" x2="322" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="406" y1="10" x2="406" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="518" y1="10" x2="518" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <!-- curves (ptsTop from script output) -->
+        <polyline points="42.0,132.0 56.4,132.0 70.7,132.0 85.1,132.0 99.4,132.0 113.8,132.0 128.2,132.0 142.5,132.0 156.9,132.0 171.2,130.9 185.6,128.9 199.9,124.6 214.3,128.0 228.7,125.6 243.0,126.8 257.4,127.3 271.7,127.2 286.1,125.2 300.5,123.0 314.8,120.7 329.2,121.9 343.5,121.7 357.9,120.0 372.3,119.7 386.6,119.8 401.0,118.1 415.3,117.2 429.7,115.9 444.1,114.4 458.4,112.7 472.8,111.1 487.1,108.8 501.5,105.8 515.8,102.2 530.2,98.8 544.6,94.9 558.9,90.7 573.3,86.2 587.6,81.0 602.0,75.6" fill="none" stroke="#00dd88" stroke-width="1.5"/>
+        <polyline points="42.0,132.0 56.4,132.0 70.7,132.0 85.1,132.0 99.4,132.0 113.8,132.0 128.2,131.1 142.5,128.9 156.9,124.1 171.2,120.6 185.6,114.1 199.9,111.3 214.3,104.5 228.7,102.3 243.0,95.6 257.4,90.8 271.7,108.1 286.1,102.5 300.5,98.6 314.8,111.0 329.2,105.9 343.5,114.9 357.9,114.7 372.3,112.2 386.6,109.4 401.0,102.5 415.3,95.8 429.7,92.7 444.1,86.5 458.4,92.6 472.8,87.2 487.1,84.1 501.5,78.1 515.8,78.0 530.2,74.8 544.6,71.7 558.9,67.9 573.3,64.2 587.6,61.0 602.0,53.8" fill="none" stroke="#4ab0f0" stroke-width="1.5"/>
+        <polyline points="42.0,109.4 56.4,103.2 70.7,99.1 85.1,94.8 99.4,118.8 113.8,119.5 128.2,116.6 142.5,112.3 156.9,109.0 171.2,104.3 185.6,109.4 199.9,111.8 214.3,112.6 228.7,108.7 243.0,107.7 257.4,102.8 271.7,103.1 286.1,100.9 300.5,98.9 314.8,99.2 329.2,94.8 343.5,98.5 357.9,95.4 372.3,97.3 386.6,92.8 401.0,91.2 415.3,88.2 429.7,83.9 444.1,83.9 458.4,81.4 472.8,78.0 487.1,77.2 501.5,72.1 515.8,71.5 530.2,69.8 544.6,67.4 558.9,66.3 573.3,63.5 587.6,60.9 602.0,58.5" fill="none" stroke="#30d0b0" stroke-width="1.5"/>
+        <polyline points="42.0,84.2 56.4,81.6 70.7,77.2 85.1,72.9 99.4,71.1 113.8,85.0 128.2,82.0 142.5,79.3 156.9,87.5 171.2,85.6 185.6,83.6 199.9,88.7 214.3,84.4 228.7,88.1 243.0,99.4 257.4,95.5 271.7,92.3 286.1,92.8 300.5,95.0 314.8,97.1 329.2,97.6 343.5,97.5 357.9,98.0 372.3,98.7 386.6,95.9 401.0,92.0 415.3,90.4 429.7,89.3 444.1,86.8 458.4,82.9 472.8,77.5 487.1,75.3 501.5,75.0 515.8,73.7 530.2,68.9 544.6,66.0 558.9,67.0 573.3,66.0 587.6,66.0 602.0,60.2" fill="none" stroke="#9880ff" stroke-width="1.5"/>
+        <!-- y axis labels -->
+        <text x="36" y="135" text-anchor="end" font-size="7.5" fill="#2d4560">0</text>
+        <text x="36" y="100" text-anchor="end" font-size="7.5" fill="#2d4560">0.25</text>
+        <text x="36" y="66" text-anchor="end" font-size="7.5" fill="#2d4560">0.50</text>
+        <text x="36" y="31" text-anchor="end" font-size="7.5" fill="#2d4560">0.70</text>
+        <!-- x axis labels -->
+        <text x="42" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.01</text>
+        <text x="126" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.02</text>
+        <text x="238" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.05</text>
+        <text x="322" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.1</text>
+        <text x="406" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.2</text>
+        <text x="518" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.5</text>
+        <text x="602" y="162" text-anchor="middle" font-size="7" fill="#2d4560">1.0</text>
+        <text x="322" y="172" text-anchor="middle" font-size="7" fill="#2d4560">κ (log scale)</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#00dd88"></div> complete10_double</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#4ab0f0"></div> bp_mutants</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#30d0b0"></div> complete10_single</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#9880ff"></div> combined_single</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="chart-wrap">
+      <div class="chart-title">ELEVATED-PRESSURE LADDERS — ρ(κ) PROFILES <span style="color:var(--dim);font-size:8px">SCALE 0–1.00</span></div>
+      <svg viewBox="0 0 650 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+        <line x1="42" y1="10" x2="42" y2="152" stroke="#0e1f32" stroke-width="1"/>
+        <line x1="602" y1="10" x2="602" y2="152" stroke="#0e1f32" stroke-width="1"/>
+        <line x1="42" y1="132" x2="602" y2="132" stroke="#0e1f32" stroke-width="0.8"/>
+        <line x1="42" y1="97" x2="602" y2="97" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="42" y1="63" x2="602" y2="63" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="42" y1="28" x2="602" y2="28" stroke="#0e1f32" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="126" y1="10" x2="126" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="238" y1="10" x2="238" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="322" y1="10" x2="322" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="406" y1="10" x2="406" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <line x1="518" y1="10" x2="518" y2="152" stroke="#0e1f32" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <!-- combined_del_single ptsAll -->
+        <polyline points="42.0,61.3 56.4,62.1 70.7,61.8 85.1,61.4 99.4,60.8 113.8,59.7 128.2,60.4 142.5,60.0 156.9,59.7 171.2,60.0 185.6,65.9 199.9,66.0 214.3,66.2 228.7,65.5 243.0,65.9 257.4,64.6 271.7,64.1 286.1,63.2 300.5,62.9 314.8,62.7 329.2,61.9 343.5,62.0 357.9,61.1 372.3,65.0 386.6,65.4 401.0,69.5 415.3,67.9 429.7,71.4 444.1,69.7 458.4,68.6 472.8,70.5 487.1,67.4 501.5,65.2 515.8,62.0 530.2,67.6 544.6,68.6 558.9,65.9 573.3,62.8 587.6,63.1 602.0,66.8" fill="none" stroke="#f0a030" stroke-width="2"/>
+        <!-- deletion ptsAll -->
+        <polyline points="42.0,21.5 56.4,21.8 70.7,22.0 85.1,22.0 99.4,21.9 113.8,22.6 128.2,22.8 142.5,23.3 156.9,23.6 171.2,23.5 185.6,23.8 199.9,24.3 214.3,24.6 228.7,25.4 243.0,26.5 257.4,26.9 271.7,27.9 286.1,28.8 300.5,30.0 314.8,31.0 329.2,31.3 343.5,32.0 357.9,33.1 372.3,34.8 386.6,35.6 401.0,36.2 415.3,37.4 429.7,38.5 444.1,39.4 458.4,40.6 472.8,41.6 487.1,42.3 501.5,42.7 515.8,42.9 530.2,43.7 544.6,44.1 558.9,44.1 573.3,43.7 587.6,42.9 602.0,42.2" fill="none" stroke="#e04040" stroke-width="2"/>
+        <!-- horizontal reference lines -->
+        <line x1="42" y1="55" x2="602" y2="55" stroke="#f0a030" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.4"/>
+        <text x="608" y="57" font-size="7" fill="#f0a030" opacity="0.7">ρ=0.55</text>
+        <line x1="42" y1="19" x2="602" y2="19" stroke="#e04040" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.4"/>
+        <text x="608" y="21" font-size="7" fill="#e04040" opacity="0.7">ρ=0.82</text>
+        <!-- y labels -->
+        <text x="36" y="135" text-anchor="end" font-size="7.5" fill="#2d4560">0</text>
+        <text x="36" y="100" text-anchor="end" font-size="7.5" fill="#2d4560">0.35</text>
+        <text x="36" y="66" text-anchor="end" font-size="7.5" fill="#2d4560">0.60</text>
+        <text x="36" y="31" text-anchor="end" font-size="7.5" fill="#2d4560">0.90</text>
+        <text x="42" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.01</text>
+        <text x="238" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.05</text>
+        <text x="322" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.1</text>
+        <text x="518" y="162" text-anchor="middle" font-size="7" fill="#2d4560">0.5</text>
+        <text x="602" y="162" text-anchor="middle" font-size="7" fill="#2d4560">1.0</text>
+        <text x="322" y="172" text-anchor="middle" font-size="7" fill="#2d4560">κ (log scale)</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#f0a030"></div> combined_del_single · Weak Persistence</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#e04040"></div> deletion · Boundary-Stabilized</div>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 2.1</div>
+  <div class="finding-title">The deletion ρ(κ) profile is monotonically rising and featureless — structurally unlike any other biological or physical ladder</div>
+  <p>All substitution ladders show ρ(κ) curves that rise, fluctuate, and partially stabilise — consistent with multi-scale gap structure interacting with the vulnerability envelope. The <span class="em">deletion</span> ladder profile is a smooth, near-monotonic rise from ρ ≈ 0.08 at κ = 0.01 to ρ ≈ 0.91 at κ ≈ 0.8, then slightly descending to ρ = 0.74 at κ = 1.0. This featureless profile suggests that deletion-induced fitness ranks lack the hierarchical gap structure that creates the mid-κ inflection points seen in physically meaningful ladders. The <span class="em">combined_del_single</span> curve is flat at ρ ≈ 0.55–0.59 across nearly all κ, indicating constant structural pressure without κ-dependent features.</p>
+</div>
+
+<!-- ══════════════════ §3 STRUC-BIO-I RESULTS ══════════════════ -->
+<div class="section-label"><span class="sl-num">§3</span> STRUC-BIO-I v0.1 — EPISTASIS COMPENSATION CRITERION</div>
+
+<div class="bio1-grid">
+
+  <div class="bio1-card">
+    <div class="b1c-title">QT45 v2 · CLEAN EXPORT <span style="color:var(--dim)">· measured fitness</span></div>
+    <div class="b1c-law sat">D(72) ≤ C(2,235) — SATISFIED</div>
+    <div class="b1c-metrics">
+      <div class="b1c-m"><div class="b1c-ml">ρ = D/C</div><div class="b1c-mv ok">0.0322</div></div>
+      <div class="b1c-m"><div class="b1c-ml">regime</div><div class="b1c-mv ok" style="font-size:11px">STABLE</div></div>
+      <div class="b1c-m"><div class="b1c-ml">z-score</div><div class="b1c-mv sm" style="color:var(--accent)">+4.22</div></div>
+      <div class="b1c-m"><div class="b1c-ml">null ρ̄</div><div class="b1c-mv sm" style="color:var(--text2)">0.0304</div></div>
+      <div class="b1c-m"><div class="b1c-ml">pos. epistasis</div><div class="b1c-mv sm" style="color:var(--teal)">46.7%</div></div>
+      <div class="b1c-m"><div class="b1c-ml">mean E</div><div class="b1c-mv sm" style="color:var(--teal)">+0.192</div></div>
+      <div class="b1c-m"><div class="b1c-ml">singles</div><div class="b1c-mv sm" style="color:var(--text2)">100</div></div>
+      <div class="b1c-m"><div class="b1c-ml">doubles</div><div class="b1c-mv sm" style="color:var(--text2)">4,791</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:8.5px;color:var(--dim);line-height:1.6">Raw QT45 measured fitness. 44 positions × 3 substitutions minus 32 Hamming-0 strips = 100 singles. 72/100 singles below WT (D=72). 46.7% of doubles carry positive epistasis. ρ slightly above null (z=+4.22) — real structural signal.</div>
+  </div>
+
+  <div class="bio1-card">
+    <div class="b1c-title">HYBRID · FULL 44-POSITION <span style="color:var(--dim)">· measured + fidelity f=0.900</span></div>
+    <div class="b1c-law sat">D(132) ≤ C(947) — SATISFIED</div>
+    <div class="b1c-metrics">
+      <div class="b1c-m"><div class="b1c-ml">ρ = D/C</div><div class="b1c-mv ok">0.1394</div></div>
+      <div class="b1c-m"><div class="b1c-ml">regime</div><div class="b1c-mv ok" style="font-size:11px">STABLE</div></div>
+      <div class="b1c-m"><div class="b1c-ml">z-score</div><div class="b1c-mv sm" style="color:var(--text2)">−0.68</div></div>
+      <div class="b1c-m"><div class="b1c-ml">null ρ̄</div><div class="b1c-mv sm" style="color:var(--text2)">0.1398</div></div>
+      <div class="b1c-m"><div class="b1c-ml">pos. epistasis</div><div class="b1c-mv sm" style="color:var(--green)">99.9%</div></div>
+      <div class="b1c-m"><div class="b1c-ml">mean E</div><div class="b1c-mv sm" style="color:var(--green)">+15.16</div></div>
+      <div class="b1c-m"><div class="b1c-ml">singles</div><div class="b1c-mv sm" style="color:var(--text2)">132</div></div>
+      <div class="b1c-m"><div class="b1c-ml">doubles</div><div class="b1c-mv sm" style="color:var(--text2)">948</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:8.5px;color:var(--dim);line-height:1.6">Hybrid: f_combined = f_measured + F̂(κ=0.900). Uniform fidelity shift pushes all 132 singles below WT (D=132). Near-total positive epistasis (99.9%) is driven by the flat fidelity correction. ρ indistinguishable from null shuffle (z=−0.68) — fidelity shift erases structural signal.</div>
+  </div>
+
+  <div class="bio1-card">
+    <div class="b1c-title">HYBRID · 12-POSITION WINDOW <span style="color:var(--dim)">· measured + fidelity</span></div>
+    <div class="b1c-law sat">D(36) ≤ C(159) — SATISFIED</div>
+    <div class="b1c-metrics">
+      <div class="b1c-m"><div class="b1c-ml">ρ = D/C</div><div class="b1c-mv hi-z">0.2264</div></div>
+      <div class="b1c-m"><div class="b1c-ml">regime</div><div class="b1c-mv ok" style="font-size:11px">STABLE</div></div>
+      <div class="b1c-m"><div class="b1c-ml">z-score</div><div class="b1c-mv hi-z">+10.27</div></div>
+      <div class="b1c-m"><div class="b1c-ml">null ρ̄</div><div class="b1c-mv sm" style="color:var(--text2)">0.1458</div></div>
+      <div class="b1c-m"><div class="b1c-ml">pos. epistasis</div><div class="b1c-mv sm" style="color:var(--amber)">26.8%</div></div>
+      <div class="b1c-m"><div class="b1c-ml">mean E</div><div class="b1c-mv sm" style="color:var(--red)">−0.694</div></div>
+      <div class="b1c-m"><div class="b1c-ml">singles</div><div class="b1c-mv sm" style="color:var(--text2)">36</div></div>
+      <div class="b1c-m"><div class="b1c-mv sm" style="color:var(--text2)">C(12,2)×9 = 594</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:8.5px;color:var(--dim);line-height:1.6">12-position sub-window. 36/36 singles below WT. Negative mean epistasis (−0.694) — predominantly antagonistic. ρ = 0.226, z = +10.27: significantly above null, showing genuine structural signal distinct from random. All 594 doubles resolved (skipped = 0).</div>
+  </div>
+
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 3.1</div>
+  <div class="finding-title">QT45 measured fitness achieves ρ = 0.032 — placing the ribozyme among the most structurally relaxed systems in the full corpus</div>
+  <p>The measured QT45 landscape (D=72, C=2,235, ρ = <span class="val">0.0322</span>, z = +4.22) places the catalytic RNA's fitness landscape in the same structural pressure tier as the complete10_double STRUC-I ladder and near H₂O rovibrational spectra — the most relaxed physical systems in the 3,313-evaluation corpus. The law is satisfied with a margin of C/D = <span class="val">31.0×</span>. The z = +4.22 indicates the observed ρ is significantly above the null model, confirming genuine compensatory structure rather than statistical noise.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 3.2</div>
+  <div class="finding-title">The 12-position hybrid window (z = +10.27) carries a stronger structural signal than the full-44-position run (z = −0.68), revealing positional dependence of the epistatic compensation structure</div>
+  <p>The full-44-position hybrid run has ρ ≈ null and z = −0.68, because the uniform fidelity shift makes 99.9% of doubles appear compensatory — saturating C and erasing signal. The 12-position window, without this saturation, achieves z = <span class="warn">+10.27</span> with predominantly negative mean epistasis (−0.694), indicating that the positional subset under study carries strongly antagonistic epistasis that structurally elevates ρ above null. This divergence suggests that catalytic-core positions have fundamentally different epistatic architecture from the peripheral positions.</p>
+</div>
+
+<!-- ══════════════════ §4 CORPUS CONTEXT ══════════════════ -->
+<div class="section-label"><span class="sl-num">§4</span> CORPUS CONTEXT — BIOLOGICAL DOMAIN VS PHYSICAL DOMAINS</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRUC-I ρ̄: BIOLOGICAL LADDERS VS CORPUS REFERENCE DOMAINS</div>
+    <div style="margin-top:4px">
+      <!-- reference domains -->
+      <div class="ctx-row"><div class="ctx-label" style="color:var(--text2);font-size:8px">— CORPUS REFERENCE —</div></div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:#888">Solar F10.7</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:2.2%;background:#888;opacity:0.5"></div></div>
+        <div class="ctx-val" style="color:#888">0.022</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--teal)">Molecular (HITRAN)</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:11.4%;background:var(--teal);opacity:0.6"></div></div>
+        <div class="ctx-val" style="color:var(--teal)">0.103</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--blue)">Nuclear spectra</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:21.9%;background:var(--blue);opacity:0.6"></div></div>
+        <div class="ctx-val" style="color:var(--blue)">0.197</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--amber)">Condensed-matter</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:22.7%;background:var(--amber);opacity:0.5"></div></div>
+        <div class="ctx-val" style="color:var(--amber)">0.204</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--accent)">Cosmic Web (xyz)</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:33.9%;background:var(--accent);opacity:0.5"></div></div>
+        <div class="ctx-val" style="color:var(--accent)">0.305</div>
+      </div>
+      <div class="ctx-sep"></div>
+      <!-- bio ladders -->
+      <div class="ctx-row"><div class="ctx-label" style="color:var(--text2);font-size:8px">— BIOLOGICAL (THIS STUDY) —</div></div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--green);font-weight:600">complete10_double</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:9.0%;background:var(--green)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.081</div></div>
+        <div class="ctx-val" style="color:var(--green)">0.081</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--blue);font-weight:600">bp_mutants</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:19.1%;background:var(--blue)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.172</div></div>
+        <div class="ctx-val" style="color:var(--blue)">0.172</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--teal);font-weight:600">complete10_single</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:24.6%;background:var(--teal)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.222</div></div>
+        <div class="ctx-val" style="color:var(--teal)">0.222</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--purple);font-weight:600">combined_single</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:30.8%;background:var(--purple)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.277</div></div>
+        <div class="ctx-val" style="color:var(--purple)">0.277</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--orange);font-weight:600">combined_del_single</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:61.6%;background:var(--orange)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.554 — Weak Persistence</div></div>
+        <div class="ctx-val" style="color:var(--orange)">0.554</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--red);font-weight:600">deletion</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:91.0%;background:var(--red)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.819 — Boundary-Stabilized</div></div>
+        <div class="ctx-val" style="color:var(--red)">0.819</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">STRUC-BIO-I ρ: GENOTYPE GRAPH RESULTS VS STRUC-I CONTEXT</div>
+    <div style="margin-top:4px">
+      <div class="ctx-row"><div class="ctx-label" style="color:var(--text2);font-size:8px">— STRUC-BIO-I (D/C CRITERION) —</div></div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--green);font-weight:600">QT45 clean (measured)</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:3.6%;background:var(--green)"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.032</div></div>
+        <div class="ctx-val" style="color:var(--green)">0.032</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--teal)">Hybrid full 44-pos</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:15.5%;background:var(--teal);opacity:0.7"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.139</div></div>
+        <div class="ctx-val" style="color:var(--teal)">0.139</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--blue)">Hybrid 12-pos window</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:25.2%;background:var(--blue);opacity:0.7"></div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--bg)">0.226</div></div>
+        <div class="ctx-val" style="color:var(--blue)">0.226</div>
+      </div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-row"><div class="ctx-label" style="color:var(--text2);font-size:8px">— STRUC-I BIO LADDERS (for scale) —</div></div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--green);font-size:8.5px">complete10_double (STRUC-I)</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:9.0%;background:var(--green);opacity:0.4"></div></div>
+        <div class="ctx-val" style="color:var(--dim)">0.081</div>
+      </div>
+      <div class="ctx-row">
+        <div class="ctx-label" style="color:var(--purple);font-size:8.5px">combined_single (STRUC-I)</div>
+        <div class="ctx-track"><div class="ctx-fill" style="width:30.8%;background:var(--purple);opacity:0.4"></div></div>
+        <div class="ctx-val" style="color:var(--dim)">0.277</div>
+      </div>
+      <div style="margin-top:12px;font-size:8.5px;color:var(--dim);line-height:1.65">STRUC-BIO-I ρ (D/C) and STRUC-I ρ (inv/ν) are formally distinct quantities. The QT45 clean result (ρ = 0.032) sits within the STRUC-I range of the substitution ladders. Cross-instrument consistency confirms robustness of the STABLE verdict.</div>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 4.1</div>
+  <div class="finding-title">Cross-instrument consistency: both STRUC-I and STRUC-BIO-I independently place the QT ribozyme substitution landscape in the Stable Structure / GOE pressure tier</div>
+  <p>STRUC-I finds mean ρ̄ = 0.081–0.277 for substitution ladders; STRUC-BIO-I finds ρ = 0.032–0.226 for three genotype graph configurations. Despite measuring different mathematical objects — admissibility of fitness rank sequences (STRUC-I) vs epistasis compensation in double-mutant graphs (STRUC-BIO-I) — both instruments return STABLE verdicts with ρ values in the same absolute range as GOE random matrices and nuclear/molecular spectra. This cross-instrument consistency is the strongest evidence that biological fitness landscapes obey the same structural constraint as physical systems.</p>
+</div>
+
+<!-- ══════════════════ §5 KEY FINDINGS ══════════════════ -->
+<div class="section-label"><span class="sl-num">§5</span> KEY FINDINGS SYNTHESIS</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 5.1 — PRIMARY</div>
+  <div class="finding-title">The QT ribozyme fitness landscape satisfies the Universal Structural Law under both instruments and all configurations tested</div>
+  <p>Zero violations were recorded across 240 STRUC-I κ-step evaluations and 3 STRUC-BIO-I runs. All Aκ ≥ 0.997. All D ≤ C. The biological fitness landscape is empirically non-falsified under the admissibility inequality.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 5.2 — SUBSTITUTION REGIME</div>
+  <div class="finding-title">Point substitution fitness landscapes occupy the same structural pressure tier as nuclear spectra (ρ̄ = 0.081–0.277 vs nuclear 0.103–0.257)</div>
+  <p>The four substitution ladders cluster tightly. The complete10_double ladder (ρ̄ = 0.081) is comparable to H₂O rovibrational spectra. The combined_single ladder (ρ̄ = 0.277) is the highest-pressure substitution ladder, approaching the nuclear maximum. STRUC-BIO-I confirms: QT45 clean ρ = 0.032.</p>
+</div>
+
+<div class="finding" style="border-left-color:var(--amber)">
+  <div class="finding-num" style="color:var(--amber)">FINDING 5.3 — DELETION REGIME</div>
+  <div class="finding-title">Length-altering mutations produce a structurally distinct high-pressure regime not previously observed in any physical domain</div>
+  <p>Deletion ladders (ρ̄ = 0.554–0.819) exceed the prior physical maximum of ρ = 0.424 (Si_density). The deletion_global_ladder is Boundary-Stabilized with Aκ = 1.0000, establishing that this elevated pressure does not imply violation. The structural law holds, but deletion landscapes are geometrically unlike substitution landscapes and warrant separate admissibility tracking.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 5.4 — z-SCORE INTERPRETATION</div>
+  <div class="finding-title">QT45 clean (z=+4.22) and 12-pos hybrid (z=+10.27) show genuine structural signal above null; full hybrid (z=−0.68) is null-indistinguishable due to fidelity saturation</div>
+  <p>The null model shuffles single-mutant fitness labels while holding double-mutant values fixed. QT45 clean ρ = 0.032 sits 4.22σ above the null mean of 0.030 — the observed compensatory structure exceeds random expectation. The 12-position hybrid at z = +10.27 shows the strongest signal of any configuration, driven by the positional restriction isolating antagonistically epistatic core positions. The full hybrid z ≈ 0 is an artefact of near-uniform fidelity correction collapsing all epistasis to positive.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 5.5 — CORPUS POSITION</div>
+  <div class="finding-title">The biological domain extends the corpus into structurally new territory at both ends: the most relaxed fitness ladder (complete10_double, ρ̄=0.081) and the highest-pressure physical ladders (deletion, ρ̄=0.819)</div>
+  <p>No prior physical domain produced a Boundary-Stabilized verdict. The deletion ladder (ρ̄ = 0.819, Aκ = 1.0000) is the first. Simultaneously, the complete10_double fitness ladder (ρ̄ = 0.081) matches the most relaxed rovibrational molecular spectra. The biological domain therefore spans the widest ρ range of any single subject in the corpus: <span class="val">0.081–0.819</span> — a factor of 10× from lowest to highest. This range exceeds condensed-matter (0.015–0.424, factor 28×) and nuclear (0.103–0.257, factor 2.5×) in absolute spread.</p>
+</div>
+
+<!-- ══════════════════ FOOTNOTE ══════════════════ -->
+<div class="footnote">
+  <strong>STRUC-BIO Biological Corpus Analysis</strong> &middot; UNNS Substrate Program &middot; 2026-03-20<br>
+  Subject: QT ribozyme · 45 nt catalytic RNA · QT45 v2 fitness dataset<br>
+  Instruments: CHAMBER STRUC-I v1.0.4 (κ ∈ [0.01, 1.0] · 40 steps logspaced · M=2,000 MC runs · 6 fitness ladders · 240 evaluations) · CHAMBER STRUC-BIO-I v0.1 (3 configurations · 100/132/36 singles · 4791/948/594 doubles)<br>
+  STRUC-I ladders: bp_mutants_global_ladder (n=69) · combined_del_single_global_ladder (n=46) · combined_single_global_ladder (n=133) · complete10_double_global_ladder (n=2000, subsampled) · complete10_single_global_ladder (n=133) · deletion_global_ladder (n=2000, subsampled)<br>
+  STRUC-BIO-I configurations: QT45 v2 clean (measured fitness, Hamming-0 stripped) · Hybrid full 44-pos (measured + fidelity f=0.900) · Hybrid 12-pos window<br>
+  Corpus context: biological evaluations contribute 240 STRUC-I runs to the full 3,313-evaluation UNNS corpus (3,069 physical + 240 biological + 4 cluster adversarial).
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>

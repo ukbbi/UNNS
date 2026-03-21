@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STRUC-BIO-I · UNNS Substrate</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 13px; }
+    body { background: #080c14; color: #c8d6e8; font-family: 'Courier New', Courier, monospace; line-height: 1.55; min-height: 100vh; }
+
+    .chamber-shell { max-width: 1200px; margin: 0 auto; padding: 0 0 60px; }
+
+    .chamber-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px 16px; border-bottom: 1px solid #1c2541; background: #080c14; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: baseline; gap: 10px; }
+    .chamber-label { font-size: 16px; font-weight: 700; letter-spacing: 4px; color: #6fffe9; }
+    .chamber-version { font-size: 10px; color: #5a6880; letter-spacing: 2px; border: 1px solid #1c2541; padding: 2px 6px; }
+    .header-center { font-size: 11px; letter-spacing: 2px; color: #5bc0be; text-transform: uppercase; }
+    .header-right { font-size: 10px; color: #3a4558; letter-spacing: 2px; }
+
+    .panel { border: 1px solid #1c2541; background: #0d1220; margin: 16px 16px 0; }
+    .panel-row { display: grid; grid-template-columns: 1fr 1fr; }
+    .panel-row .panel { margin-right: 0; }
+    .panel-row .panel:first-child { border-right: none; }
+    .panel-header { font-size: 10px; letter-spacing: 3px; color: #5a6880; text-transform: uppercase; padding: 9px 16px 8px; border-bottom: 1px solid #1c2541; background: #080c14; }
+    .panel-body { padding: 20px 20px 22px; }
+
+    .panel-collapsed .panel-body-format { display: none; }
+    .panel-toggle { cursor: pointer; user-select: none; }
+    .panel-toggle:hover { color: #5bc0be; }
+
+    .file-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .file-block { border: 1px solid #1c2541; padding: 14px 16px; background: #080c14; transition: border-color 0.2s; }
+    .file-block.loaded { border-color: #10b981; }
+    .file-title { font-size: 11px; color: #6fffe9; letter-spacing: 2px; margin-bottom: 4px; }
+    .file-hint { font-size: 10px; color: #3a4558; margin-bottom: 12px; min-height: 14px; }
+    .file-btn { display: inline-block; font-size: 10px; letter-spacing: 2px; color: #5bc0be; border: 1px solid #1c2541; padding: 6px 12px; cursor: pointer; text-transform: uppercase; transition: border-color 0.15s, color 0.15s; }
+    .file-btn:hover { border-color: #5bc0be; color: #6fffe9; }
+    .file-btn input[type="file"] { display: none; }
+    .file-name { font-size: 10px; color: #3a4558; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-name.ok { color: #10b981; }
+
+    .run-row { display: flex; align-items: center; gap: 12px; }
+    .btn-primary { font-family: inherit; font-size: 11px; letter-spacing: 3px; color: #080c14; background: #5bc0be; border: none; padding: 10px 22px; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: background 0.15s; }
+    .btn-primary:hover { background: #6fffe9; }
+    .btn-primary:active { background: #4aa8a6; }
+    .btn-primary:disabled { background: #1c2541; color: #3a4558; cursor: not-allowed; }
+    .btn-secondary { font-family: inherit; font-size: 10px; letter-spacing: 2px; color: #5a6880; background: transparent; border: 1px solid #1c2541; padding: 9px 16px; cursor: pointer; text-transform: uppercase; transition: border-color 0.15s, color 0.15s; }
+    .btn-secondary:hover { border-color: #5a6880; color: #c8d6e8; }
+    .status-text { font-size: 10px; color: #3a4558; letter-spacing: 1px; margin-left: 4px; }
+    .status-text.error { color: #ef4444; }
+    .status-text.ok { color: #10b981; }
+    .status-text.running { color: #f59e0b; }
+
+    .law-display { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 14px 0 18px; }
+    .law-term { text-align: center; }
+    .law-sym { font-size: 11px; letter-spacing: 2px; color: #5a6880; margin-bottom: 4px; }
+    .law-val { font-size: 38px; font-weight: 700; color: #6fffe9; line-height: 1; min-width: 60px; text-align: center; }
+    .law-sub { font-size: 9px; letter-spacing: 2px; color: #3a4558; margin-top: 4px; text-transform: uppercase; }
+    .law-op { font-size: 28px; color: #5bc0be; line-height: 1; padding-top: 8px; }
+    .law-verdict { text-align: center; font-size: 12px; letter-spacing: 3px; padding: 10px; border: 1px solid #1c2541; color: #5a6880; background: #080c14; }
+    .law-verdict.satisfied { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.05); }
+    .law-verdict.failed { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.05); }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .metric-block { background: #080c14; border: 1px solid #1c2541; padding: 12px 14px; }
+    .metric-label { font-size: 9px; letter-spacing: 2px; color: #3a4558; text-transform: uppercase; margin-bottom: 6px; }
+    .metric-value { font-size: 20px; font-weight: 700; color: #5bc0be; letter-spacing: 1px; }
+    .metric-regime.STABLE { color: #10b981; }
+    .metric-regime.BOUNDARY { color: #f59e0b; }
+    .metric-regime.BREAKDOWN { color: #ef4444; }
+
+    .chart-note { font-size: 10px; color: #3a4558; letter-spacing: 1px; margin-bottom: 10px; }
+    .chart-wrap { position: relative; width: 100%; height: 220px; }
+
+    .json-pre { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #5a6880; background: #080c14; border: 1px solid #1c2541; padding: 16px; overflow-x: auto; white-space: pre; max-height: 420px; overflow-y: auto; line-height: 1.6; }
+
+    .format-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .format-block { background: #080c14; border: 1px solid #1c2541; padding: 14px; }
+    .format-title { font-size: 10px; letter-spacing: 2px; color: #5bc0be; margin-bottom: 8px; text-transform: uppercase; }
+    .format-pre { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #5a6880; white-space: pre; overflow-x: auto; line-height: 1.6; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080c14; }
+    ::-webkit-scrollbar-thumb { background: #1c2541; }
+
+    @media (max-width: 760px) {
+      .panel-row { grid-template-columns: 1fr; }
+      .panel-row .panel:first-child { border-right: 1px solid #1c2541; }
+      .file-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .format-grid { grid-template-columns: 1fr; }
+      .chamber-header { flex-direction: column; gap: 6px; text-align: center; }
+    }
+
+    /* ── Guide accordion ──────────────────────────────────────── */
+    .guide-wrap { margin: 16px 16px 0; }
+    .guide-details {
+      border: 1px solid #1c2541;
+      background: #0d1220;
+    }
+    .guide-details summary {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #5a6880;
+      text-transform: uppercase;
+      padding: 9px 16px 8px;
+      background: #080c14;
+      border-bottom: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+    }
+    .guide-details summary::marker,
+    .guide-details summary::-webkit-details-marker { display: none; }
+    .guide-details summary:hover { color: #5bc0be; }
+    .guide-details[open] summary { border-bottom: 1px solid #1c2541; color: #5bc0be; }
+    .guide-details summary .guide-arrow { font-size: 9px; transition: transform 0.2s; }
+    .guide-details[open] summary .guide-arrow { transform: rotate(90deg); }
+
+    .guide-body { padding: 20px 20px 22px; color: #c8d6e8; font-size: 11px; line-height: 1.72; }
+    .guide-body h3 {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #5bc0be;
+      text-transform: uppercase;
+      margin: 20px 0 10px;
+    }
+    .guide-body h3:first-child { margin-top: 0; }
+    .guide-callout {
+      border-left: 2px solid #1c2541;
+      padding: 10px 14px;
+      margin: 10px 0;
+      background: #080c14;
+      font-size: 11px;
+      line-height: 1.68;
+      color: #8aa0b8;
+    }
+    .guide-callout.teal  { border-color: #5bc0be; color: #5bc0be; }
+    .guide-callout.green { border-color: #10b981; color: #6ee7b7; }
+    .guide-callout.amber { border-color: #f59e0b; color: #fcd34d; }
+    .guide-callout.red   { border-color: #ef4444; color: #fca5a5; }
+    .guide-callout strong { display: block; margin-bottom: 4px; letter-spacing: 1px; font-size: 10px; text-transform: uppercase; }
+    .guide-step-list { list-style: none; counter-reset: gctr; margin: 8px 0; }
+    .guide-step-list li {
+      counter-increment: gctr;
+      display: flex;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #0d1525;
+      font-size: 11px;
+    }
+    .guide-step-list li:last-child { border-bottom: none; }
+    .guide-step-list li::before {
+      content: counter(gctr);
+      min-width: 18px;
+      height: 18px;
+      background: rgba(91,192,190,0.1);
+      border: 1px solid #1c2541;
+      color: #5bc0be;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .guide-pill {
+      display: inline-block;
+      background: rgba(91,192,190,0.08);
+      border: 1px solid rgba(91,192,190,0.25);
+      color: #5bc0be;
+      border-radius: 2px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .guide-pill.green {
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.25);
+      color: #10b981;
+    }
+    .guide-pill.amber {
+      background: rgba(245,158,11,0.08);
+      border-color: rgba(245,158,11,0.25);
+      color: #f59e0b;
+    }
+    .guide-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .guide-metric {
+      background: #080c14;
+      border: 1px solid #1c2541;
+      padding: 9px 12px;
+    }
+    .guide-metric-label { font-size: 9px; letter-spacing: 2px; color: #3a4558; text-transform: uppercase; margin-bottom: 4px; }
+    .guide-metric-val { font-size: 13px; font-weight: 700; color: #6fffe9; letter-spacing: 1px; }
+    .guide-sep { border: none; border-top: 1px solid #1c2541; margin: 18px 0; }
+    @media (max-width: 760px) {
+      .guide-metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="chamber-shell">
+
+  <header class="chamber-header">
+    <div class="header-left">
+      <span class="chamber-label">STRUC-BIO-I</span>
+      <span class="chamber-version">v0.1</span>
+    </div>
+    <div class="header-center">Biological Mutation Structural Analysis</div>
+    <div class="header-right">UNNS Substrate Program</div>
+  </header>
+
+
+  <!-- ── GUIDE ─────────────────────────────────────────────── -->
+  <div class="guide-wrap">
+    <details class="guide-details">
+      <summary><span class="guide-arrow">&#9654;</span> Guide &#8212; How to use STRUC-BIO-I</summary>
+      <div class="guide-body">
+
+        <h3>What this chamber does</h3>
+        <p>
+          STRUC-BIO-I evaluates the UNNS admissibility inequality on a double-mutant
+          epistasis graph: <strong>&#961; = D(G) / C(G) &#8804; 1</strong>, where D is the disorder
+          (inversion count under fitness perturbation) and C is the compensation capacity
+          (count of compensatory epistatic pairs). A clean result &#8212; all &#961; &#8804; 1 &#8212; constitutes
+          structural admissibility of the fitness landscape. Any &#961; &gt; 1 is a genuine
+          falsifier and is reported accurately.
+        </p>
+
+        <hr class="guide-sep">
+        <h3>Input files</h3>
+        <div class="guide-callout teal">
+          <strong>Where to get the input files</strong>
+          The fastest path is to download the pre-compiled QT45 pack from the input bundle:
+          <a href="https://unns.tech/media/unns/struc-bio-i-ii_biological_corpus/input_files.zip" target="_blank" style="color:#5bc0be;">input_files.zip</a>
+          &#8594; open the <span class="guide-pill">QT45 MODE</span> folder.
+          Alternatively, run STRUC-BIO-II in any mode and use its
+          <em>EXPORT FOR STRUC-BIO-I</em> button to generate all three files.
+        </div>
+        <ul class="guide-step-list">
+          <li>
+            <span class="guide-pill">singles.csv</span> &#8212;
+            Single-mutant fitness table. Tab-separated, no header required.
+            Format: <code>LABEL&lt;tab&gt;FITNESS</code> per row
+            (e.g. <code>G2A&#9;0.0701</code>).
+            Hamming-0 (WT) rows are stripped automatically on load.
+          </li>
+          <li>
+            <span class="guide-pill">doubles.csv</span> &#8212;
+            Double-mutant fitness table. Tab-separated, no header required.
+            Format: <code>LABEL_A LABEL_B&lt;tab&gt;FITNESS_AB</code> per row
+            (e.g. <code>G2A C3A&#9;0.01349</code>).
+            Labels must match those in singles.csv &#8212; mismatches are warned and skipped.
+          </li>
+          <li>
+            <span class="guide-pill">wildtype.json</span> &#8212;
+            Optional. Provides the WT sequence and reference fitness for report annotation.
+            Format: <code>{"sequence": "&#8230;", "fitness": 0.0}</code>.
+            If omitted the chamber runs normally &#8212; only the report header is affected.
+          </li>
+        </ul>
+
+        <hr class="guide-sep">
+        <h3>Running the chamber</h3>
+        <ol class="guide-step-list">
+          <li>Click <strong>CHOOSE FILE</strong> under <em>singles.csv</em> and load your singles file. The filename turns green when accepted.</li>
+          <li>Click <strong>CHOOSE FILE</strong> under <em>doubles.csv</em> and load your doubles file.</li>
+          <li>Optionally load <em>wildtype.json</em> for annotated report output.</li>
+          <li>Click <strong>&#9654; RUN CHAMBER</strong>. The status indicator shows <em>running&#8230;</em> during the null-model Monte Carlo (1,000 fitness shuffles). Typical runtime: under 3&#8202;s.</li>
+          <li>Results populate immediately: Core Law display, Structural Pressure metrics, Null Model and Epistasis charts, and the canonical JSON output.</li>
+          <li>Click <strong>&#8595; EXPORT JSON</strong> to download the full result bundle, or <strong>&#8595; EXPORT REPORT</strong> for the annotated HTML report.</li>
+        </ol>
+
+        <hr class="guide-sep">
+        <h3>Interpreting the result</h3>
+        <div class="guide-metrics">
+          <div class="guide-metric"><div class="guide-metric-label">D(G) &#8212; Disorder</div><div class="guide-metric-val" style="color:#5bc0be;">inv count</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">C(G) &#8212; Compensation</div><div class="guide-metric-val" style="color:#5bc0be;">epistatic pairs</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">&#961; = D / C</div><div class="guide-metric-val" style="color:#6fffe9;">&#8804; 1 = pass</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">Null &#961;&#772;</div><div class="guide-metric-val" style="color:#5a6880;">shuffle mean</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">z-score</div><div class="guide-metric-val" style="color:#5a6880;">vs null</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">Regime</div><div class="guide-metric-val" style="color:#10b981;">STABLE</div></div>
+        </div>
+        <div class="guide-callout green">
+          <strong>&#961; &#8804; 1 &#8212; Admissible (SATISFIED)</strong>
+          The epistasis graph satisfies the USL bound. Disorder does not exceed compensation
+          capacity. A high positive z-score indicates the result is well above the random-graph null &#8212;
+          structural evidence is strong.
+        </div>
+        <div class="guide-callout red">
+          <strong>&#961; &gt; 1 &#8212; Violation (FAILED)</strong>
+          Disorder exceeds compensation capacity. This is a genuine falsifier event.
+          Reported accurately &#8212; never softened. Investigate the doubles file for
+          data anomalies before concluding a structural violation.
+        </div>
+        <div class="guide-callout amber">
+          <strong>Regime classification</strong>
+          STABLE: &#961; &lt; 0.5 &#160;&#183;&#160;
+          BOUNDARY: 0.5 &#8804; &#961; &#8804; 1.0 &#160;&#183;&#160;
+          BREAKDOWN: &#961; &gt; 1.0.
+          The z-score measures the margin above the shuffled-fitness null distribution
+          (1,000 runs, seed 42). High positive z = structurally significant result.
+        </div>
+
+        <hr class="guide-sep">
+        <h3>QT45 v2 reference result</h3>
+        <div class="guide-callout teal">
+          <strong>Locked reference &#8212; QT45 ribozyme (Gianni et al. 2026, Science)</strong>
+        </div>
+        <div class="guide-metrics">
+          <div class="guide-metric"><div class="guide-metric-label">D(G)</div><div class="guide-metric-val">72</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">C(G)</div><div class="guide-metric-val">2,235</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">&#961;</div><div class="guide-metric-val">0.0322</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">z-score</div><div class="guide-metric-val">+4.22</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">Regime</div><div class="guide-metric-val" style="color:#10b981;">STABLE</div></div>
+          <div class="guide-metric"><div class="guide-metric-label">Law</div><div class="guide-metric-val" style="color:#10b981;">SATISFIED</div></div>
+        </div>
+        <p style="font-size:10px; color:#3a4558; margin-top:10px; letter-spacing:0.5px;">
+          Singles loaded: 100 (33 Hamming-0 stripped) &#160;&#183;&#160; Doubles: 4,791 &#160;&#183;&#160;
+          Source: <a href="https://unns.tech/media/unns/struc-bio-i-ii_biological_corpus/Admissibility__Depth_Submultiplicativity_and_Universal_Sign_Preservation.pdf" target="_blank" style="color:#3a4558;">Admissibility Constraints Across Physical and Biological Systems</a>
+        </p>
+
+      </div><!-- /guide-body -->
+    </details>
+  </div>
+  <!-- ── /GUIDE ────────────────────────────────────────────── -->
+
+  <section class="panel" id="panel-input">
+    <div class="panel-body">
+      <div class="file-grid">
+        <div class="file-block" id="block-wt">
+          <div class="file-title">wildtype.json</div>
+          <div class="file-hint">{ sequence, fitness }</div>
+          <label class="file-btn">choose file<input type="file" id="wildtype-file" accept=".json"></label>
+          <div class="file-name" id="wildtype-name">no file selected</div>
+        </div>
+        <div class="file-block" id="block-singles">
+          <div class="file-title">singles.csv</div>
+          <div class="file-hint">mutation label + fitness — header optional</div>
+          <label class="file-btn">choose file<input type="file" id="singles-file" accept=".csv,.tsv,.txt"></label>
+          <div class="file-name" id="singles-name">no file selected</div>
+        </div>
+        <div class="file-block" id="block-doubles">
+          <div class="file-title">doubles.csv</div>
+          <div class="file-hint">mut_a + mut_b + fitness_ab — header optional</div>
+          <label class="file-btn">choose file<input type="file" id="doubles-file" accept=".csv,.tsv,.txt"></label>
+          <div class="file-name" id="doubles-name">no file selected</div>
+        </div>
+      </div>
+      <div class="run-row">
+        <button id="run-btn" class="btn-primary">&#9654; RUN CHAMBER</button>
+        <button id="export-json-btn" class="btn-secondary">&#8595; EXPORT JSON</button>
+        <button id="export-html-btn" class="btn-secondary">&#8595; EXPORT REPORT</button>
+        <span id="status" class="status-text">ready</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="panel-row">
+    <section class="panel">
+      <div class="panel-header">CORE LAW</div>
+      <div class="panel-body">
+        <div class="law-display">
+          <div class="law-term">
+            <div class="law-sym">D(G)</div>
+            <div class="law-val" id="metric-d">—</div>
+            <div class="law-sub">disorder</div>
+          </div>
+          <div class="law-op">&#8804;</div>
+          <div class="law-term">
+            <div class="law-sym">C(G)</div>
+            <div class="law-val" id="metric-c">—</div>
+            <div class="law-sub">compensation</div>
+          </div>
+        </div>
+        <div class="law-verdict" id="metric-law">AWAITING RUN</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">STRUCTURAL PRESSURE</div>
+      <div class="panel-body">
+        <div class="metrics-grid">
+          <div class="metric-block"><div class="metric-label">&#961; = D / C</div><div class="metric-value" id="metric-rho">—</div></div>
+          <div class="metric-block"><div class="metric-label">regime</div><div class="metric-value metric-regime" id="metric-regime">—</div></div>
+          <div class="metric-block"><div class="metric-label">null &#961;&#772;</div><div class="metric-value" id="metric-null-mean">—</div></div>
+          <div class="metric-block"><div class="metric-label">z-score</div><div class="metric-value" id="metric-z">—</div></div>
+          <div class="metric-block"><div class="metric-label">positive epistasis</div><div class="metric-value" id="metric-pos-epi">—</div></div>
+          <div class="metric-block"><div class="metric-label">mean epistasis</div><div class="metric-value" id="metric-mean-epi">—</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel-row">
+    <section class="panel">
+      <div class="panel-header">NULL MODEL &#8212; &#961; distribution (1 000 fitness shuffles)</div>
+      <div class="panel-body">
+        <div class="chart-note" id="null-chart-note">Run chamber to populate.</div>
+        <div class="chart-wrap"><canvas id="chart-null-model"></canvas></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-header">EPISTASIS DISTRIBUTION &#8212; green = compensatory</div>
+      <div class="panel-body">
+        <div class="chart-note" id="epi-chart-note">Run chamber to populate.</div>
+        <div class="chart-wrap"><canvas id="chart-epistasis"></canvas></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-header">OUTPUT &#8212; canonical JSON</div>
+    <div class="panel-body">
+      <pre id="result-json" class="json-pre">Awaiting run&#8230;</pre>
+    </div>
+  </section>
+
+  <section class="panel panel-collapsed" id="panel-format">
+    <div class="panel-header panel-toggle" onclick="toggleFormat()">DATA FORMAT REFERENCE &#9654;</div>
+    <div class="panel-body panel-body-format">
+      <div class="format-grid">
+        <div class="format-block">
+          <div class="format-title">wildtype.json</div>
+          <pre class="format-pre">{
+  "sequence": "GGGCGGGCTCGATTCCGTTATCAATGTCCGACTGCGCTGCCCTGC",
+  "fitness": 0.0
+}</pre>
+        </div>
+        <div class="format-block">
+          <div class="format-title">singles.csv — raw QT45 format (tab, no header)</div>
+          <pre class="format-pre">G2A	0.0701
+G2T	0.0348
+C3A	0.2959</pre>
+        </div>
+        <div class="format-block">
+          <div class="format-title">doubles.csv — raw QT45 format (tab, no header)</div>
+          <pre class="format-pre">G2A C3A	0.01349
+G2A C3T	0.13584
+G2A C3G	0.08385</pre>
+        </div>
+        <div class="format-block">
+          <div class="format-title">Reference output (QT45 v2 clean pack)</div>
+          <pre class="format-pre">D = 72
+C = 2235
+rho = 0.03221
+regime = STABLE
+law = SATISFIED
+singles = 100 (33 Hamming-0 stripped)
+doubles = 4791</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STRUC-BIO-I v0.1 — all modules inlined (no ES imports)
+//  Works from file:// — open index.html directly in browser
+// ═══════════════════════════════════════════════════════════
+
+// ── config ───────────────────────────────────────────────────
+const DEFAULTS = {
+  chamber: 'STRUC-BIO-I',
+  version: '0.1',
+  nullRuns: 1000,
+  nullSeed: 42,
+  thresholds: { stable: 0.5, boundary: 1.0 },
+};
+
+// ── parseCsv ─────────────────────────────────────────────────
+function looksLikeHeader(cells) {
+  const first = (cells[0] ?? '').trim().toLowerCase();
+  const known = ['sequence','seq','fitness','mutation','mutation_label','mutation_a',
+    'mutation_b','fitness_ab','variant','genotype','genotype_sequence','name'];
+  if (known.includes(first)) return true;
+  if (/^[acgut]\d+[acgut]$/i.test(first)) return false;
+  if (/^[acgut]\d+[acgut]\s+[acgut]\d+[acgut]$/i.test(first)) return false;
+  if (/^wt$/i.test(first)) return false;
+  if (/^-?\d/.test(first)) return false;
+  return true;
+}
+
+function parseCsv(text) {
+  const firstNl = text.indexOf('\n');
+  const firstLine = firstNl === -1 ? text : text.slice(0, firstNl);
+  const delimiter = firstLine.includes('\t') ? '\t' : ',';
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i + 1];
+    if (ch === '"') {
+      if (inQuotes && next === '"') { cell += '"'; i++; }
+      else inQuotes = !inQuotes;
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) { row.push(cell); cell = ''; continue; }
+    if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && next === '\n') i++;
+      row.push(cell);
+      if (row.some(v => v !== '')) rows.push(row);
+      row = []; cell = '';
+      continue;
+    }
+    cell += ch;
+  }
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell);
+    if (row.some(v => v !== '')) rows.push(row);
+  }
+  if (rows.length === 0) return { header: [], rows: [] };
+  let header, body;
+  if (looksLikeHeader(rows[0])) {
+    [header, ...body] = rows;
+  } else {
+    body = rows;
+    const cols = rows[0].length;
+    const firstCell = (rows[0][0] ?? '').trim();
+    const isCombinedPair = /^[acgut]\d+[acgut]\s+[acgut]\d+[acgut]$/i.test(firstCell);
+    if (cols === 2 && isCombinedPair) header = ['mutation_pair', 'fitness'];
+    else if (cols === 2)              header = ['mutation_label', 'fitness'];
+    else if (cols === 3)              header = ['mutation_a', 'mutation_b', 'fitness_ab'];
+    else                              header = rows[0].map((_, i) => 'col' + i);
+  }
+  return {
+    header: header.map(h => h.trim()),
+    rows: body.map(r => Object.fromEntries(header.map((h, idx) => [h.trim(), (r[idx] ?? '').trim()])))
+  };
+}
+
+// ── parseQt45 ────────────────────────────────────────────────
+const SINGLE_FITNESS_HEADERS = ['fitness','fitness_mean','mean_fitness','log2_fitness','single_fitness'];
+const SINGLE_LABEL_HEADERS   = ['mutation_label','mutation','mutant','name','variant'];
+const SINGLE_SEQ_HEADERS     = ['sequence','seq','genotype_sequence'];
+const DOUBLE_A_HEADERS       = ['mutation_a','mutation1','mut1','first_mutation'];
+const DOUBLE_B_HEADERS       = ['mutation_b','mutation2','mut2','second_mutation'];
+const DOUBLE_FITNESS_HEADERS = ['fitness_ab','fitness','double_fitness','fitness_double'];
+
+function findCol(header, aliases) {
+  const lower = header.map(h => h.toLowerCase());
+  for (const alias of aliases) {
+    const idx = lower.indexOf(alias.toLowerCase());
+    if (idx >= 0) return header[idx];
+  }
+  return null;
+}
+
+function isWtRow(label) { return /^wt$/i.test((label ?? '').trim()); }
+
+function applyMutation(wtSeq, label) {
+  const m = label.trim().match(/^([ACGUTacgut])(\d+)([ACGUTacgut])$/);
+  if (!m) return null;
+  const pos    = parseInt(m[2], 10) - 1;
+  const toBase = m[3].toUpperCase();
+  if (pos < 0 || pos >= wtSeq.length) return null;
+  // NOTE: from-base validation deliberately omitted.
+  // QT45 labels use the RC strand as reference, so from_base at many positions
+  // will not match the forward-strand WT. The label is treated as a positional
+  // substitution only. Hamming-0 filtering (to_base == fwd_wt[pos]) is handled
+  // upstream in STRUC-BIO-II before these files are produced.
+  return wtSeq.slice(0, pos) + toBase + wtSeq.slice(pos + 1);
+}
+
+function diffLabel(wtSeq, seq) {
+  let pos = -1, from = '', to = '';
+  for (let i = 0; i < wtSeq.length; i++) {
+    if (wtSeq[i] !== seq[i]) {
+      if (pos !== -1) return null;
+      pos = i + 1; from = wtSeq[i]; to = seq[i];
+    }
+  }
+  return pos === -1 ? null : from + pos + to;
+}
+
+function parseSinglesCsv(text, wtSeq) {
+  const { header, rows } = parseCsv(text);
+  const fitnessKey  = findCol(header, SINGLE_FITNESS_HEADERS);
+  const labelKey    = findCol(header, SINGLE_LABEL_HEADERS);
+  const sequenceKey = findCol(header, SINGLE_SEQ_HEADERS);
+  if (!fitnessKey) throw new Error('Cannot find fitness column in singles. Found: ' + header.join(', '));
+  const parsed = [];
+  for (const row of rows) {
+    const fitness = Number(row[fitnessKey]);
+    if (!Number.isFinite(fitness)) continue;
+    let sequence = null, mutationLabel = null;
+    if (sequenceKey) {
+      sequence = row[sequenceKey].replace(/\s+/g, '');
+      if (wtSeq && sequence === wtSeq) continue;
+      mutationLabel = labelKey ? row[labelKey]?.trim() : diffLabel(wtSeq, sequence);
+    } else if (labelKey) {
+      mutationLabel = row[labelKey]?.trim();
+      if (!mutationLabel) continue;
+      if (isWtRow(mutationLabel)) continue;
+      sequence = wtSeq ? applyMutation(wtSeq, mutationLabel) : null;
+    } else continue;
+    if (!mutationLabel || isWtRow(mutationLabel)) continue;
+    parsed.push({ sequence, fitness, mutationLabel });
+  }
+  return parsed;
+}
+
+function parseDoublesCsv(text) {
+  const { header, rows } = parseCsv(text);
+  const pairKey    = header.includes('mutation_pair') ? 'mutation_pair' : null;
+  const aKey       = !pairKey ? findCol(header, DOUBLE_A_HEADERS) : null;
+  const bKey       = !pairKey ? findCol(header, DOUBLE_B_HEADERS) : null;
+  const fitnessKey = findCol(header, DOUBLE_FITNESS_HEADERS);
+  if (!fitnessKey) throw new Error('Cannot find fitness column in doubles. Found: ' + header.join(', '));
+  const parsed = [];
+  for (const row of rows) {
+    let mutationA, mutationB;
+    if (pairKey) {
+      const parts = (row[pairKey] ?? '').trim().split(/\s+/);
+      if (parts.length !== 2) continue;
+      [mutationA, mutationB] = parts;
+    } else if (aKey && bKey) {
+      mutationA = (row[aKey] ?? '').trim();
+      mutationB = (row[bKey] ?? '').trim();
+    } else throw new Error('Cannot find mutation_a / mutation_b columns. Found: ' + header.join(', '));
+    if (!mutationA || !mutationB) continue;
+    if (isWtRow(mutationA) || isWtRow(mutationB)) continue;
+    const fitnessAB = Number(row[fitnessKey]);
+    if (!Number.isFinite(fitnessAB)) continue;
+    parsed.push({ mutationA, mutationB, fitnessAB });
+  }
+  return parsed;
+}
+
+// ── validate ─────────────────────────────────────────────────
+function validateWildtype(wt) {
+  if (!wt || typeof wt.sequence !== 'string' || wt.sequence.length === 0)
+    throw new Error('wildtype.json must include a non-empty sequence');
+  if (!Number.isFinite(wt.fitness))
+    throw new Error('wildtype.json must include a numeric fitness');
+}
+
+function validateSingles(singles, wt) {
+  if (!Array.isArray(singles) || singles.length === 0)
+    throw new Error('singles.csv produced no usable rows');
+  const seen = new Set();
+  for (const [idx, row] of singles.entries()) {
+    if (row.sequence !== null && row.sequence !== undefined)
+      if (row.sequence.length !== wt.sequence.length)
+        throw new Error('singles row ' + (idx+1) + ' has wrong sequence length');
+    if (!Number.isFinite(row.fitness))
+      throw new Error('singles row ' + (idx+1) + ' has non-numeric fitness');
+    if (!row.mutationLabel)
+      throw new Error('singles row ' + (idx+1) + ' is missing mutation label');
+    if (seen.has(row.mutationLabel))
+      throw new Error('duplicate label "' + row.mutationLabel + '" at singles row ' + (idx+1));
+    seen.add(row.mutationLabel);
+  }
+}
+
+function validateDoubles(doubles, singlesLabelSet) {
+  if (!Array.isArray(doubles) || doubles.length === 0)
+    throw new Error('doubles.csv produced no usable rows');
+  const LABEL_RE = /^[ACGUTacgut]\d+[ACGUTacgut]$/i;
+  let badSyntax = 0, selfPairs = 0, missingRef = 0;
+  for (const [idx, row] of doubles.entries()) {
+    // Patch 3a: label syntax
+    if (!LABEL_RE.test(row.mutationA) || !LABEL_RE.test(row.mutationB)) {
+      badSyntax++;
+      if (badSyntax === 1) throw new Error(
+        'doubles row ' + (idx+1) + ': invalid mutation label syntax ("' +
+        row.mutationA + '" / "' + row.mutationB + '"). Expected e.g. G2A.'
+      );
+    }
+    // Patch 3b: mutationA !== mutationB
+    if (row.mutationA.toUpperCase() === row.mutationB.toUpperCase()) {
+      selfPairs++;
+      if (selfPairs === 1) throw new Error(
+        'doubles row ' + (idx+1) + ': mutationA === mutationB ("' + row.mutationA + '") — self-pair is not a double mutant'
+      );
+    }
+    // Patch 3c: referenced singles exist (only when set is provided)
+    if (singlesLabelSet) {
+      if (!singlesLabelSet.has(row.mutationA) || !singlesLabelSet.has(row.mutationB)) missingRef++;
+    }
+  }
+  if (missingRef > 0 && singlesLabelSet) {
+    const pct = (missingRef / doubles.length * 100).toFixed(1);
+    if (missingRef / doubles.length > 0.5)
+      throw new Error(missingRef + ' of ' + doubles.length + ' doubles (' + pct + '%) reference labels not in singles — wrong dataset pair?');
+    // below 50% just warn via console; hard failure deferred to run-time threshold
+    console.warn('STRUC-BIO-I validation: ' + missingRef + ' doubles (' + pct + '%) reference labels absent from singles');
+  }
+}
+
+// ── graph ────────────────────────────────────────────────────
+function buildGraph(wt, singles) {
+  const nodes = [{ id: 'WT', sequence: wt.sequence, fitness: wt.fitness, dist: 0, mutationLabel: 'WT' }];
+  const edges = [];
+  singles.forEach((row, idx) => {
+    if (row.sequence && row.sequence.length === wt.sequence.length) {
+      let d = 0;
+      for (let i = 0; i < wt.sequence.length; i++) if (wt.sequence[i] !== row.sequence[i]) d++;
+      if (d !== 1) throw new Error('Single mutant "' + row.mutationLabel + '" is Hamming-' + d + ' from WT');
+    }
+    nodes.push({ id: row.mutationLabel, sequence: row.sequence, fitness: row.fitness, dist: 1, mutationLabel: row.mutationLabel });
+    edges.push({ from: 'WT', to: row.mutationLabel });
+  });
+  return { nodes, edges };
+}
+
+// ── disorder ─────────────────────────────────────────────────
+function computeDisorder(graph) {
+  const map = new Map(graph.nodes.map(n => [n.id, n]));
+  let D = 0;
+  const decreasingEdges = [];
+  for (const edge of graph.edges) {
+    const from = map.get(edge.from), to = map.get(edge.to);
+    if (to.fitness < from.fitness) { D++; decreasingEdges.push({ ...edge, fromFitness: from.fitness, toFitness: to.fitness }); }
+  }
+  return { D, decreasingEdges };
+}
+
+// ── epistasis ─────────────────────────────────────────────────
+function computeEpistasis(doubles, sfMap, wtFitness) {
+  const rows = [], skipped = [];
+  for (const row of doubles) {
+    const fa = sfMap.get(row.mutationA), fb = sfMap.get(row.mutationB);
+    if (!Number.isFinite(fa) || !Number.isFinite(fb)) { skipped.push(row); continue; }
+    const epistasis = row.fitnessAB - (fa + fb - wtFitness);
+    rows.push({ mutationA: row.mutationA, mutationB: row.mutationB, fitnessAB: row.fitnessAB, fitnessA: fa, fitnessB: fb, epistasis, compensatory: epistasis > 0 });
+  }
+  return { rows, skipped };
+}
+
+function computeCompensation(epistasisRows) {
+  let C = 0, posSum = 0, negSum = 0, posN = 0, negN = 0, total = 0;
+  for (const row of epistasisRows) {
+    total += row.epistasis;
+    if (row.epistasis > 0) { C++; posN++; posSum += row.epistasis; }
+    else { negN++; negSum += row.epistasis; }
+  }
+  return {
+    C,
+    meanEpistasis: epistasisRows.length ? total / epistasisRows.length : 0,
+    positiveEpistasisFraction: epistasisRows.length ? posN / epistasisRows.length : 0,
+    meanPositiveEpistasis: posN ? posSum / posN : 0,
+    meanNegativeEpistasis: negN ? negSum / negN : 0,
+  };
+}
+
+// ── pressure ─────────────────────────────────────────────────
+function computeRho(D, C) { return C === 0 ? Infinity : D / C; }
+function classifyRegime(rho, t) {
+  if (!Number.isFinite(rho)) return 'BREAKDOWN';
+  if (rho < t.stable) return 'STABLE';
+  if (rho <= t.boundary) return 'BOUNDARY';
+  return 'BREAKDOWN';
+}
+
+// ── null model ────────────────────────────────────────────────
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleArr(arr, rng) {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function runNullModel(wt, singles, doubles, runs, seed) {
+  const rng = mulberry32(seed);
+  const fitVals = singles.map(s => s.fitness);
+  const labels  = singles.map(s => s.mutationLabel);
+  const nullRhos = [];
+  for (let k = 0; k < runs; k++) {
+    const sf  = shuffleArr(fitVals, rng);
+    const map = new Map(labels.map((l, i) => [l, sf[i]]));
+    let D = 0; for (const f of sf) if (f < wt.fitness) D++;
+    let C = 0;
+    for (const row of doubles) {
+      const fa = map.get(row.mutationA), fb = map.get(row.mutationB);
+      if (!Number.isFinite(fa) || !Number.isFinite(fb)) continue;
+      if (row.fitnessAB - (fa + fb - wt.fitness) > 0) C++;
+    }
+    nullRhos.push(C === 0 ? Infinity : D / C);
+  }
+  const fin = nullRhos.filter(Number.isFinite);
+  const mu  = fin.reduce((a, b) => a + b, 0) / fin.length;
+  const sd  = Math.sqrt(fin.reduce((a, b) => a + (b - mu) ** 2, 0) / fin.length);
+  return { nullRhos, rhoMean: mu, rhoStd: sd };
+}
+
+// ── runner ────────────────────────────────────────────────────
+function runStrucBioI(wt, singles, doubles) {
+  const graph = buildGraph(wt, singles);
+  const { D, decreasingEdges } = computeDisorder(graph);
+  const sfMap = new Map(singles.map(r => [r.mutationLabel, r.fitness]));
+  const { rows: epistasisRows, skipped } = computeEpistasis(doubles, sfMap, wt.fitness);
+  // Patch 2: fail loudly when skipped doubles exceed 5% threshold
+  if (doubles.length > 0) {
+    const skipFrac = skipped.length / doubles.length;
+    if (skipFrac > 0.05)
+      throw new Error(
+        'Aborted: ' + skipped.length + ' of ' + doubles.length + ' doubles (' +
+        (skipFrac * 100).toFixed(1) + '%) reference singles not in the loaded singles set. ' +
+        'Check that singles.csv and doubles.csv come from the same dataset.'
+      );
+    if (skipped.length > 0)
+      console.warn('STRUC-BIO-I: ' + skipped.length + ' doubles skipped (missing singles reference)');
+  }
+  const comp  = computeCompensation(epistasisRows);
+  const rho   = computeRho(D, comp.C);
+  const regime = classifyRegime(rho, DEFAULTS.thresholds);
+  const nullModel = runNullModel(wt, singles, doubles, DEFAULTS.nullRuns, DEFAULTS.nullSeed);
+  const zScore = nullModel.rhoStd > 0 ? (rho - nullModel.rhoMean) / nullModel.rhoStd : 0;
+  const singFit = singles.map(s => s.fitness);
+  return {
+    chamber: DEFAULTS.chamber, version: DEFAULTS.version, graph,
+    results: { D, C: comp.C, rho, regime, lawSatisfied: D <= comp.C },
+    diagnostics: {
+      decreasingEdges, epistasisRows,
+      skippedDoubleRows: skipped.length,
+      positiveEpistasisFraction: comp.positiveEpistasisFraction,
+      meanEpistasis: comp.meanEpistasis,
+      meanPositiveEpistasis: comp.meanPositiveEpistasis,
+      meanNegativeEpistasis: comp.meanNegativeEpistasis,
+      singleMutantMeanFitness: singFit.reduce((a,b)=>a+b,0)/singFit.length,
+      singleMutantMinFitness: Math.min(...singFit),
+      singleMutantMaxFitness: Math.max(...singFit),
+    },
+    nullModel: { runs: DEFAULTS.nullRuns, rhoMean: nullModel.rhoMean, rhoStd: nullModel.rhoStd, zScore, rhoValues: nullModel.nullRhos },
+  };
+}
+
+// ── exportJson ────────────────────────────────────────────────
+function buildOutputPayload(result) {
+  return {
+    chamber: result.chamber, version: result.version,
+    dataset: {
+      wildtypeLength: result.graph.nodes[0].sequence ? result.graph.nodes[0].sequence.length : 45,
+      singlesCount: result.graph.nodes.length - 1,
+      doublesCount: result.diagnostics.epistasisRows.length + result.diagnostics.skippedDoubleRows,
+    },
+    graph: { nodes: result.graph.nodes.length, edges: result.graph.edges.length, topology: 'Hamming-1 directed from WT' },
+    results: result.results,
+    nullModel: result.nullModel,
+    diagnostics: {
+      positiveEpistasisFraction: result.diagnostics.positiveEpistasisFraction,
+      meanEpistasis: result.diagnostics.meanEpistasis,
+      meanPositiveEpistasis: result.diagnostics.meanPositiveEpistasis,
+      meanNegativeEpistasis: result.diagnostics.meanNegativeEpistasis,
+      skippedDoubleRows: result.diagnostics.skippedDoubleRows,
+      singleMutantMeanFitness: result.diagnostics.singleMutantMeanFitness,
+      singleMutantMinFitness: result.diagnostics.singleMutantMinFitness,
+      singleMutantMaxFitness: result.diagnostics.singleMutantMaxFitness,
+    },
+  };
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadJson(filename, payload) {
+  downloadBlob(filename, JSON.stringify(payload, null, 2), 'application/json');
+}
+
+// ── charts ────────────────────────────────────────────────────
+let nullChart = null, epiChart = null;
+
+function bin(values, numBins) {
+  if (!values.length) return { counts: [], centers: [], mn: 0, w: 1 };
+  const mn = Math.min(...values), mx = Math.max(...values);
+  const w  = (mx - mn) / numBins || 1;
+  const counts = new Array(numBins).fill(0);
+  for (const v of values) counts[Math.min(Math.floor((v - mn) / w), numBins - 1)]++;
+  return { counts, centers: counts.map((_, i) => +((mn + (i + 0.5) * w).toFixed(5))), mn, w };
+}
+
+function renderNullModel(result) {
+  const canvas = document.getElementById('chart-null-model');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const finite  = result.nullModel.rhoValues.filter(Number.isFinite);
+  const realRho = result.results.rho;
+  const { counts, centers, mn, w } = bin(finite, 35);
+  const realBin = Number.isFinite(realRho) ? Math.min(Math.floor((realRho - mn) / w), counts.length - 1) : -1;
+  const colors  = counts.map((_, i) => i === realBin ? '#6fffe9' : 'rgba(91,192,190,0.55)');
+  if (nullChart) { nullChart.destroy(); nullChart = null; }
+  nullChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: centers, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 0, barPercentage: 1.0, categoryPercentage: 1.0 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: {
+          title: items => 'ρ ≈ ' + items[0].label,
+          label: item => 'count: ' + item.raw,
+          afterBody: items => Math.abs(parseFloat(items[0].label) - realRho) < (w || 0.01) ? ['← real ρ = ' + realRho.toFixed(5)] : []
+        }}},
+      scales: {
+        x: { ticks: { color: '#8892a4', maxTicksLimit: 7, font: { size: 10 } }, grid: { color: '#1c2541' }, title: { display: true, text: 'ρ', color: '#5a6880', font: { size: 11 } } },
+        y: { ticks: { color: '#8892a4', font: { size: 10 } }, grid: { color: '#1c2541' }, title: { display: true, text: 'count', color: '#5a6880', font: { size: 11 } } }
+      }}
+  });
+  document.getElementById('null-chart-note').style.display = 'none';
+}
+
+function renderEpistasis(result) {
+  const canvas = document.getElementById('chart-epistasis');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const values = result.diagnostics.epistasisRows.map(r => r.epistasis);
+  if (!values.length) return;
+  const { counts, centers } = bin(values, 40);
+  if (epiChart) { epiChart.destroy(); epiChart = null; }
+  epiChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: centers, datasets: [{ data: counts, backgroundColor: centers.map(c => c > 0 ? 'rgba(16,185,129,0.65)' : 'rgba(239,68,68,0.6)'), borderWidth: 0, barPercentage: 1.0, categoryPercentage: 1.0 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => 'E ≈ ' + items[0].label, label: item => 'count: ' + item.raw }}},
+      scales: {
+        x: { ticks: { color: '#8892a4', maxTicksLimit: 7, font: { size: 10 } }, grid: { color: '#1c2541' }, title: { display: true, text: 'epistasis (E)', color: '#5a6880', font: { size: 11 } } },
+        y: { ticks: { color: '#8892a4', font: { size: 10 } }, grid: { color: '#1c2541' }, title: { display: true, text: 'count', color: '#5a6880', font: { size: 11 } } }
+      }}
+  });
+  document.getElementById('epi-chart-note').style.display = 'none';
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function fmt(v, d) { return Number.isFinite(v) ? v.toFixed(d ?? 4) : '∞'; }
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status-text' + (cls ? ' ' + cls : '');
+}
+
+function render(result) {
+  setText('metric-d', String(result.results.D));
+  setText('metric-c', String(result.results.C));
+  setText('metric-rho', fmt(result.results.rho));
+  setText('metric-z', fmt(result.nullModel.zScore, 3));
+  setText('metric-null-mean', fmt(result.nullModel.rhoMean));
+  setText('metric-pos-epi', fmt(result.diagnostics.positiveEpistasisFraction * 100, 1) + '%');
+  setText('metric-mean-epi', fmt(result.diagnostics.meanEpistasis, 3));
+
+  const regimeEl = document.getElementById('metric-regime');
+  if (regimeEl) { regimeEl.textContent = result.results.regime; regimeEl.className = 'metric-value metric-regime ' + result.results.regime; }
+
+  const lawEl = document.getElementById('metric-law');
+  if (lawEl) {
+    const ok = result.results.lawSatisfied;
+    lawEl.textContent = ok
+      ? 'D(' + result.results.D + ') \u2264 C(' + result.results.C + ')  \u2014  SATISFIED'
+      : 'D(' + result.results.D + ') > C(' + result.results.C + ')  \u2014  VIOLATED';
+    lawEl.className = 'law-verdict ' + (ok ? 'satisfied' : 'failed');
+  }
+
+  const pre = document.getElementById('result-json');
+  if (pre) pre.textContent = JSON.stringify(buildOutputPayload(result), null, 2);
+
+  window.__STRUC_BIO_I_LAST_RESULT__ = result;
+  renderNullModel(result);
+  renderEpistasis(result);
+}
+
+// ── file loading ──────────────────────────────────────────────
+let _wt = null, _singles = null, _doubles = null;
+
+function wireFileInput(inputId, nameId, blockId, onLoad) {
+  const input = document.getElementById(inputId);
+  const nameEl = document.getElementById(nameId);
+  const block = document.getElementById(blockId);
+  if (!input) return;
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (nameEl) nameEl.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        onLoad(e.target.result, file.name);
+        if (nameEl) { nameEl.textContent = '\u2713 ' + file.name; nameEl.className = 'file-name ok'; }
+        if (block) block.classList.add('loaded');
+      } catch (err) {
+        setStatus('Error loading ' + file.name + ': ' + err.message, 'error');
+        if (nameEl) { nameEl.textContent = '\u2717 ' + file.name; nameEl.className = 'file-name'; }
+        if (block) block.classList.remove('loaded');
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// ── main wiring ───────────────────────────────────────────────
+wireFileInput('wildtype-file', 'wildtype-name', 'block-wt', (text) => {
+  _wt = JSON.parse(text);
+  validateWildtype(_wt);
+});
+
+wireFileInput('singles-file', 'singles-name', 'block-singles', (text) => {
+  if (!_wt) throw new Error('Load wildtype.json first');
+  _singles = parseSinglesCsv(text, _wt.sequence);
+  validateSingles(_singles, _wt);
+  // Patch 4b: update coverage display if doubles are already loaded
+  if (_doubles) {
+    const singlesSet = new Set(_singles.map(s => s.mutationLabel));
+    const resolvable = _doubles.filter(d => singlesSet.has(d.mutationA) && singlesSet.has(d.mutationB)).length;
+    const skipped    = _doubles.length - resolvable;
+    setStatus(_singles.length + ' singles + ' + _doubles.length + ' doubles — ' + resolvable + ' resolvable, ' + skipped + ' skipped', skipped > 0 ? 'running' : 'ok');
+  } else {
+    setStatus(_singles.length + ' singles loaded', 'ok');
+  }
+});
+
+wireFileInput('doubles-file', 'doubles-name', 'block-doubles', (text) => {
+  _doubles = parseDoublesCsv(text);
+  // Patch 3d: pass singles label set for reference check if singles are already loaded
+  const singlesSet = _singles ? new Set(_singles.map(s => s.mutationLabel)) : null;
+  validateDoubles(_doubles, singlesSet);
+  // Patch 4: pre-run coverage report
+  if (singlesSet) {
+    const resolvable = _doubles.filter(d => singlesSet.has(d.mutationA) && singlesSet.has(d.mutationB)).length;
+    const skipped    = _doubles.length - resolvable;
+    setStatus(_doubles.length + ' doubles loaded — ' + resolvable + ' resolvable, ' + skipped + ' skipped', skipped > 0 ? 'running' : 'ok');
+  } else {
+    setStatus(_doubles.length + ' doubles loaded (load singles first for coverage check)', 'ok');
+  }
+});
+
+document.getElementById('run-btn').addEventListener('click', () => {
+  if (!_wt || !_singles || !_doubles) {
+    setStatus('Load all three files first', 'error'); return;
+  }
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  setStatus('Running\u2026', 'running');
+  // defer to let browser repaint the status before heavy compute
+  setTimeout(() => {
+    try {
+      const result = runStrucBioI(_wt, _singles, _doubles);
+      render(result);
+      setStatus('Run completed.', 'ok');
+    } catch (err) {
+      console.error(err);
+      setStatus('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }, 30);
+});
+
+document.getElementById('export-json-btn').addEventListener('click', () => {
+  const r = window.__STRUC_BIO_I_LAST_RESULT__;
+  if (!r) { setStatus('Nothing to export yet.', 'error'); return; }
+  downloadJson('struc-bio-i-v0.1-output.json', buildOutputPayload(r));
+});
+
+document.getElementById('export-html-btn').addEventListener('click', () => {
+  const r = window.__STRUC_BIO_I_LAST_RESULT__;
+  if (!r) { setStatus('Nothing to export yet.', 'error'); return; }
+  const p = buildOutputPayload(r);
+  const ts = new Date().toISOString();
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>STRUC-BIO-I v${p.version} Report</title>
+<style>body{background:#080c14;color:#c8d6e8;font-family:'Courier New',monospace;font-size:13px;padding:32px;}
+h1{color:#6fffe9;letter-spacing:3px;font-size:20px;margin-bottom:4px;}h2{color:#5bc0be;font-size:13px;letter-spacing:3px;margin:24px 0 8px;}
+.meta{color:#5a6880;font-size:11px;margin-bottom:32px;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.card{border:1px solid #1c2541;padding:14px;background:#0d1220;}.card-label{font-size:10px;color:#5a6880;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.card-value{font-size:22px;color:#6fffe9;font-weight:700;}.verdict{border:1px solid #1c2541;padding:12px 20px;text-align:center;letter-spacing:3px;font-size:13px;margin-bottom:24px;}
+.satisfied{border-color:#10b981;color:#10b981;background:rgba(16,185,129,0.05);}.failed{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.05);}
+.STABLE{color:#10b981;}.BOUNDARY{color:#f59e0b;}.BREAKDOWN{color:#ef4444;}
+pre{background:#0d1220;border:1px solid #1c2541;padding:16px;font-size:11px;color:#8892a4;overflow-x:auto;white-space:pre;}</style></head><body>
+<h1>STRUC-BIO-I</h1><div class="meta">v${p.version} | Generated ${ts} | UNNS Substrate Program</div>
+<h2>CORE LAW</h2><div class="verdict ${p.results.lawSatisfied?'satisfied':'failed'}">D(${p.results.D}) ${p.results.lawSatisfied?'&le;':'&gt;'} C(${p.results.C}) &mdash; ${p.results.lawSatisfied?'SATISFIED':'VIOLATED'}</div>
+<div class="grid">
+<div class="card"><div class="card-label">D(G) disorder</div><div class="card-value">${p.results.D}</div></div>
+<div class="card"><div class="card-label">C(G) compensation</div><div class="card-value">${p.results.C}</div></div>
+<div class="card"><div class="card-label">rho = D/C</div><div class="card-value">${p.results.rho.toFixed(5)}</div></div>
+<div class="card"><div class="card-label">Regime</div><div class="card-value ${p.results.regime}">${p.results.regime}</div></div>
+<div class="card"><div class="card-label">z-score vs null</div><div class="card-value">${p.nullModel.zScore.toFixed(3)}</div></div>
+<div class="card"><div class="card-label">Null rho mean</div><div class="card-value">${p.nullModel.rhoMean.toFixed(5)}</div></div>
+</div><h2>CANONICAL JSON</h2><pre>${JSON.stringify(p,null,2).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`;
+  downloadBlob('struc-bio-i-report.html', html, 'text/html');
+});
+
+function toggleFormat() {
+  const panel = document.getElementById('panel-format');
+  panel.classList.toggle('panel-collapsed');
+  panel.querySelector('.panel-toggle').textContent =
+    panel.classList.contains('panel-collapsed')
+      ? 'DATA FORMAT REFERENCE \u25B6'
+      : 'DATA FORMAT REFERENCE \u25BC';
+}
+</script>
+</body>
+</html>

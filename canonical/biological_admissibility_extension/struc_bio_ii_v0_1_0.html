@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRUC-BIO-II — Biological Structure Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #080808;
+  --surface:    #101010;
+  --surface2:   #181818;
+  --surface3:   #202020;
+  --border:     #282828;
+  --border2:    #363636;
+  --text:       #e2e2e2;
+  --text-dim:   #808080;
+  --text-dimmer:#484848;
+  --accent:     #00c8a0;
+  --accent-dim: #007860;
+  --accent2:    #7c6ef5;
+  --warn:       #f0a030;
+  --err:        #f05050;
+  --ok:         #50c880;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+#header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+#header h1 {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+#header .subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+#header .version {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dimmer);
+  margin-left: auto;
+}
+
+/* ── Mode tabs ── */
+#mode-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  padding: 0 24px;
+  gap: 0;
+}
+.mode-tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  padding: 10px 18px;
+  cursor: pointer;
+  color: var(--text-dimmer);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.mode-tab:hover { color: var(--text-dim); }
+.mode-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Main layout ── */
+#main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: 1fr;
+  gap: 0;
+  height: calc(100vh - 84px);
+}
+
+/* ── Left column: input + preflight ── */
+#left-col {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#input-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#preflight-panel {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  background: var(--surface);
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#action-bar {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Right column: output ── */
+#right-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#output-header {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+}
+#output-header span {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+#output-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Section labels ── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* ── Drop zone ── */
+.drop-zone {
+  border: 1px dashed var(--border2);
+  border-radius: 4px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent-dim);
+  background: rgba(0,200,160,0.04);
+}
+.drop-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.drop-zone .dz-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 4px;
+}
+.drop-zone .dz-hint {
+  font-size: 11px;
+  color: var(--text-dimmer);
+}
+.drop-zone .dz-files {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.drop-zone .dz-file {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.drop-zone .dz-file::before { content: '✓'; font-size: 10px; }
+
+/* ── Text input ── */
+.field-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dimmer);
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 4px;
+}
+.field-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  outline: none;
+}
+.field-input:focus { border-color: var(--border2); }
+
+/* ── Preflight ── */
+.preflight-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 11px;
+}
+.preflight-row .pf-key {
+  font-family: var(--mono);
+  color: var(--text-dim);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+.preflight-row .pf-val {
+  color: var(--text);
+  font-family: var(--mono);
+  word-break: break-all;
+}
+.pf-warn { color: var(--warn); }
+.pf-err  { color: var(--err); }
+.pf-ok   { color: var(--ok); }
+.pf-dim  { color: var(--text-dimmer); }
+
+/* ── Buttons ── */
+.btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+  user-select: none;
+}
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.btn-primary:hover:not(:disabled) { background: #00e0b0; }
+.btn-secondary {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--border2);
+}
+.btn-secondary:hover:not(:disabled) { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+.btn-strucbio1 {
+  background: transparent;
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.btn-strucbio1:hover:not(:disabled) { background: rgba(240,160,48,0.1); }
+.btn-accent2 {
+  background: transparent;
+  color: var(--accent2);
+  border-color: var(--accent2);
+}
+.btn-accent2:hover:not(:disabled) { background: rgba(124,110,245,0.1); }
+
+/* ── Status bar ── */
+#status-bar {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 0 2px;
+  min-height: 22px;
+}
+.status-ok   { color: var(--ok); }
+.status-warn { color: var(--warn); }
+.status-err  { color: var(--err); }
+.status-info { color: var(--text-dim); }
+
+/* ── Preview tables ── */
+.preview-block { }
+.preview-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-title .count-badge {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+table.preview-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+table.preview-tbl thead tr {
+  background: var(--surface2);
+}
+table.preview-tbl th {
+  padding: 5px 10px;
+  color: var(--text-dimmer);
+  font-weight: 500;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.05em;
+}
+table.preview-tbl td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table.preview-tbl tr:hover td { background: var(--surface2); }
+table.preview-tbl .num { text-align: right; }
+.val-pos { color: var(--ok); }
+.val-neg { color: var(--err); }
+
+/* ── Diagnostics ── */
+.diag-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.diag-cell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+.diag-cell .dc-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dimmer);
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.diag-cell .dc-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--accent);
+}
+.diag-cell .dc-sub {
+  font-size: 10px;
+  color: var(--text-dimmer);
+  margin-top: 2px;
+}
+
+/* ── Fidelity phase chart ── */
+#phase-canvas-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+}
+#phase-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+}
+
+/* ── Quasispecies batch table ── */
+.batch-tbl-wrap { overflow-x: auto; }
+table.batch-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+table.batch-tbl th {
+  background: var(--surface2);
+  padding: 5px 10px;
+  color: var(--text-dimmer);
+  font-weight: 500;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+table.batch-tbl td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table.batch-tbl tr.active-row td { background: rgba(0,200,160,0.06); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Mode panels ── */
+.mode-panel { display: none; }
+.mode-panel.active { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Wt seq preview ── */
+.seq-preview {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ok);
+  word-break: break-all;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+.seq-preview .seq-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  display: block;
+  margin-bottom: 4px;
+}
+/* ── Guide bar ── */
+#guide-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+#guide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-dimmer);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  transition: color 0.15s;
+}
+#guide-toggle:hover { color: var(--text-dim); }
+#guide-toggle .guide-chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: 9px;
+}
+#guide-toggle.open .guide-chevron { transform: rotate(90deg); }
+#guide-content {
+  display: none;
+  padding: 0 24px 18px;
+  display: none;
+}
+#guide-content.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 32px; }
+.guide-col { padding-top: 14px; }
+.guide-col h3 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.guide-step {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 9px;
+  align-items: flex-start;
+}
+.guide-step .gs-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent-dim);
+  min-width: 14px;
+  padding-top: 1px;
+}
+.guide-step .gs-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.guide-step .gs-text code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent2);
+  background: var(--surface2);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.guide-step .gs-text strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.guide-note {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 0 3px 3px 0;
+  font-size: 11px;
+  color: var(--text-dimmer);
+  line-height: 1.55;
+}
+.guide-note code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent2);
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>STRUC-BIO-II</h1>
+  <span class="subtitle">Biological Structure Compiler</span>
+  <span class="version">v0.1.0</span>
+</div>
+
+<div id="mode-bar">
+  <div class="mode-tab active" data-mode="qt45">QT45</div>
+  <div class="mode-tab" data-mode="fasta_pool">FASTA POOL</div>
+  <div class="mode-tab" data-mode="quasispecies">QUASISPECIES</div>
+</div>
+
+<div id="guide-bar">
+  <button id="guide-toggle">
+    <span class="guide-chevron">▶</span>
+    GUIDE
+  </button>
+  <div id="guide-content">
+
+    <div class="guide-col">
+      <h3>QT45 MODE</h3>
+      <div class="guide-step"><span class="gs-num">1</span><span class="gs-text">Drop <strong>singles file</strong> — tab-separated <code>LABEL\tFITNESS</code> rows, e.g. <code>data_QT45_v2_singlemut_fitnes.txt</code></span></div>
+      <div class="guide-step"><span class="gs-num">2</span><span class="gs-text">Drop <strong>doubles file</strong> — <code>LABEL_A LABEL_B\tFITNESS</code> rows, e.g. <code>data_QT45_v2_doublemut_fitnes.txt</code></span></div>
+      <div class="guide-step"><span class="gs-num">3</span><span class="gs-text">Optionally drop <strong>WT FASTA</strong>. If omitted, the hardcoded 45-nt QT45 master sequence is used automatically.</span></div>
+      <div class="guide-step"><span class="gs-num">4</span><span class="gs-text">Click <strong>COMPILE</strong>. All rows tagged <code>source: measured</code>. Malformed doubles and WT-row entries are skipped and counted.</span></div>
+      <div class="guide-note">Mutation labels must use <strong>DNA alphabet</strong> (T not U). Labels whose mutant base equals the WT base at that position (Hamming-0) are silently filtered on STRUC-BIO-I export.</div>
+    </div>
+
+    <div class="guide-col">
+      <h3>FASTA POOL MODE</h3>
+      <div class="guide-step"><span class="gs-num">1</span><span class="gs-text">Provide the <strong>WT sequence</strong> — drop a FASTA file or paste the sequence directly. RNA (U) is auto-converted to DNA (T).</span></div>
+      <div class="guide-step"><span class="gs-num">2</span><span class="gs-text">Drop the <strong>FL pool FASTA</strong> (full-length reads) and the <strong>IP pool FASTA</strong> (in-progress / selected reads). Filenames should end in <code>_FL.fasta</code> and <code>_IP.fasta</code>.</span></div>
+      <div class="guide-step"><span class="gs-num">3</span><span class="gs-text">Set <strong>pseudocount</strong> (default 0.5). Fitness is computed as <code>log₂((IP + p) / (FL + p))</code> per mutant class.</span></div>
+      <div class="guide-step"><span class="gs-num">4</span><span class="gs-text">Click <strong>COMPILE</strong>. Sequences with 0 mutations → WT bucket; 1 → singles; 2 → doubles; 3+ → ignored (counted in diagnostics). All output tagged <code>source: estimated</code>.</span></div>
+      <div class="guide-note"><strong>Paired pool overlap</strong> in diagnostics is the fraction of doubles observed in both FL and IP. A low value means sparse coverage, not a parsing error — it is not namespace coverage.</div>
+    </div>
+
+    <div class="guide-col">
+      <h3>QUASISPECIES MODE</h3>
+      <div class="guide-step"><span class="gs-num">1</span><span class="gs-text">Drop the <strong>WT FASTA</strong> (<code>master_sequence.fasta</code>). RNA is converted to DNA automatically.</span></div>
+      <div class="guide-step"><span class="gs-num">2</span><span class="gs-text">Drop <strong>mutation tables</strong> (<code>mutation_table_*.csv</code>). Drop all at once for a full batch. Fidelity is inferred from filename (<code>_960</code> → 0.960).</span></div>
+      <div class="guide-step"><span class="gs-num">3</span><span class="gs-text"><strong>Strongly recommended:</strong> also drop <strong>Empirical Singles</strong> and <strong>Empirical Doubles</strong> (e.g. the QT45 measured files). Without these, uniform matrices produce an identical fitness for every mutation — C=0 is guaranteed and the result is structurally uninformative.</span></div>
+      <div class="guide-step"><span class="gs-num">4</span><span class="gs-text">In <strong>hybrid mode</strong>: <code>f_combined = f_measured + F̂(fidelity)</code> where <code>F̂ = log₂P(mut|wt,f) − log₂P(wt|wt,f)</code>. Doubles use the real measured epistasis <code>E = f_ab − (f_a + f_b)</code> plus fidelity-shifted singles. This produces a biologically structured landscape that varies with fidelity.</span></div>
+      <div class="guide-note"><strong>Landscape modes:</strong> <code>hybrid</code> = measured + fidelity correction (recommended). <code>matrix-only</code> = fidelity log-ratios only — intentionally degenerate for uniform matrices, useful only as a null baseline. The preflight panel shows which mode is active.</div>
+    </div>
+
+    <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:6px;padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:0 32px">
+      <div>
+        <div class="guide-step"><span class="gs-num" style="color:var(--warn)">→</span><span class="gs-text"><strong>EXPORT CANONICAL JSON</strong> — unified <code>{ meta, wt, singles, doubles, diagnostics }</code> object. For archiving and inter-tool transfer.</span></div>
+        <div class="guide-step"><span class="gs-num" style="color:var(--warn)">→</span><span class="gs-text"><strong>EXPORT FOR STRUC-BIO-I</strong> — produces three files: <code>wildtype.json</code>, <code>singles.csv</code>, <code>doubles.csv</code>. Hamming-0 entries are stripped automatically. Load these directly into STRUC-BIO-I.</span></div>
+      </div>
+      <div>
+        <div class="guide-step"><span class="gs-num" style="color:var(--warn)">→</span><span class="gs-text"><strong>EXPORT BATCH BUNDLE</strong> — quasispecies only. Exports all fidelity levels as <code>[{ fidelity, filename, canonical }, …]</code>. Not directly loadable into STRUC-BIO-I — use canonical export per level for that.</span></div>
+        <div class="guide-note">Exports are blocked if validation finds errors (missing WT, duplicate labels). Hamming-0 warnings are informational — they do not block export, but affected rows are removed from the STRUC-BIO-I files.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- ═══ LEFT COL ═══ -->
+  <div id="left-col">
+    <div id="input-panel">
+
+      <!-- QT45 MODE -->
+      <div class="mode-panel active" id="panel-qt45">
+        <div class="section-label">QT45 Inputs</div>
+
+        <div>
+          <div class="drop-zone" id="dz-qt45-singles">
+            <input type="file" id="fi-qt45-singles" accept=".txt,.tsv">
+            <span class="dz-label">SINGLES TABLE</span>
+            <span class="dz-hint">data_QT45_v2_singlemut_fitnes.txt</span>
+            <div class="dz-files" id="dz-qt45-singles-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="drop-zone" id="dz-qt45-doubles">
+            <input type="file" id="fi-qt45-doubles" accept=".txt,.tsv">
+            <span class="dz-label">DOUBLES TABLE</span>
+            <span class="dz-hint">data_QT45_v2_doublemut_fitnes.txt</span>
+            <div class="dz-files" id="dz-qt45-doubles-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="drop-zone" id="dz-qt45-wt">
+            <input type="file" id="fi-qt45-wt" accept=".fasta,.fa,.txt">
+            <span class="dz-label">WT SEQUENCE <span style="color:var(--text-dimmer)">(optional)</span></span>
+            <span class="dz-hint">master_sequence.fasta</span>
+            <div class="dz-files" id="dz-qt45-wt-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">DATASET ID</label>
+          <input class="field-input" id="qt45-dataset-id" type="text" placeholder="QT45_v2" value="QT45_v2">
+        </div>
+      </div>
+
+      <!-- FASTA POOL MODE -->
+      <div class="mode-panel" id="panel-fasta_pool">
+        <div class="section-label">FASTA Pool Inputs</div>
+
+        <div>
+          <div class="drop-zone" id="dz-fasta-wt">
+            <input type="file" id="fi-fasta-wt" accept=".fasta,.fa,.txt">
+            <span class="dz-label">WT SEQUENCE</span>
+            <span class="dz-hint">master_sequence.fasta or text</span>
+            <div class="dz-files" id="dz-fasta-wt-files"></div>
+          </div>
+        </div>
+
+        <div id="fasta-wt-text-wrap">
+          <label class="field-label">OR PASTE WT SEQUENCE</label>
+          <input class="field-input" id="fasta-wt-text" type="text" placeholder="GGGCGGGCTCGATTCC...">
+        </div>
+
+        <div>
+          <div class="drop-zone" id="dz-fasta-fl">
+            <input type="file" id="fi-fasta-fl" accept=".fasta,.fa">
+            <span class="dz-label">FL POOL FASTA</span>
+            <span class="dz-hint">*_FL.fasta</span>
+            <div class="dz-files" id="dz-fasta-fl-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="drop-zone" id="dz-fasta-ip">
+            <input type="file" id="fi-fasta-ip" accept=".fasta,.fa">
+            <span class="dz-label">IP POOL FASTA</span>
+            <span class="dz-hint">*_IP.fasta</span>
+            <div class="dz-files" id="dz-fasta-ip-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">PSEUDOCOUNT</label>
+          <input class="field-input" id="fasta-pseudo" type="number" min="0.1" step="0.1" value="0.5" style="width:100px">
+        </div>
+
+        <div>
+          <label class="field-label">DATASET ID</label>
+          <input class="field-input" id="fasta-dataset-id" type="text" placeholder="FASTA_POOL_001" value="FASTA_POOL_001">
+        </div>
+      </div>
+
+      <!-- QUASISPECIES MODE -->
+      <div class="mode-panel" id="panel-quasispecies">
+        <div class="section-label">Quasispecies Inputs</div>
+
+        <div>
+          <div class="drop-zone" id="dz-qs-wt">
+            <input type="file" id="fi-qs-wt" accept=".fasta,.fa,.txt">
+            <span class="dz-label">WT SEQUENCE</span>
+            <span class="dz-hint">master_sequence.fasta</span>
+            <div class="dz-files" id="dz-qs-wt-files"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="drop-zone" id="dz-qs-matrices">
+            <input type="file" id="fi-qs-matrices" accept=".csv" multiple>
+            <span class="dz-label">MUTATION TABLES <span style="color:var(--text-dimmer)">(one or many)</span></span>
+            <span class="dz-hint">mutation_table_*.csv — drop all at once for batch</span>
+            <div class="dz-files" id="dz-qs-matrices-files"></div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+          <div class="section-label" style="margin-bottom:8px">Empirical Landscape <span style="color:var(--ok);font-size:10px">(recommended)</span></div>
+          <div style="font-size:11px;color:var(--text-dimmer);margin-bottom:8px;line-height:1.5">
+            Provides measured fitness values to combine with fidelity correction.<br>
+            Without this, matrix-only output is <span style="color:var(--warn)">degenerate</span> (uniform matrices → flat landscape, C=0).
+          </div>
+
+          <div style="margin-bottom:8px">
+            <div class="drop-zone" id="dz-qs-emp-singles">
+              <input type="file" id="fi-qs-emp-singles" accept=".txt,.tsv,.csv">
+              <span class="dz-label">EMPIRICAL SINGLES <span style="color:var(--text-dimmer)">(optional)</span></span>
+              <span class="dz-hint">data_QT45_v2_singlemut_fitnes.txt</span>
+              <div class="dz-files" id="dz-qs-emp-singles-files"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="drop-zone" id="dz-qs-emp-doubles">
+              <input type="file" id="fi-qs-emp-doubles" accept=".txt,.tsv,.csv">
+              <span class="dz-label">EMPIRICAL DOUBLES <span style="color:var(--text-dimmer)">(optional)</span></span>
+              <span class="dz-hint">data_QT45_v2_doublemut_fitnes.txt</span>
+              <div class="dz-files" id="dz-qs-emp-doubles-files"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">POSITION RANGE (1-based, blank = all)</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="field-input" id="qs-pos-start" type="number" min="1" placeholder="1" style="width:70px">
+            <span style="color:var(--text-dimmer);font-family:var(--mono);font-size:11px">to</span>
+            <input class="field-input" id="qs-pos-end" type="number" min="1" placeholder="45" style="width:70px">
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">MAX DOUBLES PER FIDELITY</label>
+          <select class="field-input" id="qs-max-doubles" style="width:160px">
+            <option value="0">All (full namespace)</option>
+            <option value="1000">Top 1000</option>
+            <option value="500">Top 500</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label">DATASET ID</label>
+          <input class="field-input" id="qs-dataset-id" type="text" placeholder="QS_FIDELITY_v1" value="QS_FIDELITY_v1">
+        </div>
+      </div>
+
+    </div><!-- /input-panel -->
+
+    <!-- PREFLIGHT -->
+    <div id="preflight-panel">
+      <div class="section-label">Preflight</div>
+      <div id="preflight-content">
+        <div class="preflight-row">
+          <span class="pf-key pf-dim">adapter</span>
+          <span class="pf-val pf-dim" id="pf-adapter">—</span>
+        </div>
+        <div class="preflight-row">
+          <span class="pf-key pf-dim">status</span>
+          <span class="pf-val pf-dim" id="pf-status">awaiting files</span>
+        </div>
+        <div id="pf-extra"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div id="action-bar">
+      <button class="btn btn-primary" id="btn-compile" disabled>COMPILE CANONICAL JSON</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="btn-export" disabled style="flex:1">EXPORT CANONICAL JSON</button>
+        <button class="btn btn-accent2" id="btn-export-bundle" disabled style="flex:1">EXPORT BATCH BUNDLE</button>
+      </div>
+      <button class="btn btn-strucbio1" id="btn-export-strucbio1" disabled>⟶ EXPORT FOR STRUC-BIO-I</button>
+      <div id="status-bar"><span class="status-info">load files to begin</span></div>
+    </div>
+  </div><!-- /left-col -->
+
+  <!-- ═══ RIGHT COL ═══ -->
+  <div id="right-col">
+    <div id="output-header">
+      <span id="out-title">Output Preview</span>
+      <span id="out-adapter-badge" style="margin-left:auto;color:var(--accent2)"></span>
+    </div>
+    <div id="output-body">
+      <div id="out-empty" style="color:var(--text-dimmer);font-family:var(--mono);font-size:12px;padding:16px 0">
+        compile a dataset to see results
+      </div>
+      <div id="out-content" style="display:none;flex-direction:column;gap:16px">
+
+        <!-- WT block -->
+        <div id="out-wt-block">
+          <div class="section-label">Wild Type</div>
+          <div class="seq-preview">
+            <span class="seq-label" id="out-wt-id">—</span>
+            <span id="out-wt-seq">—</span>
+          </div>
+        </div>
+
+        <!-- Diagnostics -->
+        <div id="out-diag-block">
+          <div class="section-label">Diagnostics</div>
+          <div class="diag-grid" id="out-diag-grid"></div>
+          <div id="out-diag-warnings" style="margin-top:8px"></div>
+        </div>
+
+        <!-- Singles preview -->
+        <div id="out-singles-block" class="preview-block">
+          <div class="preview-title">
+            Singles
+            <span class="count-badge" id="out-singles-count">0</span>
+          </div>
+          <table class="preview-tbl" id="out-singles-tbl">
+            <thead><tr><th>#</th><th>Mutation</th><th class="num">Fitness</th><th>Source</th></tr></thead>
+            <tbody id="out-singles-body"></tbody>
+          </table>
+          <div id="out-singles-more" style="font-family:var(--mono);font-size:10px;color:var(--text-dimmer);margin-top:6px;padding-left:2px"></div>
+        </div>
+
+        <!-- Doubles preview -->
+        <div id="out-doubles-block" class="preview-block">
+          <div class="preview-title">
+            Doubles
+            <span class="count-badge" id="out-doubles-count">0</span>
+          </div>
+          <table class="preview-tbl" id="out-doubles-tbl">
+            <thead><tr><th>#</th><th>Mut A</th><th>Mut B</th><th class="num">Fitness AB</th><th>Source</th></tr></thead>
+            <tbody id="out-doubles-body"></tbody>
+          </table>
+          <div id="out-doubles-more" style="font-family:var(--mono);font-size:10px;color:var(--text-dimmer);margin-top:6px;padding-left:2px"></div>
+        </div>
+
+        <!-- Batch fidelity table (quasispecies only) -->
+        <div id="out-batch-block" style="display:none">
+          <div class="section-label">Fidelity Batch</div>
+          <div class="batch-tbl-wrap">
+            <table class="batch-tbl">
+              <thead><tr><th>Fidelity</th><th>Singles</th><th>Doubles</th><th>Exported</th></tr></thead>
+              <tbody id="out-batch-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /out-content -->
+    </div><!-- /output-body -->
+  </div><!-- /right-col -->
+
+</div><!-- /main -->
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let currentMode = 'qt45';
+let lastCanonical = null;       // single canonical JSON
+let lastBatch = null;           // array of {fidelity, canonical} for quasispecies
+
+// File stores keyed by role
+const files = {
+  qt45_singles: null,
+  qt45_doubles: null,
+  qt45_wt: null,
+  fasta_wt: null,
+  fasta_fl: null,
+  fasta_ip: null,
+  qs_wt: null,
+  qs_matrices: [],               // array for multi-file
+  qs_emp_singles: null,          // optional empirical singles (QT45 or equivalent)
+  qs_emp_doubles: null           // optional empirical doubles
+};
+
+// ════════════════════════════════════════════════════════════
+//  UTILS — FASTA
+// ════════════════════════════════════════════════════════════
+function parseFasta(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  const records = [];
+  let cur = null;
+  for (const line of lines) {
+    const l = line.trim();
+    if (!l) continue;
+    if (l.startsWith('>')) {
+      if (cur) records.push(cur);
+      cur = { header: l.slice(1), sequence: '' };
+    } else if (cur) {
+      cur.sequence += l;
+    }
+  }
+  if (cur) records.push(cur);
+  return records;
+}
+
+// Single canonical alphabet: DNA (T throughout).
+// Rationale: QT45 ecosystem uses T labels; quasispecies matrices key on T.
+// All adapters normalize to DNA so mutation labels are cross-compatible.
+function normalizeSeqDNA(seq) {
+  return seq.toUpperCase().replace(/U/g, 'T').trim();
+}
+// Alias: FASTA inputs may be RNA; convert them to the canonical DNA alphabet.
+const normalizeSeqRNA = normalizeSeqDNA;
+
+// Extract WT from FASTA text (first record)
+function extractWtFromFasta(text) {
+  const recs = parseFasta(text);
+  if (!recs.length) return null;
+  return { header: recs[0].header, sequence: recs[0].sequence.toUpperCase() };
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS — MUTATION LABELS
+// ════════════════════════════════════════════════════════════
+function mutLabel(wtBase, pos1, mutBase) {
+  return `${wtBase}${pos1}${mutBase}`;
+}
+
+// Diff two equal-length sequences → [{wtBase, pos1, mutBase}] or null
+function diffSeqs(wt, seq) {
+  if (wt.length !== seq.length) return null;
+  const muts = [];
+  for (let i = 0; i < wt.length; i++) {
+    if (wt[i] !== seq[i]) {
+      muts.push({ wtBase: wt[i], pos1: i + 1, mutBase: seq[i] });
+    }
+  }
+  return muts;
+}
+
+// Canonical double key (sorted)
+function doubleKey(labelA, labelB) {
+  return [labelA, labelB].sort().join('|');
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS — PARSE TEXT TABLE (QT45 format)
+// ════════════════════════════════════════════════════════════
+function parseTextTable(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  const rows = [];
+  for (const line of lines) {
+    const l = line.trim();
+    if (!l || l.startsWith('#')) continue;
+    const parts = l.split('\t');
+    if (parts.length < 2) continue;
+    rows.push({ key: parts[0].trim(), value: parseFloat(parts[1]) });
+  }
+  return rows;
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS — MUTATION MATRIX (Quasispecies)
+// ════════════════════════════════════════════════════════════
+function parseMutationMatrixCsv(text) {
+  // Returns { bases: ['A','G','C','T'], matrix: {from: {to: prob}} }
+  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+  // First data line is header: ,A,G,C,T
+  const headers = lines[0].split(',').slice(1).map(h => h.trim());
+  const matrix = {};
+  for (let r = 1; r < lines.length; r++) {
+    const parts = lines[r].split(',');
+    const rowBase = parts[0].trim();
+    if (!rowBase) continue;
+    matrix[rowBase] = {};
+    for (let c = 0; c < headers.length; c++) {
+      matrix[rowBase][headers[c]] = parseFloat(parts[c + 1]) || 0;
+    }
+  }
+  return { bases: headers, matrix };
+}
+
+// P(observed=toBase | encoding=fromBase)
+function baseProb(matrixObj, fromBase, toBase) {
+  return (matrixObj.matrix[toBase] || {})[fromBase] || 0;
+}
+
+// Fidelity-relative log fitness of single mutant (log scale)
+function fidelityRelativeSingleFitness(matrixObj, wtBase, mutBase) {
+  const pMut = baseProb(matrixObj, wtBase, mutBase);
+  const pWt  = baseProb(matrixObj, wtBase, wtBase);
+  if (pMut <= 0 || pWt <= 0) return -Infinity;
+  return Math.log2(pMut) - Math.log2(pWt);
+}
+
+// Fidelity-relative log fitness of double mutant (independent sites)
+function fidelityRelativeDoubleFitness(matrixObj, wtBaseA, mutBaseA, wtBaseB, mutBaseB) {
+  return fidelityRelativeSingleFitness(matrixObj, wtBaseA, mutBaseA)
+       + fidelityRelativeSingleFitness(matrixObj, wtBaseB, mutBaseB);
+}
+
+// Infer fidelity value from filename e.g. mutation_table_960.csv → 0.960
+function inferFidelityFromName(filename) {
+  const m = filename.match(/(\d{3,4})(?:\.csv)?$/i);
+  if (!m) return null;
+  const n = parseInt(m[1]);
+  if (n >= 900 && n <= 999) return n / 1000;
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════
+//  CANONICAL BUILDER
+// ════════════════════════════════════════════════════════════
+function buildCanonical({ adapter, datasetId, sourceFiles, wtHeader, wtSeq, singles, doubles, diagnostics, notes = [] }) {
+  return {
+    meta: {
+      adapter,
+      datasetId,
+      sourceFiles,
+      generatedAt: new Date().toISOString(),
+      notes
+    },
+    wt: {
+      sequence: wtSeq,
+      fitness: 0,
+      header: wtHeader || null
+    },
+    singles,
+    doubles,
+    diagnostics: {
+      singlesCount: singles.length,
+      doublesCount: doubles.length,
+      coverage: diagnostics.coverage ?? 1.0,
+      ...diagnostics
+    },
+    extras: {}
+  };
+}
+
+// ════════════════════════════════════════════════════════════
+//  VALIDATION
+// ════════════════════════════════════════════════════════════
+function validateCanonical(canonical) {
+  const warnings = [];
+  const errors = [];
+
+  // Rule 1: unique single labels
+  const singleLabels = new Set();
+  for (const s of canonical.singles) {
+    if (singleLabels.has(s.mutationLabel)) {
+      errors.push(`Duplicate single label: ${s.mutationLabel}`);
+    }
+    singleLabels.add(s.mutationLabel);
+  }
+
+  // Rule 2: doubles reference valid singles
+  let badDoubles = 0;
+  for (const d of canonical.doubles) {
+    if (!singleLabels.has(d.mutationA) || !singleLabels.has(d.mutationB)) {
+      badDoubles++;
+    }
+  }
+  if (badDoubles > 0) warnings.push(`${badDoubles} doubles reference labels not in singles`);
+
+  // Rule 3: WT sequence consistent
+  if (!canonical.wt.sequence) errors.push('Missing WT sequence');
+
+  // Rule 4: Hamming-0 singles — mut_base == WT[pos] means mutation is identity
+  if (canonical.wt.sequence) {
+    const wt = canonical.wt.sequence.toUpperCase();
+    const h0 = canonical.singles.filter(s => isHamming0Single(s.mutationLabel, wt));
+    if (h0.length > 0) {
+      warnings.push(`${h0.length} Hamming-0 singles (mut_base = WT base, e.g. ${h0[0].mutationLabel}) — will be stripped on STRUC-BIO-I export`);
+    }
+  }
+
+  return { errors, warnings };
+}
+
+// Known QT45 WT used as fallback when no WT file is supplied.
+// This is the authoritative QT45 master sequence (45 nt, DNA).
+const QT45_WT_FALLBACK = 'GGGCGGGCTCGATTCCGTTATCAATGTCCGACTGCGCTGCCCTGC';
+
+async function runQt45Adapter() {
+  const singlesText = await readFileText(files.qt45_singles);
+  const doublesText = await readFileText(files.qt45_doubles);
+  const wtText = files.qt45_wt ? await readFileText(files.qt45_wt) : null;
+
+  const datasetId = document.getElementById('qt45-dataset-id').value.trim() || 'QT45_v2';
+  const sourceFiles = [files.qt45_singles?.name, files.qt45_doubles?.name, files.qt45_wt?.name].filter(Boolean);
+
+  // Fix 1: WT is mandatory — use file if present, else hardcoded fallback
+  let wtHeader = 'Master_Sequence';
+  let wtSeq = QT45_WT_FALLBACK;
+  const notes = [];
+  if (wtText) {
+    const wt = extractWtFromFasta(wtText);
+    if (wt) { wtHeader = wt.header; wtSeq = wt.sequence.toUpperCase().replace(/U/g,'T'); }
+  } else {
+    notes.push('WT not supplied; using hardcoded QT45 master sequence fallback');
+  }
+
+  // Fix 2: skip rows whose key is "WT" (case-insensitive)
+  const singlesRows = parseTextTable(singlesText).filter(r => r.key.toUpperCase() !== 'WT');
+  const singles = singlesRows.map(r => ({
+    mutationLabel: r.key,
+    sequence: null,
+    fitness: r.value,
+    evidence: { source: 'measured', countFL: null, countIP: null, enrichment: null, timepoint: null, fidelity: null }
+  }));
+
+  // Fix 3: require exactly two whitespace-separated labels; skip malformed rows
+  const doublesRows = parseTextTable(doublesText);
+  let skippedDoubles = 0;
+  const doubles = [];
+  for (const r of doublesRows) {
+    const parts = r.key.split(/\s+/);
+    if (parts.length !== 2 || !parts[0] || !parts[1]) { skippedDoubles++; continue; }
+    doubles.push({
+      mutationA: parts[0],
+      mutationB: parts[1],
+      fitnessAB: r.value,
+      evidence: { source: 'measured', countFL: null, countIP: null, enrichment: null, timepoint: null, fidelity: null }
+    });
+  }
+
+  const warnings = [];
+  if (skippedDoubles > 0) warnings.push(`${skippedDoubles} malformed double rows skipped`);
+
+  const diagnostics = { singlesCount: singles.length, doublesCount: doubles.length, coverage: 1.0, warnings };
+
+  return buildCanonical({ adapter: 'qt45', datasetId, sourceFiles, wtHeader, wtSeq, singles, doubles, diagnostics, notes });
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADAPTER — FASTA POOL
+// ════════════════════════════════════════════════════════════
+async function runFastaPoolAdapter() {
+  const datasetId = document.getElementById('fasta-dataset-id').value.trim() || 'FASTA_POOL_001';
+  const pseudo = parseFloat(document.getElementById('fasta-pseudo').value) || 0.5;
+
+  // Get WT
+  let wtSeq = '';
+  let wtHeader = 'WT';
+  const wtTextInput = document.getElementById('fasta-wt-text').value.trim();
+  if (files.fasta_wt) {
+    const txt = await readFileText(files.fasta_wt);
+    const wt = extractWtFromFasta(txt) || { header: 'WT', sequence: txt.toUpperCase().replace(/\s/g,'') };
+    wtHeader = wt.header; wtSeq = normalizeSeqRNA(wt.sequence);
+  } else if (wtTextInput) {
+    wtSeq = normalizeSeqRNA(wtTextInput);
+  }
+  if (!wtSeq) throw new Error('WT sequence required for FASTA pool mode');
+
+  const flText = await readFileText(files.fasta_fl);
+  const ipText = await readFileText(files.fasta_ip);
+  const sourceFiles = [files.fasta_wt?.name, files.fasta_fl?.name, files.fasta_ip?.name].filter(Boolean);
+
+  const flRecords = parseFasta(flText);
+  const ipRecords = parseFasta(ipText);
+
+  // Count mutations in each pool
+  function countPool(records, wt) {
+    const singles = new Map();   // label → count
+    const doubles = new Map();   // "A|B" → count
+    let wtCount = 0, higherOrder = 0, invalidLen = 0;
+
+    for (const rec of records) {
+      const seq = normalizeSeqRNA(rec.sequence);
+      const muts = diffSeqs(wt, seq);
+      if (muts === null) { invalidLen++; continue; }
+      if (muts.length === 0) { wtCount++; continue; }
+      if (muts.length === 1) {
+        const lbl = mutLabel(muts[0].wtBase, muts[0].pos1, muts[0].mutBase);
+        singles.set(lbl, (singles.get(lbl) || 0) + 1);
+      } else if (muts.length === 2) {
+        const lblA = mutLabel(muts[0].wtBase, muts[0].pos1, muts[0].mutBase);
+        const lblB = mutLabel(muts[1].wtBase, muts[1].pos1, muts[1].mutBase);
+        const key = doubleKey(lblA, lblB);
+        doubles.set(key, (doubles.get(key) || 0) + 1);
+      } else {
+        higherOrder++;
+      }
+    }
+    return { singles, doubles, wtCount, higherOrder, invalidLen, total: records.length };
+  }
+
+  const flCounts = countPool(flRecords, wtSeq);
+  const ipCounts = countPool(ipRecords, wtSeq);
+
+  // Build singles
+  const allSingleLabels = new Set([...flCounts.singles.keys(), ...ipCounts.singles.keys()]);
+  const singles = [];
+  for (const lbl of allSingleLabels) {
+    const cFL = flCounts.singles.get(lbl) || 0;
+    const cIP = ipCounts.singles.get(lbl) || 0;
+    const fitness = Math.log2((cIP + pseudo) / (cFL + pseudo));
+    singles.push({
+      mutationLabel: lbl,
+      sequence: null,
+      fitness,
+      evidence: { source: 'estimated', countFL: cFL, countIP: cIP, enrichment: fitness, timepoint: null, fidelity: null }
+    });
+  }
+  singles.sort((a, b) => b.fitness - a.fitness);
+
+  // Build doubles
+  const allDoubleKeys = new Set([...flCounts.doubles.keys(), ...ipCounts.doubles.keys()]);
+  const doubles = [];
+  for (const key of allDoubleKeys) {
+    const parts = key.split('|');
+    const cFL = flCounts.doubles.get(key) || 0;
+    const cIP = ipCounts.doubles.get(key) || 0;
+    const fitness = Math.log2((cIP + pseudo) / (cFL + pseudo));
+    doubles.push({
+      mutationA: parts[0],
+      mutationB: parts[1],
+      fitnessAB: fitness,
+      evidence: { source: 'estimated', countFL: cFL, countIP: cIP, enrichment: fitness, timepoint: null, fidelity: null }
+    });
+  }
+  doubles.sort((a, b) => b.fitnessAB - a.fitnessAB);
+
+  const totalDoubles = doubles.length;
+  const matchedDoubles = doubles.filter(d => d.evidence.countFL > 0 && d.evidence.countIP > 0).length;
+  // Fix 6: this is pool overlap (both FL and IP observed), not namespace coverage
+  const pairedPoolOverlap = totalDoubles > 0 ? matchedDoubles / totalDoubles : 1.0;
+
+  const diagnostics = {
+    singlesCount: singles.length,
+    doublesCount: doubles.length,
+    coverage: pairedPoolOverlap,  // kept as 'coverage' in canonical schema; semantics clarified below
+    pairedPoolOverlap,
+    flTotalReads: flRecords.length,
+    ipTotalReads: ipRecords.length,
+    flWtCount: flCounts.wtCount,
+    ipWtCount: ipCounts.wtCount,
+    ignoredHigherOrder: flCounts.higherOrder + ipCounts.higherOrder,
+    invalidLength: flCounts.invalidLen + ipCounts.invalidLen,
+    warnings: pairedPoolOverlap < 0.9 ? [`Paired pool overlap ${(pairedPoolOverlap*100).toFixed(1)}% < 90% — doubles sparse across FL/IP`] : []
+  };
+
+  return buildCanonical({ adapter: 'fasta_pool', datasetId, sourceFiles, wtHeader, wtSeq, singles, doubles, diagnostics });
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADAPTER — QUASISPECIES
+//
+//  Two modes:
+//
+//  HYBRID (empirical landscape supplied):
+//    f_combined(mut, f) = f_measured(mut) + F̂(mut; f)
+//    where F̂ = log2 P(mut|wt,f) - log2 P(wt|wt,f)
+//    Epistasis from measured doubles: E_ij = f_ab - (f_a + f_b)
+//    Combined double: f_ab_combined = (f_a + f_b + E_ij) + (F̂_a + F̂_b)
+//    Source: 'hybrid'
+//
+//  MATRIX-ONLY (no empirical data):
+//    f(mut) = F̂(mut; f) only — degenerate for uniform matrices.
+//    A warning is emitted; export is not blocked but user is informed.
+//    Source: 'reconstructed'
+// ════════════════════════════════════════════════════════════
+
+// Parse empirical singles text → Map<label, fitness>
+function parseEmpiricalSingles(text) {
+  const map = new Map();
+  for (const row of parseTextTable(text)) {
+    if (row.key.toUpperCase() !== 'WT') map.set(row.key, row.value);
+  }
+  return map;
+}
+
+// Parse empirical doubles text → Map<"A|B" (sorted), fitnessAB>
+function parseEmpiricalDoubles(text) {
+  const map = new Map();
+  for (const row of parseTextTable(text)) {
+    const parts = row.key.split(/\s+/);
+    if (parts.length !== 2 || !parts[0] || !parts[1]) continue;
+    map.set(doubleKey(parts[0], parts[1]), row.value);
+  }
+  return map;
+}
+
+async function buildCanonicalFromMatrix({
+  matrixObj, wtSeq, fidelityValue, datasetId, sourceFile,
+  posStart, posEnd, maxDoubles,
+  empSingles,   // Map<label, fitness> or null
+  empDoubles    // Map<"A|B", fitnessAB> or null
+}) {
+  const wt = wtSeq.toUpperCase();
+  const len = wt.length;
+  const p0 = Math.max(0, (posStart || 1) - 1);
+  const p1 = Math.min(len - 1, (posEnd || len) - 1);
+  const bases = ['A', 'G', 'C', 'T'];
+  const hasEmpirical = empSingles && empSingles.size > 0;
+  const source = hasEmpirical ? 'hybrid' : 'reconstructed';
+
+  // ── Singles ──────────────────────────────────────────────
+  const singles = [];
+  for (let i = p0; i <= p1; i++) {
+    const wtBase = wt[i];
+    for (const mutBase of bases) {
+      if (mutBase === wtBase) continue;
+      const label = mutLabel(wtBase, i + 1, mutBase);
+      const fidCorr = fidelityRelativeSingleFitness(matrixObj, wtBase, mutBase);
+      if (!isFinite(fidCorr)) continue;
+
+      let fitness;
+      if (hasEmpirical && empSingles.has(label)) {
+        fitness = empSingles.get(label) + fidCorr;
+      } else if (hasEmpirical) {
+        continue;  // empirical mode: skip singles not in landscape
+      } else {
+        fitness = fidCorr;
+      }
+
+      singles.push({
+        mutationLabel: label,
+        sequence: null,
+        fitness,
+        evidence: {
+          source, countFL: null, countIP: null, enrichment: null,
+          timepoint: null, fidelity: fidelityValue,
+          measuredFitness: hasEmpirical && empSingles.has(label) ? empSingles.get(label) : null,
+          fidelityCorrection: fidCorr
+        }
+      });
+    }
+  }
+
+  // ── Doubles ──────────────────────────────────────────────
+  const positions = [];
+  for (let i = p0; i <= p1; i++) positions.push(i);
+
+  const doubles = [];
+  for (let pi = 0; pi < positions.length; pi++) {
+    for (let pj = pi + 1; pj < positions.length; pj++) {
+      const i = positions[pi], j = positions[pj];
+      const wtA = wt[i], wtB = wt[j];
+      for (const mutA of bases) {
+        if (mutA === wtA) continue;
+        for (const mutB of bases) {
+          if (mutB === wtB) continue;
+          const lA = mutLabel(wtA, i + 1, mutA);
+          const lB = mutLabel(wtB, j + 1, mutB);
+          const fidA = fidelityRelativeSingleFitness(matrixObj, wtA, mutA);
+          const fidB = fidelityRelativeSingleFitness(matrixObj, wtB, mutB);
+          if (!isFinite(fidA) || !isFinite(fidB)) continue;
+
+          let fitnessAB, measuredAB = null;
+          if (hasEmpirical) {
+            const fa = empSingles.get(lA);
+            const fb = empSingles.get(lB);
+            if (fa === undefined || fb === undefined) continue;
+            const empKey = doubleKey(lA, lB);
+            const fabMeasured = empDoubles ? empDoubles.get(empKey) : undefined;
+            if (fabMeasured !== undefined) {
+              // Epistasis from measured: E = f_ab - (f_a + f_b)
+              const epistasis = fabMeasured - (fa + fb);
+              // Combined: independent fidelity shifts + measured epistatic structure
+              fitnessAB = (fa + fidA) + (fb + fidB) + epistasis;
+              measuredAB = fabMeasured;
+            } else {
+              // Double not in empirical data: assume additive from combined singles
+              fitnessAB = (fa + fidA) + (fb + fidB);
+            }
+          } else {
+            fitnessAB = fidelityRelativeDoubleFitness(matrixObj, wtA, mutA, wtB, mutB);
+          }
+
+          doubles.push({
+            mutationA: lA,
+            mutationB: lB,
+            fitnessAB,
+            evidence: {
+              source, countFL: null, countIP: null, enrichment: null,
+              timepoint: null, fidelity: fidelityValue,
+              measuredFitnessAB: measuredAB
+            }
+          });
+        }
+      }
+      if (maxDoubles > 0 && doubles.length >= maxDoubles) break;
+    }
+    if (maxDoubles > 0 && doubles.length >= maxDoubles) break;
+  }
+
+  const warnings = [];
+  if (!hasEmpirical) {
+    warnings.push('Matrix-only mode: uniform fidelity matrices produce a flat landscape (C=0 expected). Supply empirical singles/doubles for a meaningful result.');
+  }
+
+  const diagnostics = {
+    singlesCount: singles.length,
+    doublesCount: doubles.length,
+    coverage: 1.0,
+    positionRange: [p0 + 1, p1 + 1],
+    fidelityValue,
+    landscapeMode: hasEmpirical ? 'hybrid' : 'matrix-only',
+    warnings
+  };
+
+  return buildCanonical({
+    adapter: 'quasispecies',
+    datasetId: datasetId + `_f${Math.round(fidelityValue * 1000)}`,
+    sourceFiles: [sourceFile],
+    wtHeader: 'Master_Sequence',
+    wtSeq: wt,
+    singles,
+    doubles,
+    diagnostics,
+    notes: [`fidelity=${fidelityValue}`, `landscapeMode=${hasEmpirical ? 'hybrid' : 'matrix-only'}`]
+  });
+}
+
+async function runQuasispeciesAdapter() {
+  const datasetId = document.getElementById('qs-dataset-id').value.trim() || 'QS_FIDELITY_v1';
+  const posStart = parseInt(document.getElementById('qs-pos-start').value) || null;
+  const posEnd = parseInt(document.getElementById('qs-pos-end').value) || null;
+  const maxDoubles = parseInt(document.getElementById('qs-max-doubles').value) || 0;
+
+  // WT
+  const wtText = await readFileText(files.qs_wt);
+  const wtObj = extractWtFromFasta(wtText);
+  if (!wtObj) throw new Error('Could not parse WT sequence');
+  const wtSeq = wtObj.sequence.toUpperCase().replace(/U/g, 'T');
+
+  // Optional empirical landscape
+  let empSingles = null, empDoubles = null;
+  if (files.qs_emp_singles) {
+    const t = await readFileText(files.qs_emp_singles);
+    empSingles = parseEmpiricalSingles(t);
+  }
+  if (files.qs_emp_doubles) {
+    const t = await readFileText(files.qs_emp_doubles);
+    empDoubles = parseEmpiricalDoubles(t);
+  }
+
+  // Matrices (sorted by fidelity ascending)
+  const matrixFiles = [...files.qs_matrices].sort((a, b) => {
+    return (inferFidelityFromName(a.name) || 0) - (inferFidelityFromName(b.name) || 0);
+  });
+
+  const batch = [];
+  for (const mf of matrixFiles) {
+    const text = await readFileText(mf);
+    const matrixObj = parseMutationMatrixCsv(text);
+    const fidelityValue = inferFidelityFromName(mf.name) ?? 0;
+    const canonical = await buildCanonicalFromMatrix({
+      matrixObj, wtSeq, fidelityValue, datasetId,
+      sourceFile: mf.name, posStart, posEnd, maxDoubles,
+      empSingles, empDoubles
+    });
+    batch.push({ fidelity: fidelityValue, filename: mf.name, canonical });
+  }
+
+  return batch;
+}
+
+// ════════════════════════════════════════════════════════════
+//  FILE I/O
+// ════════════════════════════════════════════════════════════
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) { reject(new Error('No file')); return; }
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error(`Cannot read ${file.name}`));
+    reader.readAsText(file);
+  });
+}
+
+function exportJson(obj, filename) {
+  // Fix 7: run validation before any export; hard-block on errors
+  const { errors } = validateCanonical(obj);
+  if (errors.length > 0) {
+    setStatus('EXPORT BLOCKED — validation errors: ' + errors.join('; '), 'err');
+    return false;
+  }
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// Fix 8: bundle is a different object class from canonical JSON — labelled separately
+// Each canonical in the bundle is still validated before export
+function exportBundle(batch, basename) {
+  const blocked = batch.filter(b => validateCanonical(b.canonical).errors.length > 0);
+  if (blocked.length > 0) {
+    setStatus(`BUNDLE EXPORT BLOCKED — ${blocked.length} fidelity level(s) have validation errors`, 'err');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(batch, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = basename + '_batch_bundle.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════════════
+//  STRUC-BIO-I BRIDGE EXPORT
+// ════════════════════════════════════════════════════════════
+
+// Parse mutation label → {wtBase, pos1, mutBase} or null
+// Accepts labels like G2A, C10T, A123G (DNA alphabet)
+function parseMutLabel(label) {
+  const m = String(label).match(/^([ACGT])(\d+)([ACGT])$/i);
+  if (!m) return null;
+  return { wtBase: m[1].toUpperCase(), pos1: parseInt(m[2]), mutBase: m[3].toUpperCase() };
+}
+
+// Returns true if applying this mutation to the WT sequence produces a sequence
+// identical to WT at that position — i.e. Hamming-0 from WT.
+function isHamming0Single(label, wtSeq) {
+  const parsed = parseMutLabel(label);
+  if (!parsed) return false;
+  const actualWtBase = wtSeq[parsed.pos1 - 1];
+  return actualWtBase !== undefined && actualWtBase.toUpperCase() === parsed.mutBase;
+}
+
+function exportForStrucBioI(canonical) {
+  // Hard-block on validation errors before producing any files
+  const { errors } = validateCanonical(canonical);
+  if (errors.length > 0) {
+    setStatus('EXPORT BLOCKED — validation errors: ' + errors.join('; '), 'err');
+    return;
+  }
+
+  const wt = (canonical.wt.sequence || '').toUpperCase();
+
+  // Filter Hamming-0 singles: mut_base == WT[pos] means applying the mutation
+  // leaves the sequence unchanged — STRUC-BIO-I rejects these.
+  let hamming0Singles = 0;
+  const filteredSingles = canonical.singles.filter(s => {
+    if (isHamming0Single(s.mutationLabel, wt)) { hamming0Singles++; return false; }
+    return true;
+  });
+
+  // Build Hamming-0 label set so doubles referencing them can be pruned too.
+  const hamming0Labels = new Set(
+    canonical.singles
+      .filter(s => isHamming0Single(s.mutationLabel, wt))
+      .map(s => s.mutationLabel)
+  );
+
+  // Filter doubles that contain any Hamming-0 mutation (would not be Hamming-2 from WT)
+  let hamming0Doubles = 0;
+  const filteredDoubles = canonical.doubles.filter(d => {
+    if (hamming0Labels.has(d.mutationA) || hamming0Labels.has(d.mutationB)) {
+      hamming0Doubles++; return false;
+    }
+    return true;
+  });
+
+  function dl(filename, blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // 1. wildtype.json
+  const wtBlob = new Blob(
+    [JSON.stringify({ sequence: canonical.wt.sequence, fitness: canonical.wt.fitness ?? 0 }, null, 2)],
+    { type: 'application/json' }
+  );
+
+  // 2. singles — tab-separated, same format as QT45 source files
+  const singlesText = filteredSingles
+    .map(s => `${s.mutationLabel}\t${s.fitness}`)
+    .join('\n');
+  const singlesBlob = new Blob([singlesText], { type: 'text/plain' });
+
+  // 3. doubles — space-separated pair + tab + fitness
+  const doublesText = filteredDoubles
+    .map(d => `${d.mutationA} ${d.mutationB}\t${d.fitnessAB}`)
+    .join('\n');
+  const doublesBlob = new Blob([doublesText], { type: 'text/plain' });
+
+  const id = canonical.meta.datasetId.replace(/[^a-z0-9_]/gi,'_').toLowerCase();
+  dl(`${id}_wildtype.json`,  wtBlob);
+  dl(`${id}_singles.csv`,    singlesBlob);
+  dl(`${id}_doubles.csv`,    doublesBlob);
+
+  const filterNote = (hamming0Singles > 0 || hamming0Doubles > 0)
+    ? ` — stripped ${hamming0Singles} Hamming-0 singles, ${hamming0Doubles} affected doubles`
+    : '';
+  setStatus(`exported 3 files for STRUC-BIO-I — ${filteredSingles.length} singles, ${filteredDoubles.length} doubles${filterNote}`, hamming0Singles > 0 ? 'warn' : 'ok');
+}
+
+// ════════════════════════════════════════════════════════════
+//  PREFLIGHT
+// ════════════════════════════════════════════════════════════
+function updatePreflight() {
+  const pf = {
+    adapter: currentMode,
+    ready: false,
+    infoRows: []
+  };
+
+  if (currentMode === 'qt45') {
+    pf.ready = !!(files.qt45_singles && files.qt45_doubles);
+    const wtNote = files.qt45_wt ? files.qt45_wt.name : '(using hardcoded QT45 fallback)';
+    pf.infoRows = [
+      { k: 'singles file', v: files.qt45_singles?.name || '—', ok: !!files.qt45_singles },
+      { k: 'doubles file', v: files.qt45_doubles?.name || '—', ok: !!files.qt45_doubles },
+      { k: 'wt sequence', v: wtNote, ok: true },
+    ];
+  } else if (currentMode === 'fasta_pool') {
+    const hasWt = !!(files.fasta_wt || document.getElementById('fasta-wt-text').value.trim());
+    pf.ready = !!(hasWt && files.fasta_fl && files.fasta_ip);
+    pf.infoRows = [
+      { k: 'wt', v: files.fasta_wt?.name || (document.getElementById('fasta-wt-text').value.trim() ? 'text input' : '—'), ok: hasWt },
+      { k: 'FL fasta', v: files.fasta_fl?.name || '—', ok: !!files.fasta_fl },
+      { k: 'IP fasta', v: files.fasta_ip?.name || '—', ok: !!files.fasta_ip },
+    ];
+  } else if (currentMode === 'quasispecies') {
+    pf.ready = !!(files.qs_wt && files.qs_matrices.length > 0);
+    const hasEmp = !!(files.qs_emp_singles);
+    const fvals = files.qs_matrices.map(f => inferFidelityFromName(f.name)).filter(Boolean).sort();
+    pf.infoRows = [
+      { k: 'wt file',   v: files.qs_wt?.name || '—', ok: !!files.qs_wt },
+      { k: 'matrices',  v: files.qs_matrices.length > 0 ? `${files.qs_matrices.length} file(s)` : '—', ok: files.qs_matrices.length > 0 },
+      { k: 'fid range', v: fvals.length ? `${fvals[0].toFixed(3)} – ${fvals[fvals.length-1].toFixed(3)}` : '—', ok: true },
+      { k: 'landscape', v: hasEmp ? `hybrid (${files.qs_emp_singles.name})` : 'matrix-only ⚠ degenerate', ok: hasEmp },
+      { k: 'emp doubles', v: files.qs_emp_doubles?.name || '(none — additive fill)', ok: true },
+    ];
+  }
+
+  // Render
+  document.getElementById('pf-adapter').textContent = pf.adapter;
+  document.getElementById('pf-adapter').className = 'pf-val';
+
+  const statusEl = document.getElementById('pf-status');
+  statusEl.textContent = pf.ready ? 'ready to compile' : 'missing required files';
+  statusEl.className = 'pf-val ' + (pf.ready ? 'pf-ok' : 'pf-warn');
+
+  const extraEl = document.getElementById('pf-extra');
+  extraEl.innerHTML = pf.infoRows.map(r => `
+    <div class="preflight-row">
+      <span class="pf-key pf-dim">${r.k}</span>
+      <span class="pf-val ${r.ok ? '' : 'pf-warn'}">${r.v}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('btn-compile').disabled = !pf.ready;
+}
+
+// ════════════════════════════════════════════════════════════
+//  OUTPUT RENDERING
+// ════════════════════════════════════════════════════════════
+function renderCanonical(canonical, isBatch = false, batchData = null) {
+  document.getElementById('out-empty').style.display = 'none';
+  const outContent = document.getElementById('out-content');
+  outContent.style.display = 'flex';
+
+  // WT
+  document.getElementById('out-wt-id').textContent = canonical.wt.header || canonical.meta.adapter;
+  const wtSeq = canonical.wt.sequence || '';
+  const displaySeq = wtSeq.length > 80 ? wtSeq.slice(0,80) + '…' : wtSeq;
+  document.getElementById('out-wt-seq').textContent = displaySeq || '(none)';
+
+  // Adapter badge
+  document.getElementById('out-adapter-badge').textContent = canonical.meta.adapter.toUpperCase() + ' · ' + canonical.meta.datasetId;
+
+  // Diagnostics
+  const d = canonical.diagnostics;
+  const diagData = [
+    { label: 'SINGLES', val: d.singlesCount, sub: '' },
+    { label: 'DOUBLES', val: d.doublesCount, sub: '' },
+    { label: 'COVERAGE', val: (d.coverage * 100).toFixed(1) + '%', sub: d.coverage < 0.9 ? 'below threshold' : '' },
+  ];
+  if (d.flTotalReads !== undefined) {
+    diagData.push({ label: 'FL READS', val: d.flTotalReads, sub: `${d.flWtCount} WT` });
+    diagData.push({ label: 'IP READS', val: d.ipTotalReads, sub: `${d.ipWtCount} WT` });
+    diagData.push({ label: 'IGNORED', val: d.ignoredHigherOrder, sub: 'higher order' });
+  }
+  if (d.fidelityValue !== undefined) {
+    diagData.push({ label: 'FIDELITY', val: d.fidelityValue.toFixed(3), sub: '' });
+    diagData.push({ label: 'POS RANGE', val: `${d.positionRange[0]}–${d.positionRange[1]}`, sub: '' });
+  }
+
+  document.getElementById('out-diag-grid').innerHTML = diagData.map(dc => `
+    <div class="diag-cell">
+      <div class="dc-label">${dc.label}</div>
+      <div class="dc-val">${dc.val}</div>
+      ${dc.sub ? `<div class="dc-sub">${dc.sub}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Warnings
+  const warns = (d.warnings || []);
+  const { errors: valErrors, warnings: valWarns } = validateCanonical(canonical);
+  const allWarns = [...warns, ...valWarns];
+  const allErrors = [...valErrors];
+  document.getElementById('out-diag-warnings').innerHTML = [
+    ...allErrors.map(e => `<div style="font-family:var(--mono);font-size:11px;color:var(--err);padding:2px 0">✗ ${e}</div>`),
+    ...allWarns.map(w => `<div style="font-family:var(--mono);font-size:11px;color:var(--warn);padding:2px 0">⚠ ${w}</div>`)
+  ].join('');
+
+  // Singles
+  const PREVIEW_N = 15;
+  const singles = canonical.singles;
+  document.getElementById('out-singles-count').textContent = singles.length;
+  const singlesBody = document.getElementById('out-singles-body');
+  singlesBody.innerHTML = singles.slice(0, PREVIEW_N).map((s, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${s.mutationLabel}</td>
+      <td class="num ${s.fitness >= 0 ? 'val-pos' : 'val-neg'}">${s.fitness.toFixed(6)}</td>
+      <td>${s.evidence.source}</td>
+    </tr>
+  `).join('');
+  const singlesMore = document.getElementById('out-singles-more');
+  singlesMore.textContent = singles.length > PREVIEW_N ? `… and ${singles.length - PREVIEW_N} more` : '';
+
+  // Doubles
+  const doubles = canonical.doubles;
+  document.getElementById('out-doubles-count').textContent = doubles.length;
+  const doublesBody = document.getElementById('out-doubles-body');
+  doublesBody.innerHTML = doubles.slice(0, PREVIEW_N).map((d, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${d.mutationA}</td>
+      <td>${d.mutationB}</td>
+      <td class="num ${d.fitnessAB >= 0 ? 'val-pos' : 'val-neg'}">${d.fitnessAB.toFixed(6)}</td>
+      <td>${d.evidence.source}</td>
+    </tr>
+  `).join('');
+  document.getElementById('out-doubles-more').textContent = doubles.length > PREVIEW_N ? `… and ${doubles.length - PREVIEW_N} more` : '';
+
+  // Batch block
+  const batchBlock = document.getElementById('out-batch-block');
+  if (batchData) {
+    batchBlock.style.display = 'block';
+    const batchBody = document.getElementById('out-batch-body');
+    batchBody.innerHTML = batchData.map((b, i) => `
+      <tr class="${i === 0 ? 'active-row' : ''}">
+        <td>${b.fidelity.toFixed(3)}</td>
+        <td>${b.canonical.singles.length}</td>
+        <td>${b.canonical.doubles.length}</td>
+        <td style="color:var(--text-dimmer)">${b.filename}</td>
+      </tr>
+    `).join('');
+  } else {
+    batchBlock.style.display = 'none';
+  }
+}
+
+function setStatus(msg, type = 'info') {
+  const el = document.getElementById('status-bar');
+  el.innerHTML = `<span class="status-${type}">${msg}</span>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  DROP ZONE HELPERS
+// ════════════════════════════════════════════════════════════
+function setupDropZone(dzId, inputId, fileKey, multi = false, afterLoad = null) {
+  const dz = document.getElementById(dzId);
+  const inp = document.getElementById(inputId);
+  const filesEl = document.getElementById(dzId + '-files');
+
+  function handleFiles(fileList) {
+    if (!fileList.length) return;
+    if (multi) {
+      files[fileKey] = Array.from(fileList);
+      filesEl.innerHTML = files[fileKey].map(f =>
+        `<div class="dz-file">${f.name} <span style="color:var(--text-dimmer)">(${formatBytes(f.size)})</span></div>`
+      ).join('');
+    } else {
+      files[fileKey] = fileList[0];
+      filesEl.innerHTML = `<div class="dz-file">${files[fileKey].name} <span style="color:var(--text-dimmer)">(${formatBytes(files[fileKey].size)})</span></div>`;
+    }
+    updatePreflight();
+    if (afterLoad) afterLoad();
+  }
+
+  inp.addEventListener('change', e => handleFiles(e.target.files));
+
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+}
+
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+  return (n/1024/1024).toFixed(1) + ' MB';
+}
+
+// ════════════════════════════════════════════════════════════
+//  MAIN COMPILE DISPATCHER
+// ════════════════════════════════════════════════════════════
+async function compile() {
+  try {
+    document.getElementById('btn-compile').disabled = true;
+    setStatus('compiling…', 'info');
+    if (currentMode === 'qt45') {
+      lastCanonical = await runQt45Adapter();
+      lastBatch = null;
+      // Fix 9: zero-content is a compile error
+      if (lastCanonical.singles.length === 0) throw new Error('Compiled 0 singles — check singles file format');
+      if (lastCanonical.doubles.length === 0) throw new Error('Compiled 0 doubles — check doubles file format');
+      renderCanonical(lastCanonical, false, null);
+      const { errors: ve } = validateCanonical(lastCanonical);
+      const exportOk = ve.length === 0;
+      setStatus(`compiled — ${lastCanonical.singles.length} singles, ${lastCanonical.doubles.length} doubles${ve.length ? ' ⚠ validation errors' : ''}`, ve.length ? 'warn' : 'ok');
+      document.getElementById('btn-export').disabled = !exportOk;
+      document.getElementById('btn-export-strucbio1').disabled = !exportOk;
+      document.getElementById('btn-export-bundle').disabled = true;
+
+    } else if (currentMode === 'fasta_pool') {
+      lastCanonical = await runFastaPoolAdapter();
+      lastBatch = null;
+      // Fix 9
+      if (lastCanonical.singles.length === 0) throw new Error('Compiled 0 singles — check WT sequence and FASTA files');
+      if (lastCanonical.doubles.length === 0) throw new Error('Compiled 0 doubles — check FASTA files for multi-mutant reads');
+      renderCanonical(lastCanonical, false, null);
+      const { errors: ve } = validateCanonical(lastCanonical);
+      const w = lastCanonical.diagnostics.warnings?.length ?? 0;
+      setStatus(`compiled — ${lastCanonical.singles.length} singles, ${lastCanonical.doubles.length} doubles${w ? ' ⚠ ' + w + ' warning(s)' : ''}`, (w || ve.length) ? 'warn' : 'ok');
+      document.getElementById('btn-export').disabled = ve.length > 0;
+      document.getElementById('btn-export-strucbio1').disabled = ve.length > 0;
+      document.getElementById('btn-export-bundle').disabled = true;
+
+    } else if (currentMode === 'quasispecies') {
+      setStatus('compiling fidelity batch…', 'info');
+      const batch = await runQuasispeciesAdapter();
+      lastBatch = batch;
+      lastCanonical = batch[0]?.canonical || null;
+      // Fix 9
+      if (!lastCanonical || lastCanonical.singles.length === 0) throw new Error('Compiled 0 singles — check WT and mutation tables');
+      if (lastCanonical.doubles.length === 0) throw new Error('Compiled 0 doubles — check position range and max doubles setting');
+      renderCanonical(lastCanonical, true, batch);
+      const { errors: ve } = validateCanonical(lastCanonical);
+      setStatus(`compiled — ${batch.length} fidelity levels, ${lastCanonical.singles.length} singles × ${lastCanonical.doubles.length} doubles each`, ve.length ? 'warn' : 'ok');
+      document.getElementById('btn-export').disabled = ve.length > 0;
+      document.getElementById('btn-export-strucbio1').disabled = ve.length > 0;
+      document.getElementById('btn-export-bundle').disabled = false;
+    }
+  } catch (err) {
+    setStatus('ERROR: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    document.getElementById('btn-compile').disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODE SWITCHING
+// ════════════════════════════════════════════════════════════
+function switchMode(mode) {
+  // Fix 10: clear stale file state for the mode being left to avoid cross-mode contamination
+  if (currentMode !== mode) {
+    if (currentMode === 'qt45') {
+      files.qt45_singles = null; files.qt45_doubles = null; files.qt45_wt = null;
+      ['dz-qt45-singles-files','dz-qt45-doubles-files','dz-qt45-wt-files'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = '';
+      });
+    } else if (currentMode === 'fasta_pool') {
+      files.fasta_wt = null; files.fasta_fl = null; files.fasta_ip = null;
+      ['dz-fasta-wt-files','dz-fasta-fl-files','dz-fasta-ip-files'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = '';
+      });
+      document.getElementById('fasta-wt-text').value = '';
+    } else if (currentMode === 'quasispecies') {
+      files.qs_wt = null; files.qs_matrices = [];
+      files.qs_emp_singles = null; files.qs_emp_doubles = null;
+      ['dz-qs-wt-files','dz-qs-matrices-files','dz-qs-emp-singles-files','dz-qs-emp-doubles-files'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = '';
+      });
+    }
+    // Reset compile state and output panel
+    lastCanonical = null; lastBatch = null;
+    document.getElementById('btn-export').disabled = true;
+    document.getElementById('btn-export-strucbio1').disabled = true;
+    document.getElementById('btn-export-bundle').disabled = true;
+    document.getElementById('out-empty').style.display = 'block';
+    document.getElementById('out-content').style.display = 'none';
+    setStatus('load files to begin', 'info');
+  }
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  document.querySelectorAll('.mode-panel').forEach(p => {
+    const id = p.id.replace('panel-', '');
+    p.classList.toggle('active', id === mode);
+  });
+  updatePreflight();
+}
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Guide toggle
+  document.getElementById('guide-toggle').addEventListener('click', () => {
+    const toggle = document.getElementById('guide-toggle');
+    const content = document.getElementById('guide-content');
+    const open = toggle.classList.toggle('open');
+    content.classList.toggle('open', open);
+  });
+
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+  });
+
+  // Drop zones — QT45
+  setupDropZone('dz-qt45-singles', 'fi-qt45-singles', 'qt45_singles');
+  setupDropZone('dz-qt45-doubles', 'fi-qt45-doubles', 'qt45_doubles');
+  setupDropZone('dz-qt45-wt',      'fi-qt45-wt',      'qt45_wt');
+
+  // Drop zones — FASTA pool
+  setupDropZone('dz-fasta-wt', 'fi-fasta-wt', 'fasta_wt');
+  setupDropZone('dz-fasta-fl', 'fi-fasta-fl', 'fasta_fl');
+  setupDropZone('dz-fasta-ip', 'fi-fasta-ip', 'fasta_ip');
+  document.getElementById('fasta-wt-text').addEventListener('input', updatePreflight);
+
+  // Drop zones — Quasispecies
+  setupDropZone('dz-qs-wt',          'fi-qs-wt',          'qs_wt');
+  setupDropZone('dz-qs-matrices',    'fi-qs-matrices',    'qs_matrices', true);
+  setupDropZone('dz-qs-emp-singles', 'fi-qs-emp-singles', 'qs_emp_singles');
+  setupDropZone('dz-qs-emp-doubles', 'fi-qs-emp-doubles', 'qs_emp_doubles');
+
+  // Compile
+  document.getElementById('btn-compile').addEventListener('click', compile);
+
+  // Export single
+  document.getElementById('btn-export').addEventListener('click', () => {
+    if (!lastCanonical) return;
+    const id = lastCanonical.meta.datasetId.replace(/[^a-z0-9_]/gi,'_').toLowerCase();
+    exportJson(lastCanonical, `strucbio2_${id}.json`);
+    setStatus(`exported ${id}.json`, 'ok');
+  });
+
+  // Export for STRUC-BIO-I (3 files: wildtype.json, singles.csv, doubles.csv)
+  document.getElementById('btn-export-strucbio1').addEventListener('click', () => {
+    if (!lastCanonical) return;
+    exportForStrucBioI(lastCanonical);
+  });
+
+  // Export bundle
+  document.getElementById('btn-export-bundle').addEventListener('click', () => {
+    if (!lastBatch) return;
+    const id = document.getElementById('qs-dataset-id').value.trim().replace(/[^a-z0-9_]/gi,'_').toLowerCase();
+    exportBundle(lastBatch, `strucbio2_${id}`);
+    setStatus(`exported bundle with ${lastBatch.length} fidelity levels`, 'ok');
+  });
+
+  // Initial preflight
+  updatePreflight();
+});
+</script>
+</body>
+</html>
