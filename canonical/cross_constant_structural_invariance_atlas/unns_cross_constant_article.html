@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>When Constants Change but Structure Holds — Cross-Constant Investigation | unns.tech</title>
+  <style>
+    /* ── Joomla-safe scoping ── */
+    .unns-article * { box-sizing: border-box; }
+    .unns-article {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.72;
+      color: #dde0ee;
+      background: #07080f;
+      margin: 0; padding: 0;
+    }
+    .unns-article a { color: #38bdf8; text-decoration: none; }
+    .unns-article a:hover { text-decoration: underline; color: #7dd3fc; }
+    .unns-article p { margin-bottom: 1em; }
+    .unns-article ul, .unns-article ol { margin-left: 1.5em; margin-bottom: 1em; line-height: 2.0; }
+    .unns-article li { color: #c8cfe8; }
+    .unns-article strong { color: #f0f4ff; }
+    .unns-article em { color: #a0b4d8; }
+
+    /* ── Layout ── */
+    .ua-wrap { max-width: 1140px; margin: 0 auto; padding: 28px 20px 80px; }
+
+    /* ── Hero ── */
+    .ua-hero {
+      background: linear-gradient(140deg, #09102a 0%, #111530 55%, #0d1220 100%);
+      border-radius: 14px;
+      border-left: 6px solid #38bdf8;
+      padding: 64px 54px 52px;
+      margin-bottom: 38px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ua-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 10% 40%, rgba(56,189,248,.11), transparent 45%),
+        radial-gradient(circle at 88% 25%, rgba(192,132,252,.09), transparent 48%),
+        radial-gradient(circle at 55% 92%, rgba(74,222,128,.06), transparent 40%);
+      pointer-events: none;
+    }
+    .ua-hero-tag {
+      font-size: 0.76em; letter-spacing: 3px; text-transform: uppercase;
+      color: #38bdf8; margin-bottom: 18px; font-weight: 700;
+    }
+    .ua-hero h1 {
+      font-size: 2.6em; font-weight: 800; color: #eaf0ff;
+      line-height: 1.13; margin-bottom: 20px; letter-spacing: -0.025em;
+    }
+    .ua-hero h1 span { color: #38bdf8; }
+    .ua-hero h1 span.gold { color: #fbbf24; }
+    .ua-hero-sub {
+      font-size: 1.18em; color: #8ea4c8; margin-bottom: 24px;
+      max-width: 800px; line-height: 1.6;
+    }
+    .ua-hero-badges {
+      display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px;
+    }
+    .ua-badge {
+      display: inline-block; padding: 4px 14px; border-radius: 20px;
+      font-size: 0.77em; font-weight: 700; letter-spacing: 0.4px; border: 1px solid;
+    }
+    .ua-badge.sky    { color: #7dd3fc; border-color: rgba(56,189,248,.4);  background: rgba(56,189,248,.09); }
+    .ua-badge.green  { color: #86efac; border-color: rgba(74,222,128,.4);  background: rgba(74,222,128,.09); }
+    .ua-badge.violet { color: #e4aaff; border-color: rgba(192,132,252,.4); background: rgba(192,132,252,.09); }
+    .ua-badge.amber  { color: #fde68a; border-color: rgba(251,191,36,.4);  background: rgba(251,191,36,.09); }
+    .ua-badge.orange { color: #fdba74; border-color: rgba(251,146,60,.4);  background: rgba(251,146,60,.09); }
+    .ua-badge.teal   { color: #5eead4; border-color: rgba(78,205,196,.4);  background: rgba(78,205,196,.09); }
+    .ua-hero-meta {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      font-size: 0.88em; color: #5a6888; margin-top: 28px;
+    }
+    .ua-hero-meta span { color: #7a94b8; }
+
+    /* ── Abstract ── */
+    .ua-abstract {
+      background: #0f1222;
+      border: 1px solid #1e2440;
+      border-left: 4px solid #4ecdc4;
+      border-radius: 10px;
+      padding: 32px 36px;
+      margin-bottom: 36px;
+    }
+    .ua-abstract h2 {
+      color: #4ecdc4; font-size: 1.12em;
+      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .ua-abstract p { color: #c8d0e8; }
+
+    /* ── Content blocks ── */
+    .ua-block {
+      background: #0f1222;
+      border: 1px solid #191d38;
+      border-radius: 10px;
+      padding: 40px 44px;
+      margin-bottom: 32px;
+    }
+    .ua-block h2 {
+      font-size: 1.72em; font-weight: 700; color: #4a9eff;
+      margin-bottom: 22px; padding-bottom: 14px;
+      border-bottom: 2px solid #1a1e36; line-height: 1.25;
+    }
+    .ua-block h3 { color: #4ecdc4; font-size: 1.22em; margin: 28px 0 14px; }
+    .ua-block h4 {
+      color: #94a3c8; font-size: 0.93em;
+      text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0 10px;
+    }
+    .ua-block p { color: #c8d0e8; }
+
+    /* ── Highlight boxes ── */
+    .ua-hl {
+      border-radius: 8px; padding: 22px 26px;
+      margin: 22px 0; border-left: 4px solid;
+    }
+    .ua-hl p { color: #ccd4e8; margin-bottom: 0.6em; }
+    .ua-hl p:last-child { margin-bottom: 0; }
+    .ua-hl.green  { background: rgba(74,222,128,.07);  border-color: #4ade80; }
+    .ua-hl.blue   { background: rgba(56,189,248,.07);  border-color: #38bdf8; }
+    .ua-hl.orange { background: rgba(251,146,60,.07);  border-color: #fb923c; }
+    .ua-hl.violet { background: rgba(192,132,252,.07); border-color: #c084fc; }
+    .ua-hl.amber  { background: rgba(251,191,36,.07);  border-color: #fbbf24; }
+    .ua-hl.teal   { background: rgba(78,205,196,.07);  border-color: #4ecdc4; }
+    .ua-hl.red    { background: rgba(248,113,113,.07); border-color: #f87171; }
+    .ua-hl h4 { margin-top: 0; font-size: 0.82em; letter-spacing: 1.5px; }
+    .ua-hl.green h4  { color: #4ade80; }
+    .ua-hl.blue h4   { color: #38bdf8; }
+    .ua-hl.orange h4 { color: #fb923c; }
+    .ua-hl.violet h4 { color: #c084fc; }
+    .ua-hl.amber h4  { color: #fbbf24; }
+    .ua-hl.teal h4   { color: #4ecdc4; }
+    .ua-hl.red h4    { color: #f87171; }
+
+    /* ── Manuscript spotlight ── */
+    .ua-manuscript {
+      background: linear-gradient(135deg, #0a0e22 0%, #101628 100%);
+      border: 2px solid rgba(56,189,248,.35);
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin: 36px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .ua-manuscript::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 90% 10%, rgba(56,189,248,.07), transparent 50%);
+      pointer-events: none;
+    }
+    .ua-manuscript-label {
+      font-size: 0.73em; letter-spacing: 3px; text-transform: uppercase;
+      color: #38bdf8; font-weight: 800; margin-bottom: 14px;
+    }
+    .ua-manuscript h3 {
+      font-size: 1.45em; font-weight: 700; color: #eaf2ff;
+      margin-bottom: 14px; line-height: 1.3;
+    }
+    .ua-manuscript p { color: #b8c6e0; margin-bottom: 0.9em; font-size: 0.98em; }
+    .ua-manuscript-link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 28px;
+      background: rgba(56,189,248,.12);
+      border: 1px solid rgba(56,189,248,.4);
+      border-radius: 8px;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 0.92em;
+      letter-spacing: 0.3px;
+      text-decoration: none;
+    }
+    .ua-manuscript-link:hover {
+      background: rgba(56,189,248,.22);
+      text-decoration: none;
+    }
+
+    /* ── Theorem box ── */
+    .ua-theorem {
+      background: rgba(251,191,36,.05);
+      border: 2px solid rgba(251,191,36,.4);
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin: 28px 0;
+    }
+    .ua-theorem-label {
+      font-size: 0.75em; letter-spacing: 2.5px; text-transform: uppercase;
+      color: #fbbf24; font-weight: 800; margin-bottom: 12px;
+    }
+    .ua-theorem-body {
+      font-size: 1.08em; line-height: 1.78; color: #ede8cc;
+    }
+    .ua-theorem-body em { color: #fde68a; font-style: normal; font-weight: 700; }
+
+    /* ── Stat cards ── */
+    .ua-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
+      gap: 14px; margin: 28px 0;
+    }
+    .ua-stat {
+      background: #0b0c1a; border: 1px solid #1e2440;
+      border-radius: 8px; padding: 18px 20px;
+    }
+    .ua-stat-label { font-size: 0.72em; text-transform: uppercase; letter-spacing: 1px; color: #4a5480; margin-bottom: 6px; }
+    .ua-stat-value { font-size: 1.7em; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+    .ua-stat-note  { font-size: 0.75em; color: #4a5480; }
+    .ua-stat.green .ua-stat-value  { color: #4ade80; }
+    .ua-stat.sky .ua-stat-value    { color: #38bdf8; }
+    .ua-stat.violet .ua-stat-value { color: #c084fc; }
+    .ua-stat.amber .ua-stat-value  { color: #fbbf24; }
+    .ua-stat.teal .ua-stat-value   { color: #4ecdc4; }
+    .ua-stat.orange .ua-stat-value { color: #fb923c; }
+
+    /* ── Discovery cards grid ── */
+    .ua-discoveries {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+      gap: 18px; margin: 28px 0;
+    }
+    .ua-discovery {
+      border-radius: 10px; padding: 26px 28px; border: 1px solid;
+    }
+    .ua-discovery.green  { background: rgba(74,222,128,.05);  border-color: rgba(74,222,128,.25); }
+    .ua-discovery.sky    { background: rgba(56,189,248,.05);  border-color: rgba(56,189,248,.25); }
+    .ua-discovery.amber  { background: rgba(251,191,36,.05);  border-color: rgba(251,191,36,.25); }
+    .ua-discovery.teal   { background: rgba(78,205,196,.05);  border-color: rgba(78,205,196,.25); }
+    .ua-discovery-num {
+      font-size: 0.72em; letter-spacing: 2px; text-transform: uppercase;
+      font-weight: 800; margin-bottom: 8px;
+    }
+    .ua-discovery.green .ua-discovery-num  { color: #4ade80; }
+    .ua-discovery.sky .ua-discovery-num    { color: #38bdf8; }
+    .ua-discovery.amber .ua-discovery-num  { color: #fbbf24; }
+    .ua-discovery.teal .ua-discovery-num   { color: #4ecdc4; }
+    .ua-discovery h3 {
+      font-size: 1.05em; font-weight: 700; margin-bottom: 10px;
+      color: #e0e8ff; line-height: 1.35;
+    }
+    .ua-discovery p { font-size: 0.9em; color: #9aa8c8; line-height: 1.6; margin-bottom: 0; }
+
+    /* ── Data table ── */
+    .ua-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.9em; margin: 24px 0;
+      border-radius: 8px; overflow: hidden;
+    }
+    .ua-table th {
+      background: #141830; color: #4a9eff;
+      padding: 13px 16px; text-align: left;
+      font-size: 0.8em; letter-spacing: 0.8px;
+      text-transform: uppercase; font-weight: 700;
+    }
+    .ua-table td {
+      padding: 11px 16px; border-bottom: 1px solid #181c38; color: #c0cae0;
+    }
+    .ua-table tr:hover td { background: rgba(255,255,255,.018); }
+    .ua-table .pos  { color: #4ade80; font-weight: 700; }
+    .ua-table .null { color: #38bdf8; font-weight: 700; }
+    .ua-table .weak { color: #fbbf24; font-weight: 700; }
+    .ua-table .rev  { color: #f87171; font-weight: 700; }
+    .ua-table .dim  { color: #4a5480; }
+
+    /* ── Compare columns ── */
+    .ua-compare {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin: 24px 0;
+    }
+    .ua-compare-col {
+      background: #0c0d1a; border-radius: 8px;
+      padding: 24px; border-left: 3px solid;
+    }
+    .ua-compare-col.left  { border-color: #4a5480; }
+    .ua-compare-col.right { border-color: #4ade80; }
+    .ua-compare-col h4 {
+      font-size: 0.82em; text-transform: uppercase;
+      letter-spacing: 1.5px; margin-bottom: 12px; color: #4a5480;
+    }
+    .ua-compare-col.right h4 { color: #4ade80; }
+    .ua-compare-col p { color: #9aa8c8; font-size: 0.92em; margin-bottom: 0.7em; }
+
+    /* ── Links block ── */
+    .ua-links {
+      background: #0b0d1c; border: 1px solid #191d38;
+      border-top: 3px solid #4ecdc4;
+      border-radius: 10px; padding: 32px 38px; margin-top: 12px;
+    }
+    .ua-links h2 { color: #4ecdc4; font-size: 1.18em; margin-bottom: 22px; }
+    .ua-links ul { list-style: none; margin: 0; padding: 0; }
+    .ua-links li {
+      margin: 14px 0; padding-left: 22px;
+      position: relative; font-size: 0.93em; color: #8890b8;
+    }
+    .ua-links li::before { content: '→'; position: absolute; left: 0; color: #4ecdc4; }
+    .ua-links a { color: #4ecdc4; }
+    .ua-links a:hover { color: #7dd3fc; }
+    .ua-links li strong { color: #c8d0e8; }
+
+    /* ── SVG ── */
+    .unns-article svg { max-width: 100%; height: auto; display: block; margin: 28px auto; }
+    .ua-svg-wrap { overflow-x: auto; }
+
+    /* ── Footnote ── */
+    .ua-footnote {
+      font-size: 0.82em; color: #2e3454;
+      margin-top: 32px; padding-top: 18px; border-top: 1px solid #181c38;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 760px) {
+      .ua-hero  { padding: 38px 24px 34px; }
+      .ua-hero h1 { font-size: 1.8em; }
+      .ua-block { padding: 28px 22px; }
+      .ua-compare { grid-template-columns: 1fr; }
+      .ua-manuscript { padding: 26px 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="unns-article">
+<div class="ua-wrap">
+
+<!-- ════════════ HERO ════════════ -->
+<div class="ua-hero">
+  <div class="ua-hero-tag">UNNS Substrate Program · March 2026 · Structural Response Atlas</div>
+  <h1>When Constants <span>Change</span><br>but Structure <span class="gold">Holds</span></h1>
+  <div class="ua-hero-sub">
+    A cross-constant investigation testing whether varying the fundamental constants of nature —
+    α, μ, αₛ, αG — can break the structural ordering of physical systems. The answer is
+    a precise, domain-specific <em>no</em> — and the exceptions reveal something deeper.
+  </div>
+  <div class="ua-hero-badges">
+    <span class="ua-badge sky">α · Fine-Structure</span>
+    <span class="ua-badge violet">μ · Mass Ratio</span>
+    <span class="ua-badge orange">αₛ · Strong Force</span>
+    <span class="ua-badge teal">αG · Gravity</span>
+    <span class="ua-badge green">0 Violations at Physical Values</span>
+    <span class="ua-badge amber">7 Domains · 26+ Systems</span>
+  </div>
+  <div class="ua-hero-meta">
+    <span><strong>Instrument:</strong> STRUC-I Chamber v1.0.4</span>
+    <span><strong>Assessments:</strong> 166,000+</span>
+    <span><strong>Constants tested:</strong> 4</span>
+    <span><strong>Hard violations at physical values:</strong> 0</span>
+  </div>
+</div>
+
+<!-- ════════════ OPENING HOOK ════════════ -->
+<div class="ua-abstract">
+  <h2>The Question</h2>
+  <p>
+    What if the fine-structure constant — the number that governs how electrons and photons interact —
+    were slightly different from what it is? What if gravity were 20% stronger, or the ratio between
+    the proton and electron masses shifted by a few percent?
+  </p>
+  <p>
+    The standard intuition is that everything would unravel. The chemistry would change. Nuclear binding
+    would shift. Stars would form differently, or not at all. Physical structure seems fragile —
+    precariously balanced at the specific values the constants happen to take.
+  </p>
+  <p style="color:#fde68a; font-size:1.06em; font-style:italic;">
+    This investigation tests that intuition directly. And the answer is more nuanced than either fragility or robustness — it is <strong style="color:#fde68a;">selectivity</strong>.
+  </p>
+</div>
+
+<!-- ════════════ SECTION 1: THE TOOL ════════════ -->
+<div class="ua-block">
+  <h2>§1 — The Instrument: STRUC-I Chamber</h2>
+
+  <p>
+    To test what happens to physical structure under constant variation, we need a precise instrument —
+    something that can measure not just whether a physical system's energies change (they always do),
+    but whether its <strong>ordering architecture</strong> changes. Whether the structure itself becomes
+    unstable.
+  </p>
+
+  <p>
+    That instrument is <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/chamber_struc_i_v1_0_4.html" target="_blank"><strong>STRUC-I v1.0.4</strong></a>.
+  </p>
+
+  <h3>What STRUC-I Measures</h3>
+
+  <p>
+    Consider any ordered physical system — the energy levels of an atom, the vibrational frequencies of
+    a molecule, the harmonic spectrum of a planet's gravity field. These form a <strong>ladder</strong>:
+    a sequence of values arranged from smallest to largest, with <strong>gaps</strong> between them.
+  </p>
+
+  <p>
+    STRUC-I asks: when you perturb this ladder — push its elements around by small amounts — how many
+    of them reorder? How many gaps get crossed? And critically: is the number of reorderings bounded
+    by the geometric structure of the gaps themselves?
+  </p>
+
+  <!-- SVG: Ladder concept diagram -->
+  <div class="ua-svg-wrap">
+  <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+    <rect width="680" height="160" fill="#0b0d1c" rx="8"/>
+    <!-- Ladder rungs -->
+    <text x="24" y="22" fill="#4a5480" font-size="10" font-family="monospace" letter-spacing="1">LADDER  →  GAPS  →  PERTURB  →  COUNT INVERSIONS  →  ADMISSIBILITY?</text>
+    <!-- Level bars -->
+    <rect x="30"  y="60" width="48" height="8" rx="3" fill="#38bdf8" opacity=".7"/>
+    <rect x="100" y="52" width="48" height="8" rx="3" fill="#38bdf8" opacity=".7"/>
+    <rect x="170" y="40" width="48" height="8" rx="3" fill="#38bdf8" opacity=".7"/>
+    <rect x="240" y="70" width="48" height="8" rx="3" fill="#38bdf8" opacity=".7"/>
+    <rect x="310" y="44" width="48" height="8" rx="3" fill="#38bdf8" opacity=".7"/>
+    <!-- Gap labels -->
+    <text x="78"  y="74" fill="#4ecdc4" font-size="9" font-family="monospace">g₁</text>
+    <text x="148" y="62" fill="#4ecdc4" font-size="9" font-family="monospace">g₂</text>
+    <text x="218" y="72" fill="#4ecdc4" font-size="9" font-family="monospace">g₃</text>
+    <text x="288" y="70" fill="#4ecdc4" font-size="9" font-family="monospace">g₄</text>
+    <!-- Arrow right -->
+    <text x="390" y="70" fill="#5a6888" font-size="28">→</text>
+    <!-- Perturbation result -->
+    <text x="430" y="62" fill="#fbbf24" font-size="11" font-family="monospace">inv ≤ ν(V)</text>
+    <text x="430" y="80" fill="#4ade80" font-size="10" font-family="monospace">✓ ADMISSIBLE</text>
+    <!-- Labels -->
+    <text x="30"  y="110" fill="#4a5480" font-size="9" font-family="monospace">ℓ₁</text>
+    <text x="100" y="110" fill="#4a5480" font-size="9" font-family="monospace">ℓ₂</text>
+    <text x="170" y="110" fill="#4a5480" font-size="9" font-family="monospace">ℓ₃</text>
+    <text x="240" y="110" fill="#4a5480" font-size="9" font-family="monospace">ℓ₄</text>
+    <text x="310" y="110" fill="#4a5480" font-size="9" font-family="monospace">ℓ₅</text>
+    <text x="30"  y="140" fill="#2e3a5a" font-size="9" font-family="sans-serif">ordered ladder (energy levels, harmonic degrees, gap sizes...)</text>
+    <text x="430" y="140" fill="#2e3a5a" font-size="9" font-family="sans-serif">structural law holds</text>
+  </svg>
+  </div>
+
+  <p>
+    The answer — the core claim of the UNNS Substrate Program — is that for all physical systems tested,
+    the number of inversions never exceeds the vulnerability capacity of the gap structure.
+    This is the <strong>admissibility inequality</strong>, and it appears to be a universal law of
+    physical ordering.
+  </p>
+
+  <div class="ua-hl blue">
+    <h4>What admissibility means in plain terms</h4>
+    <p>
+      A ladder is <em>admissible</em> if its gap architecture is rich enough to absorb the reordering
+      pressure that any bounded perturbation can generate. Physical systems — atoms, molecules, gravity
+      fields, nuclear spectra — are all admissible. Always. This investigation asks whether that
+      changes when the constants themselves are varied.
+    </p>
+  </div>
+</div>
+<p style="text-align: center;"><a class="ref-link"href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/chamber_struc_i_v1_0_4.html" target="_blank">Open in Fullscreen!</a></p>
+<div style="margin: 20px 0px; text-align: center;"><iframe allowfullscreen="" height="700" src="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/chamber_struc_i_v1_0_4.html" style="border-radius: 12px; border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.3);" width="100%">
+  </iframe>
+</div>
+<!-- ════════════ SECTION 2: THE LAW ════════════ -->
+<div class="ua-block">
+  <h2>§2 — The Universal Structural Law</h2>
+
+  <p>
+    Established in the
+    <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/The_Universal_Structural_Law_v6.pdf" target="_blank">Universal Structural Law</a>
+    paper, the admissibility framework states that for any physically realised ordered system:
+  </p>
+
+  <div class="ua-theorem">
+    <div class="ua-theorem-label">Universal Structural Law</div>
+    <div class="ua-theorem-body">
+      The number of ordering inversions induced by a perturbation cannot exceed the
+      <em>vulnerability capacity</em> of the gap structure — a purely geometric quantity determined by
+      how the gaps between consecutive elements are distributed. Physical systems live in a bounded
+      interior of the admissibility manifold. The boundary has never been crossed by any physical system.
+    </div>
+  </div>
+
+  <p>
+    Tested across more than 3,000 physical ladders spanning thirteen domains — from nuclear
+    γ-transitions to CMB acoustic oscillations — the inequality holds without exception.
+    The structural pressure ratio ρ̄ (how much of the vulnerability budget a system uses)
+    ranges across four orders of magnitude between domains, yet none exceeds the budget.
+  </p>
+
+  <p>
+    But all those tests were at the <em>actual</em> values of the physical constants. What this
+    investigation adds is a new kind of test: what happens when the constants themselves
+    are treated as dials that can be turned?
+  </p>
+</div>
+
+<!-- ════════════ SECTION 3: THE EXPERIMENT ════════════ -->
+<div class="ua-block">
+  <h2>§3 — The Experiment: The Alignment Matrix</h2>
+
+  <p>
+    The experiment is organised as a matrix. Each row is a physical system; each column is a
+    fundamental constant. The cells record the structural response when that constant is
+    systematically varied around its physical value.
+  </p>
+
+  <p>
+    Four constants were tested, each chosen because it couples non-uniformly to different
+    components of physical ladders — making it a genuine structural deformation operator
+    rather than a simple rescaling.
+  </p>
+
+  <!-- SVG: Cross-constant matrix -->
+  <div class="ua-svg-wrap">
+  <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;">
+    <rect width="720" height="380" fill="#080a16" rx="8"/>
+
+    <!-- Column headers -->
+    <text x="190" y="28" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">Col I · α</text>
+    <text x="330" y="28" fill="#c084fc" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">Col II · μ</text>
+    <text x="470" y="28" fill="#fb923c" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">Col III · αₛ</text>
+    <text x="620" y="28" fill="#4ecdc4" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">Col IV · αG</text>
+
+    <!-- Domain labels (rows) -->
+    <text x="8"  y="68"  fill="#5a6888" font-size="9.5" font-family="monospace">H (atomic)</text>
+    <text x="8"  y="100" fill="#5a6888" font-size="9.5" font-family="monospace">Na (atomic)</text>
+    <text x="8"  y="132" fill="#5a6888" font-size="9.5" font-family="monospace">H₂ (molecule)</text>
+    <text x="8"  y="164" fill="#5a6888" font-size="9.5" font-family="monospace">HD (molecule)</text>
+    <text x="8"  y="196" fill="#5a6888" font-size="9.5" font-family="monospace">CO/N₂/HCl</text>
+    <text x="8"  y="228" fill="#5a6888" font-size="9.5" font-family="monospace">CMB · Planck</text>
+    <text x="8"  y="260" fill="#5a6888" font-size="9.5" font-family="monospace">Geoid · Earth</text>
+    <text x="8"  y="292" fill="#5a6888" font-size="9.5" font-family="monospace">⁴⁸Ca (nuclear)</text>
+    <text x="8"  y="324" fill="#5a6888" font-size="9.5" font-family="monospace">²⁰⁸Pb (nuclear)</text>
+    <text x="8"  y="356" fill="#5a6888" font-size="9.5" font-family="monospace">Charmonium</text>
+
+    <!-- Horizontal grid lines -->
+    <line x1="150" y1="40" x2="710" y2="40" stroke="#121630" stroke-width="1"/>
+    <line x1="150" y1="72"  x2="710" y2="72"  stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="104" x2="710" y2="104" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="136" x2="710" y2="136" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="168" x2="710" y2="168" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="200" x2="710" y2="200" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="232" x2="710" y2="232" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="264" x2="710" y2="264" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="296" x2="710" y2="296" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="328" x2="710" y2="328" stroke="#121630" stroke-width="0.5"/>
+    <line x1="150" y1="360" x2="710" y2="360" stroke="#121630" stroke-width="0.5"/>
+
+    <!-- Vertical col dividers -->
+    <line x1="255" y1="40" x2="255" y2="368" stroke="#121630" stroke-width="1"/>
+    <line x1="395" y1="40" x2="395" y2="368" stroke="#121630" stroke-width="1"/>
+    <line x1="545" y1="40" x2="545" y2="368" stroke="#121630" stroke-width="1"/>
+
+    <!-- Cell fills — Col I α -->
+    <!-- H: TYPE I → dim green -->
+    <rect x="156" y="48" width="94" height="18" rx="3" fill="rgba(74,222,128,.08)"/>
+    <text x="203" y="61" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I</text>
+    <!-- Na: III-Max → bright orange/red -->
+    <rect x="156" y="80" width="94" height="18" rx="3" fill="rgba(251,146,60,.18)"/>
+    <text x="203" y="93" fill="#fb923c" font-size="9" font-family="monospace" text-anchor="middle">III-Max ★</text>
+    <!-- H2 α: not tested -->
+    <rect x="156" y="112" width="94" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="203" y="125" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <!-- HD α -->
+    <rect x="156" y="144" width="94" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="203" y="157" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <!-- CO/N2/HCl α -->
+    <rect x="156" y="176" width="94" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="203" y="189" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <!-- CMB α: WEAK -->
+    <rect x="156" y="208" width="94" height="18" rx="3" fill="rgba(251,191,36,.08)"/>
+    <text x="203" y="221" fill="#fbbf24" font-size="9" font-family="monospace" text-anchor="middle">WEAK</text>
+    <!-- Geoid α: PROXY refuted -->
+    <rect x="156" y="240" width="94" height="18" rx="3" fill="rgba(248,113,113,.1)"/>
+    <text x="203" y="253" fill="#f87171" font-size="9" font-family="monospace" text-anchor="middle">PROXY ✗</text>
+    <!-- 48Ca α: III-Fr -->
+    <rect x="156" y="272" width="94" height="18" rx="3" fill="rgba(251,146,60,.15)"/>
+    <text x="203" y="285" fill="#fb923c" font-size="9" font-family="monospace" text-anchor="middle">III-Fr 17/17</text>
+    <!-- 208Pb α: TYPE I calm -->
+    <rect x="156" y="304" width="94" height="18" rx="3" fill="rgba(74,222,128,.08)"/>
+    <text x="203" y="317" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I calm</text>
+    <!-- Charmonium α -->
+    <rect x="156" y="336" width="94" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="203" y="349" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+
+    <!-- Cell fills — Col II μ -->
+    <!-- H μ: control -->
+    <rect x="261" y="48" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="61" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">CTRL</text>
+    <!-- Na μ: control -->
+    <rect x="261" y="80" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="93" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">CTRL</text>
+    <!-- H2 μ: III-MAX ★ -->
+    <rect x="261" y="112" width="128" height="18" rx="3" fill="rgba(192,132,252,.2)"/>
+    <text x="325" y="125" fill="#c084fc" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">III-Max ★ β*=1.00</text>
+    <!-- HD μ: TYPE I -->
+    <rect x="261" y="144" width="128" height="18" rx="3" fill="rgba(74,222,128,.08)"/>
+    <text x="325" y="157" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I</text>
+    <!-- CO/N2/HCl μ: TYPE I ultra -->
+    <rect x="261" y="176" width="128" height="18" rx="3" fill="rgba(74,222,128,.05)"/>
+    <text x="325" y="189" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I · ultra</text>
+    <!-- CMB μ -->
+    <rect x="261" y="208" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="221" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <!-- Geoid μ: excluded -->
+    <rect x="261" y="240" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="253" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <!-- 48Ca μ: excl -->
+    <rect x="261" y="272" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="285" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <!-- 208Pb μ: excl -->
+    <rect x="261" y="304" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="317" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <!-- Charmonium μ -->
+    <rect x="261" y="336" width="128" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="325" y="349" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+
+    <!-- Col III αₛ -->
+    <rect x="401" y="48"  width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="61"  fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">CTRL</text>
+    <rect x="401" y="80"  width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="93"  fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <rect x="401" y="112" width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="125" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="401" y="144" width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="157" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="401" y="176" width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="189" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="401" y="208" width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="221" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <rect x="401" y="240" width="138" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="470" y="253" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <!-- 48Ca αs: TYPE I — dramatic reversal -->
+    <rect x="401" y="272" width="138" height="18" rx="3" fill="rgba(74,222,128,.08)"/>
+    <text x="470" y="285" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I ← reversal</text>
+    <!-- 208Pb αs: TYPE I calm -->
+    <rect x="401" y="304" width="138" height="18" rx="3" fill="rgba(74,222,128,.08)"/>
+    <text x="470" y="317" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I calm</text>
+    <!-- Charmonium αs -->
+    <rect x="401" y="336" width="138" height="18" rx="3" fill="rgba(74,222,128,.06)"/>
+    <text x="470" y="349" fill="#4ade80" font-size="9" font-family="monospace" text-anchor="middle">TYPE I · ultra</text>
+
+    <!-- Col IV αG -->
+    <rect x="551" y="48"  width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="61"  fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">CTRL</text>
+    <rect x="551" y="80"  width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="93"  fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <rect x="551" y="112" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="125" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="551" y="144" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="157" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="551" y="176" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="189" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="551" y="208" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="221" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+    <!-- Geoid αG: TYPE I Tier A -->
+    <rect x="551" y="240" width="152" height="18" rx="3" fill="rgba(78,205,196,.12)"/>
+    <text x="627" y="253" fill="#4ecdc4" font-size="9" font-family="monospace" text-anchor="middle">TYPE I · Tier A ✓</text>
+    <rect x="551" y="272" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="285" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="551" y="304" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="317" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">excl.</text>
+    <rect x="551" y="336" width="152" height="18" rx="3" fill="rgba(255,255,255,.02)"/>
+    <text x="627" y="349" fill="#2e3a5a" font-size="9" font-family="monospace" text-anchor="middle">—</text>
+
+    <!-- Legend -->
+    <rect x="156" y="370" width="10" height="7" rx="2" fill="rgba(192,132,252,.25)"/>
+    <text x="170" y="377" fill="#7a8aaa" font-size="8" font-family="monospace">★ = physical constant at structural extremum</text>
+    <rect x="400" y="370" width="10" height="7" rx="2" fill="rgba(248,113,113,.15)"/>
+    <text x="414" y="377" fill="#7a8aaa" font-size="8" font-family="monospace">✗ = proxy result refuted by Tier A run</text>
+  </svg>
+  </div>
+
+  <p>
+    The matrix tells the story at a glance: structural response is <strong>sparse and selective</strong>.
+    Most cells are quiet. Two cells — Na under α and H₂ under μ — show
+    something remarkable: the physical constant value sits at a structural pressure maximum.
+    Two entire columns (αₛ, αG) are universally quiet.
+  </p>
+</div>
+
+<!-- ════════════ MANUSCRIPT SPOTLIGHT ════════════ -->
+<div class="ua-manuscript">
+  <div class="ua-manuscript-label">Core Scientific Output · UNNS Substrate Program · 2026</div>
+  <h3>Structural Invariance and Domain-Selective Response<br>Under Fundamental Constant Deformation</h3>
+  <p>
+    The formal scientific paper behind this investigation. It covers all four columns of the Alignment Matrix,
+    with full data tables, Tier A protocol documentation, the geoid proxy refutation, the HD decomposition
+    artifact analysis, and seven principal findings including the first cross-constant confirmation of
+    ²⁰⁸Pb's deep inertness and the ⁴⁸Ca constant-selectivity reversal.
+  </p>
+  <p>
+    20 pages · STRUC-I v1.0.4 · 166,000+ assessments · HITRAN, ENSDF, PDG, EIGEN-6C4, Planck 2018
+  </p>
+  <a class="ua-manuscript-link"
+     href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/Structural Invariance and Domain-Selective Response Under Fundamental Constant Deformation.pdf"
+     target="_blank">
+    ↗ Read the Full Manuscript (PDF)
+  </a>
+</div>
+
+<!-- ════════════ SECTION 4: DISCOVERIES ════════════ -->
+<div class="ua-block">
+  <h2>§4 — What Was Found</h2>
+
+  <p>
+    The investigation returned several distinct findings, each revealing a different facet of how
+    physical structure relates to the constants that govern it.
+  </p>
+
+  <div class="ua-discoveries">
+    <div class="ua-discovery green">
+      <div class="ua-discovery-num">Discovery 1</div>
+      <h3>Structure Does Not Break</h3>
+      <p>
+        Across 166,000+ assessments spanning all four constants and seven domain types,
+        the admissibility inequality is not violated at any physical constant value in any domain.
+        Zero hard violations. The ordering structure of physical systems is robustly preserved
+        even when constants are varied by ±20% around their physical values.
+      </p>
+    </div>
+    <div class="ua-discovery sky">
+      <div class="ua-discovery-num">Discovery 2</div>
+      <h3>Constants Are Selective Operators</h3>
+      <p>
+        No constant deforms all domains structurally. α activates sodium but not hydrogen.
+        μ activates H₂ but not CO, N₂, or HCl. αₛ activates nothing in the nuclear or hadronic
+        corpus. αG activates nothing in the planetary geoid corpus. The coupling mechanism of
+        each constant determines which systems respond — and those mechanisms differ fundamentally.
+      </p>
+    </div>
+    <div class="ua-discovery amber">
+      <div class="ua-discovery-num">Discovery 3</div>
+      <h3>Physical Values Sit at Structural Peaks</h3>
+      <p>
+        In the two cases where structural response is confirmed — sodium under α and
+        H₂ under μ — the physical constant value coincides with a structural pressure maximum.
+        The actual laws of physics place these systems at the peak of their structural stress
+        landscape. Whether this is coincidence or something deeper remains an open question.
+      </p>
+    </div>
+    <div class="ua-discovery teal">
+      <div class="ua-discovery-num">Discovery 4</div>
+      <h3>The Geoid Proxy Was an Artefact</h3>
+      <p>
+        An earlier result — that all three planetary gravity fields showed a sharp structural
+        minimum exactly at the physical gravitational coupling — was fully refuted by the
+        Tier A αG sweep. The apparent alignment was produced by the proxy scaling rule,
+        not by physical G-coupling. The geoid is structurally inert under actual αG variation.
+      </p>
+    </div>
+  </div>
+
+  <div class="ua-stats">
+    <div class="ua-stat green">
+      <div class="ua-stat-label">Hard violations at physical β</div>
+      <div class="ua-stat-value">0</div>
+      <div class="ua-stat-note">across all 4 constants</div>
+    </div>
+    <div class="ua-stat sky">
+      <div class="ua-stat-label">Systems tested</div>
+      <div class="ua-stat-value">26+</div>
+      <div class="ua-stat-note">7 domain types</div>
+    </div>
+    <div class="ua-stat violet">
+      <div class="ua-stat-label">Active constants</div>
+      <div class="ua-stat-value">2</div>
+      <div class="ua-stat-note">α and μ only</div>
+    </div>
+    <div class="ua-stat amber">
+      <div class="ua-stat-label">Null constants</div>
+      <div class="ua-stat-value">2</div>
+      <div class="ua-stat-note">αₛ and αG</div>
+    </div>
+    <div class="ua-stat teal">
+      <div class="ua-stat-label">Total assessments</div>
+      <div class="ua-stat-value">166K+</div>
+      <div class="ua-stat-note">STRUC-I v1.0.4</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SECTION 5: H2 vs HD ════════════ -->
+<div class="ua-block">
+  <h2>§5 — The H₂ and HD Story</h2>
+
+  <p>
+    The molecular domain produced the most instructive contrast in the entire investigation.
+    Two closely related molecules — H₂ (molecular hydrogen) and HD (hydrogen deuteride) —
+    tell completely different stories under the same deformation rule.
+  </p>
+
+  <!-- SVG: H2 vs HD schematic -->
+  <div class="ua-svg-wrap">
+  <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+    <rect width="680" height="240" fill="#080a16" rx="8"/>
+    <!-- Titles -->
+    <text x="170" y="24" fill="#c084fc" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">H₂ — TYPE III-Max</text>
+    <text x="510" y="24" fill="#4ade80" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">HD — TYPE I (Tier A)</text>
+
+    <!-- Axes H2 -->
+    <line x1="40"  y1="200" x2="300" y2="200" stroke="#1e2440" stroke-width="1.5"/>
+    <line x1="40"  y1="200" x2="40"  y2="45"  stroke="#1e2440" stroke-width="1.5"/>
+    <!-- Axes HD -->
+    <line x1="380" y1="200" x2="640" y2="200" stroke="#1e2440" stroke-width="1.5"/>
+    <line x1="380" y1="200" x2="380" y2="45"  stroke="#1e2440" stroke-width="1.5"/>
+
+    <!-- Axis labels H2 -->
+    <text x="170" y="218" fill="#3a4a6a" font-size="9" font-family="monospace" text-anchor="middle">β (relative μ)</text>
+    <text x="20"  y="125" fill="#3a4a6a" font-size="9" font-family="monospace" text-anchor="middle" transform="rotate(-90,20,125)">ρ̄</text>
+    <!-- Axis labels HD -->
+    <text x="510" y="218" fill="#3a4a6a" font-size="9" font-family="monospace" text-anchor="middle">β (relative μ)</text>
+
+    <!-- β = 1.00 markers -->
+    <line x1="170" y1="46" x2="170" y2="198" stroke="#c084fc" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+    <text x="172" y="58" fill="#c084fc" font-size="8" font-family="monospace" opacity=".8">β=1.00</text>
+    <line x1="510" y1="46" x2="510" y2="198" stroke="#4ecdc4" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+    <text x="512" y="58" fill="#4ecdc4" font-size="8" font-family="monospace" opacity=".8">β=1.00</text>
+
+    <!-- H2 curve: rises to peak at β=1.00, symmetric -->
+    <!-- scale: y=200 → ρ=0, y=50 → ρ=0.72 (range 150px for 0.72) -->
+    <!-- points: β=0.80 ρ=0.565→y=82, β=0.95 ρ=0.637→y=67, β=1.00 ρ=0.702→y=54, β=1.05 ρ=0.642→y=66, β=1.20 ρ=0.591→y=77 -->
+    <polyline fill="none" stroke="#c084fc" stroke-width="2.5"
+      points="55,118 85,102 115,90 145,73 170,54 195,72 225,88 255,100 295,108"/>
+    <!-- Peak dot -->
+    <circle cx="170" cy="54" r="5" fill="#c084fc" opacity=".9"/>
+    <text x="178" y="51" fill="#c084fc" font-size="9" font-family="monospace">PEAK</text>
+    <text x="178" y="63" fill="#c084fc" font-size="8" font-family="monospace">ρ̄=0.70</text>
+
+    <!-- H2 axis ticks -->
+    <text x="55"  y="213" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="middle">0.80</text>
+    <text x="170" y="213" fill="#c084fc" font-size="8" font-family="monospace" text-anchor="middle">1.00</text>
+    <text x="295" y="213" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="middle">1.20</text>
+    <text x="32"  y="118" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="end">0.56</text>
+    <text x="32"  y="54"  fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="end">0.70</text>
+
+    <!-- HD curve: flat, slight noise -->
+    <!-- scale: y=200 → ρ=0, y=50 → ρ=0.22 (range 150px for 0.22) -->
+    <!-- HD ρ̄ ≈ 0.125–0.165, mid ≈ 0.145, y ≈ 200 - 0.145/0.22*150 = 101 -->
+    <polyline fill="none" stroke="#4ade80" stroke-width="2.5"
+      points="395,109 420,112 445,107 470,111 510,96 550,111 575,106 600,103 635,108"/>
+    <!-- Note: small bump at β=1.00 just visible -->
+    <circle cx="510" cy="96" r="5" fill="#4ade80" opacity=".9"/>
+    <text x="518" y="93" fill="#4ade80" font-size="9" font-family="monospace">ρ̄=0.165</text>
+    <text x="518" y="104" fill="#4ade80" font-size="8" font-family="monospace">TYPE I</text>
+
+    <!-- HD axis ticks -->
+    <text x="395" y="213" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="middle">0.80</text>
+    <text x="510" y="213" fill="#4ecdc4" font-size="8" font-family="monospace" text-anchor="middle">1.00</text>
+    <text x="635" y="213" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="middle">1.20</text>
+    <text x="372" y="109" fill="#3a4a6a" font-size="8" font-family="monospace" text-anchor="end">0.12</text>
+
+    <!-- Divider -->
+    <line x1="340" y1="38" x2="340" y2="225" stroke="#1a1e36" stroke-width="1" stroke-dasharray="6,4"/>
+  </svg>
+  </div>
+
+  <p>
+    H₂ shows a clear structural pressure peak near β = 1.00 — the physical mass ratio is the point
+    of maximum structural stress. The system lives right at its own structural maximum.
+  </p>
+
+  <p>
+    HD, tested with a proper Tier A vibrational/rotational decomposition, tells a completely
+    different story: flat, stable, uninflected across the full sweep. Type I. Structurally inert.
+  </p>
+
+  <div class="ua-compare">
+    <div class="ua-compare-col left">
+      <h4>H₂ · Molecular Hydrogen</h4>
+      <p><strong style="color:#c084fc;">TYPE III-Max</strong> — structural pressure maximum at β ≈ 1.00.</p>
+      <p>ρ̄ rises from 0.565 at β=0.80 to 0.702 at β=1.00, then falls back to 0.591 at β=1.20.
+        The physical mass ratio sits at the apex of the structural pressure landscape.</p>
+      <p>Signal is 1,380× the empirical noise floor.</p>
+    </div>
+    <div class="ua-compare-col right">
+      <h4>HD · Hydrogen Deuteride</h4>
+      <p><strong style="color:#4ade80;">TYPE I</strong> — flat, inert, structurally invisible.</p>
+      <p>ρ̄ ≈ 0.15 throughout β ∈ [0.80, 1.20]. No trend. No distinguished β-point.
+        Aκ = 1.000 at every tested value. The mass ratio is structurally irrelevant to HD.</p>
+      <p>An earlier run with an approximate decomposition produced spurious violations —
+        fully resolved by Tier A band inference.</p>
+    </div>
+  </div>
+
+  <div class="ua-hl amber">
+    <h4>The Decomposition Lesson</h4>
+    <p>
+      HD's earlier apparent violations — max ρ > 1.0, Aκ = 0.517 — were produced by an
+      approximate energy-component separation. The correct Tier A decomposition, which properly
+      separates vibrational (β<sup>−1/2</sup>) and rotational (β<sup>−1</sup>) contributions,
+      gives a completely different result: perfect admissibility throughout.
+      This confirms that in the molecular domain, classification is only as good as the quality
+      of the energy decomposition. Approximate splits can produce artefactual violations.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════ SECTION 6: NUCLEAR STORY ════════════ -->
+<div class="ua-block">
+  <h2>§6 — The Nuclear Contrast: ⁴⁸Ca vs ²⁰⁸Pb</h2>
+
+  <p>
+    The nuclear corpus produced the most striking constant-selectivity story in the investigation.
+    Two doubly-magic nuclei — both sitting in the Boundary-Stabilized structural regime —
+    respond completely differently to the same constants.
+  </p>
+
+  <table class="ua-table">
+    <thead>
+      <tr>
+        <th>Nucleus</th>
+        <th>Under α (Col. I)</th>
+        <th>Under αₛ (Col. III)</th>
+        <th>Pattern</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>⁴⁸Ca</strong> · doubly-magic · n=273</td>
+        <td class="rev">17/17 violations · III-Fr</td>
+        <td class="null">0 violations · Type I</td>
+        <td class="weak">α-specific excursion</td>
+      </tr>
+      <tr>
+        <td><strong>²⁰⁸Pb</strong> · doubly-magic · n=607</td>
+        <td class="null">0 violations · Type I calm</td>
+        <td class="null">0 violations · Type I calm</td>
+        <td class="pos">cross-constant calm</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong>⁴⁸Ca</strong> is the starkest constant-selectivity case in the corpus. Under α, it is
+    the most active nucleus tested: marginal violations at every single one of the 17 tested α-values.
+    Under αₛ, it is completely silent — same gap structure, same STRUC-I operationalisation,
+    zero signal. The only difference is the deformation rule. The α spin-weighted coupling
+    somehow excites the ⁴⁸Ca gap architecture in a way that the αₛ coupling does not.
+  </p>
+
+  <p>
+    <strong>²⁰⁸Pb</strong> is the opposite: universally calm. Aκ = 1.0000 at every tested value
+    under both α (17 values) and αₛ (17 values). Perfect admissibility in 34 consecutive tests
+    across two independent constants. Doubly-magic character at maximum shell closure (Z=82, N=126)
+    produces a depth of structural inertness that no constant can penetrate within the tested range.
+  </p>
+
+  <div class="ua-hl green">
+    <h4>Cross-constant confirmation</h4>
+    <p>
+      ²⁰⁸Pb's cross-constant calm is the strongest inertness result in the corpus —
+      not merely the absence of a signal, but perfect admissibility under two completely
+      independent deformation rules applied to the same physical system.
+      It establishes that maximum shell closure is a structural invariant across constants,
+      not just within one coupling channel.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════ SECTION 7: WHY IT MATTERS ════════════ -->
+<div class="ua-block">
+  <h2>§7 — Why This Matters</h2>
+
+  <h3>This is not about fine-tuning</h3>
+  <p>
+    The familiar fine-tuning narrative says: if the constants were different, everything
+    would break. Life wouldn't form. Stars wouldn't ignite. Atoms wouldn't bind.
+    That narrative is about the <em>chemistry and physics</em> of the universe.
+  </p>
+  <p>
+    This investigation asks a different question: would the <em>structural ordering principles</em>
+    that govern how physical ladders are organised change? Would the admissibility of
+    ordered structures fail?
+  </p>
+  <p>
+    The answer is no. The structural law is more robust than the fine-tuning story implies.
+    You can push the constants around by 20% in either direction and the ordering architecture
+    of physical systems remains admissible. What changes is the <em>degree</em> of structural
+    pressure — some systems become more stressed (H₂ near β=1.00), others don't respond at all.
+    But the law holds.
+  </p>
+
+  <h3>Constants as structural operators</h3>
+  <p>
+    What this investigation establishes is a new way of thinking about fundamental constants.
+    Rather than parameters in dynamical equations, they can be treated as
+    <strong>operators acting on structural geometry</strong> — deforming the ladder architecture
+    of physical systems in constant-specific and domain-specific ways.
+  </p>
+  <p>
+    From this perspective, the question "why does α take the value it does?" becomes structural:
+    at what value does the sodium gap ladder sit at peak structural pressure?
+    The empirical answer — that the physical value of α corresponds to this structural maximum
+    in sodium — is either a deep coincidence or a constraint worth investigating further.
+  </p>
+
+  <div class="ua-theorem">
+    <div class="ua-theorem-label">Core Finding</div>
+    <div class="ua-theorem-body">
+      Physical constants are <em>selective</em> structural operators. They couple to some systems
+      and not others, and when they do couple, the physical constant value tends to sit at
+      a <em>structural extremum</em> — not at an arbitrary interior point. The admissibility
+      law is never violated at physical constant values. The ordering of physical matter
+      is structurally protected.
+    </div>
+  </div>
+</div>
+<p style="text-align: center;"><a class="ref-link"href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/cross_constant_analysis.html" target="_blank">Open in Fullscreen!</a></p>
+<div style="margin: 20px 0px; text-align: center;"><iframe allowfullscreen="" height="700" src="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/cross_constant_analysis.html" style="border-radius: 12px; border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.3);" width="100%">
+  </iframe>
+</div>
+<!-- ════════════ SECTION 8: DATA ════════════ -->
+<div class="ua-block">
+  <h2>§8 — Data Transparency</h2>
+  <p>
+    All source data in this investigation derives from real physical datasets. No synthetic
+    or simulated inputs were used as primary data. The deformation rules applied to these
+    datasets range from proxy-grade (Column I) to Tier A (Columns II and IV), but the
+    underlying ladders are always drawn from published experimental sources.
+  </p>
+  <p>
+    The full deformation output pack — all four columns, all 17 γ-values per system,
+    complete STRUC-I fingerprints — is available for inspection and reproduction:
+  </p>
+  <div class="ua-hl teal">
+    <h4>Open Data Pack</h4>
+    <p>
+      <a href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/four_constants_deformation_pack.zip" target="_blank">
+        ↗ Four Constants Deformation Pack (.zip)
+      </a>
+      — STRUC-I output files for all four constant sweeps, all systems, all β-values.
+      CSV profiles and JSON result fingerprints included.
+    </p>
+    <p>
+      Source datasets: HITRAN (molecular), ENSDF (nuclear), PDG (hadronic),
+      EIGEN-6C4/JGM85F01/AIUB-GRL350A (geoid), Planck 2018 (CMB), DESI (cosmology).
+    </p>
+  </div>
+
+  <p>
+    The
+    <a href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/cross_constant_analysis.html" target="_blank">
+    interactive Cross-Constant Atlas</a>
+    provides a full visual summary of the Alignment Matrix, all four columns, and all
+    cross-constant findings including the ⁴⁸Ca reversal and the geoid proxy refutation.
+  </p>
+</div>
+
+<!-- ════════════ LINKS ════════════ -->
+<div class="ua-links">
+  <h2>Resources</h2>
+  <ul>
+    <li>
+      <strong>Primary manuscript</strong> —
+      <a href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/Structural Invariance and Domain-Selective Response Under Fundamental Constant Deformation.pdf" target="_blank">
+        Structural Invariance and Domain-Selective Response Under Fundamental Constant Deformation (PDF)
+      </a>
+    </li>
+    <li>
+      <strong>Interactive atlas</strong> —
+      <a href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/cross_constant_analysis.html" target="_blank">
+        Cross-Constant Analysis · HTML
+      </a>
+    </li>
+    <li>
+      <strong>The structural law</strong> —
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/The_Universal_Structural_Law_v6.pdf" target="_blank">
+        The Universal Structural Law v6 (PDF)
+      </a>
+    </li>
+    <li>
+      <strong>Run the chamber</strong> —
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/chamber_struc_i_v1_0_4.html" target="_blank">
+        STRUC-I Chamber v1.0.4
+      </a>
+    </li>
+    <li>
+      <strong>Data pack</strong> —
+      <a href="https://unns.tech/media/unns/cross_constant_structural_invariance_atlas/four_constants_deformation_pack.zip" target="_blank">
+        Four Constants Deformation Pack (.zip)
+      </a>
+    </li>
+  </ul>
+</div>
+
+<div class="ua-footnote">
+  UNNS Substrate Research Program · March 2026 · STRUC-I v1.0.4 ·
+  Instrument: STRUC-I v1.0.4 · Inequality: inv(Pε;L) ≤ ν(V(L)) ·
+  Data sources: HITRAN, ENSDF, PDG, EIGEN-6C4, JGM85F01, AIUB-GRL350A, Planck 2018, DESI ·
+  All source datasets are real experimental data. Deformation rule grades (Tier A / proxy)
+  refer to the coupling derivation, not the source data.
+</div>
+
+</div><!-- /ua-wrap -->
+</div><!-- /unns-article -->
+</body>
+</html>
