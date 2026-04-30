@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNNS Cross-Instrument Corpus Analysis — STRUC-I × STRUC-PERC-I</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=IBM+Plex+Sans:wght@200;300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#040810; --bg2:#060a14; --panel:#07101c; --panel2:#091422;
+  --border:#0e1f32; --border2:#0b1a2a;
+  --accent:#00c8f0; --green:#00dd88; --gold:#e8c840; --orange:#e07030;
+  --red:#e04040; --blue:#4ab0f0; --purple:#9880ff; --teal:#30d0b0;
+  --amber:#f0a030; --text:#a8bfd0; --text2:#5a7a96; --dim:#2d4560;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --display:'Space Mono',monospace;
+  --si:#e8c840; --sp:#00c8f0; /* instrument colours */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.65;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
+.shell{max-width:1480px;margin:0 auto;padding:36px 28px 100px}
+
+/* HEADER */
+.rh{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:40px;position:relative;overflow:hidden}
+.rh::before{content:'';position:absolute;top:0;left:-20px;right:-20px;bottom:0;
+  background:radial-gradient(ellipse 50% 100% at 30% 50%,rgba(232,200,64,0.04),transparent),
+             radial-gradient(ellipse 50% 100% at 70% 50%,rgba(0,200,240,0.04),transparent);
+  pointer-events:none}
+.rh-eye{font-size:8px;color:var(--text2);letter-spacing:.3em;font-weight:600;margin-bottom:8px}
+.rh-title{font-family:var(--display);font-size:clamp(16px,2.8vw,28px);letter-spacing:.05em;line-height:1.15;margin-bottom:8px}
+.rh-title .t1{color:var(--si)} .rh-title .t2{color:var(--sp)} .rh-title .tx{color:var(--text2)}
+.rh-sub{font-family:var(--sans);font-size:12px;font-weight:300;color:var(--text2);margin-bottom:18px}
+.rh-meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:9px;color:var(--dim);letter-spacing:.12em}
+.rh-meta span{color:var(--text2)}
+.rh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.rh-tag{display:inline-block;font-size:8px;border:1px solid;padding:2px 9px;letter-spacing:.15em;font-weight:600}
+
+/* SECTION LABELS */
+.sl{font-size:8px;color:var(--dim);letter-spacing:.32em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.sl .n{color:var(--accent);font-size:9px;font-family:var(--display);min-width:28px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:12px}
+.pt{font-size:8px;color:var(--accent);letter-spacing:.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pt .ps{color:var(--dim);font-weight:400;font-size:7.5px;margin-left:auto}
+
+/* GRIDS */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:900px){.row3{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+
+/* STAT CARDS */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.sc{background:var(--panel2);border:1px solid var(--border2);padding:12px 14px}
+.sc-l{font-size:7.5px;color:var(--text2);letter-spacing:.18em;font-weight:600;margin-bottom:5px}
+.sc-v{font-family:var(--display);font-size:20px;line-height:1;margin-bottom:2px}
+.sc-u{font-size:8px;color:var(--dim)}
+
+/* TABLES */
+.sb{overflow-x:auto;border:1px solid var(--border2)}
+.sb::-webkit-scrollbar{height:4px}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.12em;font-weight:600;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);position:sticky;top:0}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,0.03)}
+.dt td.pass{color:var(--green)} .dt td.warn{color:var(--amber)} .dt td.crit{color:var(--orange)}
+.dt td.fail{color:var(--red)} .dt td.dim{color:var(--dim)} .dt td.blue{color:var(--blue)}
+.dt td.gold{color:var(--gold)} .dt td.teal{color:var(--teal)} .dt td.accent{color:var(--accent)}
+.dt td.purple{color:var(--purple)} .dt th.r,.dt td.r{text-align:right}
+
+/* INSTRUMENT BADGES */
+.ib{display:inline-block;font-size:7px;font-weight:700;letter-spacing:.14em;padding:2px 7px;border:1px solid;margin-right:4px}
+.ib.si{color:var(--si);border-color:var(--si);background:rgba(232,200,64,0.07)}
+.ib.sp{color:var(--sp);border-color:var(--sp);background:rgba(0,200,240,0.07)}
+
+/* VERDICT BADGE */
+.vb{display:inline-block;font-size:7.5px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border:1px solid}
+.vb.full{color:var(--green);border-color:var(--green);background:rgba(0,221,136,0.07)}
+.vb.giant{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,0.07)}
+.vb.tail{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,0.07)}
+.vb.hard{color:var(--red);border-color:var(--red);background:rgba(224,64,64,0.07)}
+
+/* PRESSURE ZONE BADGES */
+.pz{display:inline-block;font-size:7px;font-weight:700;padding:2px 7px;border:1px solid;letter-spacing:.1em}
+.pz.stab{color:var(--green);border-color:var(--green);background:rgba(0,221,136,0.05)}
+.pz.weak{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,0.05)}
+.pz.bdy {color:var(--orange);border-color:var(--orange);background:rgba(224,112,48,0.05)}
+.pz.crit{color:var(--red);border-color:var(--red);background:rgba(224,64,64,0.05)}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.fn{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.2em;margin-bottom:5px;font-weight:700}
+.ft{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10px;color:var(--text);line-height:1.7}
+.finding .em{color:var(--gold);font-weight:600}
+.finding .val{font-family:var(--display);color:var(--accent)}
+.finding .ev{background:var(--border2);border-left:2px solid var(--dim);padding:6px 12px;margin-top:8px;font-size:8.5px;color:var(--text2);line-height:2;font-family:var(--mono)}
+
+/* DOMAIN CARD */
+.dc{border:1px solid var(--border2);padding:0;margin-bottom:12px;position:relative}
+.dc-bar{display:flex;gap:0;height:100%;position:absolute;left:0;top:0;bottom:0;width:4px;flex-direction:column}
+.dc-body{padding:14px 18px 14px 22px}
+.dc-hdr{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.dc-name{font-family:var(--display);font-size:9.5px;font-weight:700;letter-spacing:.14em}
+.dc-n{font-size:8px;color:var(--dim)}
+
+/* COMPARISON SPLIT — dual columns with instrument labels */
+.cmp2{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border2);margin-bottom:4px}
+.cmp2 .ci{padding:8px 12px;font-size:9px;line-height:1.8}
+.cmp2 .ci.left{border-right:1px solid var(--border2)}
+.cmp2 .ci .ci-hdr{font-size:7.5px;font-weight:700;letter-spacing:.14em;margin-bottom:4px}
+
+/* ALIGNMENT ICON */
+.align{display:inline-block;font-size:10px;margin-right:5px}
+.align.yes{color:var(--green)} .align.part{color:var(--amber)} .align.no{color:var(--red)} .align.comp{color:var(--purple)}
+
+/* DUAL-INSTRUMENT PROGRESS BAR */
+.di-bar-wrap{display:flex;align-items:center;gap:8px;margin:3px 0}
+.di-bar-track{flex:1;height:5px;background:var(--border2);position:relative;overflow:hidden}
+.di-bar-fill{height:100%;position:absolute;left:0;top:0}
+
+/* REGIME MAP */
+.rmap-row{display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--border2);font-size:9px}
+.rmap-row:last-child{border-bottom:none}
+.rmap-dom{min-width:180px;color:var(--text2)}
+.rmap-si{min-width:180px}
+.rmap-sp{min-width:200px}
+.rmap-align{min-width:80px;text-align:center}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HEADER ════════════════════════════════════════════════════════════ -->
+<div class="rh">
+  <div class="rh-eye">UNNS SUBSTRATE RESEARCH PROGRAM · CROSS-INSTRUMENT CORPUS ANALYSIS</div>
+  <div class="rh-title">
+    <span class="t1">STRUC-I v1.0.4</span> <span class="tx">×</span> <span class="t2">STRUC-PERC-I v2.4.0</span>
+    <br><span style="font-size:0.6em;color:var(--text2)">INVERSION PRESSURE · PERCOLATION STRUCTURE · JOINT DOMAIN ASSESSMENT</span>
+  </div>
+  <div class="rh-sub">First direct comparison of the two canonical UNNS instruments across shared physical domains — 14 domains, 5,233 + 81 evaluations, two orthogonal structural probes of the same universal admissibility law.</div>
+  <div class="rh-meta">
+    <div>STRUC-I RUNS <span>5,233 (3,069 physical + 1,920 CM-phase + 240 bio + 4 adversarial)</span></div>
+    <div>STRUC-PERC RUNS <span>81 across 14 domains</span></div>
+    <div>SHARED DOMAINS <span>10 directly comparable</span></div>
+    <div>STRUC-I ZERO VIOLATIONS <span style="color:var(--green)">yes (all Aκ ≈ 1.000)</span></div>
+    <div>STRUC-PERC THEOREM 1 <span style="color:var(--amber)">1 / 81 (TiO₂ density)</span></div>
+  </div>
+  <div class="rh-tags">
+    <span class="rh-tag" style="color:var(--si);border-color:var(--si)">STRUC-I — ρ = inv/ν · structural pressure · Aκ admissibility</span>
+    <span class="rh-tag" style="color:var(--sp);border-color:var(--sp)">STRUC-PERC — giant ratio · κ_connect · percolation tier</span>
+    <span class="rh-tag" style="color:var(--text2);border-color:var(--dim)">ORTHOGONAL PROBES — same law, different lenses</span>
+  </div>
+</div>
+
+<!-- ═══ 1. INSTRUMENT OVERVIEW ════════════════════════════════════════════ -->
+<div class="sl"><span class="n">01</span>INSTRUMENT COMPARISON</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="pt"><span class="ib si">STRUC-I</span>v1.0.4 — Inversion Pressure Engine</div>
+    <div style="font-size:9px;color:var(--text2);line-height:2">
+      <div><span style="color:var(--si)">PROBE</span> — Tests inv(Pε;L) ≤ ν(Vε(L)) directly via MC sampling</div>
+      <div><span style="color:var(--si)">PRIMARY METRIC</span> — ρ = inv/ν (structural pressure ratio)</div>
+      <div><span style="color:var(--si)">VERDICT</span> — Aκ (admissibility fraction) + pressure zone</div>
+      <div><span style="color:var(--si)">ZONES</span> — RELAXED / TENSION / NEAR BOUNDARY / CRITICAL</div>
+      <div><span style="color:var(--si)">RESOLUTION</span> — κ-grid 40 points, MC 1000 samples/step</div>
+      <div><span style="color:var(--si)">DIRECTION</span> — Necessary + sufficient (direct test)</div>
+      <div><span style="color:var(--si)">KEY RESULT</span> — Zero clean violations across all runs</div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="pt"><span class="ib sp">STRUC-PERC</span>v2.4.0 — Percolation Graph Engine</div>
+    <div style="font-size:9px;color:var(--text2);line-height:2">
+      <div><span style="color:var(--sp)">PROBE</span> — Full pairwise vulnerability graph G_κ(L), exact connectivity</div>
+      <div><span style="color:var(--sp)">PRIMARY METRIC</span> — giant ratio, κ_connect, tail dominance</div>
+      <div><span style="color:var(--sp)">VERDICT</span> — 4-tier: FULL / GIANT / TAIL / HARD</div>
+      <div><span style="color:var(--sp)">SCALE</span> — ε = κ · IQR(Δ), τ-floor, MAX_WINDOW=64</div>
+      <div><span style="color:var(--sp)">RESOLUTION</span> — κ-grid 17 points + adaptive extension</div>
+      <div><span style="color:var(--sp)">DIRECTION</span> — Necessary only (Theorem 1 proven, Conj.1 open)</div>
+      <div><span style="color:var(--sp)">KEY RESULT</span> — 1 Theorem-1 trigger (TiO₂ raw density)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2. MASTER CROSS-DOMAIN TABLE ══════════════════════════════════════ -->
+<div class="sl"><span class="n">02</span>MASTER CROSS-DOMAIN ALIGNMENT TABLE</div>
+
+<div class="panel">
+  <div class="pt">DOMAIN-BY-DOMAIN DUAL INSTRUMENT SUMMARY <span class="ps">all shared domains · metrics from each corpus · alignment assessment</span></div>
+  <div class="sb">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th colspan="3"><span class="ib si">STRUC-I</span> mean ρ · zone · Aκ</th>
+          <th colspan="3"><span class="ib sp">STRUC-PERC</span> verdict · giant ratio · κ_conn</th>
+          <th>Alignment</th>
+        </tr>
+        <tr style="font-size:8px">
+          <th></th>
+          <th class="r">mean ρ</th><th>Pressure zone</th><th class="r">min Aκ</th>
+          <th>Tier</th><th class="r">Giant ratio</th><th class="r">κ_connect</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- MOLECULAR -->
+        <tr>
+          <td class="teal">Molecular (HITRAN)</td>
+          <td class="r teal">0.103</td>
+          <td><span class="pz stab">RELAXED</span></td>
+          <td class="r pass">1.0000</td>
+          <td><span class="vb giant">GIANT</span></td>
+          <td class="r blue">0.9985</td>
+          <td class="r dim">— (no conn)</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- ATOMIC — ZEEMAN -->
+        <tr>
+          <td class="blue">Atomic / Zeeman</td>
+          <td class="r fail">0.9585</td>
+          <td><span class="pz crit">CRITICAL</span></td>
+          <td class="r warn">0.9990</td>
+          <td><span class="vb full">FULL</span></td>
+          <td class="r pass">1.0000</td>
+          <td class="r fail">2–4 × 10⁵</td>
+          <td><span class="align comp">⇄</span><span style="font-size:8px;color:var(--text2)">Complementary</span></td>
+        </tr>
+        <!-- ATOMIC — NORMAL -->
+        <tr>
+          <td class="blue">Atomic / Normal spectra</td>
+          <td class="r warn">0.21–0.66</td>
+          <td><span class="pz weak">TENSION</span></td>
+          <td class="r pass">1.0000</td>
+          <td><span class="vb full">FULL</span> / <span class="vb tail">TAIL</span></td>
+          <td class="r warn">0.994–1.000</td>
+          <td class="r fail">2–4 × 10⁵</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- BIOLOGICAL -->
+        <tr>
+          <td class="pass">Biological (QT45)</td>
+          <td class="r" style="color:var(--orange)">0.188–0.819</td>
+          <td><span class="pz stab">STABLE</span> → <span class="pz bdy">BDY</span></td>
+          <td class="r pass">≈1.000</td>
+          <td><span class="vb full">FULL</span></td>
+          <td class="r pass">1.0000</td>
+          <td class="r pass">0.42 – 2.00</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- NUCLEAR -->
+        <tr>
+          <td class="purple">Nuclear (ENSDF)</td>
+          <td class="r blue">0.197</td>
+          <td><span class="pz stab">RELAXED</span></td>
+          <td class="r pass">1.0000</td>
+          <td><span class="vb full">FULL</span> / <span class="vb tail">TAIL</span></td>
+          <td class="r warn">0.976–1.000</td>
+          <td class="r fail">3.8×10⁴–4.2×10⁵</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- CONDENSED MATTER -->
+        <tr>
+          <td class="amber">Condensed Matter</td>
+          <td class="r warn">0.178–0.263</td>
+          <td><span class="pz stab">STABLE</span> – <span class="pz weak">WEAK</span></td>
+          <td class="r warn">0.9995</td>
+          <td><span class="vb full">FULL</span> / <span class="vb hard">HARD</span></td>
+          <td class="r warn">0.833–1.000</td>
+          <td class="r warn">0.75 – 8072</td>
+          <td><span class="align part">△</span><span style="font-size:8px;color:var(--text2)">Partial (TiO₂)</span></td>
+        </tr>
+        <!-- CMB -->
+        <tr>
+          <td class="accent">CMB (Planck 2018)</td>
+          <td class="r dim">—</td>
+          <td class="dim">not in STRUC-I</td>
+          <td class="r dim">—</td>
+          <td><span class="vb full">FULL</span></td>
+          <td class="r pass">1.0000</td>
+          <td class="r crit">230 – 2389</td>
+          <td class="dim">PERC-only</td>
+        </tr>
+        <!-- COSMIC WEB -->
+        <tr>
+          <td style="color:var(--purple)">Cosmic Web</td>
+          <td class="r accent">0.143 (0.651 peak)</td>
+          <td><span class="pz stab">STABLE</span>–<span class="pz weak">WEAK</span></td>
+          <td class="r pass">≈1.000</td>
+          <td><span class="vb giant">GIANT</span> / <span class="vb tail">TAIL</span></td>
+          <td class="r warn">0.994–0.999</td>
+          <td class="r dim">— (no conn)</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- ATMOSPHERE -->
+        <tr>
+          <td class="teal">Atmosphere (ERA5)</td>
+          <td class="r blue">0.086–0.225</td>
+          <td><span class="pz stab">RELAXED</span>–<span class="pz stab">STABLE</span></td>
+          <td class="r pass">≈1.000</td>
+          <td><span class="vb full">FULL</span></td>
+          <td class="r pass">1.0000</td>
+          <td class="r pass">0.42 – 2.00</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- GEODESY / GPS -->
+        <tr>
+          <td class="gold">Geodesy / GPS</td>
+          <td class="r dim">—</td>
+          <td class="dim">not in STRUC-I</td>
+          <td class="r dim">—</td>
+          <td><span class="vb full">FULL</span> / <span class="vb giant">GIANT</span></td>
+          <td class="r pass">0.999</td>
+          <td class="r warn">253 – 402</td>
+          <td class="dim">PERC-only</td>
+        </tr>
+        <!-- GRAVITY / GEOID -->
+        <tr>
+          <td class="gold">Gravity / Geoid</td>
+          <td class="r gold">0.073 (Earth) → 0.640 (Moon)</td>
+          <td><span class="pz stab">STABLE</span> – <span class="pz bdy">NEAR BDY</span></td>
+          <td class="r warn">0.802 (Moon absS)</td>
+          <td><span class="vb giant">GIANT</span></td>
+          <td class="r pass">0.997–1.000</td>
+          <td class="r dim">— (no conn)</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- SOLAR -->
+        <tr>
+          <td style="color:var(--orange)">Solar Plasma</td>
+          <td class="r orange">0.022–0.393</td>
+          <td><span class="pz stab">STABLE</span>–<span class="pz weak">WEAK</span></td>
+          <td class="r pass">≈1.000</td>
+          <td><span class="vb tail">TAIL</span></td>
+          <td class="r warn">0.982</td>
+          <td class="r dim">— (TAIL)</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+        <!-- GOE -->
+        <tr>
+          <td class="purple">Random Matrix (GOE)</td>
+          <td class="r purple">0.087–0.101</td>
+          <td><span class="pz stab">RELAXED</span></td>
+          <td class="r pass">1.0000</td>
+          <td><span class="vb giant">GIANT</span></td>
+          <td class="r blue">0.9960</td>
+          <td class="r dim">— (GIANT)</td>
+          <td><span class="align yes">◎</span><span style="font-size:8px;color:var(--text2)">Consistent</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:8px;font-size:8px;color:var(--dim)">
+    <span class="align yes">◎</span> Consistent — instruments agree on structural status.&nbsp;&nbsp;
+    <span class="align part">△</span> Partial — divergence on one sub-case (TiO₂).&nbsp;&nbsp;
+    <span class="align comp">⇄</span> Complementary — instruments reveal orthogonal aspects of the same structure.
+  </div>
+</div>
+
+<!-- ═══ 3. KEY CROSS-INSTRUMENT FINDINGS ═════════════════════════════════ -->
+<div class="sl"><span class="n">03</span>CROSS-INSTRUMENT FINDINGS</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 01</div>
+  <div class="ft">Zeeman Atomic Ladders — Maximum Pressure in STRUC-I, Maximum Delay in STRUC-PERC: Orthogonal Probes of the Same Boundary</div>
+  <p>The Zeeman domain is the single most striking cross-instrument result. <span class="ib si">STRUC-I</span> reports ρ = <span class="val">0.9585</span> — the highest structural pressure in the entire physical corpus, deep in the CRITICAL zone, 10× higher than nuclear, with only 4.15% margin before violation. <span class="ib sp">STRUC-PERC</span> reports FULL_PERCOLATION — but at κ_connect = <span class="val">2–4 × 10⁵</span>, the most extreme connectivity delay of any domain. Both instruments are correct; they are measuring orthogonal structural properties of the same gap architecture. STRUC-I sees: the inversion budget is almost fully exhausted (ν ≈ inv). STRUC-PERC sees: the gap distribution has extreme outlier transitions that require astronomical κ to bridge. The physical mechanism is the same — fine-structure Zeeman splittings produce a small bulk of nearly-equal gaps (high ρ, high mutual connectivity) pierced by a handful of extreme hyperfine transitions (astronomical tail, delayed percolation). The system is simultaneously maximally pressured and fully percolating — the boundary-stabilized state captured from two angles.</p>
+  <div class="ev">STRUC-I: ρ = 0.9585 ± 0.00004 · Aκ = 0.9990 · CRITICAL zone · 4.15% margin
+STRUC-PERC: FULL_PERCOLATION · κ_conn = 206k–420k (Li, Na, He-II, Zeeman variants)
+JOINT READING: Boundary-stabilized structure — maximum pressure with full long-range connectivity at extreme scale</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 02</div>
+  <div class="ft">Biological Domain — Admissible Under Both Probes, But With a Critical Distinction: Deletion Mutations Are Boundary-Stabilized in STRUC-I While STRUC-PERC Sees Them as FULL</div>
+  <p>Both instruments agree the QT45 ribozyme fitness landscape is admissible. But the granularity of the comparison is revealing. <span class="ib sp">STRUC-PERC</span> sees a flat picture: all 7 biological ladders return FULL_PERCOLATION with very low κ_conn (0.42–2.00) — the most immediately connective physical domain in the corpus. <span class="ib si">STRUC-I</span> reveals a wide internal spread: substitution ladders ρ ≈ 0.188 (Stable), combined_del ρ = 0.554 (Weak Persistence), deletion ρ = <span class="em">0.819</span> (Boundary-Stabilized — the highest-pressure biological result and among the highest in the entire corpus). Both are admissible, but STRUC-I shows that deletion mutations push the fitness landscape to the very edge of the admissibility boundary in the inversion space, while STRUC-PERC finds that the gap structure still percolates easily. The biological system operates near the USL limit not through structural fragmentation but through extreme inversion pressure.</p>
+  <div class="ev">STRUC-I deletion_global: ρ = 0.819 · Boundary-Stabilized · Aκ = 1.000
+STRUC-PERC deletion_global: FULL_PERCOLATION · κ_conn = 0.750
+JOINT READING: Maximum admissible structural stress — high pressure boundary reached but not crossed, with fast global connectivity</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 03</div>
+  <div class="ft">Cosmic Web — Both Instruments Detect the Void-Filament Transition, But at Different Scales and via Different Mechanisms</div>
+  <p>The cosmic web domain produces the strongest qualitative agreement across instruments. <span class="ib si">STRUC-I</span> observes a dramatic ν-explosion at κ ≈ 0.30: ν jumps 8.7× in a single κ step, ρ collapses from 0.651 to 0.058, and the ρ(κ) profile has the most dramatic cliff in the entire corpus. <span class="ib sp">STRUC-PERC</span> finds that DESI ladders cannot achieve κ_connect at any tested scale — giant ratio plateaus at 0.994, void gaps of ~10⁶ × median dominate the tail, tail dominance = 0.913. Both instruments are detecting the same physical structure: the separation between galaxy filament spacings and void diameters. STRUC-I sees it as a scale transition in the admissibility budget (the cliff). STRUC-PERC sees it as persistent non-connectivity (the isolated void vertices). The joint result establishes this as the most structurally complex domain in the shared corpus — simultaneously highly admissible (Aκ ≈ 1.000) and never fully connected.</p>
+  <div class="ev">STRUC-I DESI xyz: ρ_peak = 0.651 · ν jump 17→148 at κ=0.307 · Aκ ≈ 1.000 throughout
+STRUC-PERC DESI: TAIL_FRAGMENTATION · GR = 0.994 · tail_dominance = 0.913 · no κ_connect
+JOINT READING: Void-filament transition scale is structurally non-connectable but admissible — the law holds despite extreme scale separation</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 04</div>
+  <div class="ft">Condensed Matter — The Only Domain Where Instruments Partially Diverge: TiO₂ Raw Density Triggers STRUC-PERC Theorem 1 While STRUC-I Finds It Admissible in Phase-Chain Form</div>
+  <p>The condensed matter domain is the only case of genuine (partial) instrumental divergence. <span class="ib si">STRUC-I</span> tests TiO₂ as a crystallographic phase chain (rutile/anatase/brookite polymorphs, n=3, ρ = 0.033) — a Stable Structure result with zero pressure. <span class="ib sp">STRUC-PERC</span> tests TiO₂ as a raw density-of-states ladder (HARD_FRAGMENTATION, giant ratio 0.833, Theorem 1 triggered) and as a cleaned spectral peaks ladder (FULL_PERCOLATION at κ_conn = 681). The divergence is not a contradiction — it is a representation sensitivity finding. The instruments are measuring different physical objects derived from the same material. The phase-chain representation (structural parameters across polymorphs) is admissibility-trivial (n=3, all gaps similar). The raw DOS representation reveals genuine structural fragmentation invisible to STRUC-I's phase-chain probe. This is the most important data-representation finding in the corpus.</p>
+  <div class="ev">STRUC-I TiO₂ phase-chain: ρ = 0.033 · n=3 · Stable Structure · Aκ = 1.0000
+STRUC-PERC tio2_density: HARD_FRAGMENTATION · GR = 0.833 · Theorem 1 triggered
+STRUC-PERC tio2_cleaned: FULL_PERCOLATION · κ_conn = 681
+JOINT READING: Same material, three representations → three different structural assessments</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 05</div>
+  <div class="ft">Nuclear Domain — STRUC-I Sees Low Uniform Pressure; STRUC-PERC Identifies a Structurally Anomalous Subgroup (²³⁸U, ¹⁵⁰Nd, ¹⁰⁰Mo, ⁴⁸Ca)</div>
+  <p><span class="ib si">STRUC-I</span> reports nuclear as a compact, well-behaved domain: mean ρ = 0.197 (2.2× GOE null), all ladders Stable Structure, no Weak Persistence or boundary cases. The instrument sees the nuclear domain as homogeneous. <span class="ib sp">STRUC-PERC</span> disagrees on homogeneity: 10 isotopes return FULL_PERCOLATION (consistent with STRUC-I's Stable verdict) but 4 return TAIL_FRAGMENTATION with tail dominance = 1.000 and astronomical max ratios (10⁹–10¹⁸). The TAIL isotopes — ²³⁸U, ¹⁵⁰Nd, ¹⁰⁰Mo, ⁴⁸Ca — are all nuclei with known structural complexity (deformation, shape coexistence, double β-decay candidacy). STRUC-I's ρ metric averages over all gap pairs and does not flag these isotopes because their extreme tail transitions are rare (small count, small ρ contribution). STRUC-PERC's tail dominance = 1.000 means these single transitions consume 100% of the gap budget — a structural asymmetry STRUC-I cannot resolve. STRUC-PERC provides strictly finer nuclear discrimination.</p>
+  <div class="ev">STRUC-I nuclear: mean ρ = 0.197 · all 15 ladders Stable · no distinction among isotopes
+STRUC-PERC: 10 FULL (κ_conn 37k–418k) · 4 TAIL (²³⁸U/¹⁵⁰Nd/¹⁰⁰Mo/⁴⁸Ca · GR 0.976–0.988 · td=1.000)
+Note: ⁴⁸Ca previously flagged as cross-constant reversal anomaly in α-sweep corpus — consistent</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 06</div>
+  <div class="ft">Random Matrix GOE — Both Instruments Place It at the Structural Floor, But With Different Resolution: STRUC-I Shows Tight ρ = 0.09, STRUC-PERC Shows Persistent GIANT (Not FULL)</div>
+  <p><span class="ib si">STRUC-I</span> shows GOE as the null baseline: ρ = 0.087–0.101 across n=100, 200, 500, the most relaxed structural state of any tested object, below even Earth's gravity field. This is the expected RMT result — level repulsion produces locally uniform spacing (small ρ, minimal inversion pressure). <span class="ib sp">STRUC-PERC</span> finds GIANT_COMPONENT_PERCOLATION rather than FULL, with GR = 0.9960, no κ_connect on the main grid or via extension. This is a new observation: GOE level repulsion creates a nearly-but-not-quite globally connected graph. The isolated vertices correspond to rare large eigenvalue gaps (the tail of the GOE bulk spacing distribution). Both instruments agree the GOE is structurally benign; STRUC-PERC adds that even the most relaxed known ordered structure cannot achieve perfect percolation within the tested κ range.</p>
+  <div class="ev">STRUC-I GOE: ρ = 0.087–0.101 · Stable Structure · Aκ = 1.0000 · 3,000 samples
+STRUC-PERC GOE: GIANT · GR = 0.9960 · no κ_connect · tail_dominance = ?
+JOINT READING: GOE is structurally minimal — lowest ρ and near-complete percolation, both consistent with maximal level repulsion</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 07</div>
+  <div class="ft">Solar Plasma — STRUC-I Reveals Three Internal Structural Tiers (F10.7, Dynamo, Flare); STRUC-PERC Confirms the Flare as Structurally Stressed</div>
+  <p>The solar domain is where both instruments agree most concisely on internal differentiation. <span class="ib si">STRUC-I</span> shows F10.7 coronal flux at ρ = 0.022 (most relaxed solar measurement, below GOE), solar dynamo at ρ = 0.376 (Weak Persistence, distributed Aκ deficits), and flare flux at ρ_peak = 0.806 (Weak Persistence, sharpest ν-cliff in the corpus, 46× jump at κ ≈ 0.052). <span class="ib sp">STRUC-PERC</span> tests the GOES-XRS 2014 solar flare record (flux-type ladder) and finds TAIL_FRAGMENTATION with GR = 0.982, tail dominance = 1.000, max ratio = 3.2×10¹⁰. The 10¹⁰ × median outlier in STRUC-PERC is the physical flare spike — the same structural feature that creates STRUC-I's 46× ν cliff. The instruments independently identify the same solar flare energy as the dominant structural anomaly.</p>
+  <div class="ev">STRUC-I flare flux: ρ_peak = 0.806 · ν jumps 1→46 at κ=0.052 · Weak Persistence
+STRUC-PERC GOES-XRS: TAIL · GR=0.982 · tail_dominance=1.000 · max_ratio=3.2×10¹⁰
+JOINT READING: Solar flare energy is the same structural event seen as a ν-cliff (STRUC-I) and a tail-dominated isolated gap (STRUC-PERC)</div>
+</div>
+
+<div class="finding">
+  <div class="fn">CROSS-FINDING 08</div>
+  <div class="ft">Gravity / Geoid — STRUC-I Finds Earth as Most Ordered Physical Body; STRUC-PERC Finds All Planetary Bodies as GIANT (No κ_connect)</div>
+  <p><span class="ib si">STRUC-I</span> distinguishes planetary bodies dramatically: Earth ρ = 0.073 (below GOE, most ordered), Mars ρ = 0.277, Moon absS ρ = 0.640 (near-random — "statistically indistinguishable from a synthetic random field" for S-coefficient ordering). <span class="ib sp">STRUC-PERC</span> collapses this hierarchy: all four gravity field ladders (Earth EIGEN-6C4, Mars JGM85, Moon AIUB-GRL350A, Earth spatial 2°) return GIANT with GR = 0.997–1.000, no κ_connect. The STRUC-PERC result is informationally poorer here — it cannot distinguish Earth's extraordinary geometric regularity from the Moon's near-random coefficient ordering. STRUC-I provides strictly richer discrimination in this domain. This is the most significant case where STRUC-I outperforms STRUC-PERC.</p>
+  <div class="ev">STRUC-I Earth: ρ = 0.073 · STRUC-I Mars: ρ = 0.277 · STRUC-I Moon: ρ = 0.640 (absS)
+STRUC-PERC: all 4 GIANT · GR 0.997–1.000 · no κ_connect distinguishable
+JOINT READING: STRUC-I provides planetary discrimination; STRUC-PERC loses it — gravity domain favours STRUC-I</div>
+</div>
+
+<!-- ═══ 4. STRUCTURAL PRESSURE vs. PERCOLATION MAP ════════════════════════ -->
+<div class="sl"><span class="n">04</span>ρ — κ_connect JOINT PHASE DIAGRAM</div>
+
+<div class="panel">
+  <div class="pt">STRUCTURAL PRESSURE (ρ) × CONNECTIVITY SCALE (κ_connect) <span class="ps">each domain plotted on dual axes · log-scale κ_connect</span></div>
+  <div style="position:relative;height:340px;background:var(--panel2);border:1px solid var(--border2);padding:10px 20px 36px 56px;overflow:hidden">
+    <!-- Axis labels -->
+    <div style="position:absolute;left:4px;top:50%;transform:translateY(-50%) rotate(-90deg);font-size:8px;color:var(--dim);white-space:nowrap;letter-spacing:.1em">ρ (STRUC-I pressure)</div>
+    <div style="position:absolute;bottom:6px;right:20px;font-size:8px;color:var(--dim);letter-spacing:.1em">κ_connect (log scale) →</div>
+    <!-- Y axis ticks -->
+    <div style="position:absolute;left:14px;top:12px;font-size:7px;color:var(--dim)">1.0</div>
+    <div style="position:absolute;left:14px;top:57px;font-size:7px;color:var(--dim)">0.8</div>
+    <div style="position:absolute;left:14px;top:102px;font-size:7px;color:var(--dim)">0.6</div>
+    <div style="position:absolute;left:14px;top:147px;font-size:7px;color:var(--dim)">0.4</div>
+    <div style="position:absolute;left:14px;top:192px;font-size:7px;color:var(--dim)">0.2</div>
+    <div style="position:absolute;left:14px;top:237px;font-size:7px;color:var(--dim)">0.0</div>
+    <!-- X axis ticks (log κ_conn: 0.01, 0.1, 1, 10, 100, 1k, 10k, 100k, 1M) -->
+    <!-- SVG coordinate system: x=0→left, x=100%→right; κ log from 0.01(x=0) to 1e6(x=100%) -->
+    <!-- y: 0→top (ρ=1.0), 100%→bottom (ρ=0) -->
+    <!-- κ_conn x-position: (log10(kc) - log10(0.01)) / (log10(1e6) - log10(0.01)) * 100 = (log10(kc)+2)/8*100 -->
+    <svg style="position:absolute;inset:10px 10px 36px 50px;width:calc(100% - 60px);height:calc(100% - 46px)" viewBox="0 0 800 260" preserveAspectRatio="none">
+      <!-- grid lines -->
+      <line x1="0" y1="0"   x2="800" y2="0"   stroke="#0b1a2a" stroke-width="1"/>
+      <line x1="0" y1="52"  x2="800" y2="52"  stroke="#0b1a2a" stroke-width="1"/>
+      <line x1="0" y1="104" x2="800" y2="104" stroke="#0b1a2a" stroke-width="1"/>
+      <line x1="0" y1="156" x2="800" y2="156" stroke="#0b1a2a" stroke-width="1"/>
+      <line x1="0" y1="208" x2="800" y2="208" stroke="#0b1a2a" stroke-width="1"/>
+      <line x1="0" y1="260" x2="800" y2="260" stroke="#0b1a2a" stroke-width="1"/>
+      <!-- vertical grid at each decade -->
+      <line x1="0"   y1="0" x2="0"   y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=0.01 -->
+      <line x1="100" y1="0" x2="100" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=0.1 -->
+      <line x1="200" y1="0" x2="200" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=1 -->
+      <line x1="300" y1="0" x2="300" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=10 -->
+      <line x1="400" y1="0" x2="400" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=100 -->
+      <line x1="500" y1="0" x2="500" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=1k -->
+      <line x1="600" y1="0" x2="600" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=10k -->
+      <line x1="700" y1="0" x2="700" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=100k -->
+      <line x1="800" y1="0" x2="800" y2="260" stroke="#0b1a2a" stroke-width="1"/><!-- κ=1M -->
+      <!-- Quadrant shading: high ρ + extreme κ = boundary-stabilized / complementary -->
+      <rect x="500" y="0" width="300" height="260" fill="rgba(0,200,240,0.03)"/>
+      <rect x="0" y="0" width="300" height="130" fill="rgba(0,221,136,0.03)"/>
+      <!-- ρ=0.5 reference line -->
+      <line x1="0" y1="130" x2="800" y2="130" stroke="#2d4560" stroke-width="1" stroke-dasharray="4,4"/>
+      <!-- Domain dots: x=κ_conn position, y=ρ×260 from top -->
+      <!-- Formula: x = (log10(kc)+2)/8*800; y = (1-rho)*260 -->
+      <!-- Biological: κ=1.0 → x=200, ρ=0.50 avg → y=130  (range: rho=0.19-0.82) -->
+      <circle cx="200" cy="62"  r="10" fill="rgba(0,221,136,0.25)" stroke="var(--green)" stroke-width="1.5"/>
+      <text x="215" y="60" font-size="9" fill="#00dd88">Biology</text>
+      <text x="215" y="71" font-size="7" fill="#5a7a96">ρ=0.19–0.82 · κ=0.42–2</text>
+      <!-- Atmosphere: κ=1.2 → x=216, ρ=0.16 → y=218 -->
+      <circle cx="216" cy="218" r="8" fill="rgba(48,208,176,0.25)" stroke="var(--teal)" stroke-width="1.5"/>
+      <text x="230" y="222" font-size="9" fill="#30d0b0">Atmosphere</text>
+      <text x="230" y="232" font-size="7" fill="#5a7a96">ρ=0.09–0.23</text>
+      <!-- GOE: no κ_conn (GIANT); plot at right edge with downward arrow -->
+      <circle cx="60" cy="233" r="8" fill="rgba(152,128,255,0.25)" stroke="var(--purple)" stroke-width="1.5"/>
+      <text x="74" y="230" font-size="9" fill="#9880ff">GOE</text>
+      <text x="74" y="240" font-size="7" fill="#5a7a96">ρ=0.09</text>
+      <!-- Molecular: GIANT no κ_conn; low ρ -->
+      <circle cx="100" cy="233" r="8" fill="rgba(48,208,176,0.20)" stroke="var(--teal)" stroke-width="1.5"/>
+      <text x="114" y="230" font-size="9" fill="#30d0b0">Molecular</text>
+      <text x="114" y="240" font-size="7" fill="#5a7a96">ρ=0.10</text>
+      <!-- Nuclear: κ=37k-418k avg~200k → x=681, ρ=0.197 → y=208 -->
+      <circle cx="681" cy="208" r="10" fill="rgba(152,128,255,0.25)" stroke="var(--purple)" stroke-width="1.5"/>
+      <text x="640" y="198" font-size="9" fill="#9880ff">Nuclear</text>
+      <text x="640" y="208" font-size="7" fill="#5a7a96">ρ=0.20 · κ~10⁴–4×10⁵</text>
+      <!-- Condensed matter: κ=0.75-8072, ρ=0.18-0.26 -->
+      <circle cx="340" cy="200" r="11" fill="rgba(240,160,48,0.25)" stroke="var(--amber)" stroke-width="1.5"/>
+      <text x="356" y="197" font-size="9" fill="#f0a030">Cond. Matter</text>
+      <text x="356" y="207" font-size="7" fill="#5a7a96">ρ=0.18–0.26 · κ=0.75–8k</text>
+      <!-- Cosmic Web: TAIL/GIANT no κ_conn · high ρ peak 0.651 -->
+      <circle cx="60" cy="100" r="10" fill="rgba(0,200,240,0.20)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="76" y="98" font-size="9" fill="#00c8f0">Cosmic Web</text>
+      <text x="76" y="108" font-size="7" fill="#5a7a96">ρ_peak=0.65 · no κ_conn</text>
+      <!-- CMB: κ=230-2389, ρ=unknown from STRUC-I -->
+      <circle cx="538" cy="240" r="7" fill="rgba(0,200,240,0.20)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="550" y="238" font-size="9" fill="#00c8f0">CMB</text>
+      <text x="550" y="248" font-size="7" fill="#5a7a96">PERC-only · κ=230–2389</text>
+      <!-- Gravity: GIANT no κ_conn, ρ=0.073–0.64 -->
+      <circle cx="60" cy="182" r="9" fill="rgba(232,200,64,0.20)" stroke="var(--gold)" stroke-width="1.5"/>
+      <text x="76" y="180" font-size="9" fill="#e8c840">Gravity</text>
+      <text x="76" y="190" font-size="7" fill="#5a7a96">ρ=0.07–0.64 · GIANT</text>
+      <!-- Solar: κ_conn=tail, ρ=0.022-0.393 -->
+      <circle cx="60" cy="155" r="8" fill="rgba(224,112,48,0.25)" stroke="var(--orange)" stroke-width="1.5"/>
+      <text x="76" y="153" font-size="9" fill="#e07030">Solar</text>
+      <text x="76" y="163" font-size="7" fill="#5a7a96">ρ=0.02–0.39 · TAIL</text>
+      <!-- ZEEMAN: κ=300k, ρ=0.9585 → extreme point -->
+      <circle cx="726" cy="11" r="13" fill="rgba(224,64,64,0.20)" stroke="var(--red)" stroke-width="2"/>
+      <text x="690" y="9" font-size="9" fill="#e04040" font-weight="bold">Zeeman</text>
+      <text x="690" y="20" font-size="7" fill="#5a7a96">ρ=0.9585 · κ~3×10⁵</text>
+      <text x="690" y="30" font-size="7" fill="#e04040">BOUNDARY-STABILIZED</text>
+      <!-- X axis labels -->
+      <text x="0"   y="275" font-size="8" fill="#2d4560" text-anchor="middle">0.01</text>
+      <text x="100" y="275" font-size="8" fill="#2d4560" text-anchor="middle">0.1</text>
+      <text x="200" y="275" font-size="8" fill="#2d4560" text-anchor="middle">1</text>
+      <text x="300" y="275" font-size="8" fill="#2d4560" text-anchor="middle">10</text>
+      <text x="400" y="275" font-size="8" fill="#2d4560" text-anchor="middle">100</text>
+      <text x="500" y="275" font-size="8" fill="#2d4560" text-anchor="middle">1k</text>
+      <text x="600" y="275" font-size="8" fill="#2d4560" text-anchor="middle">10k</text>
+      <text x="700" y="275" font-size="8" fill="#2d4560" text-anchor="middle">100k</text>
+      <text x="800" y="275" font-size="8" fill="#2d4560" text-anchor="middle">1M</text>
+      <!-- Quadrant labels -->
+      <text x="140" y="20" font-size="8" fill="#00dd88" opacity="0.6">LOW ρ · FAST CONN → STABLE</text>
+      <text x="540" y="20" font-size="8" fill="#00c8f0" opacity="0.6">LOW ρ · SLOW CONN → RELAXED TAIL</text>
+      <text x="540" y="135" font-size="8" fill="#e04040" opacity="0.6">HIGH ρ · SLOW CONN → BOUNDARY-STAB.</text>
+      <text x="140" y="135" font-size="8" fill="#f0a030" opacity="0.6">HIGH ρ · FAST CONN → STRESSED</text>
+    </svg>
+    <!-- dashed → GIANT domains (no κ_conn) label -->
+    <div style="position:absolute;bottom:18px;left:60px;font-size:7.5px;color:var(--dim)">Dashed circles = GIANT/TAIL with no κ_connect · plotted at κ ≈ 0.05 (notional)</div>
+  </div>
+</div>
+
+<!-- ═══ 5. DOMAIN-BY-DOMAIN SIDE-BY-SIDE ════════════════════════════════ -->
+<div class="sl"><span class="n">05</span>DOMAIN-BY-DOMAIN DETAILED COMPARISON</div>
+
+<!-- MOLECULAR -->
+<div class="dc">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--teal)"></div>
+  <div class="dc-body">
+    <div class="dc-hdr">
+      <div class="dc-name" style="color:var(--teal)">MOLECULAR — HITRAN (H₂O, NH₃, CO₂, CH₄, O₃, CO)</div>
+      <div class="dc-n">6 ladders · n ≈ 1,634–2,000 (STRUC-I) · n ≈ 170k downsampled (STRUC-PERC)</div>
+    </div>
+    <div class="cmp2">
+      <div class="ci left">
+        <div class="ci-hdr" style="color:var(--si)"><span class="ib si">STRUC-I</span>ρ = 0.103 · Stable Structure · Aκ = 1.000</div>
+        Low structural pressure — 1.2× GOE null. No ladder reaches Tension zone. Molecular vibrational-rotational level ladders have near-uniform gap distributions at the probed scale. Zero inversion pressure anomalies across all κ.
+      </div>
+      <div class="ci">
+        <div class="ci-hdr" style="color:var(--sp)"><span class="ib sp">STRUC-PERC</span>GIANT · GR ≈ 0.9985 · no κ_connect</div>
+        Near-complete but not full percolation. No adaptive extension κ_connect found. Isolated vertices = a handful of extreme high-energy vibrational transitions outside the IQR-scaled window. Both probes are consistent: low structural stress, high connectivity, isolated outlier gaps not severe enough to trigger Theorem 1.
+      </div>
+    </div>
+    <div style="font-size:8.5px;color:var(--text2);margin-top:6px"><span style="color:var(--green)">Joint verdict:</span> Structurally relaxed, admissible, near-fully connected. STRUC-PERC adds: one or few isolated high-energy gaps persist that STRUC-I's ρ does not single out.</div>
+  </div>
+</div>
+
+<!-- ZEEMAN -->
+<div class="dc">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red)"></div>
+  <div class="dc-body">
+    <div class="dc-hdr">
+      <div class="dc-name" style="color:var(--red)">ATOMIC — ZEEMAN (H, He, Na, Ca, Ag, Au in magnetic field)</div>
+      <div class="dc-n">8 Zeeman ladders (STRUC-I) · 10 atomic ladders (STRUC-PERC)</div>
+    </div>
+    <div class="cmp2">
+      <div class="ci left">
+        <div class="ci-hdr" style="color:var(--si)"><span class="ib si">STRUC-I</span>ρ = 0.9585 · CRITICAL · Aκ = 0.9990</div>
+        Highest ρ in entire physical corpus. Universal across 8 elements (std = 0.000036). 95.85% of ν budget consumed. All ladders in CRITICAL zone. Yet Aκ = 0.9990 — the law holds. This is the boundary-stabilized state: operating at maximum structural pressure without violation.
+      </div>
+      <div class="ci">
+        <div class="ci-hdr" style="color:var(--sp)"><span class="ib sp">STRUC-PERC</span>FULL · GR = 1.000 · κ_conn = 2–4 × 10⁵</div>
+        Full percolation — but at extreme scale. Connectivity achieved only at κ two to four orders of magnitude above the main grid. Tail dominance reflects hyperfine transition outliers. Full percolation at κ ≈ 3×10⁵ means the bulk Zeeman structure is homogeneous enough to connect at large scale; the fine-structure transitions are the outliers STRUC-I sees as high ρ.
+      </div>
+    </div>
+    <div style="font-size:8.5px;color:var(--text2);margin-top:6px"><span style="color:var(--purple)">Complementary insight:</span> STRUC-I captures extreme inversion pressure; STRUC-PERC captures extreme connectivity delay. Both arise from the same Zeeman splitting gap structure. Together they describe the boundary-stabilized state completely.</div>
+  </div>
+</div>
+
+<!-- BIOLOGICAL -->
+<div class="dc">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green)"></div>
+  <div class="dc-body">
+    <div class="dc-hdr">
+      <div class="dc-name" style="color:var(--green)">BIOLOGICAL — QT45 RIBOZYME FITNESS LANDSCAPE</div>
+      <div class="dc-n">6 ladders (STRUC-I) · 7 ladders (STRUC-PERC) · mutant classes</div>
+    </div>
+    <div class="cmp2">
+      <div class="ci left">
+        <div class="ci-hdr" style="color:var(--si)"><span class="ib si">STRUC-I</span>ρ = 0.188–0.819 · Stable → Boundary-Stabilized</div>
+        Widest within-domain ρ spread in the biological corpus. Substitution ladders: ρ ≈ 0.188 (Stable). combined_del: ρ = 0.554 (Weak Persistence). deletion: ρ = 0.819 (Boundary-Stabilized — highest biological ρ, among highest in corpus). All Aκ = 1.000. Living matter reaches the USL boundary at maximum pressure via deletion mutations.
+      </div>
+      <div class="ci">
+        <div class="ci-hdr" style="color:var(--sp)"><span class="ib sp">STRUC-PERC</span>FULL all · κ_conn = 0.42 – 2.00</div>
+        All 7 ladders FULL_PERCOLATION. Lowest κ_connect of any physical domain (0.42–2.00). Fitness landscape gap structures are the most immediately homogeneous in the corpus. STRUC-PERC sees no distinction among mutant classes — all connect at κ ≤ 2. The deletion mutation's extreme inversion pressure (STRUC-I) does not manifest as percolation delay.
+      </div>
+    </div>
+    <div style="font-size:8.5px;color:var(--text2);margin-top:6px"><span style="color:var(--gold)">Key finding:</span> Biological systems reach the USL pressure boundary through inversion saturation (STRUC-I), not through connectivity fragmentation (STRUC-PERC). The law is under maximum stress in living matter from the inversion direction, not the percolation direction.</div>
+  </div>
+</div>
+
+<!-- NUCLEAR -->
+<div class="dc">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--purple)"></div>
+  <div class="dc-body">
+    <div class="dc-hdr">
+      <div class="dc-name" style="color:var(--purple)">NUCLEAR — ENSDF γ-LEVEL SCHEMES (14 ISOTOPES)</div>
+      <div class="dc-n">15 ladders STRUC-I · 14 ladders STRUC-PERC · ¹⁰⁰Mo–²³⁸U</div>
+    </div>
+    <div class="cmp2">
+      <div class="ci left">
+        <div class="ci-hdr" style="color:var(--si)"><span class="ib si">STRUC-I</span>mean ρ = 0.197 · all Stable · Aκ = 1.000</div>
+        Compact domain — all 15 ladders in Stable Structure zone. No isotope reaches Tension or Weak Persistence. The mean ρ = 0.197 is 2.2× GOE null, consistent with the known UNNS nuclear finding. No internal discrimination among isotopes.
+      </div>
+      <div class="ci">
+        <div class="ci-hdr" style="color:var(--sp)"><span class="ib sp">STRUC-PERC</span>10 FULL · 4 TAIL (²³⁸U/¹⁵⁰Nd/¹⁰⁰Mo/⁴⁸Ca)</div>
+        4 isotopes with structural anomalies show TAIL_FRAGMENTATION (tail dominance = 1.000, max ratio 10⁹–10¹⁸). 10 percolate at κ_conn = 37k–418k. ⁴⁸Ca again flagged — consistent with its cross-constant reversal in the α-sweep corpus. STRUC-PERC provides strictly finer nuclear discrimination than STRUC-I.
+      </div>
+    </div>
+    <div style="font-size:8.5px;color:var(--text2);margin-top:6px"><span style="color:var(--sp)">STRUC-PERC advantage:</span> Identifies structurally anomalous isotopes invisible to STRUC-I's aggregate ρ metric. The extreme outlier γ-transitions consume 100% of the gap budget (tail dominance = 1.000) but contribute minimally to ρ due to their rarity.</div>
+  </div>
+</div>
+
+<!-- CONDENSED MATTER -->
+<div class="dc">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--amber)"></div>
+  <div class="dc-body">
+    <div class="dc-hdr">
+      <div class="dc-name" style="color:var(--amber)">CONDENSED MATTER (DFT Density + Cleaned Spectra)</div>
+      <div class="dc-n">~40 ladders STRUC-I (density + formation E + oxides) · 12 ladders STRUC-PERC</div>
+    </div>
+    <div class="cmp2">
+      <div class="ci left">
+        <div class="ci-hdr" style="color:var(--si)"><span class="ib si">STRUC-I</span>ρ = 0.178–0.263 · Stable–Weak · min Aκ = 0.9995</div>
+        Density ladders show Weak Persistence (ρ = 0.204–0.263, min Aκ = 0.9995) for small-n (n ≤ 42). Formation energy ladders are Stable (ρ = 0.226). Transition-metal oxides: variable ρ = 0.033–0.424 (TiO₂ DFT phase-chain ρ = 0.033; Si_density ρ = 0.424). No clean violations.
+      </div>
+      <div class="ci">
+        <div class="ci-hdr" style="color:var(--sp)"><span class="ib sp">STRUC-PERC</span>11 FULL · 1 HARD (TiO₂ raw DOS)</div>
+        TiO₂ raw density-of-states ladder: HARD_FRAGMENTATION (GR = 0.833) — only Theorem 1 trigger in corpus. TiO₂ cleaned dataset: FULL at κ_conn = 681. Si density: FULL at κ_conn = 2 (despite STRUC-I ρ = 0.424, one of highest condensed-matter results). Wide κ_conn spread: 0.75 (SnO) to 8072 (VO cleaned).
+      </div>
+    </div>
+    <div style="font-size:8.5px;color:var(--text2);margin-top:6px"><span style="color:var(--amber)">Representation sensitivity:</span> TiO₂ raw DOS triggers Theorem 1 (STRUC-PERC); TiO₂ phase-chain is Stable (STRUC-I). Same material, different data representations, opposite extremes. This is the only domain where the instruments partially diverge — and it is a data-representation finding, not a physical contradiction.</div>
+  </div>
+</div>
+
+<!-- ═══ 6. INSTRUMENT COMPLEMENTARITY MATRIX ══════════════════════════════ -->
+<div class="sl"><span class="n">06</span>INSTRUMENT COMPLEMENTARITY ASSESSMENT</div>
+
+<div class="panel">
+  <div class="pt">WHERE EACH INSTRUMENT EXCELS <span class="ps">domain-level resolution · structural depth · discrimination power</span></div>
+  <div class="row2">
+    <div>
+      <div style="font-size:8px;color:var(--si);letter-spacing:.2em;font-weight:700;margin-bottom:10px">STRUC-I ADVANTAGES</div>
+      <div style="font-size:9px;color:var(--text2);line-height:2">
+        <div>✓ <span style="color:var(--text)">Planetary gravity discrimination</span> — resolves Earth vs. Mars vs. Moon (STRUC-PERC cannot)</div>
+        <div>✓ <span style="color:var(--text)">Biological pressure gradient</span> — resolves substitution (ρ=0.19) vs. deletion (ρ=0.82)</div>
+        <div>✓ <span style="color:var(--text)">Solar plasma internal tiers</span> — F10.7 / dynamo / flare in one corpus</div>
+        <div>✓ <span style="color:var(--text)">ν-cliff detection</span> — identifies void-filament, H-cliff, flare transition scales</div>
+        <div>✓ <span style="color:var(--text)">CM phase chains</span> — captures crystallographic phase transitions (STRUC-PERC not tested here)</div>
+        <div>✓ <span style="color:var(--text)">Pressure zone taxonomy</span> — RELAXED / TENSION / NEAR BOUNDARY / CRITICAL is richer than 4-tier verdict for intermediate cases</div>
+        <div>✓ <span style="color:var(--text)">Large-n scale</span> — 5,233 runs enables statistical nuclear/GOE analysis at 3,000-sample depth</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:8px;color:var(--sp);letter-spacing:.2em;font-weight:700;margin-bottom:10px">STRUC-PERC ADVANTAGES</div>
+      <div style="font-size:9px;color:var(--text2);line-height:2">
+        <div>✓ <span style="color:var(--text)">Nuclear isotope discrimination</span> — identifies ²³⁸U/¹⁵⁰Nd/¹⁰⁰Mo/⁴⁸Ca as anomalous (STRUC-I sees them as uniform)</div>
+        <div>✓ <span style="color:var(--text)">Data-representation sensitivity</span> — TiO₂ raw vs. cleaned reveals DOS-ladder fragmentation invisible to STRUC-I</div>
+        <div>✓ <span style="color:var(--text)">κ_connect as structural clock</span> — orders domains on a single continuous scale (0.01 to 420k)</div>
+        <div>✓ <span style="color:var(--text)">Theorem 1 triggering</span> — necessary direction proof fires on TiO₂; STRUC-I finds it admissible</div>
+        <div>✓ <span style="color:var(--text)">Tail dominance metric</span> — isolates the budget impact of outlier gaps (missing from STRUC-I)</div>
+        <div>✓ <span style="color:var(--text)">CMB and geodesy</span> — new domains not tested in STRUC-I</div>
+        <div>✓ <span style="color:var(--text)">Topology</span> — graph-level view of structural connectivity; STRUC-I is inversion-counting only</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 7. COMBINED FINDINGS TABLE ════════════════════════════════════════ -->
+<div class="sl"><span class="n">07</span>JOINT THEORETICAL CONCLUSIONS</div>
+
+<div class="finding" style="border-color:var(--accent)">
+  <div class="fn" style="color:var(--accent)">JOINT CONCLUSION 01</div>
+  <div class="ft">The USL admissibility law holds across both instrument lenses with zero contradictions in the shared corpus</div>
+  <p>Across all shared domains, <span class="em">no run produces a physical contradiction between the two instruments</span>. Where STRUC-I finds Stable Structure, STRUC-PERC finds FULL or GIANT percolation. Where STRUC-I finds Weak Persistence or Boundary-Stabilized, STRUC-PERC finds FULL percolation at large κ or TAIL (inconclusive). The single HARD_FRAGMENTATION case (TiO₂ raw DOS) tests a representation not covered by STRUC-I's phase-chain probe — not a contradiction but a representation-sensitivity finding. The two instruments are consistent with each other everywhere they overlap.</p>
+</div>
+
+<div class="finding" style="border-color:var(--gold)">
+  <div class="fn" style="color:var(--gold)">JOINT CONCLUSION 02</div>
+  <div class="ft">The boundary-stabilized state is confirmed by both instruments simultaneously, with Zeeman as the clearest example</div>
+  <p>The Zeeman domain demonstrates the boundary-stabilized state from two independent angles simultaneously. STRUC-I: ρ = 0.9585 (CRITICAL, 4.15% margin). STRUC-PERC: FULL at κ = 2–4×10⁵ (extreme delay). A system can simultaneously be at maximum structural pressure (STRUC-I) and fully percolating at large scale (STRUC-PERC). This is not a paradox — it reflects two orthogonal structural properties of the same gap architecture. The physical system is sitting at the edge of the admissibility boundary from the inversion direction while being globally connected in the percolation graph. Both measurements are required to fully characterise the boundary-stabilized state.</p>
+</div>
+
+<div class="finding" style="border-color:var(--purple)">
+  <div class="fn" style="color:var(--purple)">JOINT CONCLUSION 03</div>
+  <div class="ft">The two instruments together establish a complete structural taxonomy: five joint states replace the two-state binary of either instrument alone</div>
+  <p>Individually, STRUC-I classifies by pressure zone (4 levels) and STRUC-PERC by percolation tier (4 levels). Together, the joint matrix identifies five empirically distinct structural states in this corpus: (1) <span class="em">Relaxed-Connected</span> (low ρ, FULL/GIANT, low κ) — biological, atmosphere; (2) <span class="em">Moderate-Connected</span> (medium ρ, FULL, moderate κ) — nuclear, condensed matter; (3) <span class="em">Relaxed-Tail</span> (low ρ, GIANT, no conn) — molecular, geoid, GOE; (4) <span class="em">Stressed-Extreme</span> (high ρ, FULL at extreme κ) — Zeeman; (5) <span class="em">Stressed-Fragmented</span> (high ρ, TAIL, no conn) — cosmic web peak, solar flare. No physical system falls in the (high ρ, HARD) cell — the only HARD case is TiO₂ raw DOS, a data representation issue not arising from the physical system itself.</p>
+</div>
+
+<!-- FOOTER -->
+<div style="margin-top:60px;padding-top:16px;border-top:1px solid var(--border2);font-size:8.5px;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;letter-spacing:.1em">
+  <span>UNNS SUBSTRATE RESEARCH PROGRAM · CROSS-INSTRUMENT ANALYSIS · 2026-04-06</span>
+  <span><span style="color:var(--si)">STRUC-I v1.0.4</span> (5,233 runs) × <span style="color:var(--sp)">STRUC-PERC-I v2.4.0</span> (81 runs) · 10 shared domains</span>
+  <span>USL: ZERO PHYSICAL CONTRADICTIONS · Theorem 1: 1/81 (representation) · Conjecture 1: OPEN</span>
+</div>
+
+</div></body></html>

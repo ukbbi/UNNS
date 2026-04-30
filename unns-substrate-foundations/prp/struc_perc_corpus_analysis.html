@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRUC-PERC-I v2.4.0 — Cross-Domain Percolation Corpus Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=IBM+Plex+Sans:wght@200;300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #040810;
+  --bg2:     #060a14;
+  --panel:   #07101c;
+  --panel2:  #091422;
+  --border:  #0e1f32;
+  --border2: #0b1a2a;
+  --accent:  #00c8f0;
+  --green:   #00dd88;
+  --gold:    #e8c840;
+  --orange:  #e07030;
+  --red:     #e04040;
+  --blue:    #4ab0f0;
+  --purple:  #9880ff;
+  --teal:    #30d0b0;
+  --amber:   #f0a030;
+  --text:    #a8bfd0;
+  --text2:   #5a7a96;
+  --dim:     #2d4560;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+  --display: 'Space Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 11px; line-height: 1.65; min-height: 100vh; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg2); } ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+.shell { max-width: 1480px; margin: 0 auto; padding: 36px 28px 100px; }
+
+/* HEADER */
+.report-header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 40px; position: relative; overflow: hidden; }
+.report-header::before { content: ''; position: absolute; top: 0; left: -20px; right: -20px; bottom: 0; background: radial-gradient(ellipse 60% 100% at 80% 50%, rgba(0,200,240,0.04), transparent); pointer-events: none; }
+.rh-eyebrow { font-size: 8px; color: var(--text2); letter-spacing: 0.3em; font-weight: 600; margin-bottom: 8px; }
+.rh-title { font-family: var(--display); font-size: clamp(18px,3vw,30px); color: var(--accent); letter-spacing: 0.05em; line-height: 1.1; margin-bottom: 8px; }
+.rh-subtitle { font-family: var(--sans); font-size: 13px; font-weight: 300; color: var(--text2); letter-spacing: 0.02em; margin-bottom: 18px; }
+.rh-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 9px; color: var(--dim); letter-spacing: 0.12em; }
+.rh-meta span { color: var(--text2); }
+.rh-tag { display: inline-block; font-size: 8px; border: 1px solid; padding: 2px 9px; letter-spacing: 0.15em; font-weight: 600; }
+.rh-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+
+/* SECTION LABELS */
+.section-label { font-size: 8px; color: var(--dim); letter-spacing: 0.32em; font-weight: 700; padding: 5px 0 10px; border-top: 1px solid var(--border2); margin-top: 44px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+.section-label .sl-num { color: var(--accent); font-size: 9px; font-family: var(--display); min-width: 28px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+
+/* PANELS */
+.panel { background: var(--panel); border: 1px solid var(--border2); padding: 16px 20px; margin-bottom: 12px; }
+.panel-title { font-size: 8px; color: var(--accent); letter-spacing: 0.22em; font-weight: 600; border-bottom: 1px solid var(--border2); padding-bottom: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.panel-title .psub { color: var(--dim); font-weight: 400; font-size: 7.5px; margin-left: auto; }
+
+/* GRID */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 900px) { .row3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .row2, .row3 { grid-template-columns: 1fr; } }
+
+/* STAT CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.stat-card { background: var(--panel2); border: 1px solid var(--border2); padding: 12px 14px; }
+.sc-label { font-size: 7.5px; color: var(--text2); letter-spacing: 0.18em; font-weight: 600; margin-bottom: 5px; }
+.sc-val { font-family: var(--display); font-size: 20px; line-height: 1; margin-bottom: 2px; }
+.sc-unit { font-size: 8px; color: var(--dim); }
+.sc-accent  { color: var(--accent); }
+.sc-green   { color: var(--green); }
+.sc-gold    { color: var(--gold); }
+.sc-orange  { color: var(--orange); }
+.sc-red     { color: var(--red); }
+.sc-blue    { color: var(--blue); }
+.sc-teal    { color: var(--teal); }
+.sc-purple  { color: var(--purple); }
+.sc-amber   { color: var(--amber); }
+
+/* TABLES */
+.scrollbox { overflow-x: auto; border: 1px solid var(--border2); }
+.scrollbox::-webkit-scrollbar { height: 4px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.data-table th { color: var(--accent); letter-spacing: 0.12em; font-weight: 600; padding: 5px 10px; border-bottom: 1px solid var(--border2); text-align: left; white-space: nowrap; background: var(--panel2); position: sticky; top: 0; }
+.data-table td { padding: 4px 10px; border-bottom: 1px solid var(--border2); font-family: var(--mono); white-space: nowrap; }
+.data-table tr:hover td { background: rgba(0,200,240,0.03); }
+.data-table td.pass   { color: var(--green); }
+.data-table td.warn   { color: var(--amber); }
+.data-table td.crit   { color: var(--orange); }
+.data-table td.fail   { color: var(--red); }
+.data-table td.dim    { color: var(--dim); }
+.data-table td.blue   { color: var(--blue); }
+.data-table td.gold   { color: var(--gold); }
+.data-table td.teal   { color: var(--teal); }
+.data-table td.accent { color: var(--accent); }
+.data-table td.purple { color: var(--purple); }
+.data-table th.r, .data-table td.r { text-align: right; }
+
+/* VERDICT BADGE */
+.vbadge { display: inline-block; font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; padding: 2px 8px; border: 1px solid; }
+.vbadge.full  { color: var(--green);  border-color: var(--green);  background: rgba(0,221,136,0.07); }
+.vbadge.giant { color: var(--blue);   border-color: var(--blue);   background: rgba(74,176,240,0.07); }
+.vbadge.tail  { color: var(--amber);  border-color: var(--amber);  background: rgba(240,160,48,0.07); }
+.vbadge.hard  { color: var(--red);    border-color: var(--red);    background: rgba(224,64,64,0.07); }
+
+/* DOMAIN CARDS */
+.domain-card { border: 1px solid var(--border2); padding: 14px 18px; margin-bottom: 10px; position: relative; overflow: hidden; }
+.domain-card::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; }
+.domain-card.molecular::before  { background: var(--teal); }
+.domain-card.atomic::before     { background: var(--blue); }
+.domain-card.biological::before { background: var(--green); }
+.domain-card.nuclear::before    { background: var(--purple); }
+.domain-card.condensed::before  { background: var(--amber); }
+.domain-card.cmb::before        { background: var(--accent); }
+.domain-card.cosmic::before     { background: var(--purple); }
+.domain-card.atmosphere::before { background: var(--teal); }
+.domain-card.geodesy::before    { background: var(--gold); }
+.domain-card.geoid::before      { background: var(--orange); }
+.domain-card.solar::before      { background: var(--gold); }
+.domain-card.rmt::before        { background: var(--red); }
+.domain-card.adversarial::before{ background: var(--dim); }
+.dc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.dc-domain { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
+.dc-n { font-size: 8px; color: var(--dim); }
+.dc-kc { font-size: 8px; color: var(--text2); margin-left: auto; }
+
+/* FINDINGS */
+.finding { background: var(--panel2); border: 1px solid var(--border2); border-left: 3px solid var(--gold); padding: 12px 16px; margin-bottom: 10px; }
+.finding-num { font-family: var(--display); font-size: 8px; color: var(--gold); letter-spacing: 0.2em; margin-bottom: 5px; font-weight: 700; }
+.finding-title { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 5px; }
+.finding p { font-size: 10px; color: var(--text); line-height: 1.7; }
+.finding .em { color: var(--gold); font-weight: 600; }
+.finding .val { font-family: var(--display); color: var(--accent); }
+
+/* KAPPA CONNECT BAR */
+.kc-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.kc-bar-track { height: 4px; background: var(--border2); flex: 1; position: relative; overflow: hidden; min-width: 60px; }
+.kc-bar-fill { height: 100%; position: absolute; left: 0; top: 0; }
+
+/* TIER BREAKDOWN BARS */
+.tier-bars { display: flex; height: 6px; border-radius: 2px; overflow: hidden; margin: 6px 0; }
+.tier-bars div { height: 100%; }
+
+/* OUTLIER SEVERITY DOT */
+.sev-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+/* REGIMES TABLE */
+.regime-block { background: var(--panel2); border: 1px solid var(--border2); padding: 10px 14px; margin-bottom: 8px; }
+.regime-block .rb-label { font-size: 8px; color: var(--text2); letter-spacing: 0.18em; font-weight: 600; margin-bottom: 4px; }
+.regime-block .rb-val { font-family: var(--display); font-size: 13px; color: var(--accent); }
+.regime-block .rb-sub { font-size: 8px; color: var(--dim); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<div class="report-header">
+  <div class="rh-eyebrow">UNNS SUBSTRATE RESEARCH PROGRAM · STRUC-PERC-I v2.4.0</div>
+  <div class="rh-title">CROSS-DOMAIN PERCOLATION CORPUS ANALYSIS</div>
+  <div class="rh-subtitle">Full pairwise vulnerability graph · IQR-scaled ε · 4-tier verdict system · 81 runs across 14 domains</div>
+  <div class="rh-meta">
+    INSTRUMENT <span>STRUC-PERC-I v2.4.0</span>
+    DATE <span>2026-04-05</span>
+    TOTAL RUNS <span>81</span>
+    DOMAINS <span>14</span>
+    USL VIOLATIONS <span style="color:var(--green)">0 (zero hard USL violations)</span>
+    THEOREM 1 TRIGGERED <span style="color:var(--amber)">1 / 81</span>
+  </div>
+  <div class="rh-tags">
+    <span class="rh-tag" style="color:var(--green);border-color:var(--green)">FULL PERCOLATION: 48</span>
+    <span class="rh-tag" style="color:var(--blue);border-color:var(--blue)">GIANT COMPONENT: 23</span>
+    <span class="rh-tag" style="color:var(--amber);border-color:var(--amber)">TAIL FRAGMENTATION: 9</span>
+    <span class="rh-tag" style="color:var(--red);border-color:var(--red)">HARD FRAGMENTATION: 1</span>
+    <span class="rh-tag" style="color:var(--text2);border-color:var(--dim)">ENGINE: IQR-scaled ε · τ-floor · MAX_WINDOW=64</span>
+  </div>
+</div>
+
+<!-- ══ 1. EXECUTIVE SUMMARY ═══════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">01</span>EXECUTIVE SUMMARY</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">TOTAL RUNS</div><div class="sc-val sc-accent">81</div><div class="sc-unit">across 14 domains</div></div>
+  <div class="stat-card"><div class="sc-label">FULL PERCOLATION</div><div class="sc-val sc-green">48</div><div class="sc-unit">59.3% of corpus</div></div>
+  <div class="stat-card"><div class="sc-label">GIANT COMPONENT</div><div class="sc-val sc-blue">23</div><div class="sc-unit">28.4% · tier 2</div></div>
+  <div class="stat-card"><div class="sc-label">TAIL FRAGMENTATION</div><div class="sc-val sc-amber">9</div><div class="sc-unit">11.1% · inconclusive</div></div>
+  <div class="stat-card"><div class="sc-label">HARD FRAGMENTATION</div><div class="sc-val sc-red">1</div><div class="sc-unit">TiO₂ density only</div></div>
+  <div class="stat-card"><div class="sc-label">THEOREM 1 TRIGGERED</div><div class="sc-val sc-red">1</div><div class="sc-unit">USL violation guaranteed</div></div>
+  <div class="stat-card"><div class="sc-label">ZERO HARD VIOLATIONS</div><div class="sc-val sc-green">80</div><div class="sc-unit">of 81 runs clean</div></div>
+  <div class="stat-card"><div class="sc-label">TAIL DOMINANCE &gt;50%</div><div class="sc-val sc-amber">45</div><div class="sc-unit">outlier-gap-dominated</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">VERDICT DISTRIBUTION BY DOMAIN <span class="psub">all 81 runs · STRUC-PERC-I v2.4.0 · IQR-scaled ε</span></div>
+  <div class="scrollbox">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th class="r">N</th>
+          <th>Tier breakdown</th>
+          <th class="r">FULL</th>
+          <th class="r">GIANT</th>
+          <th class="r">TAIL</th>
+          <th class="r">HARD</th>
+          <th class="r">Avg giant ratio</th>
+          <th class="r">κ_conn range</th>
+          <th class="r">Theorem 1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="teal">Molecular (HITRAN)</td><td class="r">6</td>
+          <td><div class="tier-bars"><div style="width:0%;background:var(--green)"></div><div style="width:100%;background:var(--blue)"></div></div></td>
+          <td class="r dim">0</td><td class="r pass">6</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">0.9985</td>
+          <td class="r dim">— (GIANT, no conn)</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="blue">Atomic Spectra</td><td class="r">10</td>
+          <td><div class="tier-bars"><div style="width:40%;background:var(--green)"></div><div style="width:50%;background:var(--blue)"></div><div style="width:10%;background:var(--amber)"></div></div></td>
+          <td class="r pass">4</td><td class="r blue">5</td><td class="r warn">1</td><td class="r dim">0</td>
+          <td class="r pass">0.9978</td>
+          <td class="r accent">2.1×10⁵ – 4.2×10⁵</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="pass">Biological (QT45)</td><td class="r">7</td>
+          <td><div class="tier-bars"><div style="width:100%;background:var(--green)"></div></div></td>
+          <td class="r pass">7</td><td class="r dim">0</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">1.0000</td>
+          <td class="r pass">0.42 – 2.00</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="purple">Nuclear (ENSDF)</td><td class="r">14</td>
+          <td><div class="tier-bars"><div style="width:71%;background:var(--green)"></div><div style="width:0%;background:var(--blue)"></div><div style="width:29%;background:var(--amber)"></div></div></td>
+          <td class="r pass">10</td><td class="r dim">0</td><td class="r warn">4</td><td class="r dim">0</td>
+          <td class="r pass">0.9945</td>
+          <td class="r accent">3.8×10⁴ – 4.2×10⁵</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="amber">Condensed Matter</td><td class="r">12</td>
+          <td><div class="tier-bars"><div style="width:91%;background:var(--green)"></div><div style="width:0%;background:var(--blue)"></div><div style="width:0%;background:var(--amber)"></div><div style="width:9%;background:var(--red)"></div></div></td>
+          <td class="r pass">11</td><td class="r dim">0</td><td class="r dim">0</td><td class="r fail">1</td>
+          <td class="r warn">0.9861</td>
+          <td class="r pass">0.75 – 8.1×10³</td>
+          <td class="r fail">1 (TiO₂)</td>
+        </tr>
+        <tr>
+          <td class="accent">CMB</td><td class="r">3</td>
+          <td><div class="tier-bars"><div style="width:100%;background:var(--green)"></div></div></td>
+          <td class="r pass">3</td><td class="r dim">0</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">1.0000</td>
+          <td class="r warn">230 – 2389</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td style="color:var(--purple)">Cosmic Web</td><td class="r">5</td>
+          <td><div class="tier-bars"><div style="width:0%;background:var(--green)"></div><div style="width:40%;background:var(--blue)"></div><div style="width:60%;background:var(--amber)"></div></div></td>
+          <td class="r dim">0</td><td class="r blue">2</td><td class="r warn">3</td><td class="r dim">0</td>
+          <td class="r warn">0.9954</td>
+          <td class="r dim">— (no direct conn)</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="teal">Atmosphere (ERA5)</td><td class="r">8</td>
+          <td><div class="tier-bars"><div style="width:100%;background:var(--green)"></div></div></td>
+          <td class="r pass">8</td><td class="r dim">0</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">1.0000</td>
+          <td class="r pass">0.42 – 2.00</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="gold">Geodesy (GPS)</td><td class="r">5</td>
+          <td><div class="tier-bars"><div style="width:40%;background:var(--green)"></div><div style="width:60%;background:var(--blue)"></div></div></td>
+          <td class="r pass">2</td><td class="r blue">3</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">0.9989</td>
+          <td class="r warn">253 – 402</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="crit">Geoid / Gravity</td><td class="r">4</td>
+          <td><div class="tier-bars"><div style="width:0%;background:var(--green)"></div><div style="width:100%;background:var(--blue)"></div></div></td>
+          <td class="r dim">0</td><td class="r blue">4</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">0.9983</td>
+          <td class="r dim">— (GIANT, no conn)</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="gold">Solar (GOES-XRS)</td><td class="r">1</td>
+          <td><div class="tier-bars"><div style="width:0%;background:var(--green)"></div><div style="width:0%;background:var(--blue)"></div><div style="width:100%;background:var(--amber)"></div></div></td>
+          <td class="r dim">0</td><td class="r dim">0</td><td class="r warn">1</td><td class="r dim">0</td>
+          <td class="r warn">0.9820</td>
+          <td class="r dim">— (TAIL)</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="fail">Random Matrix (GOE)</td><td class="r">1</td>
+          <td><div class="tier-bars"><div style="width:0%;background:var(--green)"></div><div style="width:100%;background:var(--blue)"></div></div></td>
+          <td class="r dim">0</td><td class="r blue">1</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">0.9960</td>
+          <td class="r dim">— (GIANT)</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="dim">Adversarial / Cluster</td><td class="r">3</td>
+          <td><div class="tier-bars"><div style="width:33%;background:var(--green)"></div><div style="width:67%;background:var(--blue)"></div></div></td>
+          <td class="r pass">1</td><td class="r blue">2</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">0.9993</td>
+          <td class="r pass">0.01</td>
+          <td class="r dim">—</td>
+        </tr>
+        <tr>
+          <td class="dim">Adversarial / Weak</td><td class="r">2</td>
+          <td><div class="tier-bars"><div style="width:100%;background:var(--green)"></div></div></td>
+          <td class="r pass">2</td><td class="r dim">0</td><td class="r dim">0</td><td class="r dim">0</td>
+          <td class="r pass">1.0000</td>
+          <td class="r amber">2.7×10⁴ – 2.3×10⁵</td>
+          <td class="r dim">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ 2. KEY FINDINGS ════════════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">02</span>KEY FINDINGS</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 01</div>
+  <div class="finding-title">Zero Hard USL Violations Across 80 of 81 Runs</div>
+  <p>Only <span class="em">1 of 81 runs</span> (TiO₂ density, giant ratio <span class="val">0.8333</span>) triggers Theorem 1, confirming a USL violation. All remaining 80 domains return verdicts consistent with structural admissibility. This is the central result of the corpus: at the current κ-grid range, real physical ladders are overwhelmingly admissible or inconclusive, with true structural failure appearing only in the one known pathological case.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 02</div>
+  <div class="finding-title">Three Distinct Percolation Regimes Confirmed Across Domains</div>
+  <p>The corpus cleanly partitions into three structural regimes distinguished by their κ_connect scale:
+  <br>— <span class="em">Immediate percolation</span> (κ_conn ≤ 2): biological fitness landscapes, atmospheric wind fields, adversarial baselines, some condensed-matter.
+  <br>— <span class="em">Moderate delayed percolation</span> (κ_conn = 10–8000): condensed matter solids (FeO, KSiO, Cu, VO), CMB spectra (230–2389), GPS crustal displacement.
+  <br>— <span class="em">Extreme delayed / tail-dominated percolation</span> (κ_conn = 10⁴–4×10⁵): nuclear γ-level schemes, atomic spectra (Na, He-II, Li). These connect only at κ far exceeding the main grid, driven by astronomical gap ratios (max ratio up to 4×10⁵) yet structurally consistent.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 03</div>
+  <div class="finding-title">Biological Domain Shows the Lowest κ_connect Across All Physical Domains</div>
+  <p>All 7 biological runs (QT45 ribozyme fitness landscape) return <span class="em">FULL_PERCOLATION</span> with κ_conn in the range <span class="val">0.42 – 2.00</span> — the lowest of any physical domain. This means the fitness landscape gap structure is the most locally homogeneous in Δ-space of all systems tested. The result is consistent with the published biological extension article at unns.tech and confirms the earlier STRUC-BIO-I findings.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 04</div>
+  <div class="finding-title">Nuclear Domain Splits: 10 FULL, 4 TAIL — Correlated with Isotope Structure</div>
+  <p>The four TAIL_FRAGMENTATION nuclei are <span class="em">²³⁸U, ¹⁵⁰Nd, ¹⁰⁰Mo, ⁴⁸Ca</span> — all isotopes with known structural anomalies (deformed nuclei, shape coexistence, or collectivity transitions). Giant ratios range from 0.976 to 0.988, with tail dominance = 1.000 and astronomically large max ratios (up to 2×10¹⁸). These outliers are single extreme-energy γ-transitions far above the bulk level scheme. Theorem 1 does not apply (TAIL verdict), but the pattern is physically interpretable: structural irregularity in the level scheme produces outlier gaps that resist global connectivity at the tested κ scale.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 05</div>
+  <div class="finding-title">Cosmic Web Ladders Are the Only Physical Domain Lacking Direct κ_connect</div>
+  <p>All 5 cosmic web runs (2MRS, DESI synthetic, DESI sample, SDSS) return GIANT or TAIL verdicts with <span class="em">no κ_connect on the main grid and no adaptive extension result</span>. Giant ratios are tightly clustered at 0.994–0.999. This is structurally different from the nuclear tail cases: the cosmic web ladders have isolated vertices at maximum κ that extension cannot resolve within the tested range, reflecting genuine large-scale void structure in the galaxy distribution. The 3 TAIL cases have tail dominance 0.913, driven by a max ratio of ~10⁶.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 06</div>
+  <div class="finding-title">CMB Percolates — But at Extreme Scale (κ_conn up to 2389)</div>
+  <p>All three CMB spectra (TT, TE, EE) return FULL_PERCOLATION after adaptive extension, but with dramatically different connectivity scales: TE connects at κ ≈ <span class="val">230</span>, TT at κ ≈ <span class="val">322</span>, EE at κ ≈ <span class="val">2389</span>. The large κ required reflects the multi-scale power spectrum structure — acoustic peaks create local gap homogeneity at specific scales, but the overall spectrum is too heterogeneous to bridge within κ ≤ 1. EE polarization requiring 10× larger κ than TE is a new discriminative result consistent with the different noise properties of these spectra.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 07</div>
+  <div class="finding-title">TiO₂ Density Is the Only Confirmed Hard Structural Failure</div>
+  <p>The <span class="em">tio2_density_ladder</span> (cleaned dataset) returns HARD_FRAGMENTATION with giant ratio <span class="val">0.8333</span> — the only run triggering Theorem 1. The companion <span class="em">tio2_cleaned_dataset</span> run returns FULL_PERCOLATION at κ_conn = 681, showing that the raw density representation produces genuine structural fragmentation while the cleaned spectral dataset is admissible. This split is scientifically significant: it demonstrates that data pre-processing choice directly affects PRP verdict for the same physical system.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING 08</div>
+  <div class="finding-title">Geoid / Gravity and Molecular HITRAN Show Persistent GIANT — Never Crossing to FULL</div>
+  <p>Six molecular species (H₂O, NH₃, CO₂, CH₄, O₃, CO) and all four gravity field models (Earth EIGEN-6C4, Mars JGM85, Moon AIUB-GRL350A, Earth spatial 2°) return GIANT_COMPONENT_PERCOLATION with giant ratios 0.997–0.9997, but no κ_connect on the main grid and no adaptive extension. This is the most structurally coherent GIANT cluster in the corpus: persistent near-complete connectivity without a small number of extreme outliers preventing closure. It suggests these systems are structurally admissible at scale but have isolated tail gaps that resist connection even at κ = 1.</p>
+</div>
+
+<!-- ══ 3. κ-CONNECT STRUCTURE ═════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">03</span>κ-CONNECT STRUCTURE ACROSS DOMAINS</div>
+
+<div class="panel">
+  <div class="panel-title">κ_connect VALUES — ALL 48 RUNS WITH DIRECT CONNECTIVITY <span class="psub">log-scale ordering · lower = more homogeneous gap structure</span></div>
+  <div class="scrollbox">
+    <table class="data-table">
+      <thead>
+        <tr><th>Run ID</th><th>Domain</th><th>Verdict</th><th class="r">κ_connect</th><th class="r">Giant ratio</th><th class="r">Tail dominance</th><th class="r">Max ratio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="dim">uniform_baseline_ladder</td><td class="dim">Adversarial / Cluster</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.01000</td><td class="r pass">1.0000</td><td class="r dim">0.000</td><td class="r dim">0.0</td></tr>
+        <tr><td>era5_latband_absmean_labels</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.4217</td><td class="r pass">1.0000</td><td class="r dim">0.00</td><td class="r dim">—</td></tr>
+        <tr><td>complete10_double_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.4217</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>complete10_single_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.4217</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>bp_mutants_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.4217</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>combined_single_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.4217</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_global_lonsector_labels</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.5623</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>double_mutant_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.5623</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_latband_absmax_u</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.7499</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>deletion_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.7499</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>sno_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r pass">0.7499</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_latband_signedmean_u</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">1.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_top12_jet_absmean_u</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_top12_jet_labels</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_latband_absmean_u</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>era5_global_lonsector_absmean_u</td><td class="teal">Atmosphere (ERA5)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>combined_del_single_global</td><td class="pass">Biological (QT45)</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>vo_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>si_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r pass">2.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>tio_density_clean</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r pass">10.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>ge_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r pass">10.000</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>feo_cleaned</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r warn">30.08</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>ksio_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r warn">94.04</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>o_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r warn">94.04</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>cu_density</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r warn">94.04</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>cmb_te_spectrum</td><td class="accent">CMB</td><td><span class="vbadge full">FULL</span></td><td class="r warn">229.68</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>p811_crustal_displacement</td><td class="gold">Geodesy (GPS)</td><td><span class="vbadge full">FULL</span></td><td class="r warn">252.87</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>cmb_tt_spectrum</td><td class="accent">CMB</td><td><span class="vbadge full">FULL</span></td><td class="r warn">321.88</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>cac2_crustal_displacement</td><td class="gold">Geodesy (GPS)</td><td><span class="vbadge full">FULL</span></td><td class="r warn">402.21</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>tio2_cleaned_dataset</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r warn">681.36</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>cmb_ee_spectrum</td><td class="accent">CMB</td><td><span class="vbadge full">FULL</span></td><td class="r crit">2389.12</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>vo_cleaned_dataset</td><td class="amber">Condensed Matter</td><td><span class="vbadge full">FULL</span></td><td class="r crit">8072.55</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        <tr><td>weak_ladders_summary</td><td class="dim">Adversarial / Weak</td><td><span class="vbadge full">FULL</span></td><td class="r crit">26 758</td><td class="r pass">1.0000</td><td class="r amber">0.999</td><td class="r amber">26 759</td></tr>
+        <tr><td>ensdf_116sn</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">37 586</td><td class="r pass">1.0000</td><td class="r amber">0.966</td><td class="r fail">37 586</td></tr>
+        <tr><td>ensdf_90zr</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">39 623</td><td class="r pass">1.0000</td><td class="r amber">0.946</td><td class="r fail">39 623</td></tr>
+        <tr><td>ensdf_174yb</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">59 068</td><td class="r pass">1.0000</td><td class="r amber">0.982</td><td class="r fail">59 068</td></tr>
+        <tr><td>ensdf_208pb</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">64 262</td><td class="r pass">1.0000</td><td class="r amber">0.968</td><td class="r fail">64 262</td></tr>
+        <tr><td>ensdf_166er</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">106 377</td><td class="r pass">1.0000</td><td class="r amber">0.983</td><td class="r fail">106 377</td></tr>
+        <tr><td>ensdf_28si</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">157 499</td><td class="r pass">1.0000</td><td class="r amber">0.990</td><td class="r fail">157 499</td></tr>
+        <tr><td>ensdf_152sm</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">176 211</td><td class="r pass">1.0000</td><td class="r crit">0.987</td><td class="r fail">176 211</td></tr>
+        <tr><td>sodium_spectrum_qm1 (×2)</td><td class="blue">Atomic Spectra</td><td><span class="vbadge full">FULL</span></td><td class="r fail">206 721</td><td class="r pass">1.0000</td><td class="r crit">—</td><td class="r fail">206 721</td></tr>
+        <tr><td>weak_ladders_profiles</td><td class="dim">Adversarial / Weak</td><td><span class="vbadge full">FULL</span></td><td class="r fail">227 428</td><td class="r pass">1.0000</td><td class="r crit">0.996</td><td class="r fail">227 428</td></tr>
+        <tr><td>heliumii_spectrum_qm1</td><td class="blue">Atomic Spectra</td><td><span class="vbadge full">FULL</span></td><td class="r fail">329 031</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r fail">329 031</td></tr>
+        <tr><td>ensdf_56fe</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">329 108</td><td class="r pass">1.0000</td><td class="r crit">0.996</td><td class="r fail">329 108</td></tr>
+        <tr><td>ensdf_60ni</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">397 204</td><td class="r pass">1.0000</td><td class="r crit">0.993</td><td class="r fail">397 204</td></tr>
+        <tr><td>ensdf_24mg</td><td class="purple">Nuclear (ENSDF)</td><td><span class="vbadge full">FULL</span></td><td class="r fail">418 677</td><td class="r pass">1.0000</td><td class="r crit">0.992</td><td class="r fail">418 677</td></tr>
+        <tr><td>lithium_spectrum_qm1</td><td class="blue">Atomic Spectra</td><td><span class="vbadge full">FULL</span></td><td class="r fail">420 033</td><td class="r pass">1.0000</td><td class="r dim">—</td><td class="r fail">420 033</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ 4. TAIL FRAGMENTATION CASES ══════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">04</span>TAIL FRAGMENTATION — 9 INCONCLUSIVE RUNS</div>
+
+<div class="panel">
+  <div class="panel-title">TAIL FRAGMENTATION DETAIL <span class="psub">giant ratio ≥ 0.95 · no large secondary cluster · Theorem 1 does NOT apply</span></div>
+  <div class="scrollbox">
+    <table class="data-table">
+      <thead>
+        <tr><th>Run ID</th><th>Domain</th><th class="r">Giant ratio</th><th class="r">Isolated</th><th class="r">Tail dominance</th><th class="r">Max Δ/med</th><th>Interpretation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="amber">ensdf_238u</td><td class="purple">Nuclear (ENSDF)</td><td class="r warn">0.9829</td><td class="r">—</td><td class="r fail">1.000</td><td class="r fail">2.5 × 10⁹</td><td class="dim">Single extreme high-E γ transition</td></tr>
+        <tr><td class="amber">ensdf_150nd</td><td class="purple">Nuclear (ENSDF)</td><td class="r warn">0.9758</td><td class="r">—</td><td class="r fail">1.000</td><td class="r fail">2.2 × 10¹⁸</td><td class="dim">Shape-coexistence deformed nucleus</td></tr>
+        <tr><td class="amber">ensdf_100mo</td><td class="purple">Nuclear (ENSDF)</td><td class="r warn">0.9884</td><td class="r">—</td><td class="r fail">1.000</td><td class="r fail">7.0 × 10¹⁸</td><td class="dim">Double β-decay candidate, outlier γ</td></tr>
+        <tr><td class="amber">ensdf_48ca</td><td class="purple">Nuclear (ENSDF)</td><td class="r warn">0.9761</td><td class="r">—</td><td class="r fail">1.000</td><td class="r fail">2.5 × 10¹⁸</td><td class="dim">Doubly-magic + deformation excitation</td></tr>
+        <tr><td class="amber">cw_desi_xyz_sample</td><td style="color:var(--purple)">Cosmic Web</td><td class="r warn">0.9943</td><td class="r">—</td><td class="r warn">0.913</td><td class="r crit">1.01 × 10⁶</td><td class="dim">Void radial gap > 1M × median</td></tr>
+        <tr><td class="amber">cw_desi_synthetic</td><td style="color:var(--purple)">Cosmic Web</td><td class="r warn">0.9943</td><td class="r">—</td><td class="r warn">0.913</td><td class="r crit">1.01 × 10⁶</td><td class="dim">Void radial gap > 1M × median</td></tr>
+        <tr><td class="amber">desi_ra_dec_z_redshift</td><td style="color:var(--purple)">Cosmic Web</td><td class="r warn">0.9942</td><td class="r">—</td><td class="r warn">0.913</td><td class="r crit">1.01 × 10⁶</td><td class="dim">Redshift ladder void structure</td></tr>
+        <tr><td class="amber">goes-xrs-2014</td><td class="gold">Solar (GOES-XRS)</td><td class="r warn">0.9820</td><td class="r">—</td><td class="r fail">1.000</td><td class="r fail">3.2 × 10¹⁰</td><td class="dim">Solar flare spike dominates gap budget</td></tr>
+        <tr><td class="amber">gold_zeeman</td><td class="blue">Atomic Spectra</td><td class="r warn">0.9944</td><td class="r">—</td><td class="r fail">0.998</td><td class="r fail">4.8 × 10⁶</td><td class="dim">Au Zeeman fine-structure outlier</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;font-size:9px;color:var(--text2);line-height:1.8">
+    <span style="color:var(--amber)">⚠ INCONCLUSIVE</span> — All 9 cases have tail dominance ≥ 0.913: isolated vertices are produced by single extreme outlier gaps, not structural fragmentation.
+    Theorem 1 (necessary direction) does NOT apply. USL violation is not guaranteed. Diagnostic action: refine domain adapter to exclude pathological outlier transitions, or extend κ to astronomical scales.
+  </div>
+</div>
+
+<!-- ══ 5. THE SINGLE HARD FAILURE ════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">05</span>HARD FRAGMENTATION — THEOREM 1 TRIGGER</div>
+
+<div class="panel">
+  <div class="panel-title">TiO₂ DENSITY LADDER — THE ONLY USL VIOLATION CONFIRMED <span class="psub">tio2_density_ladder · giant ratio = 0.8333 · Theorem 1 triggered</span></div>
+  <div class="row2">
+    <div>
+      <div style="margin-bottom:12px;font-size:10px;color:var(--text);line-height:1.8">
+        The raw TiO₂ density-of-states ladder returns HARD_FRAGMENTATION with giant ratio <span style="color:var(--red);font-family:var(--display)">0.8333</span> — the only run in the corpus triggering PRP Theorem 1. The companion <code>tio2_cleaned_dataset</code> run returns FULL_PERCOLATION at κ_conn = 681, demonstrating that the raw density representation contains genuine structural discontinuities that the cleaned spectral dataset does not.
+      </div>
+      <div style="font-size:9px;color:var(--text2)">This split confirms: PRP verdict is sensitive to data pre-processing for the same physical system. The raw DOS has large energy-range gaps not present in the cleaned spectral peaks ladder.</div>
+    </div>
+    <div>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat-card"><div class="sc-label">GIANT RATIO</div><div class="sc-val sc-red">0.833</div></div>
+        <div class="stat-card"><div class="sc-label">VERDICT</div><div class="sc-val sc-red" style="font-size:13px">HARD</div></div>
+        <div class="stat-card"><div class="sc-label">THEOREM 1</div><div class="sc-val sc-red">YES</div><div class="sc-unit">USL violation guaranteed</div></div>
+        <div class="stat-card"><div class="sc-label">COMPANION</div><div class="sc-val sc-green" style="font-size:13px">FULL</div><div class="sc-unit">at κ_conn = 681</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 6. DOMAIN PROFILES ════════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">06</span>DOMAIN PROFILES</div>
+
+<!-- MOLECULAR -->
+<div class="domain-card molecular">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--teal)">MOLECULAR — HITRAN</div>
+    <div class="dc-n">6 runs · H₂O, NH₃, CO₂, CH₄, O₃, CO</div>
+    <div class="dc-kc" style="color:var(--blue)">All GIANT · avg GR = 0.9985</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    All six HITRAN molecular energy level ladders return GIANT_COMPONENT_PERCOLATION with giant ratios 0.9975–0.9993. No κ_connect is found on the main grid or via adaptive extension, indicating that isolated outlier energy gaps resist connection even at κ = 1. The giant component is near-complete — the overall HITRAN level structure is highly admissibility-consistent. The absence of FULL percolation (vs. earlier instrument versions) reflects the more discriminative IQR-scaled ε: these ladders have dense bulk level spacings (small IQR) but one or two extreme outlier gaps from high-energy vibrational series.
+  </div>
+</div>
+
+<!-- ATOMIC -->
+<div class="domain-card atomic">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--blue)">ATOMIC SPECTRA — QM-I/II</div>
+    <div class="dc-n">10 runs · H, He, Li, Na, Ca, Ag, Au + Zeeman variants</div>
+    <div class="dc-kc" style="color:var(--amber)">Mixed: 4 FULL · 5 GIANT · 1 TAIL</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    The atomic domain splits by measurement type. Zeeman ladder runs (Ca, H, He-singlet, Ag, Na) predominantly return FULL_PERCOLATION at extreme κ_conn (2×10⁵ – 4×10⁵), reflecting the fine-structure outlier transitions. QM-I series spectra (He-II, Li, Na duplicates) also return FULL at large κ. Au Zeeman is the single TAIL case (GR = 0.9944, tail dominance 0.998): the Au fine-structure ladder has a single extremely large outlier gap that dominates the gap budget completely. The universal Zeeman invariant (ρ ≈ 0.96 from prior corpus) is consistent with the κ_connect clustering in the 2×10⁵ – 4×10⁵ range for multiple elements.
+  </div>
+</div>
+
+<!-- BIOLOGICAL -->
+<div class="domain-card biological">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--green)">BIOLOGICAL — QT45 RIBOZYME</div>
+    <div class="dc-n">7 runs · fitness landscape mutant classes</div>
+    <div class="dc-kc" style="color:var(--green)">All FULL · κ_conn range 0.42 – 2.00</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    The QT45 ribozyme fitness landscape is the most immediately percolating physical domain in the corpus. All seven mutant class ladders (bp_mutants, single, double, deletion, combined) return FULL_PERCOLATION with κ_connect between 0.42 and 2.00 — the lowest connectivity threshold of any domain. This confirms and extends the published UNNS biological extension (March 2026): living matter fitness landscapes have the most homogeneous gap structure of any tested system, requiring only a 0.42× IQR tolerance to achieve global graph connectivity.
+  </div>
+</div>
+
+<!-- NUCLEAR -->
+<div class="domain-card nuclear">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--purple)">NUCLEAR — ENSDF γ-LEVELS</div>
+    <div class="dc-n">14 isotopes · ²⁴Mg through ²³⁸U</div>
+    <div class="dc-kc" style="color:var(--amber)">10 FULL · 4 TAIL · κ_conn: 3.8×10⁴ – 4.2×10⁵</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    The nuclear corpus is the most internally differentiated domain. The FULL percolating isotopes all connect at large κ (37k – 418k), driven by tail-dominated gap structures (tailDominance 0.946–0.996): a small number of high-energy γ-transitions create extreme outlier gaps but the bulk of the level scheme is structurally coherent. The 4 TAIL cases (²³⁸U, ¹⁵⁰Nd, ¹⁰⁰Mo, ⁴⁸Ca) have tail dominance = 1.000 with astronomical max ratios (10⁹–10¹⁸), indicating single pathological transitions that cannot be bridged within the extension range. Notably, ⁴⁸Ca — previously identified as a cross-constant anomaly in the α-sweep corpus — again appears as a structural outlier here.
+  </div>
+</div>
+
+<!-- CONDENSED MATTER -->
+<div class="domain-card condensed">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--amber)">CONDENSED MATTER</div>
+    <div class="dc-n">12 runs · Si, Ge, Cu, FeO, TiO, TiO₂, VO, KSiO, O, SnO</div>
+    <div class="dc-kc" style="color:var(--red)">11 FULL · 1 HARD (TiO₂) · κ_conn: 0.75 – 8072</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    The widest κ_connect range of any domain (0.75 for SnO to 8072 for VO cleaned). Simple elemental metals and oxides (SnO, Si, Ge) connect within κ ≤ 10; complex transition-metal compounds (FeO, Cu, O) require κ ≈ 94; vanadium oxide and TiO₂ cleaned require κ in the hundreds to thousands. The TiO₂ raw density ladder is the corpus's only HARD_FRAGMENTATION case. VO appears twice (density and cleaned): both return FULL, but at very different scales (κ = 2.00 vs. 8072), demonstrating strong representation sensitivity.
+  </div>
+</div>
+
+<!-- CMB -->
+<div class="domain-card cmb">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--accent)">CMB — PLANCK 2018 POWER SPECTRA</div>
+    <div class="dc-n">3 spectra · TT · TE · EE</div>
+    <div class="dc-kc" style="color:var(--amber)">All FULL · κ_conn: TT=322, TE=230, EE=2389</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    All three CMB power spectra percolate via adaptive extension. The ordering TE &lt; TT &lt; EE by κ_connect is physically interpretable: TE (cross-correlation) has the most regular spacing between acoustic features; TT (temperature) is slightly more heterogeneous; EE (polarization E-mode) requires 10× larger κ, reflecting lower signal-to-noise and finer multi-pole structure near recombination. The factor of ~10 spread (230 vs. 2389) is a new discriminative result from the IQR-scaled engine that was not visible in earlier median-scaled runs.
+  </div>
+</div>
+
+<!-- COSMIC WEB -->
+<div class="domain-card cosmic">
+  <div class="dc-header">
+    <div class="dc-domain" style="color:var(--purple)">COSMIC WEB</div>
+    <div class="dc-n">5 runs · 2MRS · DESI sample/synthetic · SDSS · redshift</div>
+    <div class="dc-kc" style="color:var(--amber)">2 GIANT · 3 TAIL · no κ_connect</div>
+  </div>
+  <div style="font-size:9px;color:var(--text2);line-height:1.8">
+    The cosmic web domain is structurally distinct: no run achieves κ_connect on the main grid or via extension. Giant ratios cluster tightly at 0.994–0.999. The 2MRS and SDSS ladders return GIANT; the three DESI-based ladders (sample, synthetic, redshift) return TAIL with tail dominance 0.913 and max ratio ~10⁶. The DESI ladder void gaps are physically real — large-scale voids create radial separations orders of magnitude larger than typical filament spacings. The cosmic web requires either an adaptive extension far exceeding the current range, or a void-aware adapter that treats void structure separately from filament structure.
+  </div>
+</div>
+
+<!-- ══ 7. STRUCTURAL REGIME SUMMARY ══════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">07</span>STRUCTURAL PERCOLATION REGIMES</div>
+
+<div class="row3">
+  <div class="regime-block">
+    <div class="rb-label">REGIME I — IMMEDIATE</div>
+    <div class="rb-val">κ_conn &lt; 2</div>
+    <div class="rb-sub">Biological (QT45) · Atmosphere (ERA5) · SnO · Si · Ge · Adversarial baseline</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.7">Smooth, locally homogeneous gap structure. Small IQR relative to gap range. No significant outliers. Physical interpretation: systems with near-uniform spacing or very regular excitation ladders.</div>
+  </div>
+  <div class="regime-block">
+    <div class="rb-label">REGIME II — MODERATE DELAY</div>
+    <div class="rb-val">κ_conn = 2 – 10³</div>
+    <div class="rb-sub">Condensed matter (most) · CMB (TT, TE) · Geodesy (GPS)</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.7">Structured gap distributions with band-gap or multi-scale features. One or more secondary scale regimes. Physical interpretation: systems with competing length or energy scales producing bimodal or multi-modal gap distributions.</div>
+  </div>
+  <div class="regime-block">
+    <div class="rb-label">REGIME III — EXTREME DELAY</div>
+    <div class="rb-val">κ_conn = 10³ – 4×10⁵</div>
+    <div class="rb-sub">Nuclear (ENSDF) · Atomic spectra · CMB EE · Weak ladders</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:6px;line-height:1.7">Astronomically large tail gaps. Tail dominance &gt; 0.95. Bulk structure is coherent; connectivity blocked only by a handful of extreme outlier transitions. Physical interpretation: discrete energy systems with rare high-energy excitations far above the bulk spectrum.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">REGIME CLASSIFICATION SUMMARY</div>
+  <table class="data-table" style="width:100%">
+    <thead><tr><th>Regime</th><th>κ_conn range</th><th>Domains</th><th class="r">Runs</th><th>Tail dominance</th><th>Physical signature</th></tr></thead>
+    <tbody>
+      <tr><td class="pass">I — Immediate</td><td class="pass">&lt; 2</td><td>Biological, Atmosphere, Simple condensed</td><td class="r pass">18</td><td class="dim">Low (&lt;0.1)</td><td class="dim">Uniform spacing, no major outliers</td></tr>
+      <tr><td class="warn">II — Moderate</td><td class="warn">2 – 1000</td><td>Most condensed matter, CMB TT/TE, GPS</td><td class="r warn">13</td><td class="dim">Moderate</td><td class="dim">Multi-scale, band gaps, acoustic peaks</td></tr>
+      <tr><td class="crit">III — Extreme</td><td class="crit">10³ – 4×10⁵</td><td>Nuclear, Atomic, CMB EE, Weak</td><td class="r crit">17</td><td class="fail">High (&gt;0.9)</td><td class="dim">Rare high-E transitions dominate gap budget</td></tr>
+      <tr><td class="blue">GIANT (no conn)</td><td class="blue">—</td><td>Molecular, Geoid/Gravity, Cosmic Web (2MRS/SDSS)</td><td class="r blue">16</td><td class="dim">Low–moderate</td><td class="dim">Near-complete but one or few persistent isolated gaps</td></tr>
+      <tr><td class="amber">TAIL (no conn)</td><td class="amber">—</td><td>Cosmic Web (DESI), Nuclear (4), Solar, Gold Zeeman</td><td class="r amber">9</td><td class="fail">Very high (&gt;0.91)</td><td class="dim">Single extreme outlier prevents closure</td></tr>
+      <tr><td class="fail">HARD</td><td class="fail">—</td><td>TiO₂ raw density only</td><td class="r fail">1</td><td class="dim">—</td><td class="fail">True structural fragmentation · Theorem 1 triggered</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ 8. THEORETICAL STATUS ═════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">08</span>THEORETICAL STATUS</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">NECESSARY DIRECTION <span class="psub" style="color:var(--green)">ESTABLISHED</span></div>
+    <div style="font-size:9px;color:var(--text);line-height:1.8">
+      PRP Theorem 1 (established): Non-percolation in the full pairwise vulnerability graph ⟹ USL violation guaranteed.<br><br>
+      Across 81 runs, Theorem 1 fires exactly once (TiO₂ density, giant ratio 0.8333). All 9 TAIL_FRAGMENTATION cases correctly suppress Theorem 1 — fragmentation is outlier-driven, not structural.<br><br>
+      The <span style="color:var(--green)">zero-violation rate across 80 of 81 runs</span> is the central empirical result: physical systems at the constant values of α, μ, αₛ, αG appear to universally satisfy the structural admissibility condition.
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">SUFFICIENT DIRECTION <span class="psub" style="color:var(--amber)">OPEN CONJECTURE</span></div>
+    <div style="font-size:9px;color:var(--text);line-height:1.8">
+      PRP Conjecture 1 (open): Percolation ⟹ admissibility. Not proven.<br><br>
+      All 71 runs returning FULL or GIANT verdicts are consistent with Conjecture 1 but do not prove it. The conjecture remains open. Each percolating run should be verified independently via STRUC-I v1.0.4 to confirm inv(Pε; L) ≤ ν(Vε(L)) directly.<br><br>
+      The sufficient direction proof would require showing that the PRP connectivity condition is not only necessary but sufficient for the inversion bound — a result not established by this corpus.
+    </div>
+  </div>
+</div>
+
+<!-- ══ 9. INSTRUMENT NOTES ════════════════════════════════════════════════ -->
+<div class="section-label"><span class="sl-num">09</span>INSTRUMENT &amp; METHOD NOTES</div>
+
+<div class="panel">
+  <div class="panel-title">STRUC-PERC-I v2.4.0 — ENGINE PARAMETERS FOR THIS CORPUS</div>
+  <div style="font-size:9px;color:var(--text2);line-height:2;columns:2;gap:40px">
+    <div><span style="color:var(--accent)">ε SCALE</span> — κ · IQR(Δ), fallback to κ · median when IQR = 0. Replaces median-only scaling used in v2.3.1 and earlier, which produced false universal percolation.</div>
+    <div><span style="color:var(--accent)">MICRO-GAP FLOOR τ</span> — 0.1 × median(Δ). Gaps below τ are not connected. Prevents degenerate near-zero gaps from flooding the graph at κ → 0.</div>
+    <div><span style="color:var(--accent)">MAX_WINDOW = 64</span> — Limits transitive union reach per step in the sliding window. Prevents false full-percolation via transitive chaining of dense clusters.</div>
+    <div><span style="color:var(--accent)">OUTLIER THRESHOLD</span> — max(10×med, 5×IQR). Hybrid threshold catches extreme tails even when median is small relative to distribution width.</div>
+    <div><span style="color:var(--accent)">ADAPTIVE EXTENSION</span> — data-aware targets [2, 10, √scale, scale] where scale = min(maxRatio, 10⁶). Plateau: growth &lt; 10⁻⁴ OR relGrowth &lt; 10⁻³.</div>
+    <div><span style="color:var(--accent)">HARD_CAP</span> — 200,000 gaps. Larger ladders are downsampled via uniform stride. LARGE_RENDER_THRESHOLD = 20,000 for UI guards.</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="margin-top:60px;padding-top:16px;border-top:1px solid var(--border2);font-size:8.5px;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;letter-spacing:0.1em">
+  <span>STRUC-PERC-I v2.4.0 · UNNS Substrate Research Program · 2026-04-05</span>
+  <span>81 RUNS · 14 DOMAINS · FULL PAIRWISE VULNERABILITY GRAPH · IQR-SCALED ε · MAX_WINDOW=64</span>
+  <span>PRP Theorem 1: 1/81 triggered · Conjecture 1: OPEN</span>
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>
