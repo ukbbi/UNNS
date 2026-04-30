@@ -1,145 +1,194 @@
-Dynamic Ladder Construction Pipeline (DLCP)
-Voyager 2 Plasma → UNNS / STRUC-PERC-I Ready Ladders
-🔷 Overview
+# ⚙️ Dynamic Ladder Construction Pipeline (DLCP)  
+### Voyager 2 Plasma → UNNS / STRUC-PERC-I Ready Ladders
 
-This script implements the Dynamic Ladder Construction Protocol (DLCP) for transforming raw Voyager 2 plasma CDF data into STRUC-PERC-I compatible ladders.
+---
 
-It converts time-series plasma measurements into sorted structural representations (ladders) across sliding windows, enabling dynamic realizability analysis within the UNNS Substrate.
+## 🧭 Overview
 
-🔷 What This Pipeline Produces
+The **Dynamic Ladder Construction Protocol (DLCP)** transforms raw **Voyager 2 plasma CDF data** into **STRUC-PERC-I compatible structural ladders**.
 
-For each .cdf file:
+It converts time-series plasma measurements into **sorted realizability structures** across sliding windows, enabling **dynamic trajectory analysis** within the UNNS Substrate.
 
-Extracts multiple observables:
-V — velocity
-dens — density
-T — temperature
-w — thermal speed
-Applies:
-cleaning (NaN + fill value removal)
-alignment across variables
-sliding window segmentation
-ladder construction (sorted values)
-Outputs per-window ladder bundles:
-output/
-  voyager_<original_filename>_WIN_0000_start_end/
-      L_V.txt
-      L_dens.txt
-      L_T.txt
-      L_w.txt
+---
 
-Each .txt file is:
+## 📦 Output
 
-✅ already STRUC-PERC-I ready
-❌ no further transformation required
+For each `.cdf` file, the pipeline produces:
 
-🔷 Input Requirements
-
-Place the script in a directory containing:
-
-Voyager CDF files (e.g.):
-voyager2_pls_hires_plasma_data_hsh_20070827_v01.cdf
-voyager2_pls_hires_plasma_data_hsh_20080101_v01.cdf
-...
-🔷 Output Structure
-output/
-  voyager_<file>_WIN_<index>_<start>_<end>/
-      L_V.txt
-      L_dens.txt
-      L_T.txt
-      L_w.txt
-
-Example:
 
 output/
-  voyager_v2_20160101_v01_WIN_0003_768_1792/
-      L_V.txt
-      L_dens.txt
-      L_T.txt
-      L_w.txt
-🔷 DLCP Implementation (UNNS-Aligned)
-Stage 1 — Primary ladder
+voyager_<file>WIN<index><start><end>/
+L_V.txt
+L_dens.txt
+L_T.txt
+L_w.txt
+
+
+Each file is:
+
+- ✅ **STRUC-PERC-I ready**
+- ❌ **No further preprocessing required**
+
+---
+
+## 🔬 Observables Extracted
+
+- **V** — velocity  
+- **dens** — density  
+- **T** — temperature  
+- **w** — thermal speed  
+
+---
+
+## ⚙️ Processing Steps
+
+### 1. Data Cleaning
+- Remove NaN values  
+- Remove CDF fill values  
+- Ensure synchronized variables  
+
+### 2. Window Segmentation
+- Sliding windows over time-series  
+- High-integrity filtering  
+
+### 3. Ladder Construction
+- Sorted values per observable  
+
+---
+
+## 🧱 DLCP Structure (UNNS-Aligned)
+
+### Stage 1 — Primary Ladder
+
 L_V = sorted(V)
-Stage 2 — Parallel ladders
-L_p = sorted(dens)
+
+
+### Stage 2 — Parallel Ladders
+
+L_dens = sorted(dens)
 L_T = sorted(T)
 L_w = sorted(w)
-Stage 3 — Multi-observable embedding
+
+
+### Stage 3 — Embedded State
 
 Each window produces:
 
-(L_V, L_p, L_T, L_w)
 
-These represent a local state in realizability space.
+(L_V, L_dens, L_T, L_w)
 
-🔷 Windowing Parameters
-Parameter	Value	Description
-WINDOW_SIZE	1024	samples per window
-STEP_SIZE	256	sliding stride
-MIN_VALID_RATIO	0.95	minimum valid data threshold
-🔷 Data Cleaning
-Removes:
-NaN values
-CDF-defined FILL values
+
+👉 This defines a **local point in realizability space**
+
+---
+
+## 📏 Window Parameters
+
+| Parameter | Value | Description |
+|----------|------|------------|
+| WINDOW_SIZE | 1024 | samples per window |
+| STEP_SIZE | 256 | sliding stride |
+| MIN_VALID_RATIO | 0.95 | minimum valid data |
+
+---
+
+## 🧼 Data Integrity
+
 Ensures:
-high integrity windows
-synchronized multi-variable structure
-🔷 Normalization Mode
+
+- high-quality windows  
+- synchronized multi-variable structure  
+- no artificial smoothing  
+
+---
+
+## ⚖️ Normalization Mode
+
+
 NORMALIZE = False
-False → raw physical structure (recommended for publication)
-True → normalized ladders (for comparative analysis)
-🔷 How to Run
-1. Install dependency
+
+
+- **False** → raw physical structure (**recommended**)  
+- **True** → normalized ladders (comparative analysis)
+
+---
+
+## ▶️ How to Run
+
+### Install dependency
+```bash
 python -m pip install cdflib
-2. Run pipeline
+Execute pipeline
 python voyager_ladder_pipeline.py
-🔷 What You Get (Interpretation Layer)
+🧠 Interpretation Layer
 
-Each window corresponds to:
+Each window represents:
 
-a time-local structural snapshot of the system
+a time-local structural snapshot
 
 Across all windows:
 
-you obtain a trajectory in realizability space
+a trajectory in realizability space
 
-🔷 Next Step (Critical)
+🔗 Next Step (Critical)
 
-These ladder files are not the final result.
+DLCP outputs are not final results.
 
 They must be processed through:
 
-⚙️ STRUC-PERC-I chamber
+⚙️ STRUC-PERC-I Chamber
 
-For each ladder:
+Per ladder:
 
 regime classification
 connectivity κ
 margin m(L)
 tail dominance
-🔷 Conceptual Role in UNNS
+🌌 Role in UNNS Framework
 
-This pipeline enables:
+DLCP enables:
 
 transition from static ladders → dynamic trajectories
 testing of:
 temporal stability
 regime confinement
 boundary approach
-🔷 Important Notes
-File naming preserves original dataset identity
-Each window is fully independent and analyzable
-No statistical smoothing is applied (pure structural extraction)
-🔷 Known Limitations
-Requires correct variable names in CDF (V, dens, T, w)
+⚠️ Limitations
+Requires correct CDF variable names (V, dens, T, w)
 Assumes uniform sampling cadence
-Does not perform STRUC analysis itself
-🔷 Summary
+Does not perform STRUC analysis
+📌 Summary
 
-This script is:
+DLCP is:
 
 the entry point from real astrophysical data into the UNNS Substrate
 
-It converts:
+It performs:
 
-time-series plasma data → realizability ladders → STRUC-ready input
+time-series plasma data
+        ↓
+structural ladders
+        ↓
+STRUC-ready realizability input
+
+---
+
+# 🧠 What this fixes
+
+Compared to your version:
+
+- ✔ consistent headers  
+- ✔ real tables (not text blocks)  
+- ✔ proper code blocks (safe ones)  
+- ✔ visual hierarchy  
+- ✔ aligned with your main README style  
+- ✔ looks like a **pipeline spec, not notes**
+
+---
+
+# 🚀 Where this belongs
+
+Put this as:
+
+``` id="c1n6yj"
+rt_voyager2/protocol/README.md
