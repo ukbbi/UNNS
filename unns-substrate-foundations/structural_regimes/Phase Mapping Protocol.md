@@ -1,174 +1,208 @@
-# Phase Mapping Protocol.md
-
-## A Formal Operator-Based Structural Regime Framework
+# 🧭 Phase Mapping Protocol  
+### Operator-Based Structural Regime Framework (UNNS)
 
 ---
 
-### Definition 1 — Ladder
+## 🧠 Overview
 
-A ladder L is a finite ordered sequence:
+This protocol defines a **formal operator-driven framework** for mapping structural regimes of a ladder  
+within the UNNS Substrate.
+
+It enables:
+
+- construction of structural phase diagrams  
+- detection of regime transitions  
+- identification of operator sensitivity and rigidity  
+
+---
+
+## 🧱 Core Objects
+
+### Ladder
+
+A ladder **L** is a finite ordered sequence:
 
 L = (x₁ ≤ x₂ ≤ … ≤ xₙ), n ≥ 3
 
 ---
 
-### Definition 2 — Structural Evaluation Operator
+### Structural Evaluation Operator
 
-Let:
+Define:
 
 S(L) → (V, G, I, κ)
 
-where:
-
-* V = regime verdict
-* G = giant component ratio
-* I = isolated fraction
-* κ = connectivity metrics
-
----
-
-### Definition 3 — Deformation Operators
-
-Define two operators acting on ladders:
-
-* α : L → α(L)
-* μ : L → μ(L)
+| Component | Meaning |
+|----------|--------|
+| V | regime verdict |
+| G | giant component ratio |
+| I | isolated fraction |
+| κ | connectivity metrics |
 
 ---
 
-### Definition 4 — Operator Composition
+### Deformation Operators
 
-Forward composition:
+Two operators act on ladders:
+
+- α : L → α(L)  
+- μ : L → μ(L)  
+
+---
+
+## ⚙️ Operator Dynamics
+
+### Composition
+
+Forward:
+
 L_f = μ(α(L))
 
-Reverse composition:
+
+Reverse:
+
 L_r = α(μ(L))
+
 
 ---
 
-### Definition 5 — Structural Commutator
+### Structural Commutator
 
 Define:
 
 C(α, μ; L) = S(L_f) − S(L_r)
 
-with components:
+Components:
 
-* Δ_V = difference in verdict
-* Δ_G = difference in giant ratio
-* Δ_κ = difference in connectivity
+- ΔV — regime difference  
+- ΔG — giant component difference  
+- Δκ — connectivity difference  
 
 ---
 
-### Definition 6 — Phase Space
+## 🌌 Phase Space
 
-Define the phase space:
+Define:
 
 Ω = {(α, μ)}
 
-Each point maps to:
+Each point corresponds to:
 
 S(α, μ; L)
 
 ---
 
-### Definition 7 — Structural Regime
+### Structural Regime
 
-A regime is defined as a connected region in Ω where:
+A regime is a connected region in Ω such that:
 
 V(α, μ) = constant
 
 ---
 
-## Theorem 1 — Regime Stability
+## 📐 Phase Mapping
 
-If for all (α, μ) ∈ Ω:
+Define the phase map:
 
-V(α, μ) = V₀
+Φ : (α, μ) → V
+
+This mapping defines the **structural phase diagram** of L.
+
+---
+
+## 📊 Theorems
+
+### Theorem 1 — Regime Stability
+
+If:
+
+V(α, μ) = V₀ ∀ (α, μ) ∈ Ω
 
 then L is structurally stable over Ω.
 
 ---
 
-## Theorem 2 — Operator Commutativity (Structural)
+### Theorem 2 — Structural Commutativity
 
-If for all (α, μ):
+If:
 
-C(α, μ; L) = 0
+C(α, μ; L) = 0 ∀ (α, μ)
 
 then α and μ commute structurally on L.
 
 ---
 
-## Theorem 3 — Hidden Structural Variation
+### Theorem 3 — Hidden Structural Variation
 
 If:
 
-Δ_V = 0
-but Δ_G ≠ 0 or Δ_κ ≠ 0
+ΔV = 0  
+but ΔG ≠ 0 or Δκ ≠ 0  
 
 then L exhibits sub-regime structural variation.
 
 ---
 
-## Theorem 4 — Phase Transition
+### Theorem 4 — Phase Transition
 
-A phase transition occurs at (α*, μ*) if:
+A transition occurs at (α*, μ*) if:
 
 V changes discontinuously in a neighborhood of (α*, μ*)
 
 ---
 
-## Theorem 5 — Structural Rigidity
+### Theorem 5 — Structural Rigidity
 
 If:
 
-V is constant over Ω
-and C(α, μ; L) = 0 ∀ (α, μ)
+- V is constant over Ω  
+- C(α, μ; L) = 0 ∀ (α, μ)
 
 then L is structurally rigid.
 
 ---
 
-## Theorem 6 — Operator Sensitivity
+### Theorem 6 — Operator Sensitivity
 
-If ∃ (α, μ) such that:
+If:
 
-C(α, μ; L) ≠ 0
+∃ (α, μ) such that C(α, μ; L) ≠ 0
 
 then L is operator-sensitive.
 
 ---
 
-## Theorem 7 — Regime Boundary
+### Theorem 7 — Regime Boundary
 
-The boundary between regimes is defined by:
+The boundary is defined by:
 
 ∂Ω = {(α, μ) | V changes}
 
 ---
 
-## Theorem 8 — Phase Map
+### Theorem 8 — Phase Map Completeness
 
 The mapping:
 
-Φ : (α, μ) → V
+Φ : (α, μ) → V  
 
-defines the structural phase diagram of L.
+fully characterizes the regime structure of L.
 
 ---
 
-## Corollary 1 — Degenerate Phase Space
+## 🔁 Corollaries
 
-If Φ is constant:
+### Degenerate Phase Space
 
-Φ(α, μ) = V₀ ∀ (α, μ)
+If:
+
+Φ(α, μ) = V₀ ∀ (α, μ)
 
 then Ω is degenerate.
 
 ---
 
-## Corollary 2 — Non-Commutative Region
+### Non-Commutative Regions
 
 Regions where:
 
@@ -178,48 +212,71 @@ define operator-order-sensitive zones.
 
 ---
 
-## Protocol
+## ⚙️ Protocol Execution
 
 For a given ladder L:
 
-1. Sample Ω over α–μ grid
+1. Sample Ω over an α–μ grid  
 2. Compute:
+   - L_f = μ(α(L))  
+   - L_r = α(μ(L))  
 
-   * L_f, L_r
 3. Evaluate:
+   - S(L_f)  
+   - S(L_r)  
 
-   * S(L_f), S(L_r)
 4. Compute:
+   - C(α, μ; L)  
 
-   * C(α, μ; L)
 5. Construct:
-
-   * phase map Φ
-   * commutator field
-
----
-
-## Output Objects
-
-* Phase diagram Φ(α, μ)
-* Commutator field C(α, μ)
-* Regime partitions
-* Transition boundaries
+   - phase map Φ(α, μ)  
+   - commutator field C(α, μ)  
 
 ---
 
-## Interpretation
+## 📦 Output Objects
 
-The protocol distinguishes:
+- Phase diagram Φ(α, μ)  
+- Commutator field C(α, μ)  
+- Regime partitions  
+- Transition boundaries  
 
-* invariant systems
-* transition-capable systems
-* operator-sensitive systems
+---
+
+## 🧠 Interpretation
+
+This protocol distinguishes:
+
+- invariant systems (fully stable)  
+- transition-capable systems (boundary-sensitive)  
+- operator-sensitive systems (non-commutative)  
 
 ---
 
-## Scope
+## 🔗 Role in UNNS Framework
 
-This framework applies to any ordered system representable as a ladder and evaluated via structural connectivity.
+This protocol operationalizes:
+
+- Structural Regime Theory  
+- Operator-driven transitions (α, μ)  
+- STRUC-I / STRUC-PERC-I evaluation outputs  
+
+It connects:
+
+> deformation operators → structural response → phase behavior  
 
 ---
+
+## ⚠️ Scope
+
+Applicable to:
+
+- any ordered system representable as a ladder  
+- systems evaluated via structural connectivity  
+
+---
+
+## 📌 Summary
+
+> Phase Mapping translates operator action into **structural phase geometry**,  
+> revealing how realizability evolves under deformation.

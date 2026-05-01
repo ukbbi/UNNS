@@ -1,270 +1,221 @@
-# STRUC-PERC Batch Runner (α, μ)
+# ⚙️ Structural Field Generator (α, μ)
 
-## Overview
-
-This folder contains a complete pipeline for running **operator-driven structural analysis** using the STRUC-PERC engine.
-
-The system performs batch evaluation of ladders under joint deformation by:
-
-* α (alpha operator)
-* μ (mu operator)
-
-and maps resulting **structural regimes**, **commutator behavior**, and **connectivity metrics**.
+### Operator-Driven Transition Detection over UNNS Ladders
 
 ---
 
-## What This System Does
+## 🧭 Overview
 
-For each input ladder:
+This module implements a parameterized structural response scanner over operator space:
 
-1. Applies α–μ transformations
-2. Runs STRUC-PERC engine
-3. Computes:
+(α, μ)
 
-   * regime verdicts
-   * connectivity metrics
-   * forward vs reverse differences (commutator)
-4. Saves:
+It evaluates how ladders evolve under deformation using forward operator composition:
 
-   * JSON results (full grid)
-   * TXT ladders (inspection-ready)
-   * optional CSV exports
+μ ∘ α
+
+The transformed ladders are evaluated through the STRUC-PERC-I v2.4.0 chamber to detect structural regime behavior and boundary transitions.
 
 ---
 
-## Folder Structure
+## 🔑 Core Function
 
-```
-.
+For each input ladder L:
+
+L′ = μ(α(L))
+
+The system evaluates L′ and extracts:
+
+- structural regime (verdict)
+- connectivity threshold (κ)
+- dominant component ratio
+
+---
+
+## 🎯 What This System Does
+
+This system performs a directed scan of operator space to:
+
+- detect structural regime transitions
+- identify first admissibility boundary
+- measure robustness under deformation
+
+The scan terminates early once a regime change is detected.
+
+---
+
+## ⚠️ Important Limitations
+
+This implementation:
+
+- uses forward operator only (μ ∘ α)
+- performs early-stop transition detection
+- extracts a minimal set of structural metrics
+
+It does NOT:
+
+- compute reverse operator composition (α ∘ μ)
+- compute commutators
+- generate full phase fields
+
+---
+
+## 🧱 Folder Structure
+
+field_generator/
+
 ├── data/
-│   └── base_ladders/        # input ladders (.txt / .csv)
-│
-├── output/
-│   ├── ladders/             # generated ladders (TXT)
-│   └── *.json               # batch results
-│
-├── Docs/
-│   ├── Methods.md
-│   └── Phase Mapping Protocol.md
-│
-├── runner.py                # main batch executor
-├── config.py                # grids, paths, dataset config
-├── operators.py             # α and μ implementations
-├── analysis.py              # commutator + transition logic
-├── engine_bridge.py         # Python → Node → STRUC-PERC bridge
-│
-├── run_struc_perc.js        # Node runner for engine
-├── engine_server.js         # optional server layer
-│
-├── struc_perc_i_v2_4_0.html # STRUC-PERC engine (UI + core)
-│
-├── test.txt / test.csv      # sample input files
-└── package.json             # Node dependencies
-```
+│   └── base_ladders/          input datasets (CSV or TXT)
+
+├── output/                    results and metrics
+
+├── node_modules/              Puppeteer dependencies (do not commit)
+
+├── analysis.py                metric extraction helpers
+├── config.py                  α, μ grids and STRUC parameters
+├── config_breakdown.py        alternative configuration definitions
+├── convert_csv_to_txt.py      CSV → ladder TXT converter
+├── engine_bridge.py           Python ↔ Node interface
+├── engine_server.js           Puppeteer execution engine
+├── operators.py               α and μ transformations
+├── runner.py                  main execution engine
+├── run_struc_perc.js          STRUC-PERC runner
+├── split_ladder.py            dataset augmentation tools
+
+├── struc_perc_i_v2_4_0.html   STRUC-PERC chamber
+└── README.md
 
 ---
 
-## How It Works
+## ⚙️ Configuration
 
-### Pipeline
+Defined in config.py:
 
-```
-ladder → α/μ transforms → STRUC-PERC → metrics → aggregation
-```
+ALPHA_GRID = np.linspace(0.80, 1.20, 17)  
+MU_GRID    = np.linspace(0.80, 1.20, 17)  
 
-### Execution Layers
-
-* **Python**
-
-  * orchestration
-  * batching
-  * data handling
-
-* **Node.js**
-
-  * executes engine script
-  * extracts JSON from browser-like environment
-
-* **HTML Engine**
-
-  * performs structural computation
+K_POINTS = 17  
+K_MIN    = 0.01  
+K_MAX    = 1.0  
 
 ---
 
-## How to Run
+## ▶️ Execution
 
-### 1. Install Node dependencies
+Run from the module directory:
 
-```bash
-npm install
-```
-
-### 2. Run batch
-
-```bash
 python runner.py
-```
 
 ---
 
-## Input Formats
+## 🔄 Pipeline Logic
 
-Supported:
+For each dataset:
 
-* `.txt`
+1. Load ladder (CSV or TXT)
+2. Normalize:
+   - remove duplicates
+   - sort values
+3. Reduce ladder size if necessary
+4. Auto-sparsify to target connectivity (κ ≈ 1.0)
+5. Scan parameter space:
 
-  ```
-  0 1 2 3 10 11 12
-  ```
-
-* `.csv`
-
-  ```
-  0,1,2,3,10,11,12
-  ```
-
-All inputs are automatically parsed into numeric arrays.
-
----
-
-## Output
-
-### JSON (main result)
-
-```
-output/<dataset>_results.json
-```
-
-Contains:
-
-* forward results
-* reverse results
-* commutator
+for α in ALPHA_GRID:
+    for μ in MU_GRID:
+        L′ = μ(α(L))
+        R  = STRUC(L′)
 
 ---
 
-### TXT ladders
+## 🚨 Transition Detection
 
-```
-output/ladders/
-```
+The system detects the first structural regime change:
 
-Each file:
+- initial verdict is recorded
+- scanning continues over (α, μ)
+- execution stops when verdict changes
 
-* one ladder
-* STRUC-PERC compatible
-* ready for manual inspection
+This identifies the first admissibility boundary in operator space.
 
 ---
 
-### CSV (optional)
+## 📊 Output
 
-Structured export of ladders or results.
+Results are stored in:
 
----
+output/<name>_results.json  
+output/<name>_metrics.csv  
 
-## Manual Inspection (Important)
+Metrics include:
 
-To inspect any case:
-
-1. Open:
-
-   ```
-   struc_perc_i_v2_4_0.html
-   ```
-2. Paste ladder from:
-
-   ```
-   output/ladders/*.txt
-   ```
-3. Click **RUN FULL PRP**
-4. Observe structure
+- ladder name
+- alpha, mu parameters
+- structural verdict
+- connectivity threshold (κ)
+- giant component ratio
 
 ---
 
-## Key Concepts
+## 🔬 Preprocessing Tools
 
-### Forward vs Reverse
+convert_csv_to_txt.py  
+Converts CSV datasets into sorted ladder TXT format.
 
-* Forward: μ(α(L))
-* Reverse: α(μ(L))
+split_ladder.py  
+Generates derived ladders:
+- lower / upper splits
+- stride-based subsets
 
----
-
-### Commutator
-
-Measures operator interaction:
-
-* Δ_giant
-* Δ_kappa
-* verdict difference
+These expand the dataset space for structural testing.
 
 ---
 
-### Regimes
+## 🧠 Interpretation
 
-STRUC-PERC classifies into:
+Each ladder produces a trajectory in operator space until structural transition.
 
-* FULL
-* CRITICAL
-* SOFT
-* HARD_FRAGMENTATION
+This reveals:
 
----
-
-## Current Status
-
-✅ Engine working
-✅ Python pipeline working
-✅ Node bridge working
-✅ Batch execution stable
-✅ Output generation complete
+- deformation tolerance
+- regime stability
+- location of structural boundary
 
 ---
 
-## Important Notes
+## 🔗 Role in UNNS Framework
 
-* Synthetic datasets are used for **testing only**
-* No physical conclusions should be drawn from them
-* Real datasets are required for research results
+This module functions as:
 
----
+- a structural stress-testing system
+- a boundary detector in realizability space
+- an empirical input to Phase Mapping Protocol
 
-## Next Steps
-
-* Run real datasets:
-
-  * HD
-  * D₂
-  * CO₂
-  * geoid / cosmological ladders
-
-* Analyze:
-
-  * phase transitions
-  * commutator structure
-  * regime boundaries
+It connects operator deformation with structural admissibility.
 
 ---
 
-## Purpose
+## ⚠️ Practical Notes
 
-This system is designed to:
+node_modules/ should not be committed to GitHub.  
+Use a .gitignore entry:
 
-> Map structural behavior under operator deformation and detect regime dynamics across domains.
+node_modules/
 
----
-
-## Version
-
-STRUC-PERC Engine: v2.4.0
-UNNS Substrate Research Program — 2026
+Ensure STRUC-PERC HTML chamber is accessible locally.
 
 ---
 
-## Author Context
+## 📌 Status
 
-Part of the **UNNS Substrate project**
-Focused on **operator-driven structural regime theory**
+- operational
+- stable execution
+- transition detection validated
+- full phase mapping not implemented
 
 ---
+
+## 🧠 Conceptual Summary
+
+This system identifies where a structure ceases to remain admissible under deformation.
+
+That point defines the boundary of realizability in operator space.
