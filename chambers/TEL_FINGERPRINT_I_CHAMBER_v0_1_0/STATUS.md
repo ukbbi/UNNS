@@ -15,7 +15,13 @@ GALAXY CHAMBER MODIFIED       NO
 CONFIRMATORY PROTOCOL         NOT YET REGISTERED
 SCIENTIFIC DATA INCLUDED      NO
 SCIENTIFIC VERDICT INCLUDED   NO
+PACKAGE VERIFIER              INCLUDED, NOT EXECUTED IN THIS TURN
+BROWSER RUNTIME SMOKE TEST    NOT EXECUTED IN THIS TURN
 ```
+
+## Next engineering action
+
+Run the embedded engineering demo locally and preserve all six exports. Any runtime defect must be repaired without changing the locked fingerprint coordinates or route-class rules.
 
 ## Next scientific prerequisite
 
