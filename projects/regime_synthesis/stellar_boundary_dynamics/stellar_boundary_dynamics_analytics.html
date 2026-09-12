@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stellar Boundary Dynamics — UNNS Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1440px;margin:0 auto;padding:40px 32px 120px}
+
+/* HERO */
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 120% at 90% 50%,rgba(0,200,240,.06),transparent);pointer-events:none}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.04em;max-width:700px;margin-bottom:18px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-coral{color:var(--coral);border-color:var(--coral);background:rgba(224,96,64,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* SECTION LABELS */
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+/* TABLES */
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+/* VERDICT BADGES */
+.vf,.vg,.vt,.vh{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid;border-radius:2px;white-space:nowrap}
+.vf{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.08)}
+.vg{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.08)}
+.vt{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.08)}
+.vh{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.08)}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+/* BRIDGE CARDS */
+.bridge-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.bridge-card{background:var(--panel);border:1px solid var(--border2);padding:14px 16px}
+.bridge-val{font-family:var(--display);font-size:20px;color:var(--accent);line-height:1;margin:4px 0}
+.bridge-lbl{font-size:8px;color:var(--text2);letter-spacing:.08em;font-family:var(--mono)}
+.pair-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:9px;font-family:var(--mono)}
+.pair-a{color:var(--blue)}
+.pair-b{color:var(--amber)}
+.pair-c{color:var(--green)}
+.pair-dist{color:var(--accent);font-size:10px}
+.pair-lbl{color:var(--dim)}
+.arrow{color:var(--dim)}
+
+/* KAPPA CHART */
+.kappa-bar-wrap{display:flex;align-items:center;gap:8px;margin:3px 0}
+.kappa-bar-track{height:4px;background:var(--border2);flex:1;min-width:60px;position:relative}
+.kappa-bar-fill{height:100%;position:absolute;left:0;top:0}
+.kappa-val{font-family:var(--mono);font-size:9px;min-width:52px;text-align:right}
+.kappa-id{font-family:var(--mono);font-size:9px;color:var(--text2);min-width:80px}
+
+/* TD CHART */
+.td-bar-wrap{display:flex;align-items:center;gap:8px;margin:3px 0}
+.td-bar-track{height:6px;background:var(--border2);flex:1;position:relative}
+.td-bar-fill{height:100%;position:absolute;left:0;top:0}
+.td-val{font-family:var(--mono);font-size:9px;min-width:40px;text-align:right}
+
+/* SN2012AW SPECIAL */
+.special-banner{border:1px solid var(--amber);border-left:3px solid var(--amber);background:rgba(240,160,48,.05);padding:12px 16px;margin-bottom:10px}
+.special-title{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:5px;font-family:var(--mono)}
+
+/* CORPUS CONTEXT */
+.corpus-bar{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:9px;font-family:var(--mono)}
+.cb-track{flex:1;height:4px;background:var(--border2);position:relative;min-width:80px}
+.cb-fill{height:100%;position:absolute;left:0;top:0}
+.cb-lbl{min-width:140px;color:var(--text2)}
+.cb-val{min-width:60px;text-align:right;color:var(--text)}
+
+/* THEORY TABLE */
+.theory-row{display:grid;grid-template-columns:140px 1fr auto;gap:8px;padding:.4rem 0;border-bottom:.5px solid var(--border2);font-size:10px;align-items:start}
+.theory-row:last-child{border-bottom:none}
+.theory-hdr{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.08em;display:grid;grid-template-columns:140px 1fr auto;gap:8px;padding-bottom:.4rem;font-family:var(--mono)}
+.conf{color:var(--green);font-family:var(--mono);font-size:9px;white-space:nowrap}
+.new{color:var(--amber);font-family:var(--mono);font-size:9px;white-space:nowrap}
+
+/* PHASE CHAIN SVG */
+.chain-svg{width:100%;overflow:visible}
+
+/* DIVIDER */
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+/* TWO-COL */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* CAUTION */
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+@media(max-width:900px){.row2,.row3{grid-template-columns:1fr}.bridge-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · STELLAR BOUNDARY DYNAMICS I · 2026-06-01</div>
+  <h1>Stellar Boundary Dynamics</h1>
+  <div class="hero-sub">Three-layer structural study of a catastrophic stellar boundary transition — pre-supernova radial profiles, post-collapse light curves, and spectral line evolution — processed through STRUC-PERC-I v2.5.0 and alpha-application into bridge-comparable 5D structural vectors.</div>
+  <div class="badges">
+    <span class="badge b-green">10 / 10 FULL_PERCOLATION</span>
+    <span class="badge b-green">0 HARD · 0 GIANT · 0 TAIL</span>
+    <span class="badge b-blue">3 PHASES · A / B / C</span>
+    <span class="badge b-blue">3 BRIDGES · AB / BC / ABC</span>
+    <span class="badge b-amber">8 OBJECTS TOTAL</span>
+    <span class="badge b-amber">10 STRUC-PERC RUNS</span>
+    <span class="badge b-violet">AB: WEAK SEPARATION · d = 0.401</span>
+    <span class="badge b-red">BC: STRONG SEPARATION · d = 1.287</span>
+    <span class="badge b-red">AC: STRONG SEPARATION · d = 1.365</span>
+    <span class="badge b-green">ABC: A→B CONTACT · C BRANCHING</span>
+    <span class="badge b-coral">SN2012aw PERSISTENT ANOMALY · BI = 1.470</span>
+    <span class="badge b-dim">SOURCES: Zenodo 5556959 · OSC / AstroCats · WISeREP</span>
+  </div>
+  <div class="hero-meta">
+    <span>Instrument: STRUC-PERC-I v2.5.0</span>
+    <span>Phase A: Zenodo 5556959 · 12 M☉ + 20 M☉ pre-SN profiles</span>
+    <span>Phase B: 6 core-collapse SNe · SN1987A–SN2013ej</span>
+    <span>Phase C: SN1993J (685 rows) · SN2012aw (198 rows)</span>
+    <span>Status: A / B / C / AB / BC / ABC complete · ready for manuscript synthesis</span>
+  </div>
+</div>
+
+<!-- ═══ §1 CORPUS OVERVIEW ═══ -->
+<div class="sec-label"><span class="sec-num">§1</span> CORPUS OVERVIEW — 10 RUNS · ZERO VIOLATIONS</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">10</div><div class="stat-lbl">TOTAL STRUC-PERC RUNS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">10</div><div class="stat-lbl">FULL PERCOLATION</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">HARD / GIANT / TAIL</div></div>
+  <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">OBSERVATIONAL LAYERS</div></div>
+  <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">2 PAIRWISE + 1 TRI-DOMAIN</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.959</div><div class="stat-lbl">MAX TAIL DOMINANCE (C2)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">3992</div><div class="stat-lbl">MAX κ_CONNECT (C2)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.401</div><div class="stat-lbl">ABC A–B CENTROID</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1.287</div><div class="stat-lbl">ABC B–C CENTROID</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1.365</div><div class="stat-lbl">ABC A–C CENTROID</div></div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §1.1</div>
+  <div class="finding-title">10 / 10 FULL_PERCOLATION — zero admissibility violations across the most extreme astrophysical boundary event in the UNNS corpus</div>
+  <p>Every object across all three physical layers — pre-collapse stellar interior (A), post-collapse brightness response (B), and post-collapse spectral evolution (C) — returned FULL_PERCOLATION with giantRatio = 1.000 and isolated = 0. This constitutes the first UNNS corpus entry for catastrophic stellar boundary events. The complete absence of HARD, GIANT, or TAIL outcomes under core-collapse supernova conditions is consistent with the Margin-Confinement Law prediction that identity-preserving physical evolution cannot persistently cross ∂ℳ_adm, even under extreme forcing, and provides pilot-corpus support for that prediction in the astrophysical regime.</p>
+</div>
+
+<!-- ═══ §2 PHASE A ═══ -->
+<div class="sec-label"><span class="sec-num">§2</span> PHASE A — PRE-SUPERNOVA RADIAL PROFILES (Zenodo 5556959)</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRUC-PERC-I RESULTS <span class="psub">· v2.5.0 · 2 RUNS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Object</th><th>Mass</th><th>Verdict</th><th>κ_conn</th><th>TD</th><th>n</th><th>GR</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--blue)">A1_12M</td>
+            <td>12.09 M☉</td>
+            <td><span class="vf">FULL</span></td>
+            <td style="color:var(--green)">2</td>
+            <td>0.000</td>
+            <td>64</td>
+            <td>1.000</td>
+          </tr>
+          <tr>
+            <td style="color:var(--blue)">A2_20M</td>
+            <td>19.98 M☉</td>
+            <td><span class="vf">FULL</span></td>
+            <td style="color:var(--green)">1</td>
+            <td>0.000</td>
+            <td>64</td>
+            <td>1.000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Source: profile_single_M12.09_128net.data · profile_single_M19.98_128net.data · pre-SN radial snapshots, not time-resolved history tracks</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">ALPHA NORMALIZATION REVIEW <span class="psub">· CHANNEL DOMINANCE</span></div>
+    <p style="font-size:10.5px;margin-bottom:10px;color:var(--text)">Both Phase A objects are <strong>composition-channel dominated</strong>. The composition/gap ratio far exceeds all other channels, requiring v2 normalization for bridge work. Scale-review ≠ failure — it diagnoses the dominant structural variable in the pre-SN profile.</p>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Object</th><th>Thermal/gap</th><th>Density/gap</th><th>Compos./gap</th><th>Support/gap</th><th>Loss/gap</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--blue)">A1_12M</td><td>1.07</td><td>1.01</td><td style="color:var(--amber)">15.49</td><td>1.10</td><td>2.04</td>
+          </tr>
+          <tr>
+            <td style="color:var(--blue)">A2_20M</td><td>1.05</td><td>1.05</td><td style="color:var(--red)">254.52</td><td>1.17</td><td>1.47</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">A2_20M composition/gap = 254.5× gap scale — the more massive progenitor's envelope composition profile dominates structural space. v2 bounded anisotropic persistence used for all bridge comparisons.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §2.1</div>
+  <div class="finding-title">Pre-collapse radial profiles are near-immediate connectors: κ = 1–2, TD = 0 — the most structurally homogeneous layer in this corpus</div>
+  <p>Both pre-supernova radial profiles connect at κ_connect ≤ 2, placing them in the same tier as biological fitness landscapes (κ = 0.42–2.00) and atmospheric wind fields in the 14-domain STRUC-PERC baseline. Zero tail dominance indicates no extreme outlier gaps in the radial structure. The terminal stellar interior, despite its extreme physical conditions (ρ_c ≈ 10¹⁰ g cm⁻³, T_c ≈ 10¹⁰ K), forms a locally homogeneous structural ladder — consistent with the USL prediction that admissible systems occupy the interior of ℳ_adm regardless of physical forcing scale.</p>
+</div>
+
+<!-- ═══ §3 PHASE B ═══ -->
+<div class="sec-label"><span class="sec-num">§3</span> PHASE B — SUPERNOVA LIGHT CURVES (OSC / AstroCats)</div>
+
+<div class="panel">
+  <div class="panel-title">STRUC-PERC-I RESULTS <span class="psub">· 6 CORE-COLLAPSE SNe · ALL FULL_PERCOLATION</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Object</th><th>Type</th><th>Verdict</th><th>κ_connect</th><th>Tail Dom.</th><th>n</th><th>Bands</th><th>Phases</th><th>Adm. Persist.</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--text)">SN 1987A</td><td>II Pec</td><td><span class="vf">FULL</span></td><td>0.4217</td><td>0.000</td><td>34</td><td>5</td><td>7</td><td>0.881</td><td>anchor · reference</td></tr>
+        <tr><td style="color:var(--text)">SN 1993J</td><td>IIb</td><td><span class="vf">FULL</span></td><td>0.4217</td><td>0.000</td><td>37</td><td>7</td><td>7</td><td>0.677</td><td>contact case</td></tr>
+        <tr><td style="color:var(--text)">SN 1999em</td><td>II-P</td><td><span class="vf">FULL</span></td><td style="color:var(--green)">0.1778</td><td>0.000</td><td>36</td><td>7</td><td>6</td><td>0.870</td><td>lowest κ</td></tr>
+        <tr><td style="color:var(--text)">SN 2011dh</td><td>IIb</td><td><span class="vf">FULL</span></td><td>1.0000</td><td>0.000</td><td>45</td><td>11</td><td>7</td><td>0.846</td><td></td></tr>
+        <tr style="background:rgba(240,160,48,.04)"><td style="color:var(--amber)">SN 2012aw</td><td>II-P</td><td><span class="vf">FULL</span></td><td style="color:var(--amber)">4.4000</td><td style="color:var(--amber)">0.329</td><td>80</td><td style="color:var(--amber)">21</td><td>7</td><td>0.778</td><td style="color:var(--amber)">⚑ special case</td></tr>
+        <tr><td style="color:var(--text)">SN 2013ej</td><td>II</td><td><span class="vf">FULL</span></td><td>0.3162</td><td>0.000</td><td>95</td><td style="color:var(--blue)">23</td><td>7</td><td>0.749</td><td>most bands</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">κ_CONNECT DISTRIBUTION — PHASE B</div>
+    <div style="margin-top:6px">
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1999em</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:4%;background:var(--green)"></div></div><span class="kappa-val" style="color:var(--green)">0.178</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1987A</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:10%;background:var(--blue)"></div></div><span class="kappa-val">0.422</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1993J</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:10%;background:var(--blue)"></div></div><span class="kappa-val">0.422</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 2013ej</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:7%;background:var(--blue)"></div></div><span class="kappa-val">0.316</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 2011dh</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:23%;background:var(--blue)"></div></div><span class="kappa-val">1.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--amber)">SN 2012aw ⚑</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:100%;background:var(--amber)"></div></div><span class="kappa-val" style="color:var(--amber)">4.400</span></div>
+    </div>
+    <div class="caution">SN2012aw κ = 4.4 · 10× next highest (SN2011dh=1.0) · 25× lowest (SN1999em=0.178)</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">TAIL DOMINANCE DISTRIBUTION — PHASE B</div>
+    <div style="margin-top:6px">
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1987A</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1993J</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 1999em</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 2011dh</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN 2013ej</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.000</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--amber)">SN 2012aw ⚑</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:34%;background:var(--amber)"></div></div><span class="kappa-val" style="color:var(--amber)">0.329</span></div>
+    </div>
+    <div class="caution">5/6 objects: TD = 0 · SN2012aw is the sole tail-dominated object in Phase B</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §3.1</div>
+  <div class="finding-title">All six post-collapse light-curve ladders: FULL_PERCOLATION — the explosion boundary does not fragment the brightness-response trajectory</div>
+  <p>Post-collapse brightness trajectories, after compression into phase-gap ladders, form connected vulnerability-graph structures under STRUC-PERC-I. This extends the SN Ia finding from <em>Beyond Fragmentation</em> (where Δ-layer recovery from HARD was demonstrated) to Type II core-collapse events: even without explicit Δ-lifting, the phase-compressed multi-band light curves achieve FULL connectivity. The result supports treating supernova light curves as boundary-response relaxation trajectories within the UNNS / STRUC-PERC workflow.</p>
+</div>
+
+<!-- ═══ §4 PHASE C ═══ -->
+<div class="sec-label"><span class="sec-num">§4</span> PHASE C — SPECTRAL TIME SERIES (WISeREP)</div>
+
+<div class="panel">
+  <div class="panel-title">STRUC-PERC-I RESULTS <span class="psub">· 2 PILOT OBJECTS · SPECTRAL LINE-WINDOW LADDERS</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Object</th><th>Verdict</th><th>κ_connect</th><th>Tail Dom.</th><th>n</th><th>Spectra</th><th>Lines</th><th>Date range</th><th>Adm. Persist.</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--green)">C1 SN 1993J</td>
+          <td><span class="vf">FULL</span></td>
+          <td style="color:var(--blue)">201.4</td>
+          <td style="color:var(--blue)">0.570</td>
+          <td>685</td><td>99</td><td>8</td>
+          <td>1993-03-30 → 1993-11-08</td>
+          <td>0.684</td>
+        </tr>
+        <tr style="background:rgba(240,160,48,.04)">
+          <td style="color:var(--amber)">C2 SN 2012aw ⚑</td>
+          <td><span class="vf">FULL</span></td>
+          <td style="color:var(--amber)">3992.4</td>
+          <td style="color:var(--red)">0.959</td>
+          <td>198</td><td>84</td><td>8</td>
+          <td>2011-03-21 → 2017-04-22</td>
+          <td>0.668</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Lines: Hα · Hβ · He I 5876 · O I 7774 · Ca II NIR · Si II 6355 · Fe II 5169 · Ni/Co decay proxy · Scale review required for both objects</div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">κ_CONNECT ESCALATION A → B → C</div>
+    <div style="margin-top:8px">
+      <div style="font-size:9px;color:var(--text2);font-family:var(--mono);margin-bottom:8px">Log scale. Full corpus range shown per phase.</div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin-bottom:3px">PHASE A</div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--blue)">A2_20M</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:1%;background:var(--blue)"></div></div><span class="kappa-val">1</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--blue)">A1_12M</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:2%;background:var(--blue)"></div></div><span class="kappa-val">2</span></div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin:6px 0 3px">PHASE B</div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN1999em</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:2%;background:var(--text)"></div></div><span class="kappa-val">0.18</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">SN1987A/J</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:4%;background:var(--text)"></div></div><span class="kappa-val">0.42</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--amber)">SN2012aw ⚑</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:10%;background:var(--amber)"></div></div><span class="kappa-val" style="color:var(--amber)">4.4</span></div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin:6px 0 3px">PHASE C</div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--green)">SN1993J</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:40%;background:var(--green)"></div></div><span class="kappa-val" style="color:var(--green)">201</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--red)">SN2012aw ⚑</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:100%;background:var(--amber)"></div></div><span class="kappa-val" style="color:var(--amber)">3992</span></div>
+    </div>
+    <div class="caution">κ jump A→C: ×2000 (SN1993J) · ×4000 (SN2012aw) · spectral layer far more connectivity-delayed than profile or light-curve layers</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">TAIL DOMINANCE ESCALATION A → B → C</div>
+    <div style="margin-top:8px">
+      <div style="font-size:9px;color:var(--text2);font-family:var(--mono);margin-bottom:8px">Scale 0–1. Each bar = TD value.</div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin-bottom:3px">PHASE A</div>
+      <div class="td-bar-wrap"><span class="kappa-id" style="color:var(--blue)">A1 / A2</span><div class="td-bar-track"><div class="td-bar-fill" style="width:0%;background:var(--blue)"></div></div><span class="td-val" style="color:var(--dim)">0.000</span></div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin:6px 0 3px">PHASE B (5 of 6)</div>
+      <div class="td-bar-wrap"><span class="kappa-id">5 objects</span><div class="td-bar-track"><div class="td-bar-fill" style="width:0%;background:var(--dim)"></div></div><span class="td-val" style="color:var(--dim)">0.000</span></div>
+      <div class="td-bar-wrap"><span class="kappa-id" style="color:var(--amber)">SN2012aw ⚑</span><div class="td-bar-track"><div class="td-bar-fill" style="width:33%;background:var(--amber)"></div></div><span class="td-val" style="color:var(--amber)">0.329</span></div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--mono);margin:6px 0 3px">PHASE C</div>
+      <div class="td-bar-wrap"><span class="kappa-id" style="color:var(--green)">SN1993J</span><div class="td-bar-track"><div class="td-bar-fill" style="width:57%;background:var(--green)"></div></div><span class="td-val" style="color:var(--green)">0.570</span></div>
+      <div class="td-bar-wrap"><span class="kappa-id" style="color:var(--red)">SN2012aw ⚑</span><div class="td-bar-track"><div class="td-bar-fill" style="width:96%;background:var(--amber)"></div></div><span class="td-val" style="color:var(--amber)">0.959</span></div>
+    </div>
+    <div class="caution">TD monotone rise A→B→C for SN2012aw: 0 → 0.329 → 0.959 · new corpus maximum · exceeds solar flare flux record (ρ̄ = 0.393 in STRUC-I corpus)</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §4.1</div>
+  <div class="finding-title">C2_SN2012aw spectral ladder: TD = 0.959 and κ = 3992 — highest tail dominance in this corpus, approaching nuclear spectral regime</div>
+  <p>The SN2012aw spectral line-window ladder (n = 198, 84 spectra across 6 years) is FULL but extreme. Its tail dominance of 0.959 sets the record in this dataset and exceeds any STRUC-I physical domain result (solar flare max ρ̄ = 0.393). Its κ_connect of 3992 places it between the condensed matter upper range (~8100) and the nuclear spectral lower range (~3.8×10⁴), consistent with spectral features having larger gap heterogeneity than photometric features. The extremely high tail dominance is physically interpretable: the Ni/Co decay proxy and late-nebular iron emission lines produce extreme outlier gaps in a line-window sorted by wavelength, driving the tail fraction near unity while the backbone remains connected.</p>
+</div>
+
+<!-- ═══ §5 AB BRIDGE ═══ -->
+<div class="sec-label"><span class="sec-num">§5</span> A–B PAIRWISE BRIDGE DIAGNOSTIC — PRE-COLLAPSE ↔ LIGHT CURVE</div>
+
+<div class="bridge-row">
+  <div class="bridge-card">
+    <div class="bridge-lbl">CENTROID DISTANCE</div>
+    <div class="bridge-val">0.584</div>
+    <div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:4px">WEAK SEPARATION</div>
+    <div class="sep" style="margin:10px 0"></div>
+    <div class="pair-row"><span class="pair-lbl">closest pair</span></div>
+    <div class="pair-row"><span class="pair-b">A2_20M</span><span class="arrow">↔</span><span class="pair-a">B_SN1993J</span><span class="pair-dist">d = 0.233</span></div>
+    <div style="font-size:9px;color:var(--green);font-family:var(--mono);margin-left:2px">close structural contact</div>
+    <div class="pair-row" style="margin-top:8px"><span class="pair-lbl">most separated</span></div>
+    <div class="pair-row"><span class="pair-b">A1_12M</span><span class="arrow">↔</span><span class="pair-a">B_SN2012aw</span><span class="pair-dist">d = 2.085</span></div>
+    <div style="font-size:9px;color:var(--red);font-family:var(--mono);margin-left:2px">strongly separated</div>
+  </div>
+  <div class="bridge-card">
+    <div class="bridge-lbl">PHASE B RANKING BY NEAREST A PROFILE</div>
+    <div style="margin-top:8px">
+      <div class="scrollbox">
+        <table class="dt">
+          <thead><tr><th>Rank</th><th>B Object</th><th>Nearest A</th><th>Distance</th><th>Separation</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--green)">1</td><td>SN 1993J</td><td style="color:var(--blue)">A2_20M</td><td style="color:var(--green)">0.233</td><td style="font-size:8px;color:var(--green)">contact</td></tr>
+            <tr><td style="color:var(--green)">2</td><td>SN 2011dh</td><td style="color:var(--blue)">A2_20M</td><td>0.575</td><td style="font-size:8px;color:var(--blue)">weak</td></tr>
+            <tr><td style="color:var(--green)">3</td><td>SN 2013ej</td><td style="color:var(--blue)">A2_20M</td><td>0.627</td><td style="font-size:8px;color:var(--blue)">weak</td></tr>
+            <tr><td>4</td><td>SN 1999em</td><td style="color:var(--text2)">A1_12M</td><td>0.835</td><td style="font-size:8px;color:var(--amber)">moderate</td></tr>
+            <tr><td>5</td><td>SN 1987A</td><td style="color:var(--text2)">A1_12M</td><td>1.244</td><td style="font-size:8px;color:var(--amber)">moderate</td></tr>
+            <tr style="background:rgba(240,160,48,.04)"><td>6</td><td style="color:var(--amber)">SN 2012aw ⚑</td><td style="color:var(--blue)">A2_20M</td><td style="color:var(--amber)">1.879</td><td style="font-size:8px;color:var(--red)">strong</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="caution">4/6 B objects nearest to A2_20M (20 M☉) · 2/6 nearest to A1_12M (12 M☉)</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">AB CENTROID FEATURE DELTAS <span class="psub">· B − A SHIFT ACROSS THE BOUNDARY</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Feature</th><th>A centroid</th><th>B centroid</th><th>Δ (B−A)</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>mean_GR</td><td>0.122</td><td>0.418</td><td style="color:var(--green)">+0.296</td><td style="color:var(--text2)">GR rises post-collapse — tighter backbone in light-curve space</td></tr>
+        <tr><td>var_GR</td><td>0.009</td><td>0.254</td><td style="color:var(--amber)">+0.245</td><td style="color:var(--text2)">increased GR variance — B objects more heterogeneous</td></tr>
+        <tr><td>anis. persist. (bounded)</td><td>0.493</td><td>0.798</td><td style="color:var(--amber)">+0.305</td><td style="color:var(--text2)">light curves more deformation-sensitive than profiles</td></tr>
+        <tr><td>admissibility persist.</td><td>0.578</td><td>0.532</td><td style="color:var(--dim)">−0.046</td><td style="color:var(--text2)">slight admissibility narrowing post-collapse (small)</td></tr>
+        <tr><td>kappa_connect_ref.</td><td>0.313</td><td>0.224</td><td style="color:var(--dim)">−0.089</td><td style="color:var(--text2)">B connects slightly earlier than A in normalized space</td></tr>
+        <tr><td>tail_dominance_ref.</td><td>0.000</td><td>0.167</td><td style="color:var(--amber)">+0.167</td><td style="color:var(--text2)">tail structure emerges post-boundary; driven by SN2012aw</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §5.1</div>
+  <div class="finding-title">A–B bridge: weak separation (d = 0.584) — the boundary is a transition, not a structural rupture. A2_20M is the contact progenitor, gravitationally pulling 4/6 B objects.</div>
+  <p>The pre-collapse and post-collapse domains are not identical but they are not strongly separated. The 20 M☉ profile (A2_20M) acts as the structural attractor for the majority of post-collapse light curves: SN1993J (d = 0.233, contact), SN2011dh (d = 0.575), SN2013ej (d = 0.627), and SN2012aw (d = 1.879, still closest to A2 despite being the outlier). This is structurally interpretable: the 20 M☉ progenitor develops a larger, more extended envelope that maps onto the heterogeneous multi-band response trajectories of the Type IIb and Type II objects. The 12 M☉ profile attracts the IIP plateau-dominated objects (SN1999em, SN1987A), consistent with a more compact pre-SN structure.</p>
+</div>
+
+<!-- ═══ §6 BC BRIDGE ═══ -->
+<div class="sec-label"><span class="sec-num">§6</span> B–C PAIRWISE BRIDGE DIAGNOSTIC — LIGHT CURVE ↔ SPECTRAL EVOLUTION</div>
+
+<div class="bridge-row">
+  <div class="bridge-card">
+    <div class="bridge-lbl">CENTROID DISTANCE</div>
+    <div class="bridge-val" style="color:var(--red)">1.318</div>
+    <div style="font-size:10px;color:var(--red);font-family:var(--mono);margin-top:4px">STRONG SEPARATION</div>
+    <div class="sep" style="margin:10px 0"></div>
+    <div class="pair-row"><span class="pair-lbl">closest pair (cross-object!)</span></div>
+    <div class="pair-row"><span class="pair-a" style="color:var(--amber)">B_SN2012aw</span><span class="arrow">↔</span><span class="pair-c" style="color:var(--green)">C1_SN1993J</span><span class="pair-dist">d = 0.648</span></div>
+    <div style="font-size:9px;color:var(--amber);font-family:var(--mono);margin-left:2px">weak separation · non-matched pair</div>
+    <div class="pair-row" style="margin-top:8px"><span class="pair-lbl">most separated</span></div>
+    <div class="pair-row"><span class="pair-a">B_SN1987A</span><span class="arrow">↔</span><span class="pair-c" style="color:var(--amber)">C2_SN2012aw</span><span class="pair-dist">d = 2.646</span></div>
+    <div style="font-size:9px;color:var(--red);font-family:var(--mono);margin-left:2px">strong separation</div>
+  </div>
+  <div class="bridge-card">
+    <div class="bridge-lbl">OBJECT-MATCHED ALIGNMENT TEST</div>
+    <div style="margin-top:10px">
+      <div style="border:1px solid var(--border2);padding:10px;margin-bottom:8px;background:rgba(0,221,136,.04)">
+        <div style="font-size:10px;color:var(--green);font-family:var(--mono);margin-bottom:4px">SN1993J — COHERENT ✓</div>
+        <div style="font-size:9px;color:var(--text2);font-family:var(--mono)">B_SN1993J ↔ C1_SN1993J: d = 0.712</div>
+        <div style="font-size:9px;color:var(--green);font-family:var(--mono)">matched pair is nearest C neighbor</div>
+        <div style="font-size:9px;color:var(--text2);font-family:var(--mono)">cosine similarity = 0.712</div>
+        <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">light curve and spectra are structurally coherent</div>
+      </div>
+      <div style="border:1px solid var(--amber);border-left:3px solid var(--amber);padding:10px;background:rgba(240,160,48,.04)">
+        <div style="font-size:10px;color:var(--amber);font-family:var(--mono);margin-bottom:4px">SN2012aw — INCOHERENT ✗</div>
+        <div style="font-size:9px;color:var(--text2);font-family:var(--mono)">B_SN2012aw ↔ C2_SN2012aw: d = 1.923</div>
+        <div style="font-size:9px;color:var(--red);font-family:var(--mono)">matched pair is NOT nearest C neighbor</div>
+        <div style="font-size:9px;color:var(--text2);font-family:var(--mono)">nearest C: C1_SN1993J at d = 0.648</div>
+        <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">spectral layer adds independent structural information</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">BC CENTROID FEATURE SHIFTS <span class="psub">· C − B DELTA</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Feature</th><th>B centroid</th><th>C centroid</th><th>Δ (C−B)</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>tail_dominance_ref.</td><td>0.057</td><td>0.797</td><td style="color:var(--red)">+0.740</td><td style="color:var(--text2)">largest shift — spectral layer is heavily tail-dominated</td></tr>
+        <tr><td>kappa_connect_ref.</td><td>0.000</td><td>0.525</td><td style="color:var(--amber)">+0.525</td><td style="color:var(--text2)">large κ jump — spectra require much larger connectivity scale</td></tr>
+        <tr><td>admissibility persist.</td><td>0.621</td><td>0.037</td><td style="color:var(--red)">−0.584</td><td style="color:var(--text2)">C admissibility persistence is low — dominated by SN2012aw extreme values</td></tr>
+        <tr><td>anis. persist. (bounded)</td><td>0.707</td><td>0.802</td><td style="color:var(--dim)">+0.095</td><td style="color:var(--text2)">small further increase in deformation sensitivity</td></tr>
+        <tr><td>mean_GR</td><td>0.000</td><td>0.500</td><td style="color:var(--blue)">+0.500</td><td style="color:var(--text2)">GR centroid rises into C (normalized; both C objects at GR=1)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §6.1</div>
+  <div class="finding-title">B–C bridge: strong separation (d = 1.318) — the spectral layer is a structurally independent post-collapse observable, not a duplicate of the light-curve layer</div>
+  <p>The centroid separation doubles from A–B (0.584) to B–C (1.318). This is the primary cross-layer finding: the photometric and spectroscopic representations of the same ejecta are structurally distinct in 5D vector space, with the tail dominance shift (+0.740) being the dominant driver. SN1993J behaves coherently across B and C (its matched pair is its nearest C neighbor), validating the contact-case hypothesis from the A–B bridge. SN2012aw does not: its matched C counterpart is less structurally similar to it than C1_SN1993J is, indicating that SN2012aw's photometric and spectroscopic structures are themselves strongly separated — consistent with its persistent anomaly status.</p>
+</div>
+
+<!-- ═══ §7 SN2012aw ANOMALY ═══ -->
+<div class="sec-label"><span class="sec-num">§7</span> SN2012aw — PERSISTENT STRUCTURAL ANOMALY ACROSS ALL LAYERS</div>
+
+<div class="special-banner">
+  <div class="special-title">⚑ SN2012aw: PERSISTENT HIGH-TAIL / HIGH-κ CANDIDATE ACROSS A → B → C</div>
+  <p style="font-size:10.5px;margin-top:6px;color:var(--text)">SN2012aw (Type II-P, discovered 2012 March 16 in M95) consistently occupies the extreme structural position across every layer and bridge in this corpus. It is FULL in all three phases — admissibility is preserved — but its structural coordinates are outlier-level in B, extreme in C, and bridge-incoherent in the BC comparison.</p>
+</div>
+
+<div class="row3">
+  <div class="panel">
+    <div class="panel-title">PHASE A (proxy)</div>
+    <div style="font-size:9px;color:var(--text2);font-family:var(--mono)">Not a C object in Phase A.<br>Nearest A profile: A2_20M<br>Distance from A1_12M: 2.085 (far)<br>Distance from A2_20M: 1.879 (closer but still strong separation)</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--dim)">Most separated B object from any A profile.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">PHASE B</div>
+    <div style="font-size:9px;font-family:var(--mono)">
+      <div>κ_connect: <span style="color:var(--amber)">4.400</span> (highest B)</div>
+      <div>Tail Dom.: <span style="color:var(--amber)">0.329</span> (only non-zero B)</div>
+      <div>n: <span style="color:var(--amber)">80</span> (2nd largest B)</div>
+      <div>Bands: <span style="color:var(--amber)">21</span> (largest B coverage)</div>
+      <div>Adm. persist.: 0.778</div>
+      <div style="margin-top:4px;color:var(--text2)">curvature/gap = 1847.9 (2nd largest B)</div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">PHASE C</div>
+    <div style="font-size:9px;font-family:var(--mono)">
+      <div>κ_connect: <span style="color:var(--red)">3992.4</span> (×20 over C1)</div>
+      <div>Tail Dom.: <span style="color:var(--red)">0.959</span> (corpus max)</div>
+      <div>n: 198 (84 spectra)</div>
+      <div>Date range: 6 yr (2011→2017)</div>
+      <div>High-tail attention: <span style="color:var(--amber)">YES</span></div>
+      <div>High-κ attention: <span style="color:var(--amber)">YES</span></div>
+      <div style="margin-top:4px;color:var(--text2)">C-layer flux dominates; depth/vel/width ≈ 0</div>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §7.1</div>
+  <div class="finding-title">SN2012aw is admissibility-compliant but structurally extreme: monotone escalation TD(B→C) = 0.329 → 0.959 with BC layer incoherence — a robust FCC candidate</div>
+  <p>SN2012aw satisfies FULL_PERCOLATION in every phase, confirming the Margin-Confinement Law's prediction that even the most extreme astrophysical systems do not cross ∂ℳ_adm. However, its tail dominance escalation across layers (0 → 0.329 → 0.959), its light-curve coverage (21 photometric bands), its spectral persistence (6 years of spectra), and its BC-bridge incoherence (photometric and spectroscopic representations are themselves structurally distinct) collectively identify it as the strongest Forced Coherent Collapse (FCC) candidate in this corpus — a system that approaches the admissibility boundary under persistent extreme forcing while maintaining the giant component. Its status is consistent with the <em>Beyond Fragmentation</em> Unified Tail Dominance Scaling Law: systems undergoing sustained high-energy dissipation route to high-TD FULL states rather than fragmenting.</p>
+</div>
+
+<!-- ═══ §8 CORPUS CONTEXT ═══ -->
+<div class="sec-label"><span class="sec-num">§8</span> CORPUS CONTEXT — 14-DOMAIN STRUC-PERC BASELINE</div>
+
+<div class="panel">
+  <div class="panel-title">κ_CONNECT TIER PLACEMENT <span class="psub">· STELLAR vs EXISTING CORPUS</span></div>
+  <div style="margin-top:8px">
+    <div style="font-size:9px;color:var(--text2);font-family:var(--mono);margin-bottom:8px">Bars scaled to log range of corpus.</div>
+    <div class="corpus-bar"><span class="cb-lbl">Biological (QT45)</span><div class="cb-track"><div class="cb-fill" style="width:2%;background:var(--green)"></div></div><span class="cb-val">0.42 – 2.00</span></div>
+    <div class="corpus-bar"><span class="cb-lbl" style="color:var(--blue)">Stellar A (this work)</span><div class="cb-track"><div class="cb-fill" style="width:2%;background:var(--blue)"></div></div><span class="cb-val" style="color:var(--blue)">1 – 2</span></div>
+    <div class="corpus-bar"><span class="cb-lbl">Atmosphere (ERA5)</span><div class="cb-track"><div class="cb-fill" style="width:2%;background:var(--green)"></div></div><span class="cb-val">0.42 – 2.00</span></div>
+    <div class="corpus-bar"><span class="cb-lbl" style="color:var(--blue)">Stellar B (this work)</span><div class="cb-track"><div class="cb-fill" style="width:3%;background:var(--blue)"></div></div><span class="cb-val" style="color:var(--blue)">0.18 – 4.40</span></div>
+    <div class="corpus-bar"><span class="cb-lbl">Condensed Matter</span><div class="cb-track"><div class="cb-fill" style="width:22%;background:var(--text2)"></div></div><span class="cb-val">0.75 – 8,100</span></div>
+    <div class="corpus-bar"><span class="cb-lbl">CMB (Planck 2018)</span><div class="cb-track"><div class="cb-fill" style="width:20%;background:var(--text2)"></div></div><span class="cb-val">230 – 2,389</span></div>
+    <div class="corpus-bar"><span class="cb-lbl" style="color:var(--blue)">Stellar C (this work)</span><div class="cb-track"><div class="cb-fill" style="width:28%;background:var(--blue)"></div></div><span class="cb-val" style="color:var(--blue)">201 – 3,992</span></div>
+    <div class="corpus-bar"><span class="cb-lbl">Nuclear (ENSDF)</span><div class="cb-track"><div class="cb-fill" style="width:60%;background:var(--text2)"></div></div><span class="cb-val">38k – 420k</span></div>
+    <div class="corpus-bar"><span class="cb-lbl">Atomic Spectra (QM-I)</span><div class="cb-track"><div class="cb-fill" style="width:80%;background:var(--text2)"></div></div><span class="cb-val">210k – 420k</span></div>
+  </div>
+  <div class="caution">Stellar A and B occupy the near-immediate tier (biological/atmospheric range). Stellar C occupies the moderate-delay tier (CMB/condensed-matter range), approaching but not reaching nuclear spectral delays.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.1</div>
+  <div class="finding-title">Stellar adds a new cross-layer trajectory to the UNNS corpus: A (biological tier) → B (biological/condensed-matter tier) → C (CMB/condensed-matter tier) — all FULL, escalating structural complexity</div>
+  <p>Across the 14-domain STRUC-PERC baseline (81 runs, 0 hard violations), the stellar corpus adds 10 runs with the same zero-violation result, extending the program's empirical base to catastrophic stellar boundary events for the first time. The three-layer κ trajectory spans three distinct corpus tiers: Phase A lands in the biological/atmospheric regime (near-immediate connectivity), Phase B in the low condensed-matter regime, and Phase C approaches the CMB/condensed-matter regime. This cross-tier escalation within a single physical object family — where the observational representation, not the underlying physics, governs structural placement — directly corroborates the Phase Mapping finding that representation is the dominant structural variable.</p>
+</div>
+
+<!-- ═══ §9 THEORY ═══ -->
+<div class="sec-label"><span class="sec-num">§9</span> MANUSCRIPT FRAMEWORK CONNECTIONS</div>
+
+<div class="panel">
+  <div class="panel-title">THEORETICAL PREDICTIONS vs CORPUS RESULTS</div>
+  <div class="theory-hdr"><span>Source</span><span>Prediction</span><span>Status</span></div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Margin-Confinement Law</span>
+    <span>No persistent HARD across any phase of a catastrophic IPF event. Any HARD → representation artifact.</span>
+    <span class="conf">✓ CONFIRMED<br>10/10 FULL</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Beyond Fragmentation (FCC regime)</span>
+    <span>SN light curves → high-TD FULL state under extreme forcing. Unified Tail Dominance Scaling across domains.</span>
+    <span class="conf">✓ CONFIRMED<br>SN2012aw TD=0.959</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">USL v5 — stratification</span>
+    <span>Ordered systems occupy distinct pressure tiers in ℳ_adm. ρ encodes process complexity, not object identity.</span>
+    <span class="conf">✓ CONFIRMED<br>3 tiers A/B/C</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Phase Mapping (α, μ)</span>
+    <span>Representation is the dominant structural variable. Same physical object → different structural coordinates.</span>
+    <span class="conf">✓ CONFIRMED<br>A≠B≠C same event</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Local Geometry / Boundaries</span>
+    <span>Boundary approach navigable but not penetrable. Weakly separated domains at transition, strongly separated post-boundary observables.</span>
+    <span class="conf">✓ CONFIRMED<br>Pairwise: AB=0.584, BC=1.318<br>ABC v2: AB=0.401, BC=1.287, AC=1.365</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Admissible Cluster Geometry</span>
+    <span>Boundary events route through linked admissible regions, not a single trajectory.</span>
+    <span class="new">✓ NEW EVIDENCE<br>A,B,C = distinct clusters</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Structural Bridges</span>
+    <span>Cross-domain structural contact through shared 5D vector geometry.</span>
+    <span class="new">✓ NEW EVIDENCE<br>AB · BC · ABC complete</span>
+  </div>
+</div>
+
+<!-- ═══ §10 ABC BRIDGE ═══ -->
+<div class="sec-label"><span class="sec-num">§10</span> ABC TRI-DOMAIN BRIDGE — GLOBAL ROUTING CLASSIFICATION</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.401</div><div class="stat-lbl">A–B CENTROID (weak sep.)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1.287</div><div class="stat-lbl">B–C CENTROID (strong sep.)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1.365</div><div class="stat-lbl">A–C CENTROID (strong sep.)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.886</div><div class="stat-lbl">BC − AB BRANCHING</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.964</div><div class="stat-lbl">AC − AB SPECTRAL OFFSET</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">C BRANCH</div><div class="stat-lbl">GLOBAL ABC CLASS</div></div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §10.1 — PRIMARY ABC RESULT (v2 normalization-reviewed)</div>
+  <div class="finding-title">Global classification: A→B contact with C branching — the stellar boundary routes structure across non-equivalent admissible regimes, not through a single linear chain</div>
+  <p>Using the normalization-reviewed v2 structural vectors, the tri-domain bridge classifies the stellar boundary system as A_to_B_contact_with_C_branching. The pre-collapse radial-profile domain and post-collapse light-curve domain remain weakly separated (d = 0.401), while the spectral line-evolution domain is strongly separated from both B (d = 1.287) and A (d = 1.365). This supports a boundary-routing interpretation rather than a single linear A → B → C transition chain. The branching strength is BC − AB = 0.886 and AC − AB = 0.964: the spectral layer branches substantially further from both the pre-collapse and light-curve domains than those two domains are from each other. This establishes the stellar boundary as an admissible cluster-routing event: the system traverses the collapse, preserving admissibility throughout, but the observable post-collapse representations occupy structurally distinct regions of ℳ_adm. Internal percolation (FULL in all 10 runs) and cross-domain equivalence are confirmed to be different properties — a result directly consistent with the Admissible Cluster Geometry manuscript.</p>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">DOMAIN-PAIR DISTANCE MATRIX</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Pair</th><th>Centroid d</th><th>Label</th><th>Closest pair</th><th>d</th><th>Furthest pair</th><th>d</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--blue)">A – B</td>
+            <td style="color:var(--amber)">0.401</td>
+            <td style="font-size:8px;color:var(--amber)">weak separation</td>
+            <td>A2_20M ↔ B_SN1993J</td>
+            <td style="color:var(--green)">0.150</td>
+            <td>A2_20M ↔ B_SN1987A</td>
+            <td>1.393</td>
+          </tr>
+          <tr>
+            <td style="color:var(--amber)">B – C</td>
+            <td style="color:var(--red)">1.287</td>
+            <td style="font-size:8px;color:var(--red)">strong separation</td>
+            <td>B_SN2012aw ↔ C1_SN1993J</td>
+            <td style="color:var(--blue)">0.543</td>
+            <td>B_SN1987A ↔ C2_SN2012aw</td>
+            <td style="color:var(--red)">2.501</td>
+          </tr>
+          <tr>
+            <td style="color:var(--violet)">A – C</td>
+            <td style="color:var(--red)">1.365</td>
+            <td style="font-size:8px;color:var(--red)">strong separation</td>
+            <td>A2_20M ↔ C1_SN1993J</td>
+            <td style="color:var(--blue)">0.661</td>
+            <td>A1_12M ↔ C2_SN2012aw</td>
+            <td style="color:var(--red)">2.449</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">ABC bridge: normalization-reviewed v2 vectors · v1/v2 issue resolved · all bridge runs now on comparable normalization basis</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">STRUCTURAL ROUTING GEOMETRY</div>
+    <div style="margin-top:10px">
+      <div style="font-size:9px;color:var(--text2);font-family:var(--mono);margin-bottom:12px">Distance scale: 0 (identical) → 2.5 (maximally separated). Bars represent centroid distance.</div>
+      <div style="font-size:9px;color:var(--dim);font-family:var(--mono);margin-bottom:4px">DOMAIN CENTROID DISTANCES</div>
+      <div class="kappa-bar-wrap">
+        <span class="kappa-id" style="color:var(--amber)">A–B (weak sep.)</span>
+        <div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:16%;background:var(--amber)"></div></div>
+        <span class="kappa-val" style="color:var(--amber)">0.401</span>
+      </div>
+      <div class="kappa-bar-wrap">
+        <span class="kappa-id" style="color:var(--red)">B–C (strong sep.)</span>
+        <div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:51%;background:var(--red)"></div></div>
+        <span class="kappa-val" style="color:var(--red)">1.287</span>
+      </div>
+      <div class="kappa-bar-wrap">
+        <span class="kappa-id" style="color:var(--red)">A–C (strong sep.)</span>
+        <div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:55%;background:var(--red)"></div></div>
+        <span class="kappa-val" style="color:var(--red)">1.365</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);font-family:var(--mono);margin:10px 0 4px">BRANCHING INDICES</div>
+      <div class="kappa-bar-wrap">
+        <span class="kappa-id">BC − AB</span>
+        <div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:35%;background:var(--amber)"></div></div>
+        <span class="kappa-val" style="color:var(--amber)">+0.886</span>
+      </div>
+      <div class="kappa-bar-wrap">
+        <span class="kappa-id">AC − AB</span>
+        <div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:39%;background:var(--amber)"></div></div>
+        <span class="kappa-val" style="color:var(--amber)">+0.964</span>
+      </div>
+    </div>
+    <div class="caution">Positive branching index confirms C is farther from A than B is — spectral layer does not lie on an A→B→C linear path</div>
+  </div>
+</div>
+
+<!-- ABC centroid feature shifts -->
+<div class="panel">
+  <div class="panel-title">ABC CENTROID FEATURE SHIFTS — KEY STRUCTURAL COORDINATES ACROSS A / B / C</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Feature</th><th>A centroid</th><th>B centroid</th><th>C centroid</th><th>A→B Δ</th><th>B→C Δ</th><th>Dominant driver</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>tail_dominance_ref.</td>
+          <td style="color:var(--dim)">0.000</td>
+          <td style="color:var(--blue)">0.057</td>
+          <td style="color:var(--red)">0.797</td>
+          <td style="color:var(--dim)">+0.057</td>
+          <td style="color:var(--red)">+0.740</td>
+          <td style="color:var(--text2)">largest B→C shift · spectral tail structure</td>
+        </tr>
+        <tr>
+          <td>kappa_connect_ref.</td>
+          <td style="color:var(--dim)">0.000</td>
+          <td style="color:var(--dim)">0.000</td>
+          <td style="color:var(--amber)">0.525</td>
+          <td style="color:var(--dim)">≈0</td>
+          <td style="color:var(--amber)">+0.525</td>
+          <td style="color:var(--text2)">κ jump only at B→C transition</td>
+        </tr>
+        <tr>
+          <td>admissibility_persist.</td>
+          <td style="color:var(--green)">0.593</td>
+          <td style="color:var(--blue)">0.549</td>
+          <td style="color:var(--amber)">0.033</td>
+          <td style="color:var(--dim)">−0.044</td>
+          <td style="color:var(--red)">−0.516</td>
+          <td style="color:var(--text2)">C collapses admissibility persistence (SN2012aw extreme values)</td>
+        </tr>
+        <tr>
+          <td>collapse_onset_radius</td>
+          <td style="color:var(--dim)">0.000</td>
+          <td style="color:var(--blue)">0.250</td>
+          <td style="color:var(--dim)">0.000</td>
+          <td style="color:var(--amber)">+0.250</td>
+          <td style="color:var(--dim)">−0.250</td>
+          <td style="color:var(--text2)">A→B largest single shift · B and C share collapse onset = 0.05</td>
+        </tr>
+        <tr>
+          <td>mean_GR (norm.)</td>
+          <td style="color:var(--dim)">≈0</td>
+          <td style="color:var(--dim)">≈0</td>
+          <td style="color:var(--blue)">0.500</td>
+          <td style="color:var(--dim)">≈0</td>
+          <td style="color:var(--blue)">+0.500</td>
+          <td style="color:var(--text2)">GR centroid rise only visible in C (dominated by SN2012aw)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §10.2</div>
+  <div class="finding-title">The A→B transition is driven by collapse_onset_radius (+0.250); the B→C transition is driven by tail_dominance (+0.740) and κ (+0.525) — different structural dimensions govern each boundary crossing</div>
+  <p>The two structural transitions are driven by orthogonal feature dimensions. The A→B crossing (pre-collapse to light curve) is anchored primarily in collapse_onset_radius — the geometric onset coordinate that shifts when moving from radial profiles to temporal brightness trajectories. The B→C crossing (light curve to spectral evolution) is anchored in tail dominance and kappa_connect — the connectivity-depth and gap-outlier dimensions that characterize how heterogeneous the spectral line landscape is. This orthogonality means the boundary event is not a single structural deformation but a sequential activation of different structural variables, each governing one observable transition.</p>
+</div>
+
+<!-- ═══ §10.3 OBJECT CHAINS ═══ -->
+<div class="sec-label"><span class="sec-num">§10.3</span> OBJECT CHAIN ALIGNMENT — SN1993J CONTACT · SN2012aw ANOMALY</div>
+
+<div class="bridge-row">
+  <div class="bridge-card" style="border-left:3px solid var(--green)">
+    <div class="bridge-lbl" style="color:var(--green)">SN1993J — CONTACT CHAIN</div>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin:6px 0">A2_20M → B_SN1993J → C1_SN1993J</div>
+    <div class="sep" style="margin:8px 0"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--green)">0.150</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(A→B)</div>
+      </div>
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--blue)">0.654</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(B→C)</div>
+      </div>
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--blue)">0.661</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(A→C)</div>
+      </div>
+    </div>
+    <div style="font-size:9px;font-family:var(--mono);margin-bottom:6px">
+      <span style="color:var(--text2)">Branching index:</span> <span style="color:var(--green)">0.504</span>
+      <span style="color:var(--dim);font-size:8px;margin-left:8px">(compact chain)</span>
+    </div>
+    <div style="font-size:10px;color:var(--text)">SN1993J is the coherent contact object across the full A–B–C chain. Its A→B step is the closest pair in the entire corpus (d = 0.150). Its B→C step is weak separation (d = 0.654). C is nearly equidistant from A and B (d_AC = 0.661 ≈ d_BC = 0.654) — the chain is compact and nearly equilateral. This object demonstrates that the stellar boundary can be traversed with near-linear structural inheritance.</div>
+    <div style="margin-top:8px;font-size:9px;font-family:var(--mono);color:var(--green)">✓ Compact transition chain · C still near B · coherence confirmed across all layers</div>
+  </div>
+
+  <div class="bridge-card" style="border-left:3px solid var(--amber)">
+    <div class="bridge-lbl" style="color:var(--amber)">SN2012aw — ANOMALY CHAIN ⚑</div>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin:6px 0">A2_20M → B_SN2012aw → C2_SN2012aw</div>
+    <div class="sep" style="margin:8px 0"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--blue)">0.438</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(A→B)</div>
+      </div>
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--red)">1.908</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(B→C)</div>
+      </div>
+      <div style="background:var(--panel2);padding:8px;text-align:center">
+        <div style="font-family:var(--display);font-size:16px;color:var(--red)">2.009</div>
+        <div style="font-size:8px;color:var(--dim);font-family:var(--mono)">d(A→C)</div>
+      </div>
+    </div>
+    <div style="font-size:9px;font-family:var(--mono);margin-bottom:6px">
+      <span style="color:var(--text2)">Branching index:</span> <span style="color:var(--amber)">1.470</span>
+      <span style="color:var(--dim);font-size:8px;margin-left:8px">(2.9× SN1993J)</span>
+    </div>
+    <div style="font-size:10px;color:var(--text)">SN2012aw's chain is elongated and branching. Its A→B step (d = 0.438) is already weak separation — further from A than SN1993J's full A→C distance. Its B→C step explodes to d = 1.908, the largest matched-pair step in the corpus. Its spectral representation (C2) is structurally more distant from its pre-collapse progenitor than any other object. The branching index of 1.470 is 2.9× SN1993J's, confirming that SN2012aw is not merely a Phase B photometric anomaly but a cross-layer structural routing outlier whose spectral expression is maximally displaced from the boundary entry point.</div>
+    <div style="margin-top:8px;font-size:9px;font-family:var(--mono);color:var(--amber)">⚑ C branches away from A–B path · persistent anomaly confirmed across full chain · BI = 1.470</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §10.3</div>
+  <div class="finding-title">Branching index contrast: SN1993J BI = 0.504 (compact chain) vs SN2012aw BI = 1.470 (branching anomaly) — the corpus spans both structural routing archetypes</div>
+  <p>The two object chains represent opposite ends of the boundary routing spectrum. SN1993J achieves near-linear structural inheritance: its A→B distance (0.150) is the corpus minimum, and its full chain is compact with d_AC ≈ d_BC. This is the closest to a genuine A → B → C transition observable in the current dataset. SN2012aw achieves maximal branching: each successive transition amplifies structural displacement, with the B→C step (1.908) nearly 3× SN1993J's B→C step (0.654). Both objects remain FULL_PERCOLATION in all three layers, confirming that this is a difference in structural routing geometry, not in admissibility. The Admissible Cluster Geometry framework anticipates this pattern: internally connected regions can be widely separated in inter-domain bridge space while each maintaining local percolation — consistent with what is observed here.</p>
+</div>
+
+<!-- ═══ §10.4 ABC THEORY TABLE ═══ -->
+<div class="panel">
+  <div class="panel-title">ABC BRIDGE — ANSWERS TO PRIOR OPEN QUESTIONS</div>
+  <div class="theory-hdr"><span>Question</span><span>Answer from ABC bridge</span><span>Status</span></div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Does A→B→C form a monotone chain?</span>
+    <span>No. A–B is contact; B–C and A–C are strong separation. The distances are not monotone — C is nearly equidistant from A and B (1.365 vs 1.287).</span>
+    <span class="conf">✓ RESOLVED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Does C branch away from B as an independent regime?</span>
+    <span>Yes. BC − AB = +0.886 confirms strong C branching. The global classification is A_to_B_contact_with_C_branching.</span>
+    <span class="conf">✓ CONFIRMED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Does SN2012aw remain anomalous across all three layers jointly?</span>
+    <span>Yes. Branching index 1.470 (2.9× SN1993J). Its spectral representation is the most displaced component of the entire corpus from its progenitor state.</span>
+    <span class="conf">✓ CONFIRMED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Does SN1993J maintain contact status across full ABC chain?</span>
+    <span>Yes. BI = 0.504, compact equilateral chain, A→B distance = 0.150 (corpus minimum). Coherence confirmed across all three layers.</span>
+    <span class="conf">✓ CONFIRMED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Is the stellar boundary a cluster of admissible regions?</span>
+    <span>Yes. A, B, C are internally FULL, mutually separated in bridge space, linked by geometry. This is consistent with the Admissible Cluster Geometry prediction and provides candidate pilot evidence for it.</span>
+    <span class="new">✓ NEW EVIDENCE</span>
+  </div>
+</div>
+
+<!-- ═══ §11 NEXT STEP ═══ -->
+<div class="sec-label"><span class="sec-num">§11</span> OPEN QUESTIONS AND CORPUS EXPANSION</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">MANUSCRIPT SYNTHESIS — READY</div>
+    <p style="font-size:10.5px;color:var(--text);margin-bottom:10px">All pipeline stages complete. The recommended manuscript framing from the ABC result record:</p>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--accent)">
+      Stellar Boundary Dynamics:<br>
+      Catastrophic Transition as Routing Between<br>
+      Admissible Structural Regimes<br>
+    </div>
+    <div style="margin-top:10px;font-size:9px;font-family:var(--mono);color:var(--text2)">
+      Required manuscript elements:<br>
+      · ABC bridge method and centroid distances<br>
+      · Global classification A_to_B_contact_with_C_branching<br>
+      · SN1993J contact-chain result (BI = 0.504)<br>
+      · SN2012aw anomaly-chain result (BI = 1.470)<br>
+      · Orthogonal feature drivers at each transition<br>
+      · General theoretical claim: catastrophic transition preserves<br>
+        admissibility while routing across non-equivalent observable regimes
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">CORPUS EXPANSION DIRECTIONS</div>
+    <p style="font-size:10.5px;color:var(--text);margin-bottom:10px">The pilot establishes the workflow. Priority expansions:</p>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2)">
+      More progenitor mass points (15 M☉, 25 M☉, binary-stripped)<br>
+      More Type II subtypes (IIn, IIL, stripped IIb vs IIP)<br>
+      Time-resolved MESA history.data tracks (full A trajectory)<br>
+      Binary-stripped progenitor profiles from Zenodo 5556959<br>
+      Magnetar spin-down sequence (Margin-Confinement Law §10 target)<br>
+      Stellar flare time series (solar flare corpus bridge)<br>
+      ✓ ABC bridge v2 rerun complete · global classification confirmed (A_to_B_contact_with_C_branching)
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTNOTE ═══ -->
+<div style="margin-top:50px;padding-top:16px;border-top:1px solid var(--border2);font-size:8px;color:var(--dim);font-family:var(--mono);line-height:1.8">
+  <strong style="color:var(--text2)">STELLAR BOUNDARY DYNAMICS I — UNNS Substrate Research Program · 2026-06-02</strong><br>
+  Instrument: STRUC-PERC-I v2.5.0 · Source A: Zenodo 5556959 (Laplace et al.) · Source B: Open Supernova Catalog / AstroCats · Source C: WISeREP<br>
+  Phase A: 2 pre-SN radial profiles (12.09 M☉ + 19.98 M☉ single, 128-net) · Phase B: 6 core-collapse SNe (SN1987A, 1993J, 1999em, 2011dh, 2012aw, 2013ej) · Phase C: 2 spectral series (SN1993J 685 rows · SN2012aw 198 rows)<br>
+  All STRUC-PERC-I runs: FULL_PERCOLATION · 0 HARD · 0 GIANT · 0 TAIL · giantRatio = 1.000 all objects · isolated = 0 all objects<br>
+  ABC bridge (v2): A_to_B_contact_with_C_branching · d(AB) = 0.401 · d(BC) = 1.287 · d(AC) = 1.365 · SN1993J BI = 0.504 · SN2012aw BI = 1.470<br>
+  Caution: Phase A = terminal radial snapshots, not time-resolved tracks · Phase C spectral line-window proxies = structural features, not abundance reconstructions · scale review required for 9/10 objects · v2 normalization-reviewed vectors used in AB, BC, and ABC; AB/BC are pairwise diagnostics, while ABC is the unified tri-domain routing geometry · SN2012aw high-tail/high-κ attention across B and C
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>

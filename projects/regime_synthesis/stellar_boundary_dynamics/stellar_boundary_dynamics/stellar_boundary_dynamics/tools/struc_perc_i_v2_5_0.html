@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRUC-PERC-I v2.5.0 — Full PRP Percolation Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#040810;--bg2:#06090f;--panel:#080e18;--panel2:#0a1220;
+  --border:#111e30;--border2:#0c1828;
+  --accent:#00c8f0;--accent2:#f0a030;--accent3:#e04040;
+  --green:#00dd88;--blue:#4ab0f0;--purple:#9880ff;--gold:#e8c840;
+  --text:#a8bfd0;--text2:#5a7a96;--dim:#2d4560;
+  --pass:#00dd88;--fail:#e04040;--warn:#f0a030;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --display:'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1480px;margin:0 auto;padding:20px 20px 80px}
+
+/* ---- header ---- */
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--display);font-size:11px;color:var(--accent);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;border:1px solid;padding:2px 8px;letter-spacing:0.14em;font-weight:600;transition:all .3s}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.running{color:var(--warn);border-color:var(--warn);animation:blink 1s infinite}
+.htag.perc{color:var(--pass);border-color:var(--pass)}
+.htag.noperc{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:0.1em}
+
+/* ---- panels ---- */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:15px 18px;margin-bottom:14px}
+.ptitle{font-size:8.5px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* ---- controls ---- */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.ctrl-inp{background:var(--panel2);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none}
+.ctrl-inp:focus{border-color:var(--accent)}
+.ctrl-inp.wide{min-width:280px;max-width:700px;width:100%}
+.ctrl-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:5px 18px;cursor:pointer;letter-spacing:0.12em;font-weight:600;transition:background .15s}
+.ctrl-btn:hover{background:rgba(0,200,240,0.08)}
+.ctrl-btn.run{border-color:var(--green);color:var(--green);font-size:10px;padding:7px 24px}
+.ctrl-btn.run:hover{background:rgba(0,221,136,0.08)}
+.ctrl-btn.gold{border-color:var(--gold);color:var(--gold)}
+.ctrl-btn.gold:hover{background:rgba(232,200,64,0.08)}
+.ctrl-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ---- stats ---- */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--panel2);border:1px solid var(--border2);padding:11px 13px}
+.sc-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600;margin-bottom:4px}
+.sc-val{font-family:var(--display);font-size:18px;color:var(--dim);line-height:1}
+.sc-val.live{color:var(--accent)}.sc-val.pass{color:var(--pass)}.sc-val.warn{color:var(--warn)}.sc-val.fail{color:var(--fail)}.sc-val.blue{color:var(--blue)}.sc-val.gold{color:var(--gold)}.sc-val.purple{color:var(--purple)}
+.sc-unit{font-size:8px;color:var(--text2);margin-top:3px}
+
+/* ---- tables ---- */
+canvas{display:block;background:var(--panel2);border:1px solid var(--border2)}
+.data-table{width:100%;border-collapse:collapse;font-size:9px}
+.data-table th{color:var(--accent);letter-spacing:0.1em;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
+.data-table td{padding:3px 8px;border-bottom:1px solid var(--border2);color:var(--text);font-family:var(--mono);white-space:nowrap}
+.data-table tr.kstar-row{background:rgba(224,64,64,0.08)}
+.data-table tr.chain-row{background:rgba(0,221,136,0.04)}
+.data-table td.pass{color:var(--pass)}.data-table td.warn{color:var(--warn)}.data-table td.fail{color:var(--fail)}.data-table td.dim{color:var(--dim)}.data-table td.blue{color:var(--blue)}.data-table td.gold{color:var(--gold)}.data-table td.purple{color:var(--purple)}
+.scrollbox{max-height:340px;overflow-y:auto;border:1px solid var(--border2)}
+.scrollbox::-webkit-scrollbar{width:4px}
+.scrollbox::-webkit-scrollbar-track{background:var(--bg2)}
+.scrollbox::-webkit-scrollbar-thumb{background:var(--dim)}
+
+/* ---- log ---- */
+.log-box{background:var(--bg2);border:1px solid var(--border2);padding:8px 10px;max-height:200px;overflow-y:auto;font-size:9px}
+.log-box p{margin:1px 0;color:var(--text2)}
+.log-box p.pass{color:var(--pass)}.log-box p.warn{color:var(--warn)}.log-box p.fail{color:var(--fail)}.log-box p.accent{color:var(--accent)}.log-box p.dim{color:var(--dim)}
+
+/* ---- verdict banner ---- */
+.verdict{padding:14px 20px;margin-bottom:14px;border:1px solid;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.verdict.perc{border-color:var(--pass);background:rgba(0,221,136,0.05)}
+.verdict.noperc{border-color:var(--fail);background:rgba(224,64,64,0.05)}
+.verdict .vtitle{font-family:var(--display);font-size:13px;letter-spacing:0.08em;white-space:nowrap}
+.verdict.perc .vtitle{color:var(--pass)}
+.verdict.noperc .vtitle{color:var(--fail)}
+.verdict .vbody{font-size:9px;color:var(--text2);line-height:1.9;flex:1}
+.verdict .vbody b{color:var(--text)}
+.verdict .vbody .thm{color:var(--blue)}
+.verdict .vbody .conj{color:var(--warn)}
+.verdict .vbody .open{color:var(--dim)}
+
+/* ---- secondary notice ---- */
+.secondary-notice{border:1px solid var(--border2);padding:8px 13px;font-size:9px;color:var(--text2);margin-bottom:14px;line-height:1.8}
+.secondary-notice .tag{color:var(--purple);font-weight:600}
+
+/* ---- badges ---- */
+.badge{display:inline-block;font-size:7.5px;padding:1px 6px;border:1px solid;letter-spacing:0.1em;font-weight:600;vertical-align:middle;margin-left:5px}
+.badge.open{color:var(--warn);border-color:var(--warn)}
+.badge.proven{color:var(--blue);border-color:var(--blue)}
+.badge.proxy{color:var(--purple);border-color:var(--purple)}
+.badge.heuristic{color:var(--dim);border-color:var(--dim)}
+
+.verdict.full-perc{border-color:var(--pass);background:rgba(0,221,136,0.05)}
+.verdict.giant-perc{border-color:var(--blue);background:rgba(74,176,240,0.05)}
+.verdict.tail-frag{border-color:var(--warn);background:rgba(240,160,48,0.05)}
+.verdict.hard-frag{border-color:var(--fail);background:rgba(224,64,64,0.05)}
+.verdict.full-perc .vtitle{color:var(--pass)}
+.verdict.giant-perc .vtitle{color:var(--blue)}
+.verdict.tail-frag .vtitle{color:var(--warn)}
+.verdict.hard-frag .vtitle{color:var(--fail)}
+.tier-badge{display:inline-block;font-size:8px;padding:2px 9px;border:1px solid;letter-spacing:0.12em;font-weight:700;margin-right:8px;vertical-align:middle}
+.tier-badge.t1{color:var(--pass);border-color:var(--pass)}
+.tier-badge.t2{color:var(--blue);border-color:var(--blue)}
+.tier-badge.t3{color:var(--warn);border-color:var(--warn)}
+.tier-badge.t4{color:var(--fail);border-color:var(--fail)}
+.run-progress{margin-top:10px;display:none}
+.run-progress.visible{display:block}
+.rp-bar-wrap{height:3px;background:var(--border);position:relative;overflow:hidden;margin-bottom:5px}
+.rp-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .25s ease}
+.rp-bar-fill.paused{background:var(--warn)}
+.rp-bar-fill.stopped{background:var(--fail)}
+.rp-text{font-size:8px;color:var(--text2);letter-spacing:0.12em;display:flex;justify-content:space-between}
+.rp-text .rp-phase{color:var(--accent)}
+.rp-text .rp-phase.paused{color:var(--warn)}
+
+
+.ctrl-btn.stop:hover{background:rgba(224,64,64,0.08)}
+.ctrl-btn.pause{border-color:var(--warn);color:var(--warn)}
+.ctrl-btn.pause:hover{background:rgba(240,160,48,0.08)}
+.ctrl-btn.resume{border-color:var(--pass);color:var(--pass)}
+.ctrl-btn.resume:hover{background:rgba(0,221,136,0.08)}
+.ctrl-btn.clear{border-color:var(--dim);color:var(--dim)}
+.ctrl-btn.clear:hover{background:rgba(45,69,96,0.18);border-color:var(--text2);color:var(--text2)}
+/* ---- 4-tier verdict banners ---- */
+.verdict.full-perc{border-color:var(--pass);background:rgba(0,221,136,0.05)}
+.verdict.full-perc .vtitle{color:var(--pass)}
+.verdict.giant-perc{border-color:#4ab0f0;background:rgba(74,176,240,0.05)}
+.verdict.giant-perc .vtitle{color:#4ab0f0}
+.verdict.tail-frag{border-color:var(--warn);background:rgba(240,160,48,0.05)}
+.verdict.tail-frag .vtitle{color:var(--warn)}
+.verdict.hard-frag{border-color:var(--fail);background:rgba(224,64,64,0.05)}
+.verdict.hard-frag .vtitle{color:var(--fail)}
+/* ---- adapter / validation strip ---- */
+.adapter-warn{font-size:9px;color:var(--warn);margin-top:5px;line-height:1.8}
+.adapter-warn b{color:var(--gold)}
+/* ---- outlier bar ---- */
+.outlier-bar-bg{background:var(--border2);height:6px;border-radius:2px;overflow:hidden;margin:4px 0}
+.outlier-bar-fill{height:100%;background:var(--warn);border-radius:2px}
+
+.drop-zone{border:1px dashed var(--dim);padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .18s,background .18s;position:relative;margin-top:8px}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,200,240,0.04)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone .dz-icon{font-size:16px;color:var(--dim);flex-shrink:0}
+.drop-zone .dz-text{font-size:9px;color:var(--text2);line-height:1.6}
+.drop-zone .dz-text b{color:var(--accent);font-weight:600}
+.file-status{font-size:9px;margin-top:5px;min-height:14px;letter-spacing:0.04em}
+.file-status.ok{color:var(--pass)}.file-status.err{color:var(--fail)}.file-status.warn{color:var(--warn)}
+
+.optional-hdr{font-size:8px;color:var(--purple);letter-spacing:0.2em;font-weight:600;cursor:pointer;padding:6px 0;border-top:1px solid var(--border2);display:flex;align-items:center;gap:8px;user-select:none}
+.optional-hdr::after{content:'▸';font-size:9px;margin-left:auto;transition:transform .2s}
+.optional-hdr.expanded::after{transform:rotate(90deg)}
+.optional-body{display:none}
+.optional-body.visible{display:block;padding-top:10px}
+/* ---- batch progress ---- */
+.batch-bar-wrap{height:3px;background:var(--border);position:relative;overflow:hidden;margin:8px 0 5px}
+.batch-bar-fill{height:100%;background:var(--green);width:0%;transition:width .2s ease}
+.batch-progress-text{font-size:8px;color:var(--text2);display:flex;justify-content:space-between;letter-spacing:0.1em}
+.batch-progress-text .bp-phase{color:var(--green)}
+
+/* ---- batch results table verdict colours ---- */
+.data-table td.t1{color:var(--pass)}
+.data-table td.t2{color:var(--blue)}
+.data-table td.t3{color:var(--warn)}
+.data-table td.t4{color:var(--fail)}
+
+/* ---- batch count badge ---- */
+.batch-count{display:inline-block;font-size:9px;padding:1px 7px;border:1px solid var(--green);color:var(--green);letter-spacing:0.1em;margin-left:8px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hid">STRUC-PERC-I</div>
+  <div class="htitle">Full PRP Percolation Analyzer · Vulnerability Graph Engine</div>
+  <div class="htag idle" id="statusTag">IDLE</div>
+  <div class="hver">v2.5.0 · UNNS Substrate Research Program · 2026</div>
+</div>
+
+<!-- ENGINE IDENTITY NOTE -->
+<div class="secondary-notice">
+  <span class="tag">ENGINE MODEL</span> — This instrument implements the <b>true full pairwise vulnerability graph</b> of the PRP manuscript:
+  vertices index gaps Δᵢ; edges (i, j) ∈ Eκ whenever |Δᵢ − Δⱼ| ≤ ε(κ), where ε = κ · IQR(Δ) (fallback: κ · median(Δ) when IQR = 0).
+  <b>No window cap. No gap-value floor.</b> Every pair within ε is an edge; the sliding-window + union-find correctly computes
+  connected components in O(n log n + n·w̄) per layer. Connected components, percolation chains,
+  and κ* fragmentation scale are derived from this graph. Strict no-reset continuity is enforced.
+  Path-subgraph comparison is shown as optional secondary diagnostics only.
+  When n exceeds the hard cap (200k gaps), downsampling is applied and the result is labelled <b>APPROXIMATE</b> — Theorem 1 is not assertable on surrogate ladders.
+</div>
+
+<!-- INPUT -->
+<div class="panel">
+  <div class="ptitle">LADDER INPUT</div>
+  <div class="ctrl-row">
+    <div class="ctrl-group" style="flex:1">
+      <div class="ctrl-label">ELEMENTS x₁ ≤ x₂ ≤ … ≤ xₙ  (space or comma separated, n ≥ 3)</div>
+      <input class="ctrl-inp wide" id="ladderInput" type="text"
+             placeholder="e.g.  0 1 2 4 8 9 10   20 21 22   40 41 42">
+      <div class="drop-zone" id="dropZone" title="Drop .txt or .csv file here">
+        <input type="file" id="fileInput" accept=".txt,.csv">
+        <span class="dz-icon">↑</span>
+        <div class="dz-text">
+          <b>Drop file here</b> or click to browse &nbsp;·&nbsp; .txt / .csv &nbsp;·&nbsp; one number per line or whitespace-separated
+        </div>
+      </div>
+      <div class="file-status" id="fileStatus"></div>
+    </div>
+  </div>
+  <div class="ctrl-row">
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ GRID POINTS</div>
+      <input class="ctrl-inp" id="kPoints" type="number" value="17" min="3" max="60" style="width:90px">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ MIN</div>
+      <input class="ctrl-inp" id="kMin" type="number" value="0.01" step="0.005" min="0.001" max="0.5" style="width:90px">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ MAX</div>
+      <input class="ctrl-inp" id="kMax" type="number" value="1.0"  step="0.05"  min="0.1" max="5.0" style="width:90px">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">DOMAIN ADAPTER</div>
+      <select class="ctrl-inp" id="domainAdapter" style="width:150px;cursor:pointer" title="Adapter preprocesses raw values into a valid domain ladder">
+        <option value="generic">Generic</option>
+        <option value="molecular">Molecular / Spectral</option>
+        <option value="cmb">CMB</option>
+        <option value="cosmic_web">Cosmic Web</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">PRESET</div>
+      <select class="ctrl-inp" id="presetSel" style="width:170px;cursor:pointer">
+        <option value="">— custom —</option>
+        <option value="cluster">Cluster (non-percolating)</option>
+        <option value="blockdeg">Block-degenerate</option>
+        <option value="staircase">Staircase (steep)</option>
+        <option value="arithmetic">Arithmetic (regular)</option>
+        <option value="harmonic">Harmonic oscillator</option>
+        <option value="nuclear">Nuclear-like spectrum</option>
+        <option value="hd_like">HD-like boundary</option>
+        <option value="thin">Thin-chain boundary</option>
+      </select>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn run"    id="runBtn"    onclick="runAnalysis()">▶ RUN FULL PRP</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn pause"  id="pauseBtn"  onclick="togglePause()" style="display:none">⏸ PAUSE</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn stop"   id="stopBtn"   onclick="stopAnalysis()" style="display:none">■ STOP</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn clear"  id="clearBtn"  onclick="clearAll()">✕ CLEAR</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end;gap:6px">
+      <button class="ctrl-btn gold"   id="exportBtn" onclick="exportDataset()" disabled>⬇ EXPORT DATASET</button>
+      <button class="ctrl-btn clear"  id="exportRawBtn" onclick="exportJSON()" disabled style="font-size:8px;padding:3px 10px">full JSON</button>
+    </div>
+  </div>
+  <!-- Run progress indicator -->
+  <div class="run-progress" id="runProgress">
+    <div class="rp-bar-wrap"><div class="rp-bar-fill" id="rpFill"></div></div>
+    <div class="rp-text">
+      <span class="rp-phase" id="rpPhase">—</span>
+      <span id="rpCount">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- VERDICT BANNER -->
+<div id="verdictEl" style="display:none"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     BATCH MODE · v2.5.0
+     Controller layer only — calls runAnalysisFromData()
+     No modification to core PRP engine.
+════════════════════════════════════════════════════ -->
+<div class="panel" id="batchPanel">
+  <div class="ptitle">
+    BATCH MODE · MULTI-LADDER PROCESSING
+    <span class="psub">calls runAnalysisFromData() per ladder — zero engine modification</span>
+  </div>
+
+  <div class="ctrl-row">
+    <div class="ctrl-group">
+      <div class="ctrl-label">DELAY (ms)</div>
+      <input class="ctrl-inp" id="batchDelay" type="number" value="10" min="0" max="2000" style="width:80px">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">MAX LADDERS</div>
+      <input class="ctrl-inp" id="batchMaxFiles" type="number" value="500" min="1" max="500" style="width:80px">
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn run" id="batchRunBtn" onclick="runBatchUI()">▶ RUN BATCH</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn stop" id="batchStopBtn" onclick="stopBatch()" style="display:none">■ STOP</button>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <button class="ctrl-btn clear" onclick="clearBatch()">✕ CLEAR</button>
+    </div>
+  </div>
+
+  <div class="drop-zone" id="batchDropZone">
+    <input type="file" id="batchFileInput" multiple accept=".txt,.csv">
+    <span class="dz-icon">↑</span>
+    <div class="dz-text">
+      <b>Drop multiple .txt / .csv ladder files here</b> or click to browse
+      &nbsp;·&nbsp; one number per line or whitespace-separated
+      &nbsp;·&nbsp; each file = one independent ladder evaluation
+    </div>
+  </div>
+
+  <div class="file-status" id="batchLoadStatus"></div>
+
+  <div id="batchProgress" style="display:none;margin-top:8px">
+    <div class="batch-bar-wrap"><div class="batch-bar-fill" id="batchBarFill"></div></div>
+    <div class="batch-progress-text">
+      <span class="bp-phase" id="batchPhaseLabel">—</span>
+      <span id="batchCountLabel">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH RESULTS -->
+<div class="panel" id="batchResultsPanel" style="display:none">
+  <div class="ptitle">
+    BATCH RESULTS · REGIME TABLE
+    <span id="batchResultsBadge" class="batch-count">0 runs</span>
+  </div>
+
+  <div class="scrollbox">
+    <table class="data-table" id="batchTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>File</th>
+          <th>n (gaps)</th>
+          <th>Verdict</th>
+          <th>Giant ratio</th>
+          <th>κ_conn</th>
+          <th>Isolated</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="batchTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="ctrl-row" style="margin-top:10px">
+    <button class="ctrl-btn gold" onclick="exportBatchCSV()">⬇ EXPORT CSV</button>
+    <button class="ctrl-btn gold" onclick="exportBatchJSON()">⬇ EXPORT JSON</button>
+  </div>
+</div>
+
+<!-- SUMMARY STATS -->
+<div class="panel" id="summaryPanel" style="display:none">
+  <div class="ptitle">PERCOLATION SUMMARY · FULL PAIRWISE GRAPH</div>
+  <div class="stat-grid" id="statGrid"></div>
+</div>
+
+<!-- PHASE TRANSITION PANEL -->
+<div class="panel" id="phasePanel" style="display:none">
+  <div class="ptitle">PHASE TRANSITION SIGNATURES
+    <span class="psub">EDGE DENSITY · GIANT COMPONENT RATIO · CONNECTIVITY THRESHOLD</span>
+  </div>
+  <canvas id="phaseCanvas" height="200" style="width:100%;display:block"></canvas>
+</div>
+
+<!-- CANVASES -->
+<div class="panel" id="canvasPanel" style="display:none">
+  <div class="ptitle">SCALE TRACE &amp; GRAPH VIEW
+    <span class="psub">LEFT: component count per κ-layer · RIGHT: vulnerability graph at κ* or κ_max</span>
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <div style="flex:2;min-width:320px"><canvas id="traceCanvas" height="300" style="width:100%;min-width:320px"></canvas></div>
+    <div style="flex:1;min-width:280px"><canvas id="graphCanvas" width="420" height="300"></canvas></div>
+  </div>
+</div>
+
+<!-- LAYER TABLE -->
+<div class="panel" id="tablePanel" style="display:none">
+  <div class="ptitle">κ-LAYER TABLE · FULL PAIRWISE GRAPH
+    <span class="psub">PRIMARY OUTPUT</span>
+  </div>
+  <div class="scrollbox">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th><th>κ</th><th>ε</th>
+          <th>|E| full</th><th>density</th><th>mean deg</th>
+          <th>|C| full</th><th>giant ratio</th>
+          <th>Components (vertices)</th>
+          <th>In chain?</th><th>Chain-comp size</th>
+        </tr>
+      </thead>
+      <tbody id="layerTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- GAP TABLE + FRAGMENTATION -->
+<div class="row2" id="detailRow" style="display:none">
+  <div class="panel">
+    <div class="ptitle">GAP VECTOR Δ</div>
+    <div class="scrollbox">
+      <table class="data-table">
+        <thead><tr><th>i</th><th>Δᵢ</th><th>Δᵢ / med</th><th>vertex</th></tr></thead>
+        <tbody id="gapTbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">FRAGMENTATION REPORT</div>
+    <div id="fragReport"></div>
+  </div>
+</div>
+
+<!-- OUTLIER REPORT (Fix D) -->
+<div class="panel" id="outlierPanel" style="display:none">
+  <div class="ptitle">OUTLIER REPORT
+    <span class="psub">Δᵢ &gt; 10 × median(Δ)</span>
+  </div>
+  <div id="outlierContent"></div>
+</div>
+
+<!-- ADAPTIVE κ EXTENSION (Fix C) -->
+<div class="panel" id="adaptPanel" style="display:none">
+  <div class="ptitle">ADAPTIVE κ EXTENSION
+    <span class="psub">BEYOND κ_max — PHASE COMPLETION PROBE</span>
+  </div>
+  <div id="adaptContent"></div>
+</div>
+
+<!-- OPTIONAL: PATH-SUBGRAPH COMPARISON -->
+<div class="panel" id="projPanel" style="display:none">
+  <div class="optional-hdr" id="projHdr" onclick="toggleOptional('proj')">
+    OPTIONAL — PATH-SUBGRAPH COMPARISON
+    <span class="badge proxy">SECONDARY DIAGNOSTIC</span>
+  </div>
+  <div class="optional-body" id="projBody">
+    <div class="secondary-notice" style="margin-bottom:10px">
+      <span class="tag">NOT OPERATIVE</span> — The path-subgraph (edges only between adjacent gap pairs) is shown
+      for reference against STRUC-I v1.0.4 outputs. It is not the PRP manuscript graph and does not determine
+      the percolation verdict. Differences between full-graph and path-subgraph component counts indicate the
+      degree of non-local connectivity present in the gap structure.
+    </div>
+    <div class="scrollbox">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>κ</th><th>|E| path</th><th>|C| path</th><th>Components (path)</th><th>Δ|C| (full−path)</th></tr>
+        </thead>
+        <tbody id="projTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- OPTIONAL: LOCAL INVERSION PROXY DIAGNOSTICS -->
+<div class="panel" id="invPanel" style="display:none">
+  <div class="optional-hdr" id="invHdr" onclick="toggleOptional('inv')">
+    OPTIONAL — STRUC-I-STYLE LOCAL INVERSION PROXY DIAGNOSTICS
+    <span class="badge proxy">LOWER-ORDER PROXY</span>
+    <span class="badge heuristic">NOT USED IN VERDICT</span>
+  </div>
+  <div class="optional-body" id="invBody">
+    <div class="secondary-notice" style="margin-bottom:10px">
+      <span class="tag">PROXY ONLY</span> — inv_C is computed as the count of adjacent descents within each
+      full-graph component, acting as a lower-order proxy for the full pairwise inversion count of PRP
+      Definition 3. ν_C reported here is the component-restricted admissible inversion capacity per the
+      PRP manuscript; this instrument does not compute the full theoretical ν_C. These diagnostics are
+      shown for STRUC-I alignment only and do not feed the percolation verdict.
+    </div>
+    <div class="scrollbox">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>κ</th><th>Comp</th><th>|C|</th><th>inv_C (adj proxy)</th><th>ν_C (not computed)</th><th>Local sat?</th></tr>
+        </thead>
+        <tbody id="invTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="panel">
+  <div class="ptitle">INSTRUMENT LOG</div>
+  <div class="log-box" id="logBox"><p class="dim">// awaiting input</p></div>
+</div>
+
+<!-- THEORETICAL STATUS -->
+<div class="panel">
+  <div class="ptitle">THEORETICAL STATUS REFERENCE</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 30px;font-size:9px;line-height:2;color:var(--text2)">
+    <div>
+      <span style="color:var(--blue)">NECESSARY DIRECTION</span>
+      <span class="badge proven">ESTABLISHED</span><br>
+      Non-percolation (full graph, strict continuity) ⟹ admissibility violation.
+      Constructively verified via adversarial ladder programme. If this instrument
+      reports NON-PERCOLATING, a USL violation is guaranteed at κ*.
+    </div>
+    <div>
+      <span style="color:var(--warn)">SUFFICIENT DIRECTION</span>
+      <span class="badge open">OPEN CONJECTURE</span><br>
+      Percolation (full graph) ⟹ admissibility. This direction is not proven.
+      A PERCOLATING verdict is consistent with Conjecture 1 of the PRP manuscript.
+      Admissibility must be confirmed independently via STRUC-I v1.0.4.
+    </div>
+    <div style="margin-top:6px">
+      <span style="color:var(--purple)">GRAPH MODEL</span><br>
+      Full pairwise: (i,j) ∈ Eκ iff |Δᵢ − Δⱼ| ≤ ε = κ · IQR(Δ) (fallback κ · median when IQR = 0).
+      Components are arbitrary vertex subsets, not restricted to contiguous runs.
+    </div>
+    <div style="margin-top:6px">
+      <span style="color:var(--dim)">CONTINUITY + SPANNING</span><br>
+      Strict no-reset: chain must be continuous from κ_min to κ_max. Additionally,
+      the chain must span ALL n gap-vertices by κ_max — equivalently G_{κ_max}(L) must be connected.
+      Two distinct failure modes: (A) mid-chain break, or (B) permanent fragmentation
+      (isolated vertex groups whose |Δ| >> ε_max at all tested κ).
+    </div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+'use strict';
+
+// ============================================================
+// PRESETS
+// ============================================================
+const PRESETS = {
+  cluster:    '0 1 2 3   20 21 22 23   40 41 42 43',
+  blockdeg:   '0 0.5 1.0 1.5   10 10.5 11.0 11.5',
+  staircase:  '0 1 3 6 10 15 21 28 36 45 55 66 78',
+  arithmetic: '0 2 4 6 8 10 12 14 16 18 20',
+  harmonic:   '0 1 3 6 10 15 21 28 36 45 55',
+  nuclear:    '0 1.1 2.5 4.2 5.8 7.1 9.3 12.0 14.4 17.1 20.8 24.5 29.1 34.0',
+  hd_like:    '0 0.8 1.5 2.1 2.6 3.0 3.35 3.65 3.90 4.10 4.26 4.38 4.47 4.53',
+  thin:       '0 1.0 1.9 2.7 3.4 4.0 4.5 4.9 6.0 9.0 13.5',
+};
+document.getElementById('presetSel').addEventListener('change', function(){
+  if(this.value) document.getElementById('ladderInput').value = PRESETS[this.value]||'';
+});
+
+// ============================================================
+// FILE INPUT — ingestion layer only
+// Parses .txt / .csv → sorted number[] → ladderInput field
+// runAnalysis() is untouched.
+// ============================================================
+
+function setFileStatus(msg, cls=''){
+  const el = document.getElementById('fileStatus');
+  el.textContent = msg;
+  el.className = 'file-status ' + cls;
+}
+
+function parseFileToNumbers(text, filename){
+  // Split on newlines + commas for CSV; whitespace for TXT
+  const tokens = filename.endsWith('.csv')
+    ? text.split(/[\n,]+/)
+    : text.split(/\s+/);
+
+  const values = tokens
+    .map(t => parseFloat(t.trim()))
+    .filter(v => !isNaN(v));
+
+  if(values.length < 3) return null;
+  return values.sort((a, b) => a - b);
+}
+
+function ingestFile(file){
+  if(!file) return;
+  // Only accept .txt and .csv
+  if(!/\.(txt|csv)$/i.test(file.name)){
+    setFileStatus('✗ Unsupported format — .txt or .csv only', 'err');
+    return;
+  }
+  currentInputName = file.name.replace(/\.(txt|csv)$/i, ''); // capture for dataset naming
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const values = parseFileToNumbers(e.target.result, file.name.toLowerCase());
+    if(!values){
+      setFileStatus('✗ No valid numbers found (need ≥ 3)', 'err');
+      return;
+    }
+    document.getElementById('ladderInput').value = values.join(' ');
+    // Optional variability warning
+    const unique = new Set(values).size;
+    if(unique < 3){
+      setFileStatus(`⚠ Loaded ${values.length} values — low variability (${unique} distinct)`, 'warn');
+    } else {
+      setFileStatus(`✓ Loaded ${values.length} values from ${file.name}`, 'ok');
+    }
+  };
+  reader.onerror = () => setFileStatus('✗ File read error', 'err');
+  reader.readAsText(file);
+}
+
+// Click-to-browse via hidden <input type="file">
+document.getElementById('fileInput').addEventListener('change', function(){
+  ingestFile(this.files[0]);
+  this.value = ''; // reset so same file can be re-loaded
+});
+
+// Drag-and-drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', function(e){
+  e.preventDefault();
+  this.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', function(){
+  this.classList.remove('drag-over');
+});
+dropZone.addEventListener('drop', function(e){
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file) ingestFile(file);
+});
+
+
+const logEl = document.getElementById('logBox');
+function log(msg, cls=''){
+  const p = document.createElement('p');
+  if(cls) p.className=cls;
+  p.textContent = msg;
+  logEl.appendChild(p);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog(){ logEl.innerHTML=''; }
+
+// ============================================================
+// OPTIONAL SECTION TOGGLES
+// ============================================================
+function toggleOptional(id){
+  const hdr  = document.getElementById(id+'Hdr');
+  const body = document.getElementById(id+'Body');
+  hdr.classList.toggle('expanded');
+  body.classList.toggle('visible');
+}
+
+// ============================================================
+// CORE MATHS
+// ============================================================
+
+function parseLadder(str){
+  const v = str.trim().split(/[\s,]+/).map(Number);
+  if(v.some(isNaN) || v.length < 3) return null;
+  return v.slice().sort((a,b)=>a-b);
+}
+
+function gapVec(L){
+  return L.slice(0,-1).map((x,i)=>L[i+1]-x);
+}
+
+function medianOf(arr){
+  const s = arr.slice().sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+
+function buildKGrid(kMin, kMax, m){
+  if(m===1) return [kMin];
+  const lo=Math.log(kMin), hi=Math.log(kMax);
+  return Array.from({length:m},(_,i)=>Math.exp(lo+i*(hi-lo)/(m-1)));
+}
+
+// Safe alternatives to Math.max(...largeArray) — spread blows the call
+// stack for arrays > ~100k elements (JS argument limit).
+function arrMax(arr){ let m=-Infinity; for(let i=0;i<arr.length;i++) if(arr[i]>m) m=arr[i]; return m; }
+function arrMin(arr){ let m=+Infinity; for(let i=0;i<arr.length;i++) if(arr[i]<m) m=arr[i]; return m; }
+function compMax(comps){ let m=0; for(const c of comps) if(c.length>m) m=c.length; return m; }
+
+// IQR: robust spread measure. Replaces median as ε scale (v2.4.0).
+// IQR captures the width of the bulk distribution, not its central value.
+// Prevents false full-percolation caused by dense-but-narrow gap clusters.
+function computeIQR(arr){
+  const s=arr.slice().sort((a,b)=>a-b);
+  const q1=s[Math.floor(0.25*(s.length-1))];
+  const q3=s[Math.floor(0.75*(s.length-1))];
+  return q3-q1;
+}
+
+// ============================================================
+// Manuscript Definition 8: (i,j) ∈ Eκ iff |Δᵢ − Δⱼ| ≤ ε.
+// TRUE full pairwise vulnerability graph — sort once, sliding window per κ.
+//
+// Every pair (i,j) satisfying |Δᵢ − Δⱼ| ≤ ε is an edge. No window cap,
+// no gap-value floor. The sorted order ensures the window [left, right)
+// contains exactly all vertices within ε of sorted[right].v.
+//
+// Complexity: O(n log n) sort (once) + O(n·w̄) per κ-layer, where w̄ is
+// the average window width. Worst case O(n²) per layer (all gaps equal).
+// Sorting is hoisted outside the κ loop by the caller.
+//
+// buildComponentsFastSorted(sorted, n, eps)
+//   sorted — pre-sorted [{v, i}] array (sorted ONCE before κ loop)
+//   n      — number of gaps (= sorted.length)
+//   eps    — threshold ε = κ · IQR(Δ)  (fallback: κ · median when IQR = 0)
+// ============================================================
+function buildComponentsFastSorted(sorted, n, eps){
+  const parent = Array.from({length:n},(_,i)=>i);
+  const rnk    = new Uint8Array(n);
+  function find(x){ while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x; }
+  function union(a,b){
+    a=find(a); b=find(b); if(a===b)return;
+    if(rnk[a]<rnk[b]){const t=a;a=b;b=t;}
+    parent[b]=a; if(rnk[a]===rnk[b])rnk[a]++;
+  }
+
+  let left=0, edges=0;
+  const spanEdges=[];
+
+  for(let right=0;right<n;right++){
+    while(sorted[right].v - sorted[left].v > eps) left++;
+
+    const windowSize = right - left;
+    edges += windowSize;  // every vertex in [left, right) is within ε of right
+
+    // Union right with ALL vertices in the window — no cap, no floor
+    for(let k=left; k<right; k++){
+      union(sorted[k].i, sorted[right].i);
+      if(k === right-1) spanEdges.push([sorted[k].i, sorted[right].i]);
+    }
+  }
+
+  const groups=new Map();
+  for(let i=0;i<n;i++){
+    const root=find(i);
+    if(!groups.has(root)) groups.set(root,[]);
+    groups.get(root).push(i);
+  }
+  const components=[...groups.values()];
+  const maxComp=compMax(components);
+  const totalPairs=n*(n-1)/2;
+
+  return{
+    edges,
+    density:   totalPairs>0 ? edges/totalPairs : 0,
+    components,
+    spanEdges,
+    meanDegree: n>0 ? (2*edges)/n : 0,
+    giantRatio: maxComp/n,
+    fragIndex:  components.length/n,
+    isConnected:components.length===1,
+  };
+}
+
+// ============================================================
+// DOWNSAMPLING — uniform stride, preserves gap distribution
+// Applied when n > HARD_CAP to prevent UI freeze.
+// Mathematically: samples every ⌈n/maxN⌉-th element of the
+// sorted ladder; gap distribution shape is preserved.
+// ============================================================
+const HARD_CAP = 200_000; // gaps; ~200k ladder elements
+
+function downsample(arr, maxN){
+  const step = Math.ceil(arr.length / maxN);
+  return arr.filter((_,i) => i % step === 0);
+}
+
+
+// --- PATH-SUBGRAPH (secondary reference only) ---
+// Edge (i, i+1): |Δᵢ − Δᵢ₊₁| ≤ ε  — NOT used for verdict
+function buildPathGraph(D, eps){
+  const n=D.length;
+  const adj=Array.from({length:n},()=>[]);
+  let ec=0;
+  for(let i=0;i<n-1;i++)
+    if(Math.abs(D[i]-D[i+1])<=eps){
+      adj[i].push(i+1); adj[i+1].push(i); ec++;
+    }
+  return {adj, ec};
+}
+
+function bfsComponents(adj){
+  const n=adj.length, vis=new Uint8Array(n), comps=[];
+  for(let s=0;s<n;s++){
+    if(vis[s]) continue;
+    const q=[s], comp=[]; vis[s]=1;
+    while(q.length){ const v=q.shift(); comp.push(v); for(const w of adj[v]) if(!vis[w]){vis[w]=1;q.push(w);} }
+    comps.push(comp);
+  }
+  return comps;
+}
+
+// Adjacent-descent proxy for local inversion (STRUC-I alignment only)
+// Lower-order proxy for full pairwise inv_C — NOT used in verdict
+function adjDescentProxy(comp, D){
+  const sv = comp.slice().sort((a,b)=>a-b);
+  let c=0;
+  for(let k=0;k<sv.length-1;k++) if(D[sv[k]]>D[sv[k+1]]) c++;
+  return c;
+}
+
+// ============================================================
+// FIX A — DOMAIN-AWARE LADDER CONSTRUCTION
+// Adapters transform raw numeric input into a validated ladder.
+// Pipeline: raw values → domain adapter → canonical ladder → Δᵢ
+// Spec: Fix A (v2.2)
+// ============================================================
+
+function deduplicateSorted(sorted, tol){
+  if(!sorted.length) return sorted;
+  const out=[sorted[0]];
+  for(let i=1;i<sorted.length;i++)
+    if(Math.abs(sorted[i]-out[out.length-1])>tol) out.push(sorted[i]);
+  return out;
+}
+
+function buildLadderWithAdapter(values, domain){
+  // Strip non-finite
+  let v = values.filter(x=>isFinite(x)&&!isNaN(x));
+  const nRaw = v.length;
+  let transform, dedupTol;
+
+  switch(domain){
+    case 'molecular':
+      // Energy levels: deduplicate with tight tolerance, physically ordered
+      dedupTol = 1e-10;
+      transform = 'molecular_sorted_deduplicated';
+      break;
+    case 'cmb':
+      // CMB spectral axis: sorted unique amplitudes or ℓ values
+      dedupTol = 1e-6;
+      transform = 'cmb_sorted_unique';
+      break;
+    case 'cosmic_web':
+      // Scalar field projection (density/potential): flatten, sort, deduplicate
+      dedupTol = 1e-8;
+      transform = 'cosmic_web_scalar_sorted';
+      break;
+    default: // generic
+      dedupTol = 0;
+      transform = 'generic_sorted_unique';
+  }
+
+  v = deduplicateSorted(v.slice().sort((a,b)=>a-b), dedupTol);
+
+  // Validation checks
+  const warnings = [];
+  if(v.length < 50)
+    warnings.push(`n = ${v.length} < 50 (minimum recommended for structural analysis)`);
+
+  const dupFrac = nRaw > 0 ? 1 - v.length/nRaw : 0;
+  if(dupFrac > 0.05)
+    warnings.push(`${(dupFrac*100).toFixed(1)}% duplicates removed (${nRaw-v.length} values)`);
+
+  if(v.length >= 2){
+    const gaps = v.slice(0,-1).map((x,i)=>v[i+1]-x);
+    const m = medianOf(gaps);
+    if(m > 0){
+      const maxG = arrMax(gaps);
+      if(maxG/m > 1e6)
+        warnings.push(`Extreme tail ratio ${(maxG/m).toExponential(2)} > 10⁶ — consider outlier exclusion`);
+    }
+  }
+
+  return { ladder: v, meta: { domain, transform, nRaw, nClean: v.length }, warnings };
+}
+
+// ============================================================
+// FIX B — 4-TIER VERDICT CLASSIFICATION
+// Replaces binary PERCOLATING / NON-PERCOLATING.
+// Operates on final (κ_max or extended) layer components.
+// Does NOT modify detectPercolation — strict continuity preserved.
+//
+// Tiers:
+//   1. FULL_PERCOLATION         — chain spans all n vertices (existing logic)
+//   2. GIANT_COMPONENT_PERC     — giant ≥ 99.5% AND isolated < 0.5%
+//   3. TAIL_FRAGMENTATION       — giant ≥ 95%, no secondary comp > 1%
+//   4. HARD_FRAGMENTATION       — giant < 95% OR large secondary components
+//
+// Theorem alignment (Fix F preserved):
+//   Only HARD_FRAGMENTATION → USL violation guaranteed (Theorem 1)
+//   TAIL_FRAGMENTATION     → inconclusive (requires κ extension / refinement)
+//   GIANT_COMPONENT_PERC   → consistent with Conjecture 1
+//   FULL_PERCOLATION       → consistent with Conjecture 1
+// ============================================================
+// classifyVerdict(layers, n, percolates, outliers)
+// v2.3.1: unified field names — giantRatio, isolated, isolatedFraction, largeNonGiant
+function classifyVerdict(layers, n, percolates, outliers){
+  if(percolates)
+    return {tier:'FULL_PERCOLATION', giantRatio:1.0, isolated:0,
+      isolatedFraction:0, largeNonGiant:0, tailDriven:false};
+
+  const finalLayer  = layers[layers.length-1];
+  const sortedComps = [...finalLayer.compsFull].sort((a,b)=>b.length-a.length);
+
+  const giantSize       = sortedComps[0]?.length || 0;
+  const giantRatio      = giantSize / n;
+  const isolated        = sortedComps.filter(c=>c.length===1).length;
+  const isolatedFraction= isolated / n;
+  const secondaryMax    = sortedComps.length > 1 ? sortedComps[1].length / n : 0;
+  const largeNonGiant   = sortedComps.slice(1).filter(c=>c.length/n > 0.01).length;
+
+  const outFrac    = outliers?.fraction      || 0;
+  const tailDom    = outliers?.tailDominance || 0;
+  const tailDriven = outFrac > 0.01 || tailDom > 0.1;
+
+  if(giantRatio >= 0.995 && isolatedFraction < 0.005)
+    return {tier:'GIANT_COMPONENT_PERCOLATION', giantRatio, isolated,
+      isolatedFraction, largeNonGiant:0, tailDriven};
+  if(giantRatio >= 0.95 && secondaryMax <= 0.01)
+    return {tier:'TAIL_FRAGMENTATION', giantRatio, isolated,
+      isolatedFraction, largeNonGiant:0, tailDriven};
+  return {tier:'HARD_FRAGMENTATION', giantRatio, isolated,
+    isolatedFraction, largeNonGiant, tailDriven};
+}
+
+// ============================================================
+// FIX D — OUTLIER ANALYSIS
+// ============================================================
+// OUTLIER ANALYSIS — v2.4.0
+// Threshold = max(10×med, 5×iqrScale) so extreme tails are caught
+// even when the median is small relative to the distribution width.
+// ============================================================
+
+// ============================================================
+// FIX C — ADAPTIVE κ EXTENSION
+// If tier is TAIL_FRAGMENTATION or HARD_FRAGMENTATION, probe
+// beyond κ_max (→ 2× → 5×) to find connectivity or plateau.
+// Does NOT change main verdict. Reports κ_connect or κ_plateau.
+// ============================================================
+// Chain must run continuously from layer 0 to layer m-1.
+// C_{k} and C_{k+1} are linked iff C_{k} ∩ C_{k+1} ≠ ∅.
+// No mid-chain restart permitted.
+// ============================================================
+// ============================================================
+// Strict percolation detection — manuscript §4, Remark 4.1
+//
+// Two failure modes (both produce non-percolation):
+//   A. MID-CHAIN BREAK: continuity violated at some layer k < m.
+//      Chain is absent at layer k; firstFragment = k.
+//   B. PERMANENT FRAGMENTATION: chain runs unbroken 0 → m-1 but
+//      never reaches all n vertices (isolated vertex groups exist
+//      whose gap magnitudes are permanently outside exchange distance
+//      at all tested scales). firstFragment = m, permanentlyFragmented = true.
+//
+// Percolation requires BOTH:
+//   (1) unbroken chain from layer 0 to layer m-1 (strict continuity)
+//   (2) chain spans ALL n gap-vertices by layer m-1 (full spanning)
+//
+// Rationale for spanning requirement: permanently isolated vertex groups
+// (e.g. separator gaps in cluster ladders whose |Δ| >> ε_max) can
+// support local inversion saturation independently of the chain, enabling
+// USL violations exactly as described in PRP Theorem 1. The chain must
+// grow to include every vertex — equivalently, G_{κ_max}(L) must be
+// connected — for the topological buffer argument to apply globally.
+// ============================================================
+function detectPercolation(layerComps, totalVerts){
+  const m=layerComps.length;
+  const chainLayers=new Array(m).fill(-1);
+  let chainVerts=null;
+  let firstFragment=m;
+
+  for(let k=0;k<m;k++){
+    const comps=layerComps[k];
+    if(k===0){
+      let bi=-1, bs=0;
+      comps.forEach((c,ci)=>{ if(c.length>bs){bs=c.length;bi=ci;} });
+      if(bi>=0){ chainLayers[0]=bi; chainVerts=new Set(comps[bi]); }
+    } else {
+      if(chainVerts===null){ if(firstFragment===m) firstFragment=k; break; }
+      let found=-1;
+      for(let ci=0;ci<comps.length;ci++){
+        for(const v of comps[ci]){ if(chainVerts.has(v)){found=ci;break;} }
+        if(found>=0) break;
+      }
+      if(found>=0){
+        chainLayers[k]=found;
+        for(const v of comps[found]) chainVerts.add(v);
+      } else {
+        firstFragment=k;
+        for(let j=k;j<m;j++) chainLayers[j]=-1;
+        chainVerts=null;
+        break;
+      }
+    }
+  }
+  const chainIsUnbroken = (firstFragment===m) && (chainLayers[m-1]>=0);
+  const finalChainSize  = chainVerts ? chainVerts.size : 0;
+  const chainSpansAll   = finalChainSize === totalVerts;
+  const percolates      = chainIsUnbroken && chainSpansAll;
+  const permanentlyFragmented = chainIsUnbroken && !chainSpansAll;
+  return {percolates, chainLayers, firstFragment, finalChainSize, totalVerts, permanentlyFragmented};
+}
+
+// ============================================================
+// RUN CONTROL — stop / pause / resume / clear
+// ============================================================
+let _stop  = false;
+let _pause = false;
+let currentInputName = null; // set when a file is loaded; used for dataset naming
+
+function setRunning(){
+  document.getElementById('runBtn').style.display   = 'none';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display  = '';
+  document.getElementById('pauseBtn').style.display = '';
+  document.getElementById('pauseBtn').textContent   = '⏸ PAUSE';
+  document.getElementById('pauseBtn').className     = 'ctrl-btn pause';
+  document.getElementById('exportBtn').disabled=true; document.getElementById('exportRawBtn').disabled=true; document.getElementById('exportRawBtn').disabled=true;
+  setProgress(0, 1, 'Initialising…', false);
+  document.getElementById('runProgress').classList.add('visible');
+}
+
+function setIdle(){
+  document.getElementById('runBtn').style.display   = '';
+  document.getElementById('clearBtn').style.display = '';
+  document.getElementById('stopBtn').style.display  = 'none';
+  document.getElementById('pauseBtn').style.display = 'none';
+  _stop = false; _pause = false;
+}
+
+// Show/hide progress bar; pct in [0,1]
+function setProgress(pct, total, phase, isPaused=false){
+  const fill  = document.getElementById('rpFill');
+  const ph    = document.getElementById('rpPhase');
+  const cnt   = document.getElementById('rpCount');
+  fill.style.width = (pct*100).toFixed(1)+'%';
+  fill.className   = 'rp-bar-fill'+(isPaused?' paused':'');
+  ph.textContent   = phase;
+  ph.className     = 'rp-phase'+(isPaused?' paused':'');
+  cnt.textContent  = total>0 ? `${Math.round(pct*total)} / ${total}` : '';
+}
+
+function hideProgress(){
+  document.getElementById('runProgress').classList.remove('visible');
+}
+
+function stopAnalysis(){
+  _stop = true; _pause = false;
+  // Immediately reset button state — don't wait for the loop to exit
+  setIdle();
+  document.getElementById('statusTag').className  = 'htag idle';
+  document.getElementById('statusTag').textContent = 'STOPPING…';
+  const fill=document.getElementById('rpFill');
+  if(fill) fill.className='rp-bar-fill stopped';
+  const ph=document.getElementById('rpPhase');
+  if(ph){ ph.textContent='STOPPED BY USER'; ph.className='rp-phase'; ph.style.color='var(--fail)'; }
+}
+
+function togglePause(){
+  _pause = !_pause;
+  const btn = document.getElementById('pauseBtn');
+  const tag = document.getElementById('statusTag');
+  if(_pause){
+    btn.textContent = '▶ RESUME';
+    btn.className   = 'ctrl-btn resume';
+    tag.className   = 'htag running';
+    tag.textContent = 'PAUSED';
+    log('PAUSED — press RESUME to continue.', 'warn');
+  } else {
+    btn.textContent = '⏸ PAUSE';
+    btn.className   = 'ctrl-btn pause';
+    tag.className   = 'htag running';
+    tag.textContent = 'RUNNING';
+    log('Resumed.', 'accent');
+  }
+}
+
+async function waitWhilePaused(){
+  while(_pause && !_stop) await new Promise(r=>setTimeout(r,100));
+}
+
+function clearAll(){
+  document.getElementById('ladderInput').value = '';
+  document.getElementById('presetSel').value   = '';
+  document.getElementById('fileStatus').textContent = '';
+  hideProgress();
+  clearLog();
+  ['verdictEl','summaryPanel','phasePanel','canvasPanel','tablePanel',
+   'detailRow','outlierPanel','adaptPanel','projPanel','invPanel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  lastResult = null;
+  _stop = false; _pause = false;
+  document.getElementById('exportBtn').disabled=true; document.getElementById('exportRawBtn').disabled=true; document.getElementById('exportRawBtn').disabled=true;
+  document.getElementById('statusTag').className  = 'htag idle';
+  document.getElementById('statusTag').textContent = 'IDLE';
+}
+
+// ============================================================
+// FIX A — DOMAIN ADAPTER LAYER
+// Each adapter: rawValues → {ladder: number[], meta: object}
+// Hard validation runs after any adapter.
+// ============================================================
+const ADAPTERS = {
+
+  generic(values){
+    // Sort + unique + strip non-finite
+    const clean = [...new Set(values.filter(v=>isFinite(v)))].sort((a,b)=>a-b);
+    return {ladder:clean, meta:{domain:'GENERIC', transform:'sort+unique+finite'}};
+  },
+
+  molecular(values){
+    // Energy levels: strip non-positive, deduplicate tightly (1e-9 tolerance), sort
+    const cleaned = values.filter(v=>isFinite(v));
+    cleaned.sort((a,b)=>a-b);
+    const deduped=[];
+    for(const v of cleaned){
+      if(deduped.length===0 || Math.abs(v-deduped[deduped.length-1])>1e-9) deduped.push(v);
+    }
+    return {ladder:deduped, meta:{domain:'MOLECULAR_SPECTRAL', transform:'sort+strict_dedup'}};
+  },
+
+  cmb(values){
+    // CMB power spectrum: treat as amplitude values (C_ℓ or D_ℓ).
+    // Ladder = sorted finite positive values (spectral amplitudes, not ℓ index).
+    // Do NOT use raw multipole indices as the ladder.
+    const pos = values.filter(v=>isFinite(v) && v>0).sort((a,b)=>a-b);
+    return {ladder:pos, meta:{domain:'CMB', transform:'filter_positive+sort'}};
+  },
+
+  cosmic_web(values){
+    // Scalar field projection (density / potential).
+    // Flatten → strip non-finite → sort.
+    const clean = values.filter(v=>isFinite(v)).sort((a,b)=>a-b);
+    return {ladder:clean, meta:{domain:'COSMIC_WEB', transform:'sort+finite'}};
+  },
+};
+
+function applyAdapter(rawValues, domainKey){
+  const fn = ADAPTERS[domainKey] || ADAPTERS.generic;
+  return fn(rawValues);
+}
+
+function validateLadder(ladder, domainKey){
+  const warnings=[], errors=[];
+  const n=ladder.length;
+
+  if(n < 3)  errors.push('Ladder has fewer than 3 elements.');
+  if(n < 50) warnings.push(`Short ladder (n=${n}). Results may be unreliable for large-domain modes.`);
+
+  // Duplicate fraction
+  const unique=new Set(ladder).size;
+  const dupFrac=(n-unique)/n;
+  if(dupFrac>0.05) warnings.push(`High duplicate fraction: ${(dupFrac*100).toFixed(1)}% — consider stricter dedup.`);
+
+  // Monotonicity (should always pass after adapter, but check)
+  for(let i=1;i<n;i++){
+    if(ladder[i]<ladder[i-1]){ errors.push('Ladder is not monotone after adapter — pipeline error.'); break; }
+  }
+
+  // Extreme tail ratio (after gaps)
+  // Computed in runAnalysis after gapVec; stored separately.
+  return {warnings, errors};
+}
+
+// ============================================================
+// FIX B — 4-TIER VERDICT CLASSIFICATION
+// Operates on the final κ-layer (κ_max).
+// Does NOT modify detectPercolation — strict continuity preserved.
+// Theorem 1 fires ONLY for HARD_FRAGMENTATION.
+// ============================================================
+// ============================================================
+// FIX D — OUTLIER ANALYSIS  (v2.3: adds tail dominance)
+// Outliers: Δᵢ > 10 × median(Δ)
+// tailDominance: sum(outlier gaps) / sum(all gaps)
+//   — severity metric: count ≠ structural influence.
+//   A single gap of 10⁶ × median dominates the gap budget.
+// ============================================================
+function computeTailDominance(D, threshold){
+  let total=0, tail=0;
+  for(const g of D){ total+=g; if(g>threshold) tail+=g; }
+  return total>0 ? tail/total : 0;
+}
+
+function analyzeOutliers(D, med, iqrScale){
+  const threshold = Math.max(10*med, 5*(iqrScale||med)); // Patch 4: hybrid threshold
+  const items=[];
+  for(let i=0;i<D.length;i++){
+    if(D[i]>threshold) items.push({i, d:D[i], ratio:D[i]/med});
+  }
+  return{
+    count:items.length,
+    fraction:D.length>0 ? items.length/D.length : 0,
+    threshold,
+    maxRatio:items.length>0 ? arrMax(items.map(o=>o.ratio)) : 0,
+    tailDominance: computeTailDominance(D, threshold),
+    items,
+  };
+}
+
+// ============================================================
+// FIX C — ADAPTIVE κ EXTENSION
+// If giant ratio < 0.995 at κ_max, extend κ further.
+// Plateau: |C_max| growth < 0.1% over 2 consecutive steps → stop.
+// Extension schedule: κ_max × [2, 5] (two extra passes).
+// ============================================================
+async function runAdaptiveExtension(sortedD, n, med, epsScale, currentGiantRatio, outliers, stopFlag){
+  if(currentGiantRatio>=0.995) return null;
+
+  // Fix 1: scale targets to data — outlier ratio can reach 10⁶–10⁷
+  const maxRatio = (outliers && outliers.maxRatio) || 1;
+  const scale = Math.min(maxRatio, 1e6);
+  const extTargets = Array.from(new Set([
+    2.0,
+    10.0,
+    Math.sqrt(scale),
+    scale,
+  ])).sort((a,b)=>a-b);
+  let prevRatio=currentGiantRatio;
+  let prevPrevRatio=null;
+  const extLayers=[];
+  let kapConnect=null, kapPlateau=null;
+
+  for(const mult of extTargets){
+    await new Promise(r=>setTimeout(r,0));
+    if(stopFlag()) break;
+
+    const eps=mult*epsScale;
+    const res=buildComponentsFastSorted(sortedD, n, eps);
+    extLayers.push({kap:mult, eps, giantR:res.giantRatio, isConnected:res.isConnected,
+      nComps:res.components.length});
+
+    // Fix 5: record κ_connect on first connected layer
+    if(res.isConnected && !kapConnect){
+      kapConnect=mult;
+      log(`κ_connect = ${mult.toFixed(5)} (adaptive extension)`,'pass');
+    }
+
+    // Fix 2: strong plateau — absolute AND relative growth both thresholded
+    if(prevPrevRatio!==null){
+      const growth    = res.giantRatio - prevPrevRatio;
+      const relGrowth = prevPrevRatio>0 ? growth/prevPrevRatio : growth;
+      if(growth < 1e-4 || relGrowth < 1e-3){
+        kapPlateau=mult;
+        log(`Plateau at κ=${mult.toFixed(5)} — giant ratio stabilised at ${(res.giantRatio*100).toFixed(3)}%`,'warn');
+        break;
+      }
+    }
+    prevPrevRatio=prevRatio;
+    prevRatio=res.giantRatio;
+    if(kapConnect) break;
+  }
+  if(!kapConnect && !kapPlateau)
+    log(`Extension complete — no connectivity or plateau. Final giant ratio: ${(extLayers[extLayers.length-1]?.giantR*100||0).toFixed(2)}%`,'warn');
+  return{extLayers, kapConnect, kapPlateau,
+    finalGiantRatio:extLayers.length>0 ? extLayers[extLayers.length-1].giantR : currentGiantRatio};
+}
+
+// ============================================================
+// MAIN
+// ============================================================
+let lastResult=null;
+
+async function runAnalysis(){
+  _stop = false; _pause = false;
+  setRunning();
+  clearLog();
+  ['verdictEl','summaryPanel','phasePanel','canvasPanel','tablePanel',
+   'detailRow','outlierPanel','adaptPanel','projPanel','invPanel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  lastResult=null;
+  document.getElementById('exportBtn').disabled=true; document.getElementById('exportRawBtn').disabled=true;
+  const tag=document.getElementById('statusTag');
+  tag.className='htag running'; tag.textContent='RUNNING';
+
+  // ---- Fix A: Apply domain adapter ----
+  const domainKey = document.getElementById('domainAdapter').value || 'generic';
+  const rawValues = parseLadder(document.getElementById('ladderInput').value);
+  if(!rawValues){ log('ERROR: invalid input (need ≥ 3 numeric values)','fail'); setIdle(); tag.className='htag idle'; tag.textContent='ERROR'; return; }
+
+  const {ladder:L, meta:adapterMeta} = applyAdapter(rawValues, domainKey);
+  log(`Adapter: ${adapterMeta.domain} — ${adapterMeta.transform}`);
+
+  const kPoints=Math.max(3,Math.min(60,parseInt(document.getElementById('kPoints').value)||17));
+  const kMin=parseFloat(document.getElementById('kMin').value)||0.01;
+  const kMax=parseFloat(document.getElementById('kMax').value)||1.0;
+  if(kMin>=kMax){ log('ERROR: κ_min must be < κ_max','fail'); return; }
+
+  // ---- Fix A: Validate ladder ----
+  const {warnings:lWarn, errors:lErr}=validateLadder(L, domainKey);
+  lErr.forEach(e=>log('VALIDATION ERROR: '+e,'fail'));
+  lWarn.forEach(w=>log('WARNING: '+w,'warn'));
+  if(lErr.length>0){ setIdle(); tag.className='htag idle'; tag.textContent='ERROR'; return; }
+
+  let D=gapVec(L);
+  let med=medianOf(D);
+  let n=D.length;
+  const nOrig=n;
+  let approximateMode = false;  // true when gap vector is downsampled — Theorem 1 not assertable
+
+  // ---- Hard cap — prevents UI freeze on large ladders ----
+  if(n > HARD_CAP){
+    log(`WARNING: ${n} gaps exceeds hard cap (${HARD_CAP}). Downsampling to surrogate ladder.`, 'warn');
+    log(`APPROXIMATE MODE: results reflect a stride-sampled subset, NOT the original ladder.`, 'warn');
+    log(`Theorem 1 (Theorem-level verdicts) cannot be asserted on downsampled data.`, 'warn');
+    D = downsample(D, HARD_CAP);
+    med = medianOf(D);
+    n = D.length;
+    approximateMode = true;
+    log(`Working gap count after downsample: ${n} (stride = ${Math.ceil(nOrig/HARD_CAP)})`, 'warn');
+  }
+
+  log(`Ladder n=${L.length} → gaps n−1=${nOrig}${nOrig!==n?' → downsampled to '+n:''}`);
+  log(`Gap vector (first 12): [${D.slice(0,12).map(d=>d.toFixed(4)).join(', ')}${n>12?' …':''}]`);
+  log(`Median gap med(Δ) = ${med.toFixed(6)}`);
+  if(med===0){ log('ERROR: degenerate ladder (median gap = 0)','fail'); setIdle(); tag.className='htag idle'; tag.textContent='ERROR'; return; }
+
+  // ---- v2.4.0: IQR-based scale — computed on working D (after downsample) ----
+  const iqr      = computeIQR(D);
+  const epsScale = iqr > 0 ? iqr : med; // fallback: median if IQR=0 (uniform gaps)
+
+  // ---- Fix D: Outlier analysis — runs on working D with correct epsScale ----
+  const outliers = analyzeOutliers(D, med, epsScale);
+  if(outliers.maxRatio>1e6) log(`WARNING: extreme tail ratio max(Δ)/med(Δ) = ${outliers.maxRatio.toExponential(2)} — dominated by outliers`,'warn');
+  if(outliers.count>0) log(`Outliers (Δ > threshold): ${outliers.count} (${(outliers.fraction*100).toFixed(2)}%) — see Outlier Report panel`,'warn');
+
+  const kGrid=buildKGrid(kMin,kMax,kPoints);
+  log(`κ-grid: ${kPoints} points in [${kMin}, ${kMax}] (log-spaced)`);
+  log(`Scale: IQR=${iqr.toFixed(6)} (${iqr>0?'active':'fallback→median'}) — full pairwise graph, no window cap, no gap floor`);
+
+  // ---- Sort ONCE — hoisted outside κ loop ----
+  const sortedD = D.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v);
+
+  // ---- Per-layer computation — O(n·w̄) per layer after sort ----
+  const layers=[];
+  let kapConn=null;
+  for(let k=0;k<kGrid.length;k++){
+    // Yield to browser every 2 layers — prevents UI freeze
+    if(k % 2 === 0) await new Promise(r=>setTimeout(r,0));
+    if(_stop) break;
+    await waitWhilePaused();
+    if(_stop) break;
+
+    // Update progress indicator
+    setProgress(k/kGrid.length, kGrid.length,
+      `Layer ${k+1} / ${kGrid.length} · κ = ${kGrid[k].toFixed(5)}`, _pause);
+
+    const kap=kGrid[k];
+    const eps=kap*epsScale;           // v2.4.0: IQR-scaled ε
+    const {edges:ecF, density:densF, components:compsFull, spanEdges,
+           meanDegree:meanDeg, giantRatio:giantR, fragIndex:fragI,
+           isConnected:isCon} = buildComponentsFastSorted(sortedD, n, eps);
+    // Path-subgraph — secondary reference only
+    const {adj:adjP, ec:ecP} = buildPathGraph(D, eps);
+    const compsPath = bfsComponents(adjP);
+    if(isCon && kapConn===null) kapConn=kap;
+    layers.push({kap, eps, ecF, densF, compsFull, spanEdges, compsPath,
+      meanDeg, giantR, fragI, isCon,
+      ecP, nCompsFull:compsFull.length, nCompsPath:compsPath.length});
+  }
+
+  // ---- Handle stop: save partial result and enable export ----
+  const wasStoppedEarly = _stop && layers.length < kGrid.length;
+  if(wasStoppedEarly){
+    log(`STOPPED after ${layers.length} / ${kGrid.length} layers.`, 'warn');
+    setProgress(layers.length/kGrid.length, kGrid.length,
+      `STOPPED at layer ${layers.length} / ${kGrid.length}`, false);
+    document.getElementById('rpFill').className='rp-bar-fill stopped';
+  } else {
+    setProgress(1, kGrid.length, 'Analysis complete', false);
+  }
+
+  // Compute partial verdict from however many layers completed
+  if(layers.length === 0){
+    setIdle();
+    document.getElementById('statusTag').className  = 'htag idle';
+    document.getElementById('statusTag').textContent = 'STOPPED';
+    return;
+  }
+
+  // ---- Percolation detection on FULL graph ----
+  const layerCompsFull=layers.map(l=>l.compsFull);
+  const {percolates, chainLayers, firstFragment, finalChainSize, permanentlyFragmented}=detectPercolation(layerCompsFull, n);
+
+  const chainCount=chainLayers.filter(c=>c>=0).length;
+  // Percolation strength: HEURISTIC ONLY — fraction of layers in chain
+  const percStrength=chainCount/kPoints;
+  const kapStar=(firstFragment<kPoints)? kGrid[firstFragment] : null;
+
+  // ---- Fix B: 4-tier verdict ----
+  const verdict = classifyVerdict(layers, n, percolates, outliers);
+  const {tier} = verdict;
+
+  // ---- Fix C: Adaptive κ extension (if not fully connected) ----
+  let extResult=null;
+  if(n > 50000){
+    log(`Adaptive extension skipped — large ladder (${n} gaps > 50k). Run on a downsampled ladder to probe extension range.`, 'warn');
+  } else if(tier!=='FULL_PERCOLATION' && tier!=='GIANT_COMPONENT_PERCOLATION'){
+    log('Giant ratio < 0.995 — running adaptive κ extension…','accent');
+    extResult = await runAdaptiveExtension(sortedD, n, med, epsScale, verdict.giantRatio, outliers, ()=>_stop);
+    if(extResult){
+      if(extResult.kapConnect) log(`κ_connect = ${extResult.kapConnect.toFixed(5)} — full connectivity reached in extension`,'pass');
+      else if(extResult.kapPlateau) log(`Plateau at κ = ${extResult.kapPlateau.toFixed(5)} — growth stalled at ${(extResult.finalGiantRatio*100).toFixed(3)}%`,'warn');
+      else log(`Extension complete. Final giant ratio: ${(extResult.finalGiantRatio*100).toFixed(2)}%`,'warn');
+    }
+  }
+
+  // Patch 6 (v2.3.1): if extension proves full connectivity, upgrade tier.
+  // A base-grid HARD/TAIL verdict that resolves at large κ is DELAYED full percolation,
+  // not absolute structural failure. Theorem 1 does NOT apply in that case.
+  if(extResult?.kapConnect){
+    verdict.tier = 'FULL_PERCOLATION';
+    verdict.giantRatio = 1.0;
+    verdict.isolated = 0;
+    verdict.isolatedFraction = 0;
+    verdict.largeNonGiant = 0;
+    log(`Tier upgraded: base-grid verdict overridden by extension connectivity → FULL_PERCOLATION (delayed)`, 'pass');
+  }
+
+  // Re-read tier after possible extension upgrade (verdict object mutated by P6)
+  const finalTier = verdict.tier;
+  const finalGiantR = verdict.giantRatio;
+  const isoCount = verdict.isolated;
+  const isoFrac  = verdict.isolatedFraction;
+
+  log('---');
+  log(`Full pairwise graph analysis complete (${kPoints} layers, ${n} vertices).`);
+  log(`Verdict: ${finalTier} — giant ratio = ${(finalGiantR*100).toFixed(2)}%, isolated = ${isoCount} (${(isoFrac*100).toFixed(2)}%)`,
+    finalTier==='FULL_PERCOLATION'||finalTier==='GIANT_COMPONENT_PERCOLATION' ? 'pass'
+    : finalTier==='TAIL_FRAGMENTATION' ? 'warn' : 'fail');
+
+  if(finalTier==='HARD_FRAGMENTATION'){
+    if(approximateMode){
+      log('APPROXIMATE MODE: HARD_FRAGMENTATION verdict on downsampled ladder — Theorem 1 NOT assertable. Re-run on original data.','warn');
+    } else {
+      log('PRP Theorem 1 (necessary direction, established): giant ratio < 0.95 — USL violation guaranteed.','fail');
+    }
+  } else if(finalTier==='TAIL_FRAGMENTATION'){
+    log('INCONCLUSIVE — tail outliers present but giant component is ≥ 95%. Refine adapter or extend κ.','warn');
+  } else {
+    log('PRP Theorem 1 — consistent.','pass');
+  }
+
+  lastResult={
+  ladder:L, D, med, kGrid, kPoints, kMin, kMax, n, nOrig,
+  layers, percolates, chainLayers, firstFragment, kapStar, kapConn,
+  chainCount, percStrength, finalChainSize, permanentlyFragmented,
+  verdict, extResult, outliers, adapterMeta,
+  graphModel:'FULL_PAIRWISE', continuity:'STRICT_NO_RESET',
+  sufficientDirectionStatus:'OPEN_CONJECTURE',
+  approximateMode,
+  downsampled: nOrig !== n,
+  runStatus: wasStoppedEarly ? 'STOPPED' : 'COMPLETE',
+  layersCompleted: layers.length,
+  layersTotal: kGrid.length,
+};
+window.lastResult = lastResult;
+  const LARGE_RENDER_THRESHOLD = 20000;
+  const isLarge = (lastResult.n || 0) > LARGE_RENDER_THRESHOLD;
+
+  try {
+    renderVerdict(lastResult);
+    renderSummary(lastResult);
+    renderPhaseCanvas(lastResult);
+    if(!isLarge){
+      renderLayerTable(lastResult);
+    } else {
+      log(`Layer table skipped for large ladder (${lastResult.n} gaps) — use EXPORT DATASET for per-layer data.`, 'warn');
+      document.getElementById('tablePanel').style.display='none';
+    }
+    renderFragmentation(lastResult);
+    renderOutlierPanel(lastResult);
+    renderAdaptPanel(lastResult);
+    if(!isLarge){
+      renderGapTable(D, med);
+      renderProjectionTable(lastResult);
+      renderInvTable(lastResult);
+      document.getElementById('projPanel').style.display='';
+      document.getElementById('invPanel').style.display='';
+    } else {
+      log(`Large ladder (${lastResult.n} gaps): gap table, projection and inversion panels skipped to prevent UI freeze.`, 'warn');
+      document.getElementById('detailRow').style.display='none';
+      document.getElementById('projPanel').style.display='none';
+      document.getElementById('invPanel').style.display='none';
+    }
+    renderTraceCanvas(lastResult);
+    renderGraphCanvas(lastResult);
+  } catch(renderErr){
+    log(`Render error: ${renderErr.message}`, 'warn');
+    console.error('STRUC-PERC render error:', renderErr);
+  }
+
+  setIdle();
+  const tierCls = {FULL_PERCOLATION:'perc', GIANT_COMPONENT_PERCOLATION:'perc',
+                   TAIL_FRAGMENTATION:'running', HARD_FRAGMENTATION:'noperc'};
+  const tierLbl = {FULL_PERCOLATION:'FULL PERC', GIANT_COMPONENT_PERCOLATION:'GIANT PERC',
+                   TAIL_FRAGMENTATION:'TAIL FRAG', HARD_FRAGMENTATION:'HARD FRAG'};
+  if(wasStoppedEarly){
+    tag.className  = 'htag idle';
+    tag.textContent = `STOPPED ${layers.length}/${kGrid.length}`;
+  } else {
+    tag.className  = 'htag '+(tierCls[finalTier]||'idle');
+    tag.textContent = tierLbl[finalTier]||finalTier;
+  }
+  document.getElementById('exportBtn').disabled=false; document.getElementById('exportRawBtn').disabled=false;
+}
+
+// ============================================================
+// RENDER — 4-TIER VERDICT (Fix B)
+// ============================================================
+const TIER_META = {
+  FULL_PERCOLATION:{
+    cls:'full-perc', badge:'t1', label:'TIER 1 — FULL PERCOLATION',
+    icon:'✓',
+    body:(r)=>`<b>G<sub>κ_max</sub>(L) is fully connected. Strict chain spans all ${r.n} vertices.</b><br>
+      <span class="thm">PRP Theorem 1 — consistent.</span>`,
+    theorem:false,
+  },
+  GIANT_COMPONENT_PERCOLATION:{
+    cls:'giant-perc', badge:'t2', label:'TIER 2 — GIANT COMPONENT PERCOLATION',
+    icon:'◎',
+    body:(r)=>`<b>Giant component ≥ 99.5% of vertices. Isolated fraction < 0.5%.</b>
+      Giant ratio = ${(r.verdict.giantRatio*100).toFixed(3)}%, isolated = ${r.verdict.isoCount||r.verdict.isolated} vertices.<br>
+      <span class="thm">PRP Theorem 1 — consistent. Near-full connectivity established.</span>`,
+    theorem:false,
+  },
+  TAIL_FRAGMENTATION:{
+    cls:'tail-frag', badge:'t3', label:'TIER 3 — TAIL FRAGMENTATION',
+    icon:'⚠',
+    body:(r)=>`<b>Giant component ≥ 95% but residual outlier vertices remain isolated.</b>
+      Giant ratio = ${(r.verdict.giantRatio*100).toFixed(2)}%, isolated = ${r.verdict.isolated} (${(r.verdict.isolatedFraction*100).toFixed(2)}%).<br>
+      <span class="conj">INCONCLUSIVE — tail outliers dominate fragmentation, not structural failure.
+      Refine via domain adapter or extend κ beyond current range.</span><br>
+      <span class="open">Theorem 1 does NOT apply here. USL violation not guaranteed.</span>`,
+    theorem:false,
+  },
+  HARD_FRAGMENTATION:{
+    cls:'hard-frag', badge:'t4', label:'TIER 4 — HARD FRAGMENTATION',
+    icon:'✗',
+    body:(r)=>`<b>Giant component < 95% OR multiple large components present.</b>
+      Giant ratio = ${(r.verdict.giantRatio*100).toFixed(2)}%, isolated = ${r.verdict.isolated}, large non-giant = ${r.verdict.largeNonGiant}.<br>
+      <span class="thm">PRP Theorem 1 (necessary direction, established): structural fragmentation — USL violation guaranteed.</span><br>
+      <span class="open">Run STRUC-I v1.0.4 to locate the exact violating deformation.</span>`,
+    theorem:true,
+  },
+};
+
+function renderVerdict(r){
+  const el=document.getElementById('verdictEl');
+  el.style.display='';
+  const t=r.verdict?.tier||'HARD_FRAGMENTATION';
+  const m=TIER_META[t];
+  const partialBanner = r.runStatus==='STOPPED'
+    ? `<div style="background:rgba(240,160,48,0.12);border:1px solid var(--warn);padding:5px 10px;font-size:8.5px;color:var(--warn);margin-bottom:8px;letter-spacing:0.1em">
+        ⚠ PARTIAL RUN — ${r.layersCompleted} of ${r.layersTotal} layers completed. Verdict based on available data only.
+       </div>`
+    : '';
+  const approxBanner = r.approximateMode
+    ? `<div style="background:rgba(224,64,64,0.12);border:1px solid var(--fail);padding:5px 10px;font-size:8.5px;color:var(--fail);margin-bottom:8px;letter-spacing:0.1em">
+        ✗ APPROXIMATE MODE — gap vector downsampled from ${r.nOrig} to ${r.n} gaps. This is a surrogate ladder, not the original.
+        Theorem 1 (HARD_FRAGMENTATION verdict) is <b>NOT assertable</b> on downsampled data. Re-run on the original ladder.
+       </div>`
+    : '';
+  el.className='verdict '+m.cls;
+  el.innerHTML=`
+    <div class="vtitle">
+      <span class="tier-badge ${m.badge}">${t.replace(/_/g,' ')}</span>
+      ${m.icon} ${m.label} <span style="font-size:9px;letter-spacing:.04em">(FULL PAIRWISE GRAPH)</span>
+    </div>
+    ${approxBanner}
+    ${partialBanner}
+    <div class="vbody">${m.body(r)}</div>`;
+}
+
+// ============================================================
+// RENDER — SUMMARY
+// ============================================================
+function sc(label,val,cls,unit=''){
+  return `<div class="stat-card"><div class="sc-label">${label}</div>
+    <div class="sc-val ${cls}">${val}</div>${unit?`<div class="sc-unit">${unit}</div>`:''}</div>`;
+}
+function renderSummary(r){
+  const v=r.verdict||{};
+  const tierCls={FULL_PERCOLATION:'pass',GIANT_COMPONENT_PERCOLATION:'blue',
+                 TAIL_FRAGMENTATION:'warn',HARD_FRAGMENTATION:'fail'};
+  const tierShort={FULL_PERCOLATION:'FULL',GIANT_COMPONENT_PERCOLATION:'GIANT',
+                   TAIL_FRAGMENTATION:'TAIL',HARD_FRAGMENTATION:'HARD'};
+  const ext=r.extResult;
+  document.getElementById('statGrid').innerHTML=[
+    sc('LADDER n',      r.ladder.length,                         'live',  'elements'),
+    sc('GAPS n−1',      r.n,                                     'live',  'vertices'),
+    sc('MEDIAN GAP',    r.med.toFixed(4),                        'blue',  'med(Δ)'),
+    sc('VERDICT',       tierShort[v.tier]||'—',                  tierCls[v.tier]||'dim', '4-tier'),
+    sc('GIANT RATIO',   v.giantRatio!=null?(v.giantRatio*100).toFixed(2)+'%':'—',
+                        v.giantRatio>=0.995?'pass':v.giantRatio>=0.95?'warn':'fail', 'at κ_max'),
+    sc('ISOLATED',      v.isolated!=null?v.isolated:'—',
+                        v.isolated===0?'pass':v.isolatedFraction<0.005?'warn':'fail', 'vertices'),
+    sc('OUTLIERS',      r.outliers?r.outliers.count:'—',
+                        !r.outliers||r.outliers.count===0?'pass':r.outliers.fraction<0.01?'warn':'fail',
+                        r.outliers?'Δ > 10×med':''),
+    sc('ADAPTER',       r.adapterMeta?.domain||'GENERIC',        'accent','domain'),
+    sc('κ-LAYERS',      r.kPoints,                               'live',  'grid points'),
+    sc('CHAIN SPAN',    r.finalChainSize+'/'+r.n,
+                        r.finalChainSize===r.n?'pass':r.finalChainSize>0?'warn':'fail', 'vertices'),
+    sc('κ_conn',        r.kapConn?r.kapConn.toFixed(4):ext?.kapConnect?ext.kapConnect.toFixed(4)+'†':'—',
+                        r.kapConn||ext?.kapConnect?'pass':'dim', r.kapConn?'main grid':ext?.kapConnect?'ext.':''),
+    sc('EXT. GIANT',    ext?(ext.finalGiantRatio*100).toFixed(2)+'%':'—',
+                        ext?.kapConnect?'pass':ext?'warn':'dim', 'after extension'),
+    sc('NECESSARY',     'ESTABL.',                               'blue',  'Theorem 1'),
+    r.downsampled ? sc('DOWNSAMPLED', r.nOrig+'→'+r.n, 'warn', 'gap-dist. preserved') : '',
+  ].join('');
+  document.getElementById('summaryPanel').style.display='';
+}
+
+// ============================================================
+// RENDER — LAYER TABLE (FULL GRAPH PRIMARY)
+// ============================================================
+function renderLayerTable(r){
+  const tb=document.getElementById('layerTbody'); tb.innerHTML='';
+  r.layers.forEach((lay,k)=>{
+    const inChain=r.chainLayers[k]>=0;
+    const isKstar=r.firstFragment===k;
+    const chainComp=inChain? lay.compsFull[r.chainLayers[k]] : null;
+    const COMP_RENDER_CAP=20;
+    const compStr=lay.compsFull
+      .slice(0,COMP_RENDER_CAP)
+      .map((c,ci)=>{
+        const tag=inChain&&ci===r.chainLayers[k]?'*':'';
+        return `{${tag}size=${c.length}}`;
+      }).join(' ');
+    const compSuffix=lay.compsFull.length>COMP_RENDER_CAP
+      ? ` …+${lay.compsFull.length-COMP_RENDER_CAP}`
+      : '';
+    const tr=document.createElement('tr');
+    if(isKstar) tr.className='kstar-row';
+    else if(inChain) tr.className='chain-row';
+    tr.innerHTML=`
+      <td class="${isKstar?'fail':inChain?'pass':'dim'}">${k+1}${isKstar?' ←κ*':''}</td>
+      <td class="blue">${lay.kap.toFixed(5)}</td>
+      <td>${lay.eps.toFixed(5)}</td>
+      <td>${lay.ecF}</td>
+      <td class="${lay.densF>0.8?'pass':lay.densF>0.3?'warn':'dim'}">${lay.densF.toFixed(4)}</td>
+      <td class="${lay.meanDeg>1?'pass':'dim'}">${lay.meanDeg.toFixed(3)}</td>
+      <td class="${lay.nCompsFull===1?'pass':lay.nCompsFull<=3?'warn':'fail'}">${lay.nCompsFull}</td>
+      <td class="${lay.giantR>0.9?'pass':lay.giantR>0.5?'warn':'fail'}">${lay.giantR.toFixed(3)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${compStr+compSuffix}">${compStr}${compSuffix}</td>
+      <td class="${inChain?'pass':'fail'}">${inChain?'✓':'✗'}</td>
+      <td class="${inChain?'pass':'dim'}">${chainComp?chainComp.length:'—'}</td>
+    `;
+    tb.appendChild(tr);
+  });
+  document.getElementById('tablePanel').style.display='';
+}
+
+// ============================================================
+// RENDER — GAP TABLE
+// ============================================================
+function renderGapTable(D, med){
+  const tb=document.getElementById('gapTbody'); tb.innerHTML='';
+  const GAP_RENDER_CAP=2000;
+  const limit=Math.min(D.length, GAP_RENDER_CAP);
+  for(let i=0;i<limit;i++){
+    const d=D[i], rel=d/med;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="dim">${i+1}</td>
+      <td class="blue">${d.toFixed(6)}</td>
+      <td class="${rel<0.3?'fail':rel<0.7?'warn':rel<1.5?'pass':'fail'}">${rel.toFixed(3)}</td>
+      <td class="dim">v${i+1}</td>`;
+    tb.appendChild(tr);
+  }
+  if(D.length>GAP_RENDER_CAP){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td colspan="4" class="dim" style="padding:4px 8px">… ${D.length-GAP_RENDER_CAP} more gaps not shown</td>`;
+    tb.appendChild(tr);
+  }
+  document.getElementById('detailRow').style.display='';
+}
+
+// ============================================================
+// RENDER — FRAGMENTATION REPORT (tier-aware)
+// ============================================================
+function renderFragmentation(r){
+  const el=document.getElementById('fragReport');
+  const v=r.verdict||{};
+  const tier=v.tier||'HARD_FRAGMENTATION';
+  const ext=r.extResult;
+
+  let html='';
+
+  if(tier==='FULL_PERCOLATION'){
+    html=`<p style="color:var(--pass);font-size:10px;margin-bottom:6px">✓ FULL PERCOLATION — G<sub>κ_max</sub>(L) is fully connected.</p>
+      <p style="color:var(--text2);font-size:9px">Chain spans all ${r.n} vertices from κ_min = ${r.kMin.toFixed(4)} to κ_max = ${r.kMax.toFixed(4)}.</p>`;
+
+  }else if(tier==='GIANT_COMPONENT_PERCOLATION'){
+    html=`<p style="color:var(--blue);font-size:10px;margin-bottom:6px">◎ GIANT COMPONENT — ${(v.giantRatio*100).toFixed(3)}% connected. ${v.isolated} isolated vertex${v.isolated!==1?'es':''}.</p>
+      <p style="color:var(--text2);font-size:9px">Giant component ≥ 99.5% and isolated fraction < 0.5%. Near-complete connectivity established.</p>`;
+
+  }else if(tier==='TAIL_FRAGMENTATION'){
+    html=`<p style="color:var(--warn);font-size:10px;margin-bottom:6px">⚠ TAIL FRAGMENTATION — giant ratio = ${(v.giantRatio*100).toFixed(2)}%, isolated = ${v.isolated} (${(v.isolatedFraction*100).toFixed(2)}%).</p>
+      <p style="color:var(--text2);font-size:9px;line-height:1.9">
+        Residual isolated vertices are outlier gaps (Δ >> ε_max) not structural failure. Giant component ≥ 95% and no large secondary cluster.
+        <br><b style="color:var(--warn)">INCONCLUSIVE</b> — PRP Theorem 1 does not apply here. USL violation is not guaranteed.
+        <br>Suggested actions: (1) apply domain adapter, (2) extend κ_max, (3) review outlier report.
+      </p>`;
+    if(ext){
+      const kc=ext.kapConnect, kp=ext.kapPlateau;
+      html+=`<p style="color:var(--text2);font-size:9px;margin-top:6px">Adaptive extension: `;
+      if(kc) html+=`<span style="color:var(--pass)">κ_connect = ${kc.toFixed(3)}</span> — full connectivity reached.`;
+      else if(kp) html+=`<span style="color:var(--warn)">plateau at κ = ${kp.toFixed(3)}</span> — giant ratio = ${(ext.finalGiantRatio*100).toFixed(2)}%. Growth stalled.`;
+      else html+=`final giant ratio = ${(ext.finalGiantRatio*100).toFixed(2)}%.`;
+      html+='</p>';
+    }
+
+  }else{ // HARD_FRAGMENTATION
+    html=`<p style="color:var(--fail);font-size:10px;margin-bottom:6px">✗ HARD FRAGMENTATION — giant ratio = ${(v.giantRatio*100).toFixed(2)}%, large non-giant clusters = ${v.largeNonGiant}.</p>
+      <p style="color:var(--text2);font-size:9px;line-height:1.9">
+        Giant component < 95% or multiple large components. This is structural fragmentation, not a tail effect.
+        <br><span style="color:var(--fail)">PRP Theorem 1 (established): USL violation guaranteed.</span>
+        <br>Chain break: layer ${r.firstFragment<r.kPoints?r.firstFragment+1:'—'}, κ* = ${r.kapStar?.toFixed(5)||'—'}.
+        Chain depth: ${r.chainCount}/${r.kPoints} layers.
+      </p>`;
+    if(ext){
+      html+=`<p style="color:var(--dim);font-size:9px;margin-top:6px">Adaptive extension: final giant ratio = ${(ext.finalGiantRatio*100).toFixed(2)}%${ext.kapConnect?' — κ_connect = '+ext.kapConnect.toFixed(3):''}</p>`;
+    }
+  }
+  el.innerHTML=html;
+}
+
+// ============================================================
+// RENDER — PROJECTION COMPARISON (SECONDARY)
+// ============================================================
+function renderProjectionTable(r){
+  const tb=document.getElementById('projTbody'); tb.innerHTML='';
+  r.layers.forEach((lay,k)=>{
+    const delta=lay.nCompsFull-lay.nCompsPath;
+    const PROJ_CAP=20;
+    const cs=lay.compsPath.slice(0,PROJ_CAP).map(c=>`{size=${c.length}}`).join(' ');
+    const csSuffix=lay.compsPath.length>PROJ_CAP?` …+${lay.compsPath.length-PROJ_CAP}`:'';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="dim">${k+1}</td>
+      <td class="blue">${lay.kap.toFixed(5)}</td>
+      <td>${lay.ecP}</td>
+      <td class="purple">${lay.nCompsPath}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${cs+csSuffix}">${cs}${csSuffix}</td>
+      <td class="${delta!==0?'warn':'dim'}">${delta>0?'+'+delta:delta}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+// ============================================================
+// RENDER — LOCAL INVERSION PROXY DIAGNOSTICS (SECONDARY)
+// ============================================================
+function renderInvTable(r){
+  const tb=document.getElementById('invTbody'); tb.innerHTML='';
+  r.layers.forEach((lay,k)=>{
+    lay.compsFull.forEach((comp,ci)=>{
+      const invC=adjDescentProxy(comp, r.D);
+      const inChain=r.chainLayers[k]>=0 && ci===r.chainLayers[k];
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td class="dim">${k+1}</td>
+        <td class="blue">${lay.kap.toFixed(5)}</td>
+        <td class="${inChain?'pass':'dim'}">${ci+1}${inChain?' ★':''}</td>
+        <td>${comp.length}</td>
+        <td class="purple">${invC} <span style="font-size:7px;color:var(--dim)">(adj proxy)</span></td>
+        <td class="dim">— <span style="font-size:7px">(not computed)</span></td>
+        <td class="dim">—</td>
+      `;
+      tb.appendChild(tr);
+    });
+  });
+}
+
+// ============================================================
+// RENDER — OUTLIER REPORT (Fix D)
+// ============================================================
+function renderOutlierPanel(r){
+  const el=document.getElementById('outlierPanel');
+  const oc=document.getElementById('outlierContent');
+  const o=r.outliers;
+  if(!o || o.count===0){
+    oc.innerHTML=`<p style="color:var(--pass);font-size:9px">✓ No outliers — all gaps ≤ 10 × median(Δ) = ${r.med.toFixed(6)}</p>`;
+  } else {
+    let rows='';
+    // Show first 200 outliers max
+    const show=o.items.slice(0,200);
+    show.forEach(({i,d,ratio})=>{
+      rows+=`<tr class="outlier-row">
+        <td class="gold">${i+1}</td>
+        <td class="warn">${d.toFixed(6)}</td>
+        <td class="fail">${ratio.toFixed(1)}×</td>
+      </tr>`;
+    });
+    if(o.items.length>200) rows+=`<tr><td colspan="3" class="dim" style="padding:4px 8px">… ${o.items.length-200} more not shown</td></tr>`;
+    oc.innerHTML=`
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:9px;color:var(--text2);margin-bottom:10px;line-height:2">
+        <span>Count: <b style="color:var(--warn)">${o.count}</b></span>
+        <span>Fraction: <b style="color:var(--warn)">${(o.fraction*100).toFixed(3)}%</b></span>
+        <span>Threshold: Δ > <b style="color:var(--gold)">${o.threshold.toFixed(6)}</b> (10 × med)</span>
+        <span>Max ratio: <b style="color:var(--fail)">${o.maxRatio.toFixed(1)}×</b></span>
+        <span>Tail dominance: <b style="color:${o.tailDominance>0.1?'var(--fail)':'var(--warn)'}">${(o.tailDominance*100).toFixed(3)}%</b>
+          <span style="color:var(--dim);font-size:8px">sum(outlier Δ)/sum(all Δ)</span></span>
+      </div>
+      <div class="scrollbox" style="max-height:180px">
+        <table class="data-table">
+          <thead><tr><th>Gap index i</th><th>Δᵢ</th><th>Δᵢ / med</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p style="color:var(--dim);font-size:8px;margin-top:6px">
+        Outlier gaps are excluded from the percolation chain only if verdict is TAIL_FRAGMENTATION.
+        They remain vertices in the full pairwise graph.
+      </p>`;
+  }
+  el.style.display='';
+}
+
+// ============================================================
+// RENDER — ADAPTIVE κ EXTENSION (Fix C)
+// ============================================================
+function renderAdaptPanel(r){
+  const el=document.getElementById('adaptPanel');
+  const ac=document.getElementById('adaptContent');
+  const ext=r.extResult;
+  if(!ext){
+    ac.innerHTML=`<p style="color:var(--dim);font-size:9px">No adaptive extension — verdict at or above GIANT_COMPONENT_PERCOLATION threshold.</p>`;
+    el.style.display='';
+    return;
+  }
+  let rows='';
+  ext.extLayers.forEach(lay=>{
+    rows+=`<tr>
+      <td class="blue">${lay.kap.toFixed(3)}</td>
+      <td>${lay.eps?.toFixed(5)||'—'}</td>
+      <td class="${lay.giantR>0.995?'pass':lay.giantR>0.95?'warn':'fail'}">${(lay.giantR*100).toFixed(3)}%</td>
+      <td class="${lay.nComps===1?'pass':'fail'}">${lay.nComps}</td>
+      <td class="${lay.isConnected?'pass':'dim'}">${lay.isConnected?'✓ YES':'—'}</td>
+    </tr>`;
+  });
+  ac.innerHTML=`
+    <div style="font-size:9px;color:var(--text2);margin-bottom:10px;line-height:2">
+      ${ext.kapConnect?`<b style="color:var(--pass)">κ_connect = ${ext.kapConnect.toFixed(3)}</b> — full graph connectivity achieved in extension.`
+        :ext.kapPlateau?`<b style="color:var(--warn)">κ_plateau = ${ext.kapPlateau.toFixed(3)}</b> — giant ratio growth stalled (&lt;0.1% over 2 steps).`
+        :'Extension complete — no connectivity achieved within extended range.'}
+      &nbsp; Final giant ratio: <b>${(ext.finalGiantRatio*100).toFixed(2)}%</b>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>κ (ext)</th><th>ε</th><th>Giant ratio</th><th>|C|</th><th>Connected?</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  el.style.display='';
+}
+
+// ============================================================
+// CANVAS — PHASE TRANSITION (density + giant component ratio)
+// ============================================================
+function renderPhaseCanvas(r){
+  const cv=document.getElementById('phaseCanvas');
+  cv.width=cv.parentElement.clientWidth||900;
+  const W=cv.width, H=cv.height;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#080e18'; ctx.fillRect(0,0,W,H);
+
+  const pad={t:28,b:36,l:52,r:52};
+  const iW=W-pad.l-pad.r, iH=H-pad.t-pad.b;
+  const m=r.kGrid.length;
+
+  const kx=i=>pad.l+(i/(m-1||1))*iW;
+  // y maps [0,1] → canvas, for both density and giant ratio (same scale)
+  const vy=v=>pad.t+iH*(1-v);
+
+  // Grid
+  for(let g=0;g<=4;g++){
+    const v=g/4, y=vy(v);
+    ctx.strokeStyle='#0c1828'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+iW,y); ctx.stroke();
+    ctx.fillStyle='#2d4560'; ctx.font='7.5px IBM Plex Mono';
+    ctx.fillText(v.toFixed(2), pad.l-34, y+3);
+    ctx.fillText(v.toFixed(2), pad.l+iW+6, y+3);
+  }
+
+  // κ* vertical marker
+  if(r.firstFragment<m){
+    ctx.strokeStyle='#e04040'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+    const x=kx(r.firstFragment);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+iH); ctx.stroke();
+    ctx.fillStyle='#e04040'; ctx.font='7.5px IBM Plex Mono'; ctx.fillText('κ*',x+3,pad.t+9);
+  }
+
+  // κ_conn vertical marker (first κ where single connected component)
+  if(r.kapConn!==null){
+    const connIdx=r.kGrid.findIndex(k=>k>=r.kapConn);
+    if(connIdx>=0){
+      ctx.strokeStyle='#e8c840'; ctx.lineWidth=1; ctx.setLineDash([2,5]);
+      const x=kx(connIdx);
+      ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+iH); ctx.stroke();
+      ctx.fillStyle='#e8c840'; ctx.font='7.5px IBM Plex Mono'; ctx.fillText('κ_conn',x+3,pad.t+20);
+    }
+  }
+  ctx.setLineDash([]);
+
+  // Chain highlight
+  r.chainLayers.forEach((ch,i)=>{
+    if(ch>=0){
+      ctx.fillStyle='rgba(0,221,136,0.06)';
+      const bw=iW/m;
+      ctx.fillRect(kx(i)-bw/2, pad.t, bw, iH);
+    }
+  });
+
+  // Edge density curve (blue)
+  ctx.beginPath(); ctx.strokeStyle='#4ab0f0'; ctx.lineWidth=2;
+  r.layers.forEach((lay,i)=>{
+    const x=kx(i), y=vy(lay.densF);
+    i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Giant component ratio curve (green)
+  ctx.beginPath(); ctx.strokeStyle='#00dd88'; ctx.lineWidth=2;
+  r.layers.forEach((lay,i)=>{
+    const x=kx(i), y=vy(lay.giantR);
+    i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Fragmentation index curve (dim orange — secondary)
+  ctx.beginPath(); ctx.strokeStyle='rgba(240,160,48,0.4)'; ctx.lineWidth=1; ctx.setLineDash([2,4]);
+  r.layers.forEach((lay,i)=>{
+    const x=kx(i), y=vy(Math.min(lay.fragI,1));
+    i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Axes
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+iH); ctx.lineTo(pad.l+iW,pad.t+iH); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle='#4ab0f0'; ctx.font='8px IBM Plex Mono'; ctx.fillText('▪ edge density',  pad.l+4,    pad.t-10);
+  ctx.fillStyle='#00dd88';                                ctx.fillText('▪ giant ratio',   pad.l+92,   pad.t-10);
+  ctx.fillStyle='rgba(240,160,48,0.7)';                  ctx.fillText('╌ frag. index',   pad.l+172,  pad.t-10);
+  ctx.fillStyle='#e04040';                               ctx.fillText('╌ κ*',            pad.l+260,  pad.t-10);
+  ctx.fillStyle='#e8c840';                               ctx.fillText('╌ κ_conn',        pad.l+298,  pad.t-10);
+  ctx.fillStyle='#5a7a96';
+  ctx.fillText('[0,1]', pad.l-44, pad.t-2);
+  ctx.fillText('κ →',  pad.l+iW-18, pad.t+iH+26);
+
+  // κ-axis ticks
+  const step=Math.max(1,Math.floor(m/8));
+  for(let i=0;i<m;i+=step){
+    ctx.fillStyle='#2d4560'; ctx.font='7px IBM Plex Mono';
+    ctx.fillText(r.kGrid[i].toFixed(2), kx(i)-8, pad.t+iH+14);
+  }
+  document.getElementById('phasePanel').style.display='';
+}
+
+// ============================================================
+// CANVAS — TRACE
+// ============================================================
+function renderTraceCanvas(r){
+  const cv=document.getElementById('traceCanvas');
+  cv.width=cv.parentElement.clientWidth||700;
+  const W=cv.width, H=cv.height;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#080e18'; ctx.fillRect(0,0,W,H);
+
+  const pad={t:30,b:40,l:48,r:20};
+  const iW=W-pad.l-pad.r, iH=H-pad.t-pad.b;
+  const m=r.kGrid.length;
+  const maxC=Math.max(arrMax(r.layers.map(l=>l.nCompsFull)),1);
+
+  const kx=i=>pad.l+(i/(m-1||1))*iW;
+  const cy=n=>pad.t+iH-(n/maxC)*iH;
+
+  // Grid lines
+  for(let g=0;g<=maxC;g++){
+    const y=cy(g);
+    ctx.strokeStyle='#0c1828'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+iW,y); ctx.stroke();
+    ctx.fillStyle='#2d4560'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText(g, pad.l-22, y+3);
+  }
+
+  // Chain highlight bands
+  r.chainLayers.forEach((ch,i)=>{
+    if(ch>=0){
+      ctx.fillStyle='rgba(0,221,136,0.09)';
+      const bw=iW/m;
+      ctx.fillRect(kx(i)-bw/2, pad.t, bw, iH);
+    }
+  });
+
+  // κ* line
+  if(r.firstFragment<m){
+    ctx.strokeStyle='#e04040'; ctx.lineWidth=1.2; ctx.setLineDash([3,4]);
+    const x=kx(r.firstFragment);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+iH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#e04040'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText('κ*',x+4,pad.t+10);
+  }
+
+  // Full-graph component count (primary — bright)
+  ctx.beginPath(); ctx.strokeStyle='#00c8f0'; ctx.lineWidth=2;
+  r.layers.forEach((lay,i)=>{
+    const x=kx(i), y=cy(lay.nCompsFull);
+    i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Path-graph component count (secondary — dim dashed)
+  ctx.beginPath(); ctx.strokeStyle='rgba(152,128,255,0.35)'; ctx.lineWidth=1; ctx.setLineDash([3,5]);
+  r.layers.forEach((lay,i)=>{
+    const x=kx(i), y=cy(lay.nCompsPath);
+    i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Axes
+  ctx.strokeStyle='#111e30'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+iH); ctx.lineTo(pad.l+iW,pad.t+iH); ctx.stroke();
+
+  // Legend
+  ctx.fillStyle='#00c8f0'; ctx.font='8px IBM Plex Mono';
+  ctx.fillText('▪ full pairwise (operative)', pad.l+4, pad.t-12);
+  ctx.fillStyle='rgba(152,128,255,0.6)';
+  ctx.fillText('╌ path-subgraph (reference)', pad.l+150, pad.t-12);
+  ctx.fillStyle='#5a7a96'; ctx.fillText('Components', pad.l-44, pad.t-2);
+  ctx.fillText('κ →', pad.l+iW-18, pad.t+iH+28);
+
+  // κ-axis tick labels
+  const step=Math.max(1,Math.floor(m/7));
+  for(let i=0;i<m;i+=step){
+    ctx.fillStyle='#2d4560'; ctx.font='7.5px IBM Plex Mono';
+    ctx.fillText(r.kGrid[i].toFixed(2), kx(i)-10, pad.t+iH+14);
+  }
+  document.getElementById('canvasPanel').style.display='';
+}
+
+// ============================================================
+// CANVAS — GRAPH VIEW at κ* (or κ_max if percolating)
+// ============================================================
+function renderGraphCanvas(r){
+  const cv=document.getElementById('graphCanvas');
+  const W=cv.width, H=cv.height;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#080e18'; ctx.fillRect(0,0,W,H);
+
+  const layIdx=r.firstFragment<r.kGrid.length? r.firstFragment : r.kGrid.length-1;
+  const lay=r.layers[layIdx];
+  const D=r.D, n=D.length;
+  const pad2=32;
+  const med=r.med;
+
+  // Safe min/max — Math.max(...largeArray) blows call stack at n > ~100k
+  const maxD=arrMax(D), minD=arrMin(D), rng=maxD-minD||1;
+  const px=i=> pad2 + (i/(n-1||1))*(W-2*pad2);
+  const py=d=> pad2 + (1-(d-minD)/rng)*(H-2*pad2-20);
+
+  // --- Full pairwise spanning-forest edges (capped at 2000 for canvas performance) ---
+  const edgesToDraw = (lay.spanEdges||[]).slice(0, 2000);
+  ctx.strokeStyle='rgba(0,200,240,0.30)'; ctx.lineWidth=1;
+  for(const [a,b] of edgesToDraw){
+    ctx.beginPath(); ctx.moveTo(px(a),py(D[a])); ctx.lineTo(px(b),py(D[b])); ctx.stroke();
+  }
+  if((lay.spanEdges||[]).length > 2000){
+    ctx.fillStyle='#2d4560'; ctx.font='7px IBM Plex Mono';
+    ctx.fillText(`(${lay.spanEdges.length} edges — showing first 2000)`, pad2, H-8);
+  }
+
+  // --- Path-subgraph edges (SECONDARY — dashed dim) ---
+  ctx.setLineDash([2,4]); ctx.strokeStyle='rgba(152,128,255,0.22)'; ctx.lineWidth=0.8;
+  for(let i=0;i<n-1;i++)
+    if(Math.abs(D[i]-D[i+1])<=lay.eps){
+      ctx.beginPath(); ctx.moveTo(px(i),py(D[i])); ctx.lineTo(px(i+1),py(D[i+1])); ctx.stroke();
+    }
+  ctx.setLineDash([]);
+
+  // --- Nodes coloured by full-graph component ---
+  // Cap at 2000 nodes — stride-sample for large ladders so canvas doesn't freeze.
+  const NODE_CAP = 2000;
+  const stride = n > NODE_CAP ? Math.ceil(n / NODE_CAP) : 1;
+  const palette=['#00dd88','#f0a030','#e04040','#4ab0f0','#9880ff','#e8c840','#ff80b0','#80ffcc'];
+  const nodeComp=new Array(n).fill(-1);
+  lay.compsFull.forEach((comp,ci)=>{ comp.forEach(v=>{ nodeComp[v]=ci; }); });
+  const inChain=r.chainLayers[layIdx];
+  const showLabels = n <= 60; // vertex labels only when readable
+
+  for(let i=0;i<n;i+=stride){
+    const ci=nodeComp[i];
+    const isChain=inChain>=0 && ci===inChain;
+    const col=ci>=0? palette[ci%palette.length] : '#2d4560';
+    const r2=isChain?5:3;
+    ctx.beginPath(); ctx.arc(px(i),py(D[i]),r2,0,2*Math.PI);
+    ctx.fillStyle=col+'99'; ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=isChain?1.5:0.8; ctx.stroke();
+    if(showLabels){
+      ctx.fillStyle='#a8bfd0'; ctx.font='7px IBM Plex Mono';
+      ctx.fillText(`v${i+1}`, px(i)-7, py(D[i])-8);
+    }
+  }
+  if(stride>1){
+    ctx.fillStyle='#2d4560'; ctx.font='7px IBM Plex Mono';
+    ctx.fillText(`(${n} vertices — showing every ${stride}th)`, pad2, H-8);
+  }
+
+  // Title
+  const lbl=r.firstFragment<r.kGrid.length
+    ? `Graph at κ* = ${lay.kap.toFixed(4)} (fragmentation layer)`
+    : `Graph at κ_max = ${lay.kap.toFixed(4)}`;
+  ctx.fillStyle='#5a7a96'; ctx.font='7.5px IBM Plex Mono';
+  ctx.fillText(lbl, pad2, 14);
+
+  // Legend
+  ctx.strokeStyle='rgba(0,200,240,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pad2,22); ctx.lineTo(pad2+12,22); ctx.stroke();
+  ctx.fillStyle='#4ab0f0'; ctx.font='7px IBM Plex Mono'; ctx.fillText('spanning forest (full graph)',pad2+15,25);
+  ctx.setLineDash([2,3]); ctx.strokeStyle='rgba(152,128,255,0.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad2+172,22); ctx.lineTo(pad2+184,22); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(152,128,255,0.7)'; ctx.fillText('path (reference)',pad2+187,25);
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+// ============================================================
+// STRUC-PERC DATASET FORMAT v1.0
+// Produces a ZIP: summary.json + layers.csv + components.csv + outliers.json
+// 100–1000× smaller than full JSON dump. Analysis-ready.
+// ============================================================
+
+const VERDICT_CODE = {
+  FULL_PERCOLATION:0, GIANT_COMPONENT_PERCOLATION:1,
+  TAIL_FRAGMENTATION:2, HARD_FRAGMENTATION:3,
+};
+
+function inferInputName(){
+  if(currentInputName) return currentInputName;
+  const adapter = document.getElementById('domainAdapter')?.value || 'generic';
+  const n = lastResult?.ladder?.length || 'n';
+  return `${adapter}_ladder_${n}`;
+}
+
+function makeRunId(r){
+  const base = inferInputName()
+    .toLowerCase()
+    .replace(/[^a-z0-9_\-]/g,'_')
+    .replace(/_+/g,'_')
+    .replace(/^_|_$/g,'');
+  const ts = new Date().toISOString().replace(/[:.T]/g,'-').slice(0,19);
+  return `${base}_${ts}${r.runStatus==='STOPPED'?'_partial':''}`;
+}
+
+function buildSummary(r, runId){
+  const v=r.verdict||{};
+  const last=r.layers[r.layers.length-1];
+  const outItems=r.outliers?.items||[];
+  // Safe max for outlier gaps (outItems is always small)
+  const maxOutGap=outItems.length>0 ? outItems.reduce((m,o)=>o.d>m?o.d:m,-Infinity) : null;
+  return {
+    meta:{
+      run_id: runId,
+      instrument: 'STRUC-PERC-I',
+      version: '2.4.0',
+      timestamp: new Date().toISOString(),
+      domain: r.adapterMeta?.domain||'GENERIC',
+      adapter: r.adapterMeta?.transform||'generic',
+      n_elements: r.ladder.length,
+      n_gaps: r.n,
+      n_gaps_original: r.nOrig,
+      median_gap: r.med,
+      k_min: r.kMin,
+      k_max: r.kMax,
+      k_points: r.kPoints,
+      layers_completed: r.layersCompleted,
+      run_status: r.runStatus,
+      downsampled: r.downsampled,
+      approximate_mode: r.approximateMode||false,
+      hard_cap: HARD_CAP,
+    },
+    verdict:{
+      class: v.tier||'UNKNOWN',
+      code: VERDICT_CODE[v.tier]??-1,
+      giant_ratio: v.giantRatio??null,
+      final_chain_size: r.finalChainSize,
+      isolated_vertices: v.isolated??null,
+      kappa_connect: r.kapConn??r.extResult?.kapConnect??null,
+      kappa_plateau: r.extResult?.kapPlateau??null,
+      kappa_star: r.kapStar??null,
+    },
+    theory:{
+      necessary_direction: v.tier==='HARD_FRAGMENTATION'?'TRIGGERED':'CONSISTENT',
+      sufficient_direction: 'OPEN',
+      theorem1_triggered: v.tier==='HARD_FRAGMENTATION' && !r.approximateMode,
+      theorem1_caveat: r.approximateMode
+        ? 'APPROXIMATE MODE: downsampled ladder — Theorem 1 not assertable on surrogate data' : null,
+      partial_run_caveat: r.runStatus==='STOPPED'
+        ? `Results based on ${r.layersCompleted}/${r.layersTotal} layers only` : null,
+    },
+    structure:{
+      edge_density_final: last?.densF??null,
+      mean_degree_final:  last?.meanDeg??null,
+      components_final:   last?.nCompsFull??null,
+      fragmentation_index:last?.fragI??null,
+      giant_ratio_final:  last?.giantR??null,
+      is_connected_final: last?.isCon??null,
+    },
+    outliers: r.outliers?{
+      count:   r.outliers.count,
+      fraction:r.outliers.fraction,
+      threshold:r.outliers.threshold,
+      max_gap: maxOutGap,
+      max_to_median_ratio: r.outliers.maxRatio,
+      tail_dominance: r.outliers.tailDominance,
+    }:null,
+    adaptive_extension: r.extResult?{
+      kappa_connect: r.extResult.kapConnect,
+      kappa_plateau: r.extResult.kapPlateau,
+      final_giant_ratio: r.extResult.finalGiantRatio,
+    }:null,
+  };
+}
+
+function buildLayersCSV(r){
+  const hdr='kappa,eps,giant_ratio,n_components,mean_degree,edge_density,is_connected,in_chain';
+  const rows=r.layers.map((l,k)=>
+    [l.kap.toFixed(8), l.eps.toFixed(8),
+     l.giantR.toFixed(8), l.nCompsFull,
+     l.meanDeg.toFixed(6), l.densF.toFixed(8),
+     l.isCon, r.chainLayers[k]>=0].join(',')
+  );
+  // Append adaptive extension rows (marked with is_connected flag, no chain data)
+  if(r.extResult?.extLayers){
+    r.extResult.extLayers.forEach(el=>{
+      rows.push([el.kap.toFixed(8), el.eps!=null ? el.eps.toFixed(8) : '',
+        el.giantR.toFixed(8),el.nComps,'','',el.isConnected,'ext'].join(','));
+    });
+  }
+  return [hdr,...rows].join('\n');
+}
+
+function buildComponentsCSV(r){
+  // Final κ-layer only — sorted by size desc
+  const hdr='kappa,component_id,size,fraction,is_chain_component';
+  const last=r.layers[r.layers.length-1];
+  if(!last) return hdr;
+  const chainIdx=r.chainLayers[r.layers.length-1];
+  const sorted=[...last.compsFull]
+    .map((c,ci)=>({c,ci}))
+    .sort((a,b)=>b.c.length-a.c.length);
+  const rows=sorted.map(({c,ci},rank)=>
+    [last.kap.toFixed(8), rank, c.length,
+     (c.length/r.n).toFixed(8),
+     ci===chainIdx].join(',')
+  );
+  return [hdr,...rows].join('\n');
+}
+
+function buildOutliersJSON(r){
+  if(!r.outliers||r.outliers.count===0) return null;
+  return JSON.stringify({
+    count: r.outliers.count,
+    fraction: r.outliers.fraction,
+    threshold: r.outliers.threshold,
+    max_to_median_ratio: r.outliers.maxRatio,
+    method: '10 * median(Delta)',
+    indices: r.outliers.items.map(o=>o.i),
+    gaps:    r.outliers.items.map(o=>+o.d.toFixed(8)),
+  }, null, 2);
+}
+
+async function exportDataset(){
+  if(!lastResult) return;
+  const runId=makeRunId(lastResult);
+  const summary=buildSummary(lastResult, runId);
+  const layersCSV=buildLayersCSV(lastResult);
+  const componentsCSV=buildComponentsCSV(lastResult);
+  const outliersJSON=buildOutliersJSON(lastResult);
+
+  // Estimate sizes for log
+  const szSummary=JSON.stringify(summary,null,2).length;
+  const szLayers=layersCSV.length;
+  const total=szSummary+szLayers+(componentsCSV?.length||0)+(outliersJSON?.length||0);
+  log(`Dataset export: ${runId}`, 'accent');
+  log(`summary.json ${(szSummary/1024).toFixed(1)} KB · layers.csv ${(szLayers/1024).toFixed(1)} KB · total ~${(total/1024).toFixed(1)} KB`, 'pass');
+
+  const zip=new JSZip();
+  const folder=zip.folder(runId);
+  folder.file('summary.json',  JSON.stringify(summary,null,2));
+  folder.file('layers.csv',    layersCSV);
+  folder.file('components.csv',componentsCSV);
+  if(outliersJSON) folder.file('outliers.json', outliersJSON);
+
+  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=runId+'.zip';
+  a.click();
+}
+
+// ============================================================
+// FULL JSON EXPORT (legacy — for deep debugging only)
+// ============================================================
+function exportJSON(){
+  if(!lastResult) return;
+  if((lastResult.n || 0) > 20000){
+    log('Full JSON export blocked for large ladders — file would be hundreds of MB. Use ⬇ EXPORT DATASET instead.', 'warn');
+    return;
+  }
+  const out={
+    instrument:'STRUC-PERC-I', version:'2.4.0',
+    timestamp:new Date().toISOString(),
+    runStatus:{
+      status:lastResult.runStatus,           // 'COMPLETE' | 'STOPPED'
+      layersCompleted:lastResult.layersCompleted,
+      layersTotal:lastResult.layersTotal,
+      partial: lastResult.runStatus==='STOPPED',
+      warning: lastResult.runStatus==='STOPPED'
+        ? `RUN WAS STOPPED AFTER ${lastResult.layersCompleted} OF ${lastResult.layersTotal} LAYERS. `+
+          'Verdict and metrics reflect only completed layers. Results are PARTIAL.'
+        : null,
+    },
+    graphModel:{
+      operative:'FULL_PAIRWISE',
+      definition:'(i,j) in E_kappa iff |Delta_i - Delta_j| <= epsilon(kappa)',
+      continuity:'STRICT_NO_RESET',
+      reference:'PRP manuscript Definition 8, Remark 4.1',
+    },
+    theoreticalStatus:{
+      necessaryDirection:'ESTABLISHED — Theorem 1 (PRP): HARD_FRAGMENTATION implies USL violation',
+      sufficientDirection:'OPEN_CONJECTURE — Conjecture 1 (PRP): percolation implies admissibility (unproven)',
+      tailFragmentation:'INCONCLUSIVE — Theorem 1 does not apply; outlier-driven fragmentation, not structural',
+    },
+    secondaryDiagnostics:{
+      pathSubgraph:'PATH_SUBGRAPH shown in projectionComparison only. Not operative.',
+      localInversion:'ADJACENT_DESCENT_PROXY — lower-order proxy. Not used in verdict.',
+      percStrength:'HEURISTIC — fraction of κ-layers in chain. No theoretical grounding.',
+    },
+    adapterMeta: lastResult.adapterMeta,
+    input:{
+      ladder:lastResult.ladder, gaps:lastResult.D,
+      medianGap:lastResult.med, kGrid:lastResult.kGrid,
+      kPoints:lastResult.kPoints, kMin:lastResult.kMin, kMax:lastResult.kMax,
+      nOrig:lastResult.nOrig, nWorking:lastResult.n,
+      downsampled:lastResult.downsampled, hardCap:HARD_CAP,
+    },
+    verdict:{
+      tier:lastResult.verdict?.tier,
+      giantRatio:lastResult.verdict?.giantRatio,
+      isolated:lastResult.verdict?.isolated,
+      isolatedFraction:lastResult.verdict?.isolatedFraction,
+      largeNonGiant:lastResult.verdict?.largeNonGiant,
+      theorem1Applies: lastResult.verdict?.tier==='HARD_FRAGMENTATION',
+    },
+    outliers:{
+      count:lastResult.outliers?.count,
+      fraction:lastResult.outliers?.fraction,
+      threshold:lastResult.outliers?.threshold,
+      maxRatio:lastResult.outliers?.maxRatio,
+      indices:lastResult.outliers?.items?.map(o=>o.i),
+    },
+    adaptiveExtension: lastResult.extResult ? {
+      kapConnect:lastResult.extResult.kapConnect,
+      kapPlateau:lastResult.extResult.kapPlateau,
+      finalGiantRatio:lastResult.extResult.finalGiantRatio,
+      layers:lastResult.extResult.extLayers,
+    } : null,
+    percolation:{
+      chainLayers:lastResult.chainLayers,
+      chainCount:lastResult.chainCount,
+      totalLayers:lastResult.kPoints,
+      finalChainSize:lastResult.finalChainSize,
+      totalVertices:lastResult.n,
+      firstFragmentLayer:lastResult.firstFragment<lastResult.kPoints? lastResult.firstFragment : null,
+      kapStar:lastResult.kapStar,
+      kapConn:lastResult.kapConn,
+    },
+    layers:lastResult.layers.map((l,k)=>({
+      layer:k+1, kappa:l.kap, epsilon:l.eps,
+      full:{
+        edgeCount:l.ecF, density:l.densF, meanDegree:l.meanDeg,
+        componentCount:l.nCompsFull, giantRatio:l.giantR,
+        fragIndex:l.fragI, isConnected:l.isCon,
+        components:l.compsFull.map(c=>({size:c.length,vertices:c})),
+      },
+      inChain:lastResult.chainLayers[k]>=0,
+      projectionComparison:{
+        pathSubgraph:{edgeCount:l.ecP, componentCount:l.nCompsPath,
+          components:l.compsPath.map(c=>({size:c.length,vertices:c}))},
+      },
+    })),
+  };
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download = lastResult.runStatus==='STOPPED'
+    ? 'struc_perc_i_v2_3_2_result_PARTIAL.json'
+    : 'struc_perc_i_v2_3_2_result.json';
+  a.click();
+}
+</script>
+
+<script>
+window.runAnalysisFromData = async function(ladder) {
+  try {
+    // 1. Inject data into UI
+    document.getElementById('ladderInput').value = ladder.join(' ');
+
+    // Optional: ensure adapter default
+    const adapter = document.getElementById('domainAdapter');
+    if (adapter && !adapter.value) adapter.value = 'generic';
+
+    // 2. Run your existing pipeline
+    await runAnalysis();
+
+    // 3. Extract result from global state
+    const r = window.lastResult;
+
+    if (!r) {
+      return { error: "No result produced" };
+    }
+
+    // 4. Return CLEAN MINIMAL JSON (for Python)
+    return {
+      verdict: r.verdict?.tier,
+      giantRatio: r.verdict?.giantRatio,
+      isolated: r.verdict?.isolated,
+      isolatedFraction: r.verdict?.isolatedFraction,
+      kappa_connect: r.kapConn || r.extResult?.kapConnect || null,
+      kappa_star: r.kapStar || null,
+      n: r.n,
+      tailDominance: r.outliers?.tailDominance ?? null,
+      layersCompleted: r.layersCompleted,
+      runStatus: r.runStatus
+    };
+
+  } catch (err) {
+    return { error: err.toString() };
+  }
+};
+
+// ============================================================
+// BATCH MODE CONTROLLER · v2.5.0
+// Architecture: controller layer only.
+// Core engine (runAnalysis, graph logic) is UNTOUCHED.
+// Every ladder is an independent evaluation via runAnalysisFromData().
+// Max 500 ladders; sequential only; 10 ms default yield delay.
+// ============================================================
+
+const BATCH_MAX = 500;
+
+let batchQueue   = [];   // [{name, data: number[]}]
+let batchResults = [];   // [{name, n, verdict, giantRatio, ...}]
+let batchRunning = false;
+let batchStop    = false;
+
+// ── File parsing ─────────────────────────────────────────────
+async function parseBatchFiles(fileList) {
+  const ladders = [];
+  const maxFiles = Math.min(
+    parseInt(document.getElementById('batchMaxFiles').value) || BATCH_MAX,
+    BATCH_MAX
+  );
+
+  for (const file of fileList) {
+    if (ladders.length >= maxFiles) break;
+
+    // Accept .txt and .csv only
+    if (!/\.(txt|csv)$/i.test(file.name)) continue;
+
+    const text = await file.text();
+
+    const values = text
+      .split(/[\s,\n]+/)
+      .map(Number)
+      .filter(v => !isNaN(v) && isFinite(v))
+      .sort((a, b) => a - b);
+
+    if (values.length >= 3) {
+      ladders.push({ name: file.name, data: values });
+    }
+  }
+
+  return ladders;
+}
+
+// ── File input listener ───────────────────────────────────────
+document.getElementById('batchFileInput').addEventListener('change', async function(e) {
+  const ladders = await parseBatchFiles(e.target.files);
+  batchQueue = ladders;
+  updateBatchLoadStatus(`✓ Loaded ${ladders.length} ladder(s)`, 'ok');
+  this.value = ''; // allow re-loading same files
+});
+
+// ── Drag-and-drop ─────────────────────────────────────────────
+const batchDropZone = document.getElementById('batchDropZone');
+
+batchDropZone.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  this.classList.add('drag-over');
+});
+batchDropZone.addEventListener('dragleave', function() {
+  this.classList.remove('drag-over');
+});
+batchDropZone.addEventListener('drop', async function(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  const ladders = await parseBatchFiles(e.dataTransfer.files);
+  batchQueue = ladders;
+  updateBatchLoadStatus(`✓ Loaded ${ladders.length} ladder(s) via drop`, 'ok');
+});
+
+// ── Status helpers ────────────────────────────────────────────
+function updateBatchLoadStatus(msg, cls = '') {
+  const el = document.getElementById('batchLoadStatus');
+  el.textContent = msg;
+  el.className = 'file-status ' + cls;
+}
+
+function setBatchProgress(pct, phase, done, total) {
+  document.getElementById('batchProgress').style.display = '';
+  document.getElementById('batchBarFill').style.width = (pct * 100).toFixed(1) + '%';
+  document.getElementById('batchPhaseLabel').textContent = phase;
+  document.getElementById('batchCountLabel').textContent =
+    total > 0 ? `${done} / ${total}` : '';
+}
+
+function hideBatchProgress() {
+  document.getElementById('batchProgress').style.display = 'none';
+}
+
+// ── Verdict CSS class ─────────────────────────────────────────
+function verdictClass(tier) {
+  const map = {
+    FULL_PERCOLATION:          't1',
+    GIANT_COMPONENT_PERCOLATION: 't2',
+    TAIL_FRAGMENTATION:        't3',
+    HARD_FRAGMENTATION:        't4',
+  };
+  return map[tier] || '';
+}
+
+// ── Row renderer ──────────────────────────────────────────────
+function appendBatchRow(idx) {
+  const r  = batchResults[idx];
+  const tb = document.getElementById('batchTbody');
+  const tr = document.createElement('tr');
+
+  const vc    = verdictClass(r.verdict);
+  const gr    = (r.giantRatio != null) ? (r.giantRatio * 100).toFixed(2) + '%' : '—';
+  const kc    = (r.kappa_connect != null) ? r.kappa_connect.toFixed(5) : '—';
+  const iso   = (r.isolated != null) ? r.isolated : '—';
+  const vtext = r.verdict ? r.verdict.replace(/_/g, ' ') : (r.error || 'ERROR');
+
+  tr.innerHTML = `
+    <td>${idx + 1}</td>
+    <td style="color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${r.name}">${r.name}</td>
+    <td>${r.n ?? '—'}</td>
+    <td class="${vc}">${vtext}</td>
+    <td>${gr}</td>
+    <td>${kc}</td>
+    <td>${iso}</td>
+    <td class="${r.runStatus === 'COMPLETE' ? 'pass' : 'warn'}">${r.runStatus ?? (r.error ? 'ERR' : '—')}</td>
+  `;
+
+  tb.appendChild(tr);
+
+  // Keep badge count live
+  document.getElementById('batchResultsBadge').textContent = `${batchResults.length} runs`;
+}
+
+// ── Main runner ───────────────────────────────────────────────
+async function runBatchUI() {
+  if (batchRunning) return;
+  if (batchQueue.length === 0) {
+    updateBatchLoadStatus('⚠ No ladders loaded — drop files first', 'warn');
+    return;
+  }
+
+  batchRunning = true;
+  batchStop    = false;
+  batchResults = [];
+
+  // Clear results table
+  document.getElementById('batchTbody').innerHTML = '';
+  document.getElementById('batchResultsBadge').textContent = '0 runs';
+  document.getElementById('batchResultsPanel').style.display = '';
+
+  // UI state
+  document.getElementById('batchRunBtn').disabled = true;
+  document.getElementById('batchStopBtn').style.display = '';
+
+  const delay = Math.max(0, parseInt(document.getElementById('batchDelay').value) || 10);
+  const total = batchQueue.length;
+
+  updateBatchLoadStatus(`Running batch — ${total} ladders…`, 'warn');
+
+  for (let i = 0; i < total; i++) {
+    if (batchStop) break;
+
+    const item = batchQueue[i];
+    setBatchProgress(i / total, `Processing ${item.name}`, i, total);
+
+    // ── THE ONLY ENGINE CALL ──────────────────────────────────
+    const result = await window.runAnalysisFromData(item.data);
+    // ─────────────────────────────────────────────────────────
+
+    batchResults.push({ name: item.name, ...result });
+    appendBatchRow(batchResults.length - 1);
+
+    // Yield to browser — keeps UI responsive
+    if (delay > 0) await new Promise(r => setTimeout(r, delay));
+  }
+
+  const completed = batchResults.length;
+  const stopped   = batchStop && completed < total;
+
+  setBatchProgress(1, stopped ? `STOPPED at ${completed}/${total}` : 'Batch complete', completed, total);
+  updateBatchLoadStatus(
+    stopped
+      ? `⚠ Stopped — ${completed} of ${total} processed`
+      : `✓ Batch complete — ${completed} ladders processed`,
+    stopped ? 'warn' : 'ok'
+  );
+
+  document.getElementById('batchRunBtn').disabled = false;
+  document.getElementById('batchStopBtn').style.display = 'none';
+  batchRunning = false;
+}
+
+// ── Stop ──────────────────────────────────────────────────────
+function stopBatch() {
+  batchStop = true;
+}
+
+// ── Clear ─────────────────────────────────────────────────────
+function clearBatch() {
+  if (batchRunning) return;
+  batchQueue   = [];
+  batchResults = [];
+  document.getElementById('batchTbody').innerHTML = '';
+  document.getElementById('batchResultsBadge').textContent = '0 runs';
+  document.getElementById('batchResultsPanel').style.display = 'none';
+  hideBatchProgress();
+  updateBatchLoadStatus('');
+}
+
+// ── Export helpers ────────────────────────────────────────────
+function downloadFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function exportBatchCSV() {
+  if (!batchResults.length) return;
+  const header = 'name,n,verdict,giantRatio,kappa_connect,isolated,isolatedFraction,tailDominance,runStatus';
+  const rows = batchResults.map(r => [
+    JSON.stringify(r.name),
+    r.n       ?? '',
+    r.verdict ?? (r.error || 'ERROR'),
+    r.giantRatio != null ? r.giantRatio.toFixed(6) : '',
+    r.kappa_connect != null ? r.kappa_connect.toFixed(6) : '',
+    r.isolated ?? '',
+    r.isolatedFraction != null ? r.isolatedFraction.toFixed(6) : '',
+    r.tailDominance != null ? r.tailDominance.toFixed(6) : '',
+    r.runStatus ?? '',
+  ].join(','));
+  downloadFile([header, ...rows].join('\n'), 'struc_perc_batch_results.csv');
+}
+
+function exportBatchJSON() {
+  if (!batchResults.length) return;
+  downloadFile(JSON.stringify(batchResults, null, 2), 'struc_perc_batch_results.json');
+}
+</script>
+
+</body>
+</html>
