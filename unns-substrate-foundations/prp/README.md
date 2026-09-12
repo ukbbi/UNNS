@@ -1,203 +1,161 @@
-# 🧩 PRP — Percolative Realizability & Structural Regime Analysis
+# Percolative Realizability Program (PRP)
+
+This directory contains the principal public research artifacts of the **Percolative Realizability Program (PRP)** within the UNNS Substrate research program.
+
+PRP develops and tests **realizability** as a structural coordinate complementary to **admissibility**. The program asks not only whether a structural ladder is internally admissible under the UNNS grammar, but also whether its admissible relations form a connected, traversable, or fragmented realizability structure.
+
+The work in this directory is centered on **STRUC-PERC-I**, the percolative-realizability instrument, and on cross-domain comparison between STRUC-I admissibility diagnostics and realizability diagnostics.
 
 ---
 
-## 🧭 Overview
+## Research context
 
-This module implements and validates the **Percolative Realizability Principle (PRP)** within the  
-**UNNS (Unbounded Nested Number Sequences) Substrate**.
+PRP forms part of the broader UNNS regime-synthesis program.
 
-It combines:
+A public conceptual introduction to the dual-coordinate view is available at:
 
-- core theoretical manuscripts  
-- STRUC-PERC-I chamber outputs  
-- cross-domain structural analyses  
+**The Two Coordinates of Reality**  
+https://unns.tech/labs/the-two-coordinates-of-reality
 
----
+The frozen cross-domain input corpus used by this research is archived separately on Zenodo:
 
-## 🔑 Core Idea
+**UNNS Percolative Realizability Corpus — Cross-Domain Structural Ladder Dataset v1.0**  
+https://zenodo.org/records/22707994  
+DOI: **10.5281/zenodo.22707994**
 
-> **Realizability is not defined by continuity —  
-> it is defined by structural admissibility under fragmentation.**
-
----
-
-## 🧱 Conceptual Components
-
-### 1. Percolative Realizability Principle (PRP)
-
-- Real systems remain admissible even under fragmentation  
-- Connectivity loss ≠ structural failure  
+The Zenodo record is the archival reference for the frozen research inputs. This GitHub directory contains the theory, instrument, analyses, figures, manuscripts, public article, and result artifacts that operate on or interpret that corpus.
 
 ---
 
-### 2. Dual Observability
+## Core idea
 
-All structures must be evaluated in two spaces:
+PRP treats structural realizability as a second coordinate of physical organization.
 
-| Layer | Description |
-|------|------------|
-| Metric space | classical observables (signals, geometry) |
-| Structural space | admissibility, regime stability (UNNS) |
+In simplified form:
 
----
+- **admissibility** asks whether a ladder satisfies the relevant structural constraints;
+- **realizability** asks whether admissible relations actually form a connected structural world;
+- together they provide a two-coordinate description of structural existence.
 
-### 3. STRUC-PERC-I Outputs
+STRUC-PERC-I analyzes the connectivity structure of admissible relations and distinguishes regimes such as:
 
-Empirical validation showing:
+- full connectivity;
+- giant-component realizability;
+- tail / fragmented realizability;
+- hard disconnection.
 
-- fragmentation does NOT violate the Universal Structural Law  
-- admissibility persists beyond connectivity collapse  
-
----
-
-## 📂 Contents
-
-### 🔬 Analysis & Interactive Reports
-
-- `struc_perc_corpus_analysis.html`  
-  → regime analysis across datasets  
-
-- `cross_instrument_corpus_analysis.html`  
-  → cross-domain structural invariance  
-
-- `unns_realizability_article.html`  
-  → narrative exposition of realizability  
+This enables direct comparison between local admissibility and global realizability across heterogeneous physical domains.
 
 ---
 
-### ⚙️ STRUC-PERC-I Chamber
+## Contents
 
-- `struc_perc_i_v2_4_0.html`
+### `struc_perc_i_v2_4_0.html`
 
-Implements:
+Frozen interactive / browser-readable build of **STRUC-PERC-I v2.4.0**.
 
-- percolative fragmentation  
-- regime classification  
-- admissibility tracking  
+This is the principal realizability instrument represented in this directory.
 
----
+### `struc_perc_corpus_analysis.html`
 
-### 📊 Data & Outputs
+Cross-domain STRUC-PERC-I corpus analysis.
 
-- `percolation_output.zip`  
-  → raw + processed STRUC-PERC-I outputs  
+It summarizes the behavior of the frozen PRP corpus under the percolative-realizability instrument and provides the domain-level realizability comparison.
 
----
+### `cross_instrument_corpus_analysis.html`
 
-### 🖼️ Visuals
+Cross-instrument comparison of structural results.
 
-- `perc_1.png`  
-- `perc_2.png`  
+This artifact compares admissibility-side and realizability-side observables and examines where the two structural coordinates agree, diverge, or provide complementary information.
 
-Illustrate:
+### `unns_realizability_article.html`
 
-- fragmentation regimes  
-- connectivity decay  
-- persistence zones  
+Public-facing research article presenting the realizability framework, the STRUC-PERC-I instrument, the four realizability classes, and the relation between admissibility and connectivity.
 
----
+### `Percolative_Realizability_Principle.pdf`
 
-### 📄 Core Manuscripts
+Research manuscript developing the **Percolative Realizability Principle** and its structural interpretation.
 
-- `Percolative_Realizability_Principle.pdf`  
-- `Structural_Realizability_Dual_Observability.pdf`  
+### `Structural_Realizability_Dual_Observability.pdf`
 
----
+Research manuscript on the dual-observability framework linking structural admissibility and structural realizability.
 
-## 📊 Key Findings
+### `percolation output/`
 
-### 1. Fragmentation ≠ Structural Failure
+Frozen PRP / STRUC-PERC-I result material used by the analyses in this directory.
 
-- connectivity can collapse  
-- structure remains admissible  
+This is an **output/result directory**, not the canonical source of the cross-domain input corpus. The input corpus is archived on Zenodo.
 
-→ **supports Universal Structural Law (USL)**  
+### `perc_1.png`
+
+Figure used in the PRP analysis / manuscript material.
+
+### `perc_2.png`
+
+Figure used in the PRP analysis / manuscript material.
 
 ---
 
-### 2. Regime Stability Under Collapse
+## Data separation
 
-Across all datasets:
+Large input corpora are **not duplicated in this GitHub directory**.
 
-- HARD / SOFT / CRITICAL regimes persist  
+The canonical frozen input dataset is archived on Zenodo:
 
-→ regime identity is **invariant under fragmentation**
+https://zenodo.org/records/22707994
 
----
+This separation is intentional:
 
-### 3. Cross-Domain Structural Invariance
+- **Zenodo** provides the persistent archival record for frozen data inputs, provenance, manifests, checksums, and source-specific attribution;
+- **GitHub** provides the research structure around those inputs: theory, instruments, analyses, manuscripts, figures, public exposition, and result artifacts.
 
-Identical structural responses observed across:
-
-- physical datasets  
-- synthetic ladders  
-- multi-instrument sources  
-
-→ confirms **UNNS universality**
+When reproducing PRP results, use the Zenodo corpus corresponding to the cited dataset version rather than reconstructing inputs from unrelated external sources.
 
 ---
 
-### 4. Dual Observability is Necessary
+## Reproducibility
 
-| Approach | Result |
-|--------|--------|
-| metric-only | false collapse detection |
-| structural | persistent admissibility |
+For reproducible use of this material:
 
-→ both are required
+1. obtain the frozen corpus from the Zenodo record;
+2. preserve the package and file hashes recorded in its `CHECKSUMS.sha256` and `MANIFEST.csv`;
+3. use the corresponding frozen STRUC-PERC-I instrument version represented in this directory;
+4. keep source-derived attribution and provenance intact;
+5. distinguish input data, instrument output, and interpretive analysis.
 
----
-
-## ⚠️ Important Note on Metric Outputs
-
-Metric-derived outputs (e.g. CSV inside archives):
-
-- reflect geometry, not structure  
-- may falsely indicate:
-  - collapse  
-  - signal loss  
-  - regime failure  
+The archived corpus spans atomic, molecular, nuclear, cosmological, geodetic, atmospheric, condensed-matter, solar, adversarial, and methodological-control families.
 
 ---
 
-### ✅ Always prioritize:
+## Provenance and rights
 
-- ladder structure  
-- admissibility margins  
-- regime classification  
+The PRP corpus is mixed-source.
 
----
+UNNS contributes corpus selection, ladder construction and transformation, synthetic/control generation where applicable, normalization, packaging, provenance records, structural-analysis instruments, and interpretive framework.
 
-## 🔗 Role in UNNS Framework
+Underlying third-party source rights remain with their respective rights holders. Package-specific attribution and provenance are documented in the Zenodo deposit.
 
-This module directly supports:
+See the Zenodo record for:
 
-- Universal Structural Law (USL)  
-- Structural Regime Theory  
-- Operator-driven transitions (α, μ)  
-- STRUC-I / STRUC-PERC-I ecosystem  
+- `ATTRIBUTION.md`;
+- `SOURCE_PROVENANCE.md`;
+- `MANIFEST.csv`;
+- `CHECKSUMS.sha256`.
 
 ---
 
-## 🚀 How to Use
+## Citation
 
-1. Open locally (recommended):
+For the frozen input corpus, cite:
 
-struc_perc_i_v2_4_0.html
+> UNNS Collective. (2026). *UNNS Percolative Realizability Corpus — Cross-Domain Structural Ladder Dataset v1.0* [Dataset]. Zenodo. https://doi.org/10.5281/zenodo.22707994
 
-
-2. Explore:
-- fragmentation scenarios  
-- regime transitions  
-
-3. Cross-check with:
-- corpus analysis reports  
-- PRP manuscripts  
+For theory, instruments, manuscripts, analyses, and public explanatory material, cite the corresponding artifact or publication directly.
 
 ---
 
-## 🧠 Conceptual Summary
+## Status
 
-> **Realizability is not about staying connected.**  
-> **It is about remaining structurally admissible under transformation.**
+This directory represents the developed **PRP branch of the UNNS regime-synthesis program**.
+
+It should remain focused on the scientific body of the PRP work itself. Large frozen input datasets belong in the linked Zenodo archive rather than being duplicated here.
