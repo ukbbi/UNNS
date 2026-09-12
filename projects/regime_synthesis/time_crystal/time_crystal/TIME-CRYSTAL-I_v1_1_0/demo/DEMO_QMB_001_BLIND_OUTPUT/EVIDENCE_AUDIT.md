@@ -1,0 +1,110 @@
+# TIME-CRYSTAL-I Evidence Audit — demo_qmb_001
+
+**Verdict:** `MANY_BODY_TIME_CRYSTAL_ADMISSIBLE`
+
+## Sector audit
+
+### Temporal
+Status: **SUPPORTED**
+
+- FOUND: `temporal/trajectories.csv`
+
+Metrics:
+```json
+{
+  "q0": 2,
+  "closure": 0.95404668877447,
+  "family_contrast": 0.9474533525643904,
+  "shuffle_p": 0.004975124378109453
+}
+```
+
+### Rigidity
+Status: **SUPPORTED**
+
+- FOUND: `rigidity/initial_state_trajectories.csv`
+- MISSING: `rigidity/perturbation_scan.csv`
+
+Metrics:
+```json
+{
+  "initial_state": {
+    "pair_count": 3,
+    "significant_pairs": 3,
+    "significant_fraction": 1.0,
+    "universality": {
+      "mean": 0.3950714057465728,
+      "sd": 0.00551674512814917,
+      "CV": 0.013963919048315046,
+      "U": 0.9860360809516849
+    },
+    "pairs": [
+      {
+        "pair": "neel|ground",
+        "q0": 2,
+        "family_contrast": 0.39271954920991387,
+        "shuffle_p": 0.004975124378109453
+      },
+      {
+        "pair": "neel|random",
+        "q0": 2,
+        "family_contrast": 0.39112034123821643,
+        "shuffle_p": 0.004975124378109453
+      },
+      {
+        "pair": "ground|random",
+        "q0": 2,
+        "family_contrast": 0.4013743267915881,
+        "shuffle_p": 0.004975124378109453
+      }
+    ],
+    "pass": true
+  }
+}
+```
+
+### Collective
+Status: **SUPPORTED**
+
+- FOUND: `collective/size_scaling.csv`
+- FOUND: `collective/initial_state_order.csv`
+- FOUND: `collective/perturbation_profile.csv`
+
+Metrics:
+```json
+{
+  "size_scaling": {
+    "alpha_log_size": 0.3736804347281694,
+    "pass": true
+  },
+  "initial_state_order": {
+    "mean_abs": 0.39087258339799996,
+    "sd_abs": 0.014877506366102172,
+    "CV": 0.038062291902815244,
+    "n": 500,
+    "pass": true
+  },
+  "perturbation_profile": {
+    "IPR": 0.17718408086901546,
+    "N_eff": 5.643847884614741,
+    "note": "supporting evidence only; not sufficient by itself"
+  }
+}
+```
+
+### Spectral
+Status: **SUPPORTED**
+
+- FOUND: `spectral/typicality.csv`
+
+Metrics:
+```json
+{
+  "K_min": 0.0,
+  "K_max": 20.0,
+  "initial_mean_abs": 0.40495696777199996,
+  "final_mean_abs": 0.39642000999000004,
+  "retention": 0.9789188519734116
+}
+```
+
