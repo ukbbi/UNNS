@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JHTDB Turbulence Pilot B — UNNS Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --charge:#c0d830;--frac:#e050c0;--comp:#50c0e0;--absent:#e09030;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1480px;margin:0 auto;padding:40px 32px 120px}
+
+/* HERO */
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 140% at 92% 50%,rgba(0,200,240,.05),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:linear-gradient(to bottom,transparent,var(--charge),var(--frac),var(--comp),var(--absent),transparent)}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.03em;max-width:900px;margin-bottom:18px;line-height:1.7}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-charge{color:var(--charge);border-color:var(--charge);background:rgba(192,216,48,.07)}
+.b-frac{color:var(--frac);border-color:var(--frac);background:rgba(224,80,192,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* SECTION */
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+/* TABLES */
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+/* VERDICTS */
+.vfp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--green);color:var(--green);background:rgba(0,221,136,.08);border-radius:2px;white-space:nowrap}
+.vhf{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--red);color:var(--red);background:rgba(224,64,64,.08);border-radius:2px;white-space:nowrap}
+.vgp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.08);border-radius:2px;white-space:nowrap}
+.vts{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--amber);color:var(--amber);background:rgba(240,160,48,.08);border-radius:2px;white-space:nowrap}
+.vst{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--charge);color:var(--charge);background:rgba(192,216,48,.08);border-radius:2px;white-space:nowrap}
+.vbs{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--violet);color:var(--violet);background:rgba(144,96,224,.08);border-radius:2px;white-space:nowrap}
+.vwp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.05);border-radius:2px;white-space:nowrap}
+.vcr{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--accent);color:var(--accent);background:rgba(0,200,240,.08);border-radius:2px;white-space:nowrap}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+/* PRINCIPLE BOX */
+.principle{background:rgba(0,200,240,.04);border:1px solid rgba(0,200,240,.2);border-left:3px solid var(--accent);padding:14px 18px;margin-bottom:10px}
+.principle-eye{font-size:8px;letter-spacing:.16em;color:var(--accent);font-family:var(--mono);margin-bottom:6px}
+.principle p{font-size:11.5px;color:var(--text);line-height:1.75}
+.principle code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* LAYER CARDS */
+.layer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.layer-card{background:var(--panel);border:1px solid var(--border2);padding:12px 14px;position:relative;overflow:hidden}
+.layer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.lc-a::before{background:var(--charge)}
+.lc-b::before{background:var(--frac)}
+.lc-c::before{background:var(--comp)}
+.lc-d::before{background:var(--absent)}
+.layer-card-id{font-family:var(--display);font-size:20px;font-weight:700;line-height:1;margin-bottom:2px}
+.lc-a .layer-card-id{color:var(--charge)}
+.lc-b .layer-card-id{color:var(--frac)}
+.lc-c .layer-card-id{color:var(--comp)}
+.lc-d .layer-card-id{color:var(--absent)}
+.layer-card-name{font-size:8px;font-family:var(--mono);color:var(--text2);letter-spacing:.08em;margin-bottom:8px}
+.layer-card-n{font-family:var(--display);font-size:30px;line-height:1;margin-bottom:3px}
+.layer-card-sub{font-size:8px;color:var(--text2);font-family:var(--mono)}
+
+/* TRANSITION FAMILY / BAR */
+.tf-bar{display:flex;align-items:center;gap:6px;margin:2px 0}
+.tf-track{flex:1;height:5px;background:var(--border2);position:relative;min-width:60px}
+.tf-fill{height:100%;position:absolute;left:0;top:0;background:var(--comp)}
+.tf-lbl{font-family:var(--mono);font-size:9px;min-width:150px;color:var(--text2)}
+.tf-n{font-family:var(--mono);font-size:9px;min-width:70px;text-align:right;color:var(--text)}
+
+/* TWO-COL GRID */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+
+/* CAUTION */
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+/* PHASE CHAIN */
+.chain{display:flex;align-items:center;gap:0;margin-bottom:14px;overflow-x:auto}
+.chain-node{background:var(--panel);border:1px solid var(--border2);padding:8px 14px;font-size:8px;font-family:var(--mono);letter-spacing:.08em;white-space:nowrap;flex-shrink:0}
+.chain-node.done{border-color:var(--green);color:var(--green)}
+.chain-arrow{font-size:10px;color:var(--dim);padding:0 4px;flex-shrink:0}
+
+/* CLOSING BOX */
+.closing{background:rgba(212,160,32,.04);border:1px solid rgba(212,160,32,.25);border-left:3px solid var(--gold);padding:16px 20px;margin-top:28px}
+.closing h3{font-family:var(--display);font-size:12px;color:var(--gold);letter-spacing:.1em;margin-bottom:10px}
+.closing p{font-size:10.5px;color:var(--text);line-height:1.8;margin-bottom:8px}
+.closing p:last-child{margin-bottom:0}
+.closing code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* SCOPE NOTE */
+.scope{font-size:9px;color:var(--dim);background:var(--panel2);border:1px solid var(--border2);padding:8px 12px;margin-bottom:10px;font-family:var(--mono);line-height:1.6}
+
+/* SEP */
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+@media(max-width:1100px){.layer-grid{grid-template-columns:repeat(2,1fr)}.row4{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.row2,.row3,.row4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · TURBULENCE BRANCH · JHTDB PILOT-B REPLICATION · 2026-09-07</div>
+  <h1>JHTDB Turbulence — Pilot B Replication</h1>
+  <div class="hero-sub">A preregistered, protocol-frozen independent-sample replication of the Pilot-A scale–time routing result on Johns Hopkins Turbulence Database forced-isotropic data (<code style="color:var(--charge);font-family:var(--mono)">isotropic1024coarse</code>). Pilot B uses a spatially and temporally disjoint 256³ cutout processed through the unmodified STRUC-ROUTE-I v0.1.2 → ROUTE_LADDER_EXTRACT → STRUC-I v1.0.4 / STRUC-PERC-I v2.5.0 → STITCH-MECH v0.1.1 pipeline, scored against the eight preregistered R1–R8 criteria.</div>
+  <div class="badges">
+    <span class="badge b-green">SOURCE ACQUIRED · HASHED · ZERO OVERLAP WITH PILOT A</span>
+    <span class="badge b-green">R1 PASS — CONSTRAINED_ROUTING</span>
+    <span class="badge b-green">R2 PASS — D□ ≪ N0, p=0.0099</span>
+    <span class="badge b-red">R3 FAIL — D_STITCH Structural Boundary (Aκ=0.852)</span>
+    <span class="badge b-green">R4 PASS — FULL_PERCOLATION, 336 gaps</span>
+    <span class="badge b-green">R5 PASS — survives N1, p=0.0099</span>
+    <span class="badge b-green">R6 PASS — survives N2, p=0.0099</span>
+    <span class="badge b-red">R7 FAIL — tail enrichment 1.0×, p=1.0</span>
+    <span class="badge b-green">R8 PASS — branching localization</span>
+    <span class="badge b-violet">CLASSIFICATION: STRUCTURAL PARTIAL REPLICATION</span>
+    <span class="badge b-charge">MECHANISM: SURVIVES_LOCAL_GEOMETRY_CONTROL</span>
+    <span class="badge b-dim">RECORD STATUS: FINAL_FROZEN_RESULT</span>
+  </div>
+  <div class="hero-meta">
+    <span>Instruments: STRUC-ROUTE-I v0.1.2 · ROUTE_LADDER_EXTRACT · STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0 · STITCH-MECH v0.1.1</span>
+    <span>Pilot B: 256³ cutout, x/y/z 513:768 (1-based) · frames 501:510 · t=1.000–1.018</span>
+    <span>Pilot A reference: x/y/z 1:256 · frames 1:10 · t=0.000–0.018</span>
+    <span>Objects: 10,515 · Relations: 14,169 supplied / 14,118 eligible</span>
+    <span>Status: R1–R8 frozen · protocol locked · no post-hoc threshold changes</span>
+  </div>
+</div>
+
+<!-- ════════════════════ §0 PIPELINE ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§0</span> PILOT-B PIPELINE — ALL STAGES COMPLETE</div>
+<div class="chain">
+  <div class="chain-node done">SOURCE<br>ACQUISITION</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHYSICAL<br>ADAPTER</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">ROUTE-I<br>PRIMARY</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">ROUTE-I<br>SENSITIVITY [1,2,4,8]</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">ROUTE LADDER<br>EXTRACTION</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">STRUC-I<br>v1.0.4</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">STRUC-PERC-I<br>v2.5.0</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">STITCH-MECH<br>N1 / N2</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">R1–R8<br>SYNTHESIS</div>
+</div>
+
+<div class="principle">
+  <div class="principle-eye">INTEGRATED PRINCIPLE</div>
+  <p><strong style="color:var(--accent)">The route mechanism reproduces; the full cross-chamber signature does not.</strong><br>
+  An exceptionally low scale–time stitching defect (D□) reappears in a spatially and temporally disjoint turbulent sample and survives both a distance-controlled (N1) and a distance-plus-feature-controlled (N2) graph-local null. But the scalar STRUC-I admissibility of that same ladder falls short of Geometric Persistence, and the frozen upper-decile physical-intensity localization does not survive a zero-heavy D□ distribution. Route-mechanism reproducibility and full cross-chamber/localization reproducibility are separable questions — Pilot A alone could not distinguish them.</p>
+</div>
+
+<!-- ════════════════════ §1 INDEPENDENT SAMPLE ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§1</span> INDEPENDENT PHYSICAL SAMPLE — ZERO OVERLAP WITH PILOT A</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">2.0GB</div><div class="stat-lbl">SOURCE SIZE (2,015,302,728 B)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">SPATIAL GRID-POINT OVERLAP</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">TIME-FRAME OVERLAP</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">256³</div><div class="stat-lbl">CUTOUT SHAPE (BOTH PILOTS)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">10</div><div class="stat-lbl">STORED FRAMES (BOTH PILOTS)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.982</div><div class="stat-lbl">PHYSICAL-TIME GAP FROM PILOT A END</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">PASS</div><div class="stat-lbl">HDF5 VALIDATION STATUS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--dim)">90</div><div class="stat-lbl">JHTDB getCutout QUERIES (Z-SLABS)</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">PILOT A ↔ PILOT B — SOURCE SELECTION <span class="psub">· isotropic1024coarse · same forced-isotropic regime</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Property</th><th>Pilot A (frozen baseline)</th><th>Pilot B (this record)</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--text2)">spatial cube, 1-based</td><td>x/y/z 1:256</td><td style="color:var(--comp)">x/y/z 513:768</td></tr>
+        <tr><td style="color:var(--text2)">spatial cube, 0-based</td><td>x/y/z 0:255</td><td style="color:var(--comp)">x/y/z 512:767</td></tr>
+        <tr><td style="color:var(--text2)">stored frames, 1-based</td><td>1:10</td><td style="color:var(--frac)">501:510</td></tr>
+        <tr><td style="color:var(--text2)">stored dt</td><td>0.002</td><td>0.002</td></tr>
+        <tr><td style="color:var(--text2)">physical time window</td><td>0.000 – 0.018</td><td style="color:var(--frac)">1.000 – 1.018</td></tr>
+        <tr><td style="color:var(--text2)">selection basis</td><td>—</td><td>half-domain translation of Pilot-A origin in x/y/z; 256-gridpoint unselected band each axis</td></tr>
+        <tr><td style="color:var(--text2)">source SHA-256</td><td style="font-size:8px">e32c9225af656a2f0fa0a704be7dcd78fa12efc1a01b880af23eb45e02108a46</td><td style="font-size:8px;color:var(--comp)">977e6ab3c437252395dc7f7185af1829619fe1eec754f59f5f3ceae2ca0b969f</td></tr>
+        <tr><td style="color:var(--text2)">selection-lock SHA-256</td><td>—</td><td style="font-size:8px;color:var(--comp)">385cca0a0b28ac3b17f757ef3b7fcfe2c1954423ceb5376b927b67633a40875e</td></tr>
+        <tr><td style="color:var(--text2)">acquisition method</td><td>Hugging Face mirror (ArielLubonja)</td><td>authenticated JHTDB getCutout, serial, 30-depth z-slabs</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Independence rule satisfied exactly: 0 shared spatial grid points, 0 shared stored frames. Pilot B is a valid preregistered replication sample, not an internal subdivision of Pilot A.</div>
+</div>
+
+<!-- ════════════════════ §2 PRIMARY ROUTE-I ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§2</span> PRIMARY STRUC-ROUTE-I RESULT <span class="psub" style="color:var(--dim);font-size:8px">· run jhtdb_pilot_b_20260907_145640</span></div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">10,515</div><div class="stat-lbl">STRUCTURAL OBJECTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">14,169</div><div class="stat-lbl">RELATION CANDIDATES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">14,118</div><div class="stat-lbl">ELIGIBLE RELATIONS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">4,830</div><div class="stat-lbl">SCALE SOURCE NODES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">8,806</div><div class="stat-lbl">TIME SOURCE NODES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">3,962</div><div class="stat-lbl">STITCH-ELIGIBLE SOURCES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">100/100</div><div class="stat-lbl">NULLS ACCEPTED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">REAL-GRAPH NULL MATCHES</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">VERDICT <span class="psub">· 2/3 SUPPORTIVE · 0 OPPOSING</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span class="vcr" style="font-size:11px;padding:6px 14px">CONSTRAINED_ROUTING</span>
+      <span style="font-size:8px;font-family:var(--mono);color:var(--text2)">tags: PERSISTENT_TIME · LOW_STITCH_DEFECT</span>
+    </div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Test</th><th>Real</th><th>Null mean</th><th>z_fav</th><th>p_fav</th><th>Read</th></tr></thead>
+        <tbody>
+          <tr><td>scale persistence</td><td>0.346636</td><td>0.346954</td><td>−0.590</td><td>0.742574</td><td style="color:var(--dim)">not significant</td></tr>
+          <tr><td style="color:var(--frac)">time persistence</td><td>0.500681</td><td>0.488256</td><td>12.520</td><td style="color:var(--green)">0.009901</td><td style="color:var(--green)">supported</td></tr>
+          <tr><td style="color:var(--absent)">D□ stitch defect</td><td>0.014172</td><td>0.996336</td><td>868.885</td><td style="color:var(--green)">0.009901</td><td style="color:var(--green)">strongly supported</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Null model: directed layer-degree-preserving endpoint swaps · 7,047,947 / 7,056,000 swap attempts accepted · mean mobility 0.998859 · 100 unique null graphs (fraction 1.0).</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">STITCH DEFECT BY SCALE INDEX <span class="psub">· STITCH_BY_SCALE.csv</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>scale idx</th><th>eligible</th><th>mean D□</th><th>mean enstrophy</th><th>mean diss. proxy</th></tr></thead>
+        <tbody>
+          <tr><td>0 (×1→×2)</td><td>2,609</td><td>0.014390</td><td>1585.76</td><td>336.50</td></tr>
+          <tr><td>1 (×2→×4)</td><td>1,234</td><td>0.015058</td><td>950.92</td><td>170.91</td></tr>
+          <tr><td>2 (×4→×8)</td><td>114</td><td>0.000195</td><td>488.31</td><td>86.84</td></tr>
+          <tr><td>3 (×8→×16)</td><td>5</td><td>0.0</td><td>208.01</td><td>58.87</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Population collapses sharply above the ×4 scale gap (114 → 5 eligible) — consistent with the sparsest layer contributing negligibly, as in Pilot A.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">STITCH DEFECT BY TIME INDEX <span class="psub">· STITCH_BY_TIME.csv · 9 consecutive frame transitions</span></div>
+  <div style="padding:4px 0">
+    <div class="tf-bar"><span class="tf-lbl">t01→t02 (n=455)</span><div class="tf-track"><div class="tf-fill" style="width:54.7%"></div></div><span class="tf-n">D=0.01126</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t02→t03 (n=442)</span><div class="tf-track"><div class="tf-fill" style="width:41.2%"></div></div><span class="tf-n">D=0.00848</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t03→t04 (n=438)</span><div class="tf-track"><div class="tf-fill" style="width:67.4%"></div></div><span class="tf-n">D=0.01387</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t04→t05 (n=438)</span><div class="tf-track"><div class="tf-fill" style="width:72.2%"></div></div><span class="tf-n">D=0.01486</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t05→t06 (n=430)</span><div class="tf-track"><div class="tf-fill" style="width:49.9%"></div></div><span class="tf-n">D=0.01028</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t06→t07 (n=444)</span><div class="tf-track"><div class="tf-fill" style="width:85.0%"></div></div><span class="tf-n">D=0.01751</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t07→t08 (n=439)</span><div class="tf-track"><div class="tf-fill" style="width:100%;background:var(--frac)"></div></div><span class="tf-n">D=0.02063</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t08→t09 (n=435)</span><div class="tf-track"><div class="tf-fill" style="width:63.6%"></div></div><span class="tf-n">D=0.01313</span></div>
+    <div class="tf-bar"><span class="tf-lbl">t09→t10 (n=441)</span><div class="tf-track"><div class="tf-fill" style="width:84.9%"></div></div><span class="tf-n">D=0.01752</span></div>
+  </div>
+  <div class="caution">Bar width ∝ mean D□ relative to the largest transition (t06→t07, D=0.0206). No single frame transition dominates — the low stitching defect is distributed evenly across the 10-frame window, not concentrated at one time boundary.</div>
+</div>
+
+<!-- ════════════════════ §3 SENSITIVITY ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§3</span> ROUTE-I SENSITIVITY [1,2,4,8] <span class="psub">· factor-16 layer excluded · run jhtdb_pilot_b_20260907_154708</span></div>
+
+<div class="panel">
+  <div class="panel-title">PRIMARY vs SENSITIVITY <span class="psub">· qualitative verdict unchanged after removing the sparsest scale layer</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Metric</th><th>Primary (factors 1,2,4,8,16)</th><th>Sensitivity (factors 1,2,4,8)</th></tr></thead>
+      <tbody>
+        <tr><td>verdict</td><td><span class="vcr">CONSTRAINED_ROUTING</span></td><td><span class="vcr">CONSTRAINED_ROUTING</span></td></tr>
+        <tr><td>objects</td><td>10,515</td><td>10,487</td></tr>
+        <tr><td>relations supplied / eligible</td><td>14,169 / 14,118</td><td>14,139 / 14,088</td></tr>
+        <tr><td>scale persistence (real / null / p_fav)</td><td>0.346636 / 0.346954 / 0.742574</td><td>0.462341 / 0.462809 / 0.742574</td></tr>
+        <tr><td style="color:var(--frac)">time persistence (real / null / p_fav)</td><td>0.500681 / 0.488256 / 0.009901</td><td>0.500709 / 0.488242 / 0.009901</td></tr>
+        <tr><td style="color:var(--absent)">D□ (real / null / p_fav)</td><td>0.014172 / 0.996336 / 0.009901</td><td>0.014190 / 0.996365 / 0.009901</td></tr>
+        <tr><td>stitch-eligible sources</td><td>3,962</td><td>3,957</td></tr>
+        <tr><td>null mean mobility / unique fraction</td><td>0.998859 / 1.0</td><td>0.998869 / 1.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Removing factor-16 raises absolute scale-persistence values (fewer, coarser scale gaps) but leaves every qualitative read — verdict, time-persistence significance, D□ significance — unchanged. The primary Pilot-B result is not an artifact of the sparsest scale layer.</div>
+</div>
+
+<!-- ════════════════════ §4 LADDER EXTRACTION ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§4</span> ROUTE LADDER EXTRACTION <span class="psub">· ROUTE_EXTRACT_PB_v013 · frozen deterministic descendants</span></div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">3,962</div><div class="stat-lbl">D_STITCH POPULATION</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">8,806</div><div class="stat-lbl">P_TIME POPULATION</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">4,830</div><div class="stat-lbl">P_SCALE POPULATION</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--dim)">0</div><div class="stat-lbl">DEDUPLICATION / JITTER / SMOOTHING APPLIED</div></div>
+</div>
+<div class="scope">Rules preserved from the frozen extractor: duplicates preserved, no jitter, no smoothing, no normalization or rescaling, stable ordering only, full stored numeric precision. Canonical STRUC-I inputs: ladders\struc_i\pilot_b\. Canonical STRUC-PERC-I inputs: ladders\struc_perc_i\pilot_b\.</div>
+
+<!-- ════════════════════ §5 STRUC-I ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§5</span> STRUC-I v1.0.4 — ADMISSIBILITY RESULTS <span class="psub">· 2,000-MC primary · 10,000-MC precision rerun</span></div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRUC-I RESULTS <span class="psub">· 40 κ steps · κ ∈ [0.01, 1]</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Ladder</th><th>MC</th><th>Regime / State</th><th>mean Aκ</th><th>min Aκ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--absent)">D_STITCH</td><td>2,000</td><td><span class="vts">STRUCTURAL BOUNDARY / TRANS.</span></td><td style="color:var(--amber)">0.851863</td><td>0.7925</td></tr>
+          <tr><td style="color:var(--comp)">P_SCALE</td><td>2,000</td><td><span class="vhf">STRUCTURAL INSTABILITY / RANDOM</span></td><td>0.564837</td><td>0.5395</td></tr>
+          <tr><td style="color:var(--frac)">P_TIME</td><td>2,000</td><td><span class="vhf">STRUCTURAL INSTABILITY / RANDOM</span></td><td>0.597188</td><td>0.562</td></tr>
+          <tr style="background:rgba(240,160,48,.05)"><td style="color:var(--frac)">P_TIME (precision)</td><td style="color:var(--amber)">10,000</td><td><span class="vhf">STRUCTURAL INSTABILITY / RANDOM</span></td><td>0.598235</td><td>0.5784</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">D_STITCH sits 0.078 below the 0.93 Geometric-Persistence boundary (not boundary-adjacent; no rerun triggered). P_TIME sits only 0.0028 below the 0.60 Structural-Instability/Boundary line, so the frozen precision rule triggered a 10,000-MC rerun — final distance 0.0018, regime unchanged.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Aκ vs κ — D_STITCH (2,000 MC) <span class="psub">· domain 0.75–1.00 · dashed = 0.93 GP boundary</span></div>
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+      <rect x="0" y="0" width="800" height="150" fill="#07101e"/>
+      <line x1="0" y1="41.8" x2="800" y2="41.8" stroke="#f0a030" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+      <text x="798" y="38" font-family="Courier New" font-size="8" fill="#f0a030" text-anchor="end">0.93 GP boundary</text>
+      <polyline points="6.0,51.8 26.2,63.6 46.4,78.4 66.6,82.8 86.8,77.9 107.0,82.0 127.2,88.4 147.4,75.6 167.6,75.9 187.8,91.2 208.1,89.5 228.3,92.8 248.5,84.6 268.7,89.7 288.9,95.3 309.1,96.1 329.3,112.2 349.5,100.7 369.7,95.1 389.9,103.8 410.1,88.2 430.3,81.3 450.5,73.3 470.7,89.7 490.9,76.9 511.1,79.7 531.3,93.6 551.5,102.0 571.7,97.9 591.9,91.2 612.2,72.6 632.4,69.2 652.6,73.1 672.8,88.2 693.0,69.5 713.2,65.9 733.4,72.3 753.6,50.3 773.8,48.2 794.0,63.1"
+        fill="none" stroke="#e09030" stroke-width="1.5"/>
+      <text x="6" y="146" font-family="Courier New" font-size="7" fill="#6080a0">κ=0.01</text>
+      <text x="760" y="146" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="end">κ=1.0</text>
+    </svg>
+    <div class="caution" style="margin-top:8px">D_STITCH oscillates between Aκ≈0.79 and Aκ≈0.92 across the full κ range without ever reaching 0.93 — a stable Structural-Boundary read, not a transient dip.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Aκ vs κ — P_TIME (10,000-MC precision rerun) <span class="psub">· domain 0.55–0.70 · dashed = 0.60 SI/SB boundary</span></div>
+  <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    <rect x="0" y="0" width="800" height="150" fill="#07101e"/>
+    <line x1="0" y1="91.3" x2="800" y2="91.3" stroke="#e04040" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+    <text x="798" y="88" font-family="Courier New" font-size="8" fill="#e04040" text-anchor="end">0.60 SI/SB boundary</text>
+    <polyline points="6.0,99.9 26.2,106.2 46.4,92.5 66.6,104.7 86.8,94.7 107.0,97.1 127.2,95.4 147.4,98.8 167.6,98.2 187.8,100.9 208.1,95.4 228.3,102.3 248.5,98.8 268.7,97.3 288.9,101.8 309.1,96.5 329.3,102.9 349.5,103.7 369.7,108.5 389.9,95.4 410.1,95.1 430.3,92.7 450.5,97.2 470.7,95.6 490.9,109.8 511.1,99.9 531.3,95.9 551.5,95.3 571.7,96.7 591.9,96.0 612.2,93.0 632.4,105.8 652.6,90.5 672.8,101.6 693.0,46.2 713.2,46.9 733.4,52.3 753.6,70.8 773.8,68.3 794.0,73.0"
+      fill="none" stroke="#e050c0" stroke-width="1.5"/>
+    <text x="6" y="146" font-family="Courier New" font-size="7" fill="#6080a0">κ=0.01</text>
+    <text x="760" y="146" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="end">κ=1.0</text>
+  </svg>
+  <div class="caution" style="margin-top:8px">P_TIME sits just below the 0.60 line through most of the κ range and only crosses it at the largest perturbation scales (κ&gt;0.55) — the boundary-adjacency that triggered the frozen 10,000-MC precision rerun is visible directly in the curve.</div>
+</div>
+
+<!-- ════════════════════ §6 STRUC-PERC-I ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§6</span> STRUC-PERC-I v2.5.0 — CONNECTIVITY RESULTS</div>
+
+<div class="panel">
+  <div class="panel-title">STRUC-PERC-I BATCH <span class="psub">· 3 ladders · all FULL_PERCOLATION</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Ladder</th><th>Verdict</th><th>n</th><th>Giant ratio</th><th>Isolated</th><th>κ_conn</th><th>Tail dominance</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--absent)">D_STITCH</td><td><span class="vfp">FULL PERCOLATION</span></td><td>336</td><td style="color:var(--green)">1.000000</td><td>0</td><td>10</td><td>0.3067</td></tr>
+        <tr><td style="color:var(--comp)">P_SCALE</td><td><span class="vfp">FULL PERCOLATION</span></td><td>3</td><td>1.000000</td><td>0</td><td>0.010</td><td>0</td></tr>
+        <tr><td style="color:var(--frac)">P_TIME</td><td><span class="vfp">FULL PERCOLATION</span></td><td>9</td><td>1.000000</td><td>0</td><td>1</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">D_STITCH clears the preregistered R4 minimum (giant ratio ≥ 0.95, gap vertices ≥ 100) decisively at 336 gap vertices post-deduplication — the substantive connectivity condition passes without qualification.</div>
+</div>
+
+<!-- ════════════════════ §7 STITCH-MECH ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§7</span> STITCH-MECH v0.1.1 — HARDER NULL HIERARCHY</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">SURVIVES</div><div class="stat-lbl">MECHANISTIC VERDICT</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">0.01417</div><div class="stat-lbl">REAL D□ (EXACTLY REPRODUCED)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">98.87</div><div class="stat-lbl">z_fav vs N1</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">35.97</div><div class="stat-lbl">z_fav vs N2</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0.0099</div><div class="stat-lbl">p_fav (N0 · N1 · N2, ALL)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--dim)">100/100</div><div class="stat-lbl">N1 · N2 UNIQUE NULLS</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">NULL HIERARCHY — D□ COLLAPSE <span class="psub">· N0 → N1 → N2 → REAL</span></div>
+    <div style="padding:4px 0">
+      <div class="tf-bar"><span class="tf-lbl">N0 — degree-preserving</span><div class="tf-track"><div class="tf-fill" style="width:99.6%;background:var(--dim)"></div></div><span class="tf-n">0.99634</span></div>
+      <div class="tf-bar"><span class="tf-lbl">N1 — +distance-stratified</span><div class="tf-track"><div class="tf-fill" style="width:32.6%;background:var(--comp)"></div></div><span class="tf-n">0.32620</span></div>
+      <div class="tf-bar"><span class="tf-lbl">N2 — +feature-stratified</span><div class="tf-track"><div class="tf-fill" style="width:21.1%;background:var(--frac)"></div></div><span class="tf-n">0.21145</span></div>
+      <div class="tf-bar"><span class="tf-lbl" style="color:var(--absent)">REAL</span><div class="tf-track"><div class="tf-fill" style="width:1.4%;background:var(--absent)"></div></div><span class="tf-n" style="color:var(--absent)">0.01417</span></div>
+    </div>
+    <div class="caution">Bar width ∝ mean D□ on a 0–1 domain. Local graph geometry (N1: distance-stratified; N2: +feature-similarity-stratified) explains part of the N0 contrast but leaves a large residual — the real defect is 93.3% below N2, not merely below N0.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">N1 / N2 QUALITY GATES</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Null</th><th>Mean D□</th><th>real/null</th><th>mean mobility</th><th>unique graphs</th><th>real match</th></tr></thead>
+        <tbody>
+          <tr><td>N1 (distance-stratified)</td><td>0.326204</td><td>0.04344</td><td>0.044413</td><td>100/100</td><td>0</td></tr>
+          <tr><td>N2 (+feature-stratified)</td><td>0.211452</td><td>0.06702</td><td>0.014257</td><td>100/100</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">All thresholds passed with no quality flags: min mean-mobility 0.01, min unique-graph fraction 0.1, max real-match fraction 0.9. N1/N2 remain graph-local geometry controls, not exact field-level overlap/IoU-preserving surrogates.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §7.1</div>
+  <div class="finding-title">The route mechanism reproduces in an independent sample and survives a harder null than Pilot A used alone</div>
+  <p>Pilot B's real D□ (0.014172) is 46.8% lower than Pilot A's real D□ (0.026628) — the independent sample shows an <em>even stronger</em> stitching-defect suppression than the original. Critically, this low value is not a fragile threshold effect: it clears the same N1/N2 quality gates Pilot A cleared, with comparable null means (N1: 0.3262 vs Pilot A's 0.3291; N2: 0.2115 vs Pilot A's 0.2236). The N1/REAL and N2/REAL ratios are in fact larger in Pilot B (23.0× and 14.9× respectively) than in Pilot A (12.4× and 8.4×), meaning the separation between the real defect and its local-geometry-controlled null is more pronounced in the replication sample, not less.</p>
+</div>
+
+<!-- ════════════════════ §8 R7 PHYSICAL LOCALIZATION ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§8</span> R7 — PHYSICAL-INTENSITY LOCALIZATION <span class="psub">· frozen selector fails; alternative tail definitions are descriptive</span></div>
+
+<div class="scope" style="border-color:rgba(224,64,64,.3);background:rgba(224,64,64,.04)">R7 status: FAIL. The frozen 90th-percentile D□ threshold evaluates to exactly 0.0 in Pilot B because more than 90% of the 3,962 eligible objects sit at D□=0 — the nominal "top-decile" tail is therefore the entire eligible population (3,962/3,962), producing degenerate enrichment (1.0×) and p=1.0 for both physical-intensity measures. This is recorded as a genuine FAIL, not UNDERRESOLVED — the frozen protocol reserves that label for unusable N1/N2 tests, not for a degenerate quantile selector. No post-hoc tail repair is applied.</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">FROZEN 90TH-PERCENTILE SELECTOR <span class="psub">· degenerate at D□=0</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Measure</th><th>Enrichment</th><th>Permutation p</th><th>topD n / eligible n</th></tr></thead>
+        <tbody>
+          <tr><td>enstrophy</td><td style="color:var(--red)">1.0×</td><td style="color:var(--red)">1.0</td><td>3,962 / 3,962</td></tr>
+          <tr><td>dissipation proxy</td><td style="color:var(--red)">1.0×</td><td style="color:var(--red)">1.0</td><td>3,962 / 3,962</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Ordinary (unconditioned) rank association remains positive: ρ(D□,enstrophy)=0.1021, ρ(D□,diss.proxy)=0.1266. Geometry-conditioned partial-rank: ρ_partial(D□,enstrophy)=0.1027, ρ_partial(D□,diss.proxy)=0.0494 — both weaker than Pilot A's 0.179 / 0.120, but still positive.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">ALTERNATIVE FIXED-THRESHOLD TAILS <span class="psub">· descriptive only — do not override R7</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Tail def.</th><th>n</th><th>frac.</th><th>D median</th><th>enstrophy ratio</th><th>diss. ratio</th></tr></thead>
+        <tbody>
+          <tr><td>top10pct (frozen)</td><td>3,962</td><td>100%</td><td>0.0</td><td style="color:var(--dim)">n/a</td><td style="color:var(--dim)">n/a</td></tr>
+          <tr><td>top5pct</td><td>199</td><td>5.02%</td><td>0.2286</td><td style="color:var(--green)">1.187×</td><td style="color:var(--green)">1.290×</td></tr>
+          <tr><td>top1pct</td><td>41</td><td>1.03%</td><td>0.5887</td><td style="color:var(--green)">1.129×</td><td style="color:var(--green)">1.272×</td></tr>
+          <tr><td>D□ ≥ 0.1</td><td>144</td><td>3.63%</td><td>0.3341</td><td style="color:var(--green)">1.173×</td><td style="color:var(--green)">1.275×</td></tr>
+          <tr><td>D□ ≥ 0.5</td><td>33</td><td>0.83%</td><td>0.6516</td><td style="color:var(--green)">1.151×</td><td style="color:var(--green)">1.321×</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Every fixed-value tail definition (not conditioned on the corpus's rank quantiles) shows consistent, modest positive enrichment (1.13×–1.32×) in both physical-intensity measures. This is a genuine descriptive signal — but it is not the preregistered test, and it does not convert the frozen R7 FAIL into a pass.</div>
+  </div>
+</div>
+
+<div class="finding" style="border-left-color:var(--red)">
+  <div class="finding-num" style="color:var(--red)">FINDING §8.1</div>
+  <div class="finding-title">R7 fails on a selector artifact, not on an absence of physical association</div>
+  <p>Pilot B's D□ distribution has an unusually large atom at exactly zero (p90 = 0.0), which breaks the frozen quantile-based tail selector rather than reflecting a genuine absence of physical localization. Fixed-value alternative thresholds all recover the same qualitative direction seen in Pilot A — elevated D□ co-occurs with elevated enstrophy and dissipation proxy — at roughly half Pilot A's effect size (Pilot A: 2.50× / 1.87×; Pilot B alternative tails: ~1.13–1.32×). The preregistered protocol correctly records this as FAIL rather than rescuing it, since no alternative tail definition was specified in advance. The honest reading is: physical-intensity localization is present but weaker and its measurement is selector-sensitive in this sample.</p>
+</div>
+
+<!-- ════════════════════ §9 R8 RESTRUCTURING ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§9</span> R8 — RESTRUCTURING LOCALIZATION</div>
+
+<div class="panel">
+  <div class="panel-title">BRANCH / MERGE CONTRASTS <span class="psub">· D□ median difference, flagged vs unflagged</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Flag</th><th>Flagged n</th><th>Unflagged n</th><th>Median Δ</th><th>p</th><th>Replicated positive?</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--green)">scale branching</td><td>237</td><td>3,725</td><td style="color:var(--green)">+0.0002180745</td><td style="color:var(--green)">0.00019996</td><td><span class="vfp">YES</span></td></tr>
+        <tr><td style="color:var(--green)">time branching</td><td>81</td><td>3,881</td><td style="color:var(--green)">+0.0000111951</td><td style="color:var(--green)">0.00019996</td><td><span class="vfp">YES</span></td></tr>
+        <tr><td style="color:var(--dim)">scale merging</td><td>178</td><td>3,784</td><td>0</td><td>1.0</td><td><span class="vhf">NO</span></td></tr>
+        <tr><td style="color:var(--dim)">time merging</td><td>60</td><td>3,902</td><td>0</td><td>1.0</td><td><span class="vhf">NO</span></td></tr>
+        <tr><td style="color:var(--dim)">any restructuring</td><td>428</td><td>3,534</td><td>0</td><td>1.0</td><td><span class="vhf">NO</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">R8 requires at least one preregistered restructuring class to show significantly higher D□ (p&lt;0.05); Pilot B has two. Pilot A additionally showed significant time merging and any-restructuring contrasts that Pilot B does not reproduce — the replicated statement is narrower: noncommutation localizes around branching events specifically, not merging or aggregate restructuring.</div>
+</div>
+
+<!-- ════════════════════ §10 MASTER R1-R8 TABLE ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§10</span> FROZEN R1–R8 CRITERION RECORD — FINAL</div>
+
+<div class="panel" style="border-left:3px solid var(--violet)">
+  <div class="panel-title" style="color:var(--violet)">CLASSIFICATION: STRUCTURAL PARTIAL REPLICATION <span class="psub">· R2 passes and R5+R6 pass, but R3 (cross-chamber) fails — not CORE REPLICATION</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>ID</th><th>Frozen test</th><th>Pilot-B result</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--accent)">R1</td><td>ROUTE-I organization</td><td>CONSTRAINED_ROUTING; 100/100 nulls; mobility 0.998859; unique 1.0; match 0</td><td><span class="vfp">PASS</span></td></tr>
+        <tr><td style="color:var(--accent)">R2</td><td>Primary N0 stitching contrast</td><td>real D□ 0.0141716 ≪ N0 mean 0.9963364; z 868.885; p 0.009901</td><td><span class="vfp">PASS</span></td></tr>
+        <tr style="background:rgba(224,64,64,.06)"><td style="color:var(--red)">R3</td><td>STRUC-I D_STITCH → Geometric Persistence or stronger</td><td>mean Aκ 0.851863; Structural Boundary</td><td><span class="vhf">FAIL</span></td></tr>
+        <tr><td style="color:var(--accent)">R4</td><td>STRUC-PERC-I substantive connectivity</td><td>FULL_PERCOLATION; giant ratio 1.0; gaps 336; isolated 0</td><td><span class="vfp">PASS</span></td></tr>
+        <tr><td style="color:var(--accent)">R5</td><td>N1 survival</td><td>N1 usable; mean 0.326204; real/N1 0.043444; z 98.874; p 0.009901</td><td><span class="vfp">PASS</span></td></tr>
+        <tr><td style="color:var(--accent)">R6</td><td>N2 survival <span class="psub">(principal mechanism target)</span></td><td>N2 usable; mean 0.211452; real/N2 0.067021; z 35.966; p 0.009901</td><td><span class="vfp">PASS</span></td></tr>
+        <tr style="background:rgba(224,64,64,.06)"><td style="color:var(--red)">R7</td><td>Physical-intensity localization</td><td>enstrophy enrichment 1.0, p 1.0; dissipation enrichment 1.0, p 1.0</td><td><span class="vhf">FAIL</span></td></tr>
+        <tr><td style="color:var(--accent)">R8</td><td>Restructuring localization</td><td>scale branching p=0.00020; time branching p=0.00020</td><td><span class="vfp">PASS</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Additional preregistered robustness result (not itself an R-criterion): the [1,2,4,8] scale sensitivity run also returns CONSTRAINED_ROUTING.</div>
+</div>
+
+<!-- ════════════════════ §11 PILOT A vs B ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§11</span> DIRECT PILOT A ↔ PILOT B COMPARISON</div>
+
+<div class="panel">
+  <div class="panel-title">CRITERION-BY-CRITERION COMPARISON <span class="psub">· Pilot-A column maps the frozen baseline onto the later R1–R8 definitions for direct comparison</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>ID</th><th>Pilot A baseline</th><th>Pilot B replication</th><th>Comparison</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td><span class="vfp">PASS</span> — CONSTRAINED_ROUTING</td><td><span class="vfp">PASS</span> — CONSTRAINED_ROUTING</td><td style="color:var(--green)">route verdict replicates</td></tr>
+        <tr><td>R2</td><td><span class="vfp">PASS</span> — real 0.026628 vs N0 0.996786, p 0.009901</td><td><span class="vfp">PASS</span> — real 0.014172 vs N0 0.996336, p 0.009901</td><td style="color:var(--green)">primary stitching contrast replicates</td></tr>
+        <tr style="background:rgba(224,64,64,.05)"><td>R3</td><td><span class="vfp">PASS</span> — Aκ 0.971708, Geometric Persistence</td><td><span class="vhf">FAIL</span> — Aκ 0.851863, Structural Boundary</td><td style="color:var(--red)">cross-chamber admissibility does not replicate</td></tr>
+        <tr><td>R4</td><td><span class="vfp">PASS</span> — giant 0.996933, gaps 652, isolated 0</td><td><span class="vfp">PASS</span> — giant 1.0, gaps 336, isolated 0</td><td style="color:var(--green)">substantive connectivity replicates</td></tr>
+        <tr><td>R5</td><td><span class="vfp">PASS</span> — N1 0.329091, p 0.009901</td><td><span class="vfp">PASS</span> — N1 0.326204, p 0.009901</td><td style="color:var(--green)">distance-controlled survival replicates</td></tr>
+        <tr><td>R6</td><td><span class="vfp">PASS</span> — N2 0.223649, p 0.009901</td><td><span class="vfp">PASS</span> — N2 0.211452, p 0.009901</td><td style="color:var(--green)">harder mechanism target replicates</td></tr>
+        <tr style="background:rgba(224,64,64,.05)"><td>R7</td><td><span class="vfp">PASS</span> — enstrophy 2.50×, diss. 1.87×, p≈0.0002</td><td><span class="vhf">FAIL</span> — both 1.0×, p=1.0</td><td style="color:var(--red)">tail localization does not replicate</td></tr>
+        <tr><td>R8</td><td><span class="vfp">PASS</span> — branching + time merging + any restructure</td><td><span class="vfp">PASS</span> — scale + time branching</td><td style="color:var(--amber)">replicates in narrower form</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">QUANTITATIVE STITCHING HIERARCHY <span class="psub">· D□ across N0 → N1 → N2 → REAL</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Quantity</th><th>Pilot A</th><th>Pilot B</th><th>B relative to A</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--absent)">REAL D□</td><td>0.026628</td><td>0.014172</td><td style="color:var(--green)">46.8% lower</td></tr>
+        <tr><td>N0 mean</td><td>0.996786</td><td>0.996336</td><td>0.045% lower</td></tr>
+        <tr><td>N1 mean</td><td>0.329091</td><td>0.326204</td><td>0.88% lower</td></tr>
+        <tr><td>N2 mean</td><td>0.223649</td><td>0.211452</td><td>5.45% lower</td></tr>
+        <tr><td>N1 / REAL</td><td>12.36×</td><td style="color:var(--comp)">23.02×</td><td style="color:var(--comp)">larger separation in B</td></tr>
+        <tr><td>N2 / REAL</td><td>8.40×</td><td style="color:var(--comp)">14.92×</td><td style="color:var(--comp)">larger separation in B</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">The independent null hierarchy (N0/N1/N2) stays numerically close between pilots while the real Pilot-B stitching defect is substantially smaller — the replicated feature is not a fragile threshold effect but the persistence of an exceptionally low real D□ relative to closely comparable constrained-null ensembles.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §11.1</div>
+  <div class="finding-title">Two separable questions: route-mechanism reproducibility vs. full cross-chamber signature reproducibility</div>
+  <p>Across two independent forced-isotropic samples: CONSTRAINED_ROUTING reappears, real D□ is far below N0 in both, low real D□ survives both N1 and N2 in both, N1/N2 pass all frozen quality gates in both, substantive D_STITCH connectivity appears in both, and branching-associated elevated D□ appears in both. Not established across both pilots: STRUC-I Geometric Persistence of D_STITCH, upper-decile physical-intensity enrichment under the frozen selector, time-merging/aggregate restructuring localization, Reynolds-number generality, or generality beyond forced isotropic turbulence. The strongest two-pilot statement is a reproducible, largely commuting scale–time route regime with sample-dependent scalar admissibility strength and sample-dependent localization details of the rare noncommuting population.</p>
+</div>
+
+<!-- ════════════════════ §12 EPISTEMIC STATUS ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§12</span> EPISTEMIC STATUS — SUPPORTED / NOT CLAIMED</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">SUPPORTED BY THE COMPLETED TWO-PILOT RECORD</div>
+    <div style="font-size:9px;font-family:var(--mono);line-height:2;color:var(--text)">
+      <div style="color:var(--green)">✓ Pilot B is a valid preregistered independent sample — zero spatial/time overlap with Pilot A</div>
+      <div style="color:var(--green)">✓ CONSTRAINED_ROUTING reappears under the frozen ROUTE-I null in an independent sample</div>
+      <div style="color:var(--green)">✓ Real D□ is far below its degree-preserving null (N0) in both pilots</div>
+      <div style="color:var(--green)">✓ Low real D□ survives both the distance-controlled (N1) and distance+feature-controlled (N2) nulls in both pilots</div>
+      <div style="color:var(--green)">✓ N1/N2 pass all frozen quality gates in both pilots — no flags</div>
+      <div style="color:var(--green)">✓ D_STITCH reaches FULL_PERCOLATION with substantive gap-vertex support in both pilots</div>
+      <div style="color:var(--green)">✓ [1,2,4,8] scale-sensitivity preserves CONSTRAINED_ROUTING in both pilots</div>
+      <div style="color:var(--green)">✓ Elevated D□ localizes around branching events in both pilots</div>
+      <div style="color:var(--green)">✓ Pilot-B real D□ is 46.8% lower than Pilot A's — replication strengthens, not weakens, the core defect suppression</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">NOT CLAIMED BY THIS RECORD</div>
+    <div style="font-size:9px;font-family:var(--mono);line-height:2;color:var(--text2)">
+      <div style="color:var(--red)">✗ CORE REPLICATION — R3 fails, so the strict R1–R6-all-pass bar is not met</div>
+      <div style="color:var(--red)">✗ That D_STITCH reaches Geometric Persistence in Pilot B (it reaches Structural Boundary)</div>
+      <div style="color:var(--red)">✗ That the preregistered upper-decile physical-intensity localization replicates (frozen selector degenerate; FAIL is genuine)</div>
+      <div style="color:var(--red)">✗ That time-merging or aggregate-restructuring localization replicates</div>
+      <div style="color:var(--red)">✗ Reynolds-number generality</div>
+      <div style="color:var(--red)">✗ Generality beyond forced isotropic turbulence</div>
+      <div style="color:var(--red)">✗ Survival under a field-level surrogate preserving exact newly evaluated voxel overlap/IoU</div>
+      <div style="color:var(--red)">✗ Equivalence of D□ breakdowns with a standard intermittency observable</div>
+      <div style="color:var(--dim)">Correct claim: the route mechanism (constrained routing + low, null-surviving D□) is reproducible; the full cross-chamber admissibility and localization signature is sample-dependent.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ §13 NEXT WORK ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§13</span> NEXT WORK — STOPPING RULE ENGAGED · PILOT C DECISION PENDING</div>
+
+<div class="panel">
+  <div class="panel-title">PILOT B IS FROZEN AS OBSERVED — NEXT DECISION POINTS</div>
+  <div class="row3" style="margin-top:8px">
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">STOPPING RULE</div>
+      <p>Pilot B is one preregistered physical sample and must not be replaced under the same label after seeing its outcome. Any further independent sample requires a separately preregistered Pilot C.</p>
+    </div>
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">PILOT C DECISION</div>
+      <p>The R3 and R7 divergences from Pilot A are the open question. A third independent sample, preregistered before acquisition, would test whether Structural-Boundary D_STITCH and degenerate tail-selector behavior are Pilot-B-specific or recur.</p>
+    </div>
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">SELECTOR REFINEMENT</div>
+      <p>R7's frozen 90th-percentile selector is degenerate whenever D□ has a large zero-atom. A preregistered alternative (e.g. a fixed absolute threshold) could be specified for Pilot C in advance — not retrofit onto Pilot B.</p>
+    </div>
+  </div>
+  <div class="caution" style="margin-top:10px">No threshold, selector, or criterion is altered post hoc for Pilot B. Any change is a new preregistration version for Pilot C or later.</div>
+</div>
+
+<!-- ════════════════════ CLOSING ════════════════════ -->
+<div class="sep"></div>
+
+<div class="closing">
+  <h3>FINAL INTEGRATED STATEMENT</h3>
+  <p>The preregistered Pilot-B replication is complete and frozen. Its final classification is <code>STRUCTURAL PARTIAL REPLICATION</code>: R1, R2, R4, R5, R6, and R8 pass; R3 and R7 fail.</p>
+  <p>Pilot B independently reproduces the central route-mechanism result of Pilot A — <code>CONSTRAINED_ROUTING</code>, an exceptionally low real scale–time stitching defect, and survival of that low defect under both the distance-controlled (N1) and distance-plus-feature-controlled (N2) graph-local nulls — in a spatially and temporally disjoint sample of the same forced-isotropic dataset. It does not reproduce Pilot A's complete cross-chamber signature: the scalar STRUC-I admissibility of D_STITCH falls short of Geometric Persistence, and the frozen upper-decile physical-intensity localization degenerates against a zero-heavy D□ distribution.</p>
+  <p>The two-pilot record separates a question that Pilot A alone could not: <code>route-mechanism reproducibility is strongly supported; full cross-chamber/localization signature reproducibility is not established.</code> Pilot B is now frozen as observed. The next decision — whether the R3/R7 divergences justify a separately preregistered Pilot C — is made from this frozen comparison, not by altering Pilot B or retuning its thresholds.</p>
+</div>
+
+<!-- DATA SOURCE NOTE -->
+<div class="scope" style="margin-top:20px">
+Data sources: Johns Hopkins Turbulence Database (JHTDB), isotropic1024coarse forced-isotropic dataset, authenticated getCutout acquisition · Pilot-B source SHA-256 977e6ab3c437252395dc7f7185af1829619fe1eec754f59f5f3ceae2ca0b969f · frozen instruments STRUC-ROUTE-I v0.1.2 / ROUTE_LADDER_EXTRACT / STRUC-I v1.0.4 / STRUC-PERC-I v2.5.0 / STITCH-MECH v0.1.1 · records: R1_R8.json/.md, SYNTHESIS.json/.md (analysis/replication/jhtdb_pilot_b/, analysis/synthesis/jhtdb_pilot_b/) · record status FINAL_FROZEN_RESULT, created 2026-09-07T22:11:59Z · All claims scoped to the tested two-pilot corpus.
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>
