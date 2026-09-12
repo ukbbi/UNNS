@@ -1,0 +1,1361 @@
+================================================================================
+  CANONICAL LADDER ENGINE (CLE) v1.0.2
+  How-To-Use Guide
+  UNNS Substrate Research Program
+================================================================================
+
+CHANGELOG FROM v1.0.0
+─────────────────────
+  v1.0.1  StrucPercExportAdapter (all 3 STRUC-PERC-I schemas),
+          raw_ladder / canonical_ladder split in CIR, .gitignore,
+          63 new tests.
+  v1.0.2  FieldGeneratorAdapter (Field Generator → DeformationGridResult),
+          CIRProvenance (versioning, schema_hash, adapter traceability),
+          make_provenance() factory wired into all adapter load() paths,
+          44 + 28 new tests; total 245 tests.
+
+
+CONTENTS
+--------
+  1.  Overview
+  2.  Package Layout
+  3.  Installation & Setup
+  4.  Core Concepts
+  5.  Two Entry Points
+  6.  Entry Point A — Raw Pipeline (CLEPipeline)
+  7.  Entry Point B — CLT-I Evaluator (CLEvaluator)
+  8.  Adapters
+  9.  The Canonical Structural Tensor (CST)
+  10. The Canonical Internal Representation (CIR)
+  11. CIR Versioning and Provenance
+  12. Component Reference
+  13. Normalization & Weights
+  14. Sensitivity Analysis
+  15. Export: JSON and CSV
+  16. Connecting Pipeline to Evaluator
+  17. Batch Processing
+  18. Extending CLE: Writing a Custom Adapter
+  19. Key Constants and Thresholds
+  20. Error Handling
+  21. Running the Tests
+  22. Known Limitations
+  23. Quick-Reference Cheat Sheet
+
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+CLE is a domain-agnostic structural analysis engine.  It transforms any
+ordered scalar dataset into a canonical structural description by analysing
+the geometry of the gap field — the differences between consecutive values.
+
+CLE sits at the following position in the UNNS stack (CLE spec §4):
+
+  RAW DOMAIN VALUES
+       ↓
+  Domain Adapter Layer        ← format conversion; only layer with domain knowledge
+       ↓
+  CLEPipeline.analyze()       ← pure structural geometry; zero domain knowledge
+       ↓
+  CanonicalStructuralTensor   ← primary pipeline output
+       ↓
+  CLEvaluator.evaluate()      ← CLT-I canonicality ranking (optional layer)
+       ↓
+  FamilyResult                ← ranked encoding family with C(L) scores
+       ↓
+  export_json() / export_csv() ← JS dashboard / downstream systems
+
+CLE never knows what the values mean physically.  That separation is a hard
+architectural boundary.  Only adapters cross it.
+
+
+================================================================================
+2. PACKAGE LAYOUT
+================================================================================
+
+cle/
+├── .gitignore
+├── cle/
+│   ├── models.py           CIR, CIRProvenance, StrucPercResult, FamilyResult,
+│   │                       CLResult, ComponentScores, make_provenance,
+│   │                       CIR_VERSION, margin_from_struc, _schema_hash
+│   ├── cst.py              CanonicalStructuralTensor dataclass
+│   ├── pipeline.py         CLEPipeline: 7-stage analysis (raw values → CST)
+│   ├── evaluator.py        CLEvaluator: CLT-I C(L) scoring and ranking
+│   ├── functional.py       compute_cl(): the C(L) formula
+│   ├── normalization.py    minmax(), invert(), clip01()
+│   ├── sensitivity.py      weight_sensitivity(): rank stability analysis
+│   │
+│   ├── core/               Pure structural geometry — zero domain knowledge
+│   │   ├── gap.py          canonicalize_ladder(), extract_gaps(),
+│   │   │                   compute_scale(), kappa_grid(), epsilon()
+│   │   ├── topology.py     UnionFind, build_components_fast(), giant_ratio()
+│   │   ├── continuity.py   KappaResult, kappa_sweep(), find_kappa_conn(),
+│   │   │                   find_kappa_star(), auto_kappa_conn_result()
+│   │   ├── verdicts.py     classify_verdict()
+│   │   ├── tails.py        compute_tail_dominance(), outlier_indices()
+│   │   ├── persistence.py  compute_rigidity_persistence(),
+│   │   │                   topology_signature(), transition_signature()
+│   │   └── entropy.py      fragmentation_entropy(), mean_fragmentation_entropy()
+│   │
+│   ├── components/         CLT-I C(L) component functions
+│   │   ├── margin.py       Component 1: m̃(L)
+│   │   ├── rigidity.py     Component 2: Ω̃_L(L)
+│   │   ├── stitching.py    Component 3: D_stitch(L)
+│   │   ├── delta_lift.py   Component 4: R_Δ(L)
+│   │   ├── cross_chart.py  Component 5: S_cross(L)
+│   │   └── predictivity.py Component 6: P_phys(L)
+│   │
+│   ├── adapters/
+│   │   ├── base.py                  Abstract BaseAdapter
+│   │   ├── struc_json.py            CLE-internal flat JSON bundles
+│   │   ├── struc_perc_export.py     STRUC-PERC-I v2.5.0 all 3 schemas  [NEW v1.0.1]
+│   │   ├── field_generator_adapter.py  Field Generator grid exports     [NEW v1.0.2]
+│   │   ├── list_adapter.py          Python list → CIR via pipeline
+│   │   ├── csv_adapter.py           CSV/TSV column extraction
+│   │   ├── json_adapter.py          JSON array/dict (auto-delegates)
+│   │   └── numpy_adapter.py         .npy/.npz/ndarray
+│   │
+│   └── export/
+│       └── helpers.py      export_json(), export_csv()
+│
+└── tests/
+    ├── __init__.py                        _make_clo() fixture factory
+    ├── test_components.py                 34 tests — six C(L) components
+    ├── test_evaluator.py                  28 tests — CLEvaluator integration
+    ├── test_pipeline.py                   48 tests — pipeline + format adapters
+    ├── test_struc_perc_export.py          63 tests — STRUC-PERC-I schemas [NEW v1.0.1]
+    ├── test_field_generator_adapter.py    44 tests — Field Generator      [NEW v1.0.2]
+    └── test_cir_provenance.py             28 tests — CIR versioning        [NEW v1.0.2]
+
+
+================================================================================
+3. INSTALLATION & SETUP
+================================================================================
+
+No installation required.  CLE is a pure-Python package with zero required
+external dependencies.
+
+  Requirements
+  ────────────
+  Python 3.9+
+
+  Optional
+  ────────
+  numpy   — required only for NumpyAdapter
+
+  Setup
+  ─────
+  Unzip the archive, then add the cle/ directory to your Python path:
+
+    import sys
+    sys.path.insert(0, "/path/to/cle")
+    import cle
+
+  Or run from inside the cle/ directory:
+
+    cd cle
+    python your_script.py
+
+  Verify everything works:
+
+    cd cle
+    python -m unittest discover tests/ -v
+    # Expected: 245 tests, OK
+
+
+================================================================================
+4. CORE CONCEPTS
+================================================================================
+
+LADDER
+  An ordered scalar sequence L = (L₁ ≤ L₂ ≤ … ≤ Lₙ).
+  Sorting, deduplication, and NaN/Inf removal happen automatically inside
+  canonicalize_ladder().
+
+GAP FIELD
+  Δᵢ = Lᵢ₊₁ − Lᵢ.  All topology is derived from gap geometry, not levels.
+
+VULNERABILITY GRAPH G_κ(L)
+  (i,j) ∈ E_κ  iff  |Δᵢ − Δⱼ| ≤ ε(κ) = κ · IQR(Δ).
+
+GIANT RATIO (GR)
+  |largest connected component| / n_gaps.
+
+κ_CONN, κ*
+  κ_conn = smallest κ where GR reaches 85% of its sweep maximum.
+  κ*     = smallest κ where GR first exceeds 25%.
+
+VERDICT
+  FULL  (GR ≥ 0.95)
+  GIANT (GR ≥ 0.85)
+  TAIL  (GR ≥ 0.50 and TD > 0.30)
+  HARD  (otherwise)
+
+CONNECTIVITY MARGIN m(L) = GR − 0.95  (global reference, all classes)
+  Positive → FULL class.  Negative → any other class.
+
+RAW vs CANONICAL LADDER  [NEW in v1.0.1]
+  raw_ladder      : original values as received from the adapter, unmodified.
+  canonical_ladder: sorted, deduplicated, NaN/Inf stripped — what the engine
+                    actually analyzes.
+  clo.ladder      : property alias for canonical_ladder (backward-compat).
+
+CIR VERSIONING  [NEW in v1.0.2]
+  Every CanonicalLadderObject carries a CIRProvenance record:
+  cir_version, adapter_id, source_schema, schema_hash, created_at, notes.
+  The schema_hash is a deterministic 8-character hex fingerprint of the
+  primary structural coordinates — the reproducibility certificate.
+
+
+================================================================================
+5. TWO ENTRY POINTS
+================================================================================
+
+  ENTRY POINT A  —  CLEPipeline
+  ─────────────────────────────
+  Input:  raw scalar values (any domain)
+  Output: CanonicalStructuralTensor (CST)
+  Use when: you have raw data and want a structural description.
+
+  ENTRY POINT B  —  CLEvaluator
+  ─────────────────────────────
+  Input:  a family of CanonicalLadderObjects (CIRs)
+  Output: FamilyResult with C(L) scores and canonical ranking
+  Use when: you have multiple encodings of the same system and want the
+  most canonical representation.
+
+  COMBINED USE
+  ────────────
+  Pipeline on raw values → CST → .to_struc_perc_result() → CIR → CLEvaluator.
+  (See Section 16 for the full pattern.)
+
+  REAL STRUC-PERC-I DATA  [NEW in v1.0.1]
+  ──────────────────────────────────────
+  StrucPercExportAdapter reads actual STRUC-PERC-I export files directly,
+  bypassing the pipeline for the structural observables.  Use this when you
+  already have instrument output and want to rank encoding families.
+
+
+================================================================================
+6. ENTRY POINT A — RAW PIPELINE (CLEPipeline)
+================================================================================
+
+  IMPORT
+  ──────
+    from cle.pipeline import CLEPipeline
+
+  INSTANTIATE
+  ───────────
+    pipeline = CLEPipeline()
+
+  Optional constructor parameters:
+    n_kappa     int    Number of κ grid points.         Default: 100
+    kappa_min   float  Minimum κ value.                 Default: 0.01
+    kappa_max   float  Maximum κ value.                 Default: 3.0
+    deduplicate bool   Remove exact duplicates.         Default: True
+
+  ANALYZE A SINGLE LADDER
+  ───────────────────────
+    cst = pipeline.analyze(values, domain="atomic")
+
+  Parameters:
+    values   list[float]  Raw scalars (order does not matter; sorted internally)
+    domain   str          Domain tag for provenance.  Does not affect computation.
+    metadata dict         Optional key-value pairs attached to the CST.
+
+  Returns: CanonicalStructuralTensor  (see Section 9)
+
+  EXAMPLE
+  ───────
+    from cle.pipeline import CLEPipeline
+
+    values = [1.0, 2.3, 2.3, 5.1, 5.2, 8.7, 9.0, 100.0]
+
+    pipeline = CLEPipeline()
+    cst = pipeline.analyze(values, domain="molecular")
+
+    print(cst.verdict)               # "TAIL" or similar
+    print(cst.giant_ratio)           # float in [0, 1]
+    print(cst.kappa_conn)            # float
+    print(cst.tail_dominance)        # float in [0, 1]
+    print(cst.fragmentation_entropy) # float in [0, 1]
+    print(cst.rigidity_persistence)  # float in [0, 1]
+    print(cst.n_iso)                 # int: isolated gap nodes at κ_conn
+
+  INTERNAL STAGES (transparent to the caller)
+  ────────────────────────────────────────────
+    Stage 1  Canonicalization  — sort, remove NaN/Inf, deduplicate
+    Stage 2  Gap extraction    — Δᵢ = Lᵢ₊₁ − Lᵢ
+    Stage 3  Scale construction— IQR(Δ) + log-spaced κ grid
+    Stage 4  Vulnerability graph evolution — G_κ built at each κ
+    Stage 5  Continuity tracking — GR trajectory across κ sweep
+    Stage 6  Transition detection — κ*, κ_conn, verdict, entropy, persistence
+    Stage 7  Canonical embedding — all outputs wrapped into CST
+
+
+================================================================================
+7. ENTRY POINT B — CLT-I EVALUATOR (CLEvaluator)
+================================================================================
+
+  IMPORT
+  ──────
+    from cle import CLEvaluator
+
+  INSTANTIATE
+  ───────────
+    ev = CLEvaluator()
+
+  Optional constructor parameters:
+    weights           dict   Weight vector for C(L).   Default: all 1.0
+    run_sensitivity   bool   Run weight sensitivity.   Default: True
+    sensitivity_delta float  Perturbation half-width.  Default: 0.5
+    n_trials          int    Trials per weight.        Default: 40
+    verbose           bool   Emit auto-zero warnings.  Default: False
+
+  EVALUATE A FAMILY
+  ─────────────────
+    result = ev.evaluate(family, system_id="helium")
+
+  Parameters:
+    family      list[CanonicalLadderObject]  All encodings of one system
+    system_id   str                          Optional
+
+  Returns: FamilyResult
+
+  READING RESULTS
+  ───────────────
+    result.canonical_encoding_id   str    Top-ranked encoding
+    result.n_encodings             int
+    result.weights                 dict   Weights used (after auto-zeroing)
+    result.sensitivity             dict   Sensitivity analysis
+
+    result.results                 list[CLResult]   All encodings, sorted by rank
+
+    For each CLResult r:
+      r.rank              int     1 = canonical (best)
+      r.encoding_id       str
+      r.c_score           float   C(L) ∈ [0, 1]
+      r.components_raw    ComponentScores
+      r.components_normalized NormalizedComponents
+
+  AUTO-ZEROING OF UNAVAILABLE COMPONENTS
+  ───────────────────────────────────────
+    w_rigidity → 0.0  if no encoding in family has a deformation grid
+    w_delta    → 0.0  if no encoding has a Δ-lift result
+    w_phys     → 0.0  if no encoding has physical observables
+
+
+================================================================================
+8. ADAPTERS
+================================================================================
+
+Adapters convert raw source data into CanonicalLadderObjects (CIRs).
+The adapter layer is the ONLY component permitted to understand domain
+semantics.  All adapters now populate clo.provenance automatically.
+
+All adapters share the same interface:
+  clo = adapter.load(source, encoding_id="...", system_id="...", ...)
+  warnings = adapter.validate(clo)
+
+────────────────────────────────────────────────────────────────────────────────
+8A. StrucJsonAdapter
+  CLE-internal flat JSON schema (as described in Section 10 of this guide).
+  NOT for reading actual STRUC-PERC-I export files — use StrucPercExportAdapter
+  for those.  StrucJsonAdapter is for CIRs that were serialized in the CLE
+  bundle format.
+
+  from cle.adapters.struc_json import StrucJsonAdapter
+
+  REQUIRED FIELDS:
+    { "verdict": "FULL", "giant_ratio": 0.994, "kappa_conn": 0.812,
+      "tail_dominance": 0.021, "n_iso": 0, "n": 50, "ladder": [...] }
+
+  OPTIONAL EMBEDDED FIELDS:
+    "deformation_grid"     → Field Generator output (for Ω̃_L)
+    "delta_lifted"         → Δ-lift output (for R_Δ)
+    "physical_observables" → {"formation_energy": -2.3, ...}
+
+  clo = StrucJsonAdapter().load("helium.json", encoding_id="raw",
+                                system_id="helium")
+
+────────────────────────────────────────────────────────────────────────────────
+8B. StrucPercExportAdapter  [NEW in v1.0.1]
+  Reads actual STRUC-PERC-I v2.5.0 export files.  Auto-detects schema.
+  This is the correct adapter for loading real instrument output into CLE.
+
+  from cle.adapters.struc_perc_export import StrucPercExportAdapter
+  from cle import StrucPercExportAdapter
+
+  THREE SCHEMAS SUPPORTED:
+  ┌──────────────────┬────────────────────────────────┬──────────────────────┐
+  │ Schema           │ Source                         │ Key signature        │
+  ├──────────────────┼────────────────────────────────┼──────────────────────┤
+  │ A — summary.json │ Export Dataset button → ZIP    │ meta + verdict.class │
+  │ B — legacy JSON  │ Copy/JSON button               │ input + verdict.tier │
+  │ C — bridge dict  │ runAnalysisFromData() return   │ flat giantRatio      │
+  └──────────────────┴────────────────────────────────┴──────────────────────┘
+
+  TIER STRING NORMALISATION (automatic):
+    FULL_PERCOLATION            → FULL
+    GIANT_COMPONENT_PERCOLATION → GIANT
+    TAIL_FRAGMENTATION          → TAIL
+    HARD_FRAGMENTATION          → HARD
+
+  USAGE:
+    adapter = StrucPercExportAdapter()
+
+    # From a summary.json file (Schema A):
+    clo = adapter.load("run_001/summary.json",
+                       encoding_id="raw", system_id="helium")
+
+    # From a legacy export file (Schema B):
+    clo = adapter.load("struc_perc_result.json",
+                       encoding_id="raw", system_id="helium")
+
+    # From a runAnalysisFromData() dict (Schema C):
+    result = {
+        "verdict": "FULL_PERCOLATION",
+        "giantRatio": 1.0, "isolated": 0,
+        "kappa_connect": 0.083, "kappa_star": 0.021,
+        "n": 1423, "tailDominance": 0.021,
+    }
+    clo = adapter.load(result, encoding_id="raw", system_id="helium")
+
+    # With raw ladder values (summary.json doesn't carry the ladder):
+    clo = adapter.load("summary.json",
+                       encoding_id="raw", system_id="helium",
+                       raw_ladder=[float(i) for i in range(1, 1425)])
+
+    # Validate:
+    for w in adapter.validate(clo):
+        print("WARN:", w)
+
+  IMPORTANT — PARTIAL RUN WARNING:
+    If STRUC-PERC-I was stopped before completing the κ sweep, the export
+    will have run_status = "STOPPED".  validate() surfaces this as a warning,
+    and it is also recorded in clo.provenance.notes.
+
+────────────────────────────────────────────────────────────────────────────────
+8C. FieldGeneratorAdapter  [NEW in v1.0.2]
+  Reads Field Generator (α, μ deformation grid) exports.
+  Primary source for Component 2 (rigidity radius Ω̃_L).
+
+  from cle.adapters.field_generator_adapter import FieldGeneratorAdapter
+
+  THREE SCHEMAS SUPPORTED:
+  ┌──────────────────┬─────────────────────────────────┬─────────────────────┐
+  │ Schema           │ Source                          │ Key signature       │
+  ├──────────────────┼─────────────────────────────────┼─────────────────────┤
+  │ grid_json        │ Native FG export                │ meta.instrument or  │
+  │                  │                                 │ reference sub-dict  │
+  │ cle_bundle       │ CLE-internal bundle format      │ reference_verdict   │
+  │ flat_camel       │ Programmatic bridge             │ top-level giantRatio│
+  └──────────────────┴─────────────────────────────────┴─────────────────────┘
+
+  TWO ENTRY POINTS:
+
+  load_grid(source)  →  DeformationGridResult
+  ─────────────────
+    fg = FieldGeneratorAdapter()
+    dg = fg.load_grid("helium_raw_grid.json")
+
+    # Or from a dict:
+    dg = fg.load_grid(grid_dict)
+
+    # With tolerance overrides:
+    dg = fg.load_grid("grid.json", eps_gr=0.03, eps_kappa=0.08)
+
+    print(dg.n_total)          # number of grid points
+    print(dg.rigidity_fraction) # Ω_L ∈ [0, 1]
+
+    # Validate:
+    for w in fg.validate_grid(dg):
+        print("WARN:", w)
+
+  patch_clo(clo, source)  →  CanonicalLadderObject
+  ─────────────────────────
+  Inject a deformation grid into an existing CIR.
+  Returns a NEW CIR; the original is unmodified (pure function).
+
+    fg  = FieldGeneratorAdapter()
+    clo = StrucPercExportAdapter().load("summary.json",
+                                        encoding_id="raw", system_id="He")
+
+    # Without grid, w_rigidity will be auto-zeroed by CLEvaluator.
+    # Patch it in:
+    clo_with_grid = fg.patch_clo(clo, "helium_raw_grid.json")
+
+    # Now has_deformation_grid() returns True:
+    print(clo_with_grid.has_deformation_grid())  # True
+
+  VALIDATE:
+    warnings = fg.validate_grid(dg)
+    # Warns on: empty grid, < 9 points, < 441 points (non-standard resolution),
+    # zero rigidity on FULL reference, all-invariant grid (tolerances too loose).
+
+────────────────────────────────────────────────────────────────────────────────
+8D. ListAdapter
+  Runs the full pipeline on a Python list.
+
+  from cle.adapters.list_adapter import ListAdapter
+  clo = ListAdapter().load(
+      [1.0, 2.3, 5.1, 8.7, 9.0],
+      encoding_id="my_enc", system_id="experiment_A", domain="molecular",
+  )
+  # Full CST also in clo.metadata["cst"]
+
+────────────────────────────────────────────────────────────────────────────────
+8E. CsvAdapter
+  from cle.adapters.csv_adapter import CsvAdapter
+  clo = CsvAdapter().load(
+      "spectra/helium_raw.csv",
+      column=0, has_header=True, delimiter=",",
+      encoding_id="raw", system_id="helium", domain="atomic",
+  )
+
+────────────────────────────────────────────────────────────────────────────────
+8F. JsonAdapter
+  from cle.adapters.json_adapter import JsonAdapter
+  clo = JsonAdapter().load("energy_levels.json",
+                            encoding_id="raw", system_id="He")
+  # Accepts: bare array, dict with "values"/"ladder" key, or a full
+  # STRUC-PERC-I bundle (auto-delegates to StrucJsonAdapter if detected).
+
+────────────────────────────────────────────────────────────────────────────────
+8G. NumpyAdapter
+  from cle.adapters.numpy_adapter import NumpyAdapter
+  clo = NumpyAdapter().load("energy_levels.npy",
+                             encoding_id="raw", system_id="He")
+  # Also: .npz (npz_key="array_name"), 2-D arrays (column=N),
+  #        in-memory numpy arrays.
+
+
+================================================================================
+9. THE CANONICAL STRUCTURAL TENSOR (CST)
+================================================================================
+
+Primary output of CLEPipeline.analyze().
+
+  IDENTITY FIELDS
+    domain, n_ladder, n_gaps
+
+  PRIMARY STRUCTURAL COORDINATES
+    kappa_star, kappa_conn, giant_ratio, tail_dominance, n_iso, verdict
+
+  DERIVED STRUCTURAL METRICS
+    fragmentation_entropy  — H/log(n) at κ_conn ∈ [0, 1];  0 = connected
+    rigidity_persistence   — fraction of κ sweep with GR ≥ 0.85 ∈ [0, 1]
+    canonicality_score     — C(L) from CLT-I; −1.0 until CLEvaluator runs
+
+  TECHNICAL FIELDS
+    scale                  — IQR(Δ) used as gap-field scale factor
+
+  TOPOLOGY TRACES
+    topology_signature     — [[κ, GR, n_components], ...], ≤ 50 subsampled points
+    transition_signature   — [[κ, GR_before, GR_after, ΔGR], ...] for jumps > 0.05
+
+  METHODS
+    cst.as_dict()               → dict (JSON-serializable)
+    cst.to_struc_perc_result()  → StrucPercResult (bridge to CLEvaluator)
+
+
+================================================================================
+10. THE CANONICAL INTERNAL REPRESENTATION (CIR)
+================================================================================
+
+CanonicalLadderObject is the universal interchange object consumed by CLEvaluator.
+Every adapter produces a CIR.  In v1.0.2, CIRs are versioned and carry full
+provenance.
+
+  FIELDS  [updated v1.0.1]
+  ──────
+    encoding_id          str
+    system_id            str
+    raw_ladder           list[float]   ← NEW: original values, pre-canonicalize
+    canonical_ladder     list[float]   ← NEW: sorted, deduped, NaN-stripped
+    struc_perc           StrucPercResult
+    deformation_grid     DeformationGridResult | None
+    delta_lifted         DeltaLiftResult | None
+    physical_observables dict | None
+    metadata             dict
+    provenance           CIRProvenance | None     ← NEW v1.0.2
+
+  BACKWARD-COMPAT ALIAS
+  ─────────────────────
+    clo.ladder           → property alias for clo.canonical_ladder
+    (Existing code using clo.ladder continues to work unchanged.)
+
+  RAW vs CANONICAL DISTINCTION
+  ─────────────────────────────
+  The raw_ladder preserves the original values exactly as the adapter
+  received them — useful for debugging, re-ingestion, and audit.
+  The canonical_ladder is the sequence the engine analyzed.
+  They differ when the source data contained duplicates, NaN values,
+  or was unsorted.
+
+  PREDICATES
+  ──────────
+    clo.has_deformation_grid()     → bool
+    clo.has_delta_lift()           → bool
+    clo.has_physical_observables() → bool
+
+  StrucPercResult FIELDS
+  ──────────────────────
+    verdict        str     FULL | GIANT | TAIL | HARD
+    giant_ratio    float
+    kappa_conn     float
+    tail_dominance float
+    n_iso          int
+    n              int     ladder length
+    m_margin       float   GR − 0.95 (global reference)
+
+  BUILDING A CIR MANUALLY
+  ───────────────────────
+    from cle.models import CanonicalLadderObject, StrucPercResult
+
+    sp = StrucPercResult(
+        verdict="FULL", giant_ratio=0.994, kappa_conn=0.812,
+        tail_dominance=0.021, n_iso=0, n=50,
+    )
+    clo = CanonicalLadderObject(
+        encoding_id="raw", system_id="helium",
+        raw_ladder=raw_values,
+        canonical_ladder=sorted(set(raw_values)),
+        struc_perc=sp,
+    )
+
+
+================================================================================
+11. CIR VERSIONING AND PROVENANCE  [NEW in v1.0.2]
+================================================================================
+
+Every adapter's load() call now automatically creates a CIRProvenance record
+and attaches it to the CIR.  This enables corpus bookkeeping, reproducibility
+auditing, and migration safety across CLE schema versions.
+
+  CIR_VERSION
+  ───────────
+    from cle.models import CIR_VERSION
+    print(CIR_VERSION)   # "1.1"
+
+    History:
+      1.0  — CLE v1.0.0 (no provenance, single ladder field)
+      1.1  — CLE v1.0.2 (raw/canonical split, CIRProvenance added)
+
+  CIRProvenance FIELDS
+  ────────────────────
+    cir_version     str     CIR schema version ("1.1")
+    adapter_id      str     Class name of the producing adapter
+    adapter_version str     CLE package version ("1.0.2")
+    source_schema   str     Source format descriptor
+                            ("list", "csv", "struc_json.bundle",
+                             "struc_perc_i.summary", "struc_perc_i.legacy",
+                             "struc_perc_i.bridge", "field_generator.patch")
+    schema_hash     str     8-char hex fingerprint of primary structural coords
+    created_at      float   Unix timestamp at adapter load time
+    notes           list    Warnings (e.g., "run_status=STOPPED")
+
+  ACCESSING PROVENANCE
+  ────────────────────
+    clo = StrucPercExportAdapter().load("summary.json",
+                                        encoding_id="e", system_id="S")
+    p = clo.provenance
+    print(p.cir_version)    # "1.1"
+    print(p.adapter_id)     # "StrucPercExportAdapter"
+    print(p.source_schema)  # "struc_perc_i.summary"
+    print(p.schema_hash)    # e.g. "3a7f2b1c"
+    print(p.notes)          # [] or ["run_status=STOPPED"]
+    print(p.as_dict())      # JSON-serializable dict
+
+  SCHEMA HASH
+  ───────────
+  The schema_hash is a deterministic 8-character hex prefix of
+  SHA-256(encoding_id | verdict | GR_6dp | kappa_conn_6dp | n).
+
+  Two CIRs produced from identical instrument runs and adapter parameters
+  will always produce the same schema_hash.  A mismatch on nominally
+  identical inputs reveals undocumented variation.
+
+    # Reproducibility check:
+    h1 = clo_run1.provenance.schema_hash
+    h2 = clo_run2.provenance.schema_hash
+    if h1 != h2:
+        print("WARNING: structural coordinates differ between runs")
+
+  CREATING PROVENANCE MANUALLY
+  ────────────────────────────
+  Use make_provenance() rather than constructing CIRProvenance directly:
+
+    from cle.models import make_provenance
+
+    prov = make_provenance(
+        adapter_id    = "MyCustomAdapter",
+        source_schema = "my_format.v2",
+        verdict       = sp.verdict,
+        giant_ratio   = sp.giant_ratio,
+        kappa_conn    = sp.kappa_conn,
+        n             = sp.n,
+        encoding_id   = "my_enc",
+        notes         = ["manually constructed CIR"],
+    )
+
+  PROVENANCE IN CUSTOM ADAPTERS
+  ──────────────────────────────
+  Custom adapters (see Section 18) should call make_provenance() at the
+  end of their load() method and pass the result to CanonicalLadderObject.
+  This ensures every CIR in the corpus has traceable lineage.
+
+  PARTIAL-RUN DETECTION
+  ─────────────────────
+  StrucPercExportAdapter automatically records STOPPED runs:
+
+    if clo.provenance.notes:
+        print("Provenance notes:", clo.provenance.notes)
+    # e.g. ["run_status=STOPPED"]
+
+
+================================================================================
+12. COMPONENT REFERENCE
+================================================================================
+
+C(L) = (w₁·m̃ + w₂·Ω̃ + w₃·D_stitch_inv + w₄·R_Δ + w₅·S_cross + w₆·P_phys)
+       ─────────────────────────────────────────────────────────────────────
+                                      Σ wᵢ
+
+All six normalized components are in [0, 1].  Higher always means better.
+
+────────────────────────────────────────────────────────────────────────────────
+Component 1: Connectivity Margin  m̃(L)
+  Source:      STRUC-PERC-I (giant_ratio, verdict)
+  Raw formula: m(L) = GR − 0.95   [global reference, all classes]
+  Direction:   higher is better
+  Note:        FULL (GR ≥ 0.95) → m > 0.  All other classes → m < 0.
+               This single component enforces inter-class order in CLT-I.
+
+────────────────────────────────────────────────────────────────────────────────
+Component 2: Rigidity Radius  Ω̃_L(L)
+  Source:      Field Generator (FieldGeneratorAdapter → DeformationGridResult)
+  Raw formula: Ω_L = |invariant grid points| / |G|
+  Direction:   higher is better
+  Range:       [0, 1]
+  Fallback:    0.0 if no grid; w_rigidity auto-zeroed if none in family
+
+  Grid point (α′, μ′) is invariant iff:
+    verdict(α′,μ′) = verdict(α₀,μ₀)  AND
+    |GR(α′,μ′) − GR(α₀,μ₀)| < ε_GR (default 0.02)  AND
+    |κ(α′,μ′) − κ(α₀,μ₀)| < ε_κ   (default 0.05)
+
+  To enable Component 2 for a CIR:
+    fg  = FieldGeneratorAdapter()
+    clo = fg.patch_clo(clo, "grid_export.json")
+
+────────────────────────────────────────────────────────────────────────────────
+Component 3: Stitching-Defect Density  D_stitch(L)   [penalty]
+  Source:      STRUC-PERC-I (n_iso, n)
+  Raw formula: D_stitch = n_iso / (n − 1)  +  short-ladder penalty
+  Direction:   lower raw is better; inverted as (1 − D_norm) in C(L)
+  Motivation:  80.4% of fragmented metallic-glass ladders had n_iso = 1
+               (Merge-Boundary-as-Glue mechanism, ACG 2026)
+
+────────────────────────────────────────────────────────────────────────────────
+Component 4: Δ-Lifting Recoverability  R_Δ(L)
+  Source:      STRUC-PERC-I run on ΔL (gap-extracted ladder)
+  Direction:   higher is better
+  Range:       [0, 1]  (0.5 = neutral when no lift data)
+  Fallback:    0.5 if no delta_lifted result; w_delta auto-zeroed if none
+  Motivation:  100% of HARD/TAIL neutrino ladders recovered to FULL after
+               Δ-lifting (Latent Continuity, ACG 2026)
+
+────────────────────────────────────────────────────────────────────────────────
+Component 5: Cross-Chart Stability  S_cross(L)
+  Source:      Structural observables from whole family
+  Direction:   higher is better
+  Range:       [0, 1]  (0.5 = neutral for K = 1 encoding)
+  Rewards encodings that are not structural outliers vs their family.
+
+────────────────────────────────────────────────────────────────────────────────
+Component 6: Physical Predictivity  P_phys(L)
+  Source:      physical_observables dict + UNNS structural observables
+  Formula:     Mean |Spearman ρ| across (structural var, external obs) pairs
+  Direction:   higher is better; lowest default weight
+  Range:       [0, 1]
+  Fallback:    0.0 if no external observables; w_phys auto-zeroed if none
+
+
+================================================================================
+13. NORMALIZATION & WEIGHTS
+================================================================================
+
+Normalization is family-level min-max.  Constant families fall back to 0.5.
+D_stitch is inverted after normalization: d_stitch_inv = 1 − D_norm.
+
+  DEFAULT WEIGHTS (all 1.0 → equal; C(L) = arithmetic mean of 6 components)
+
+    DEFAULT_WEIGHTS = {
+        "w_margin":   1.0,
+        "w_rigidity": 1.0,
+        "w_stitch":   1.0,
+        "w_delta":    1.0,
+        "w_cross":    1.0,
+        "w_phys":     1.0,
+    }
+
+  CUSTOM WEIGHTS
+    ev = CLEvaluator(weights={
+        "w_margin":   3.0,
+        "w_rigidity": 2.0,
+        "w_stitch":   1.0,
+        "w_delta":    1.0,
+        "w_cross":    1.0,
+        "w_phys":     0.5,
+    })
+
+  AUTO-ZEROING (applied before evaluation, if no data for a component):
+    w_rigidity → 0.0  if no encoding has a deformation grid
+    w_delta    → 0.0  if no encoding has a Δ-lift result
+    w_phys     → 0.0  if no encoding has physical observables
+
+
+================================================================================
+14. SENSITIVITY ANALYSIS
+================================================================================
+
+CLEvaluator runs weight sensitivity automatically (unless run_sensitivity=False).
+
+  HOW IT WORKS
+  ────────────
+  For each weight w_i: sample n_trials values from Uniform[max(0, w_i−δ), w_i+δ],
+  compute rankings, measure Spearman ρ vs base ranking, record flip rate.
+
+  OUTPUT (result.sensitivity)
+  ───────────────────────────
+    {
+      "base_canonical":    "helium_norm",
+      "overall_stability": 0.97,          # mean Spearman ρ ∈ [0, 1]
+      "canonical_stable":  True,          # flip_rate < 10% for all weights
+      "per_weight": {
+          "w_margin":   {"mean_rho": 0.98, "flip_rate": 0.00, "impact": 0.02},
+          ...
+      },
+      "delta":   0.5,
+      "n_trials": 40
+    }
+
+  CUSTOMIZING
+  ───────────
+    ev = CLEvaluator(
+        run_sensitivity   = True,
+        sensitivity_delta = 0.3,
+        n_trials          = 100,
+    )
+
+
+================================================================================
+15. EXPORT: JSON AND CSV
+================================================================================
+
+  JSON EXPORT
+    from cle import export_json
+    path = export_json(result, "output/helium/family_result.json")
+
+  CSV EXPORT
+    from cle import export_csv
+    path = export_csv(result, "output/helium/family_result.csv")
+
+  CSV COLUMNS (16):
+    rank, encoding_id, system_id, c_score,
+    m_tilde, omega_tilde, d_stitch_inv, r_delta, s_cross, p_phys,
+    m_raw, omega_raw, d_stitch_raw,
+    has_grid, has_delta, has_phys
+
+
+================================================================================
+16. CONNECTING PIPELINE TO EVALUATOR
+================================================================================
+
+  SCENARIO A — Real STRUC-PERC-I exports  [recommended for production]
+  ─────────────────────────────────────────
+    from cle import CLEvaluator, StrucPercExportAdapter, export_json
+    from cle.adapters.field_generator_adapter import FieldGeneratorAdapter
+
+    sp_adapter = StrucPercExportAdapter()
+    fg         = FieldGeneratorAdapter()
+
+    # Load and patch with deformation grids
+    clo_raw    = fg.patch_clo(
+        sp_adapter.load("raw_summary.json",
+                        encoding_id="raw", system_id="helium"),
+        "raw_grid.json"
+    )
+    clo_zeeman = fg.patch_clo(
+        sp_adapter.load("zeeman_summary.json",
+                        encoding_id="zeeman", system_id="helium"),
+        "zeeman_grid.json"
+    )
+    clo_norm   = fg.patch_clo(
+        sp_adapter.load("norm_summary.json",
+                        encoding_id="norm", system_id="helium"),
+        "norm_grid.json"
+    )
+
+    ev     = CLEvaluator(verbose=True)
+    result = ev.evaluate([clo_raw, clo_zeeman, clo_norm])
+
+    print("Canonical:", result.canonical_encoding_id)
+    for r in result.results:
+        print(f"  Rank {r.rank} {r.encoding_id:12s} C={r.c_score:.4f}")
+
+    export_json(result, "output/helium_family.json")
+
+  SCENARIO B — Raw domain values via pipeline  [for new domains]
+  ───────────────────────────────────────────
+    from cle.pipeline import CLEPipeline
+    from cle.adapters.csv_adapter import CsvAdapter
+    from cle import CLEvaluator, export_json
+
+    adapter  = CsvAdapter()
+    family   = [
+        adapter.load("helium_raw.csv",    encoding_id="raw",
+                     system_id="helium", domain="atomic"),
+        adapter.load("helium_zeeman.csv", encoding_id="zeeman",
+                     system_id="helium", domain="atomic"),
+        adapter.load("helium_norm.csv",   encoding_id="norm",
+                     system_id="helium", domain="atomic"),
+    ]
+    ev     = CLEvaluator(verbose=True)
+    result = ev.evaluate(family)
+    export_json(result, "output/helium_family.json")
+
+  SCENARIO C — Manual CIR construction  [mixing sources]
+  ──────────────────────────────────────
+    from cle.models import CanonicalLadderObject, StrucPercResult
+    from cle.pipeline import CLEPipeline
+    from cle import CLEvaluator
+
+    # From pre-computed STRUC-PERC-I values:
+    sp = StrucPercResult(verdict="FULL", giant_ratio=0.994, kappa_conn=0.812,
+                         tail_dominance=0.021, n_iso=0, n=50)
+    clo_pre = CanonicalLadderObject(
+        "enc_pre", "helium",
+        raw_ladder=ladder_vals, canonical_ladder=sorted(set(ladder_vals)),
+        struc_perc=sp,
+    )
+
+    # From raw values via pipeline:
+    cst    = CLEPipeline().analyze(raw_values, domain="atomic")
+    sp_raw = cst.to_struc_perc_result()
+    clo_raw = CanonicalLadderObject(
+        "enc_raw", "helium",
+        raw_ladder=raw_values,
+        canonical_ladder=sorted(set(v for v in raw_values if v == v)),
+        struc_perc=sp_raw,
+        metadata={"cst": cst.as_dict()},
+    )
+
+    result = CLEvaluator().evaluate([clo_pre, clo_raw])
+
+
+================================================================================
+17. BATCH PROCESSING
+================================================================================
+
+  PIPELINE BATCH
+  ──────────────
+    batch = [
+        {"values": [1.0, 2.3, 5.1, 8.7],   "domain": "molecular"},
+        {"values": list(range(50)),          "domain": "atomic"},
+        {"values": [0.1, 0.2, 0.5, 100.0], "domain": "seismic",
+         "metadata": {"station": "NV01"}},
+    ]
+    results = pipeline.analyze_batch(batch)
+    failed = [cst for cst in results if "error" in cst.metadata]
+
+  EVALUATOR BATCH (multiple systems)
+  ────────────────────────────────────
+    adapter = StrucPercExportAdapter()
+    fg      = FieldGeneratorAdapter()
+    ev      = CLEvaluator(verbose=False)
+    corpus  = {}
+
+    for system_id, (files, grids) in system_manifest.items():
+        family = [
+            fg.patch_clo(
+                adapter.load(f, encoding_id=n, system_id=system_id),
+                g
+            )
+            for (f, n), g in zip(files, grids)
+        ]
+        corpus[system_id] = ev.evaluate(family)
+
+    for system_id, result in corpus.items():
+        export_json(result, f"output/{system_id}.json")
+
+
+================================================================================
+18. EXTENDING CLE: WRITING A CUSTOM ADAPTER
+================================================================================
+
+Subclass BaseAdapter.  The adapter is the ONLY place domain knowledge lives.
+Call make_provenance() to populate clo.provenance for corpus traceability.
+
+  TEMPLATE
+  ────────
+    from cle.adapters.base     import BaseAdapter
+    from cle.adapters.list_adapter import ListAdapter
+    from cle.models            import CanonicalLadderObject, make_provenance
+    from cle.pipeline          import CLEPipeline
+    from typing import Any, List
+
+    class MyFormatAdapter(BaseAdapter):
+
+        def __init__(self, pipeline=None):
+            self._list_adapter = ListAdapter(pipeline or CLEPipeline())
+
+        def load(self, source, encoding_id="unknown", system_id="unknown",
+                 domain="unknown", **kwargs) -> CanonicalLadderObject:
+
+            # Step 1: read your format (only place domain knowledge lives)
+            raw_data = self._read_my_format(source)
+            values   = self._extract_ladder_values(raw_data)
+
+            # Step 2: delegate to ListAdapter (pipeline runs internally)
+            clo = self._list_adapter.load(
+                values,
+                encoding_id=encoding_id,
+                system_id=system_id,
+                domain=domain,
+                metadata={"source": str(source)},
+            )
+
+            # Step 3: update provenance with your adapter identity
+            from cle.models import make_provenance
+            prov = make_provenance(
+                adapter_id    = "MyFormatAdapter",
+                source_schema = "my_format.v1",
+                verdict       = clo.struc_perc.verdict,
+                giant_ratio   = clo.struc_perc.giant_ratio,
+                kappa_conn    = clo.struc_perc.kappa_conn,
+                n             = clo.struc_perc.n,
+                encoding_id   = encoding_id,
+            )
+            # Return a new CIR with your provenance record
+            return CanonicalLadderObject(
+                encoding_id      = clo.encoding_id,
+                system_id        = clo.system_id,
+                raw_ladder       = list(values),
+                canonical_ladder = clo.canonical_ladder,
+                struc_perc       = clo.struc_perc,
+                metadata         = clo.metadata,
+                provenance       = prov,
+            )
+
+        def validate(self, clo) -> List[str]:
+            return self._list_adapter.validate(clo)
+
+        def _read_my_format(self, source): ...
+        def _extract_ladder_values(self, raw_data) -> List[float]: ...
+
+  ADAPTER RESPONSIBILITIES (CLE spec §6.5):
+    A. Remove invalid values (NaN, Inf, None)
+    B. Sort, deduplicate, enforce monotonicity as needed
+       (canonicalize_ladder() handles this if you delegate to ListAdapter)
+    C. Extract scalar ladders from non-native data (images, tensors, graphs)
+    D. Preserve provenance in CIRProvenance.notes (source file, params, caveats)
+    E. NEVER pass domain-specific meaning into the CLE core
+
+
+================================================================================
+19. KEY CONSTANTS AND THRESHOLDS
+================================================================================
+
+  CIR VERSIONING (models.py)  [NEW v1.0.2]
+  ──────────────────────────
+    CIR_VERSION = "1.1"
+    Schema history:
+      1.0  CLE v1.0.0  (single ladder field; no provenance)
+      1.1  CLE v1.0.2  (raw_ladder + canonical_ladder; CIRProvenance)
+
+  VERDICT THRESHOLDS (models.py)
+  ───────────────────────────────
+    FULL  → GR ≥ 0.95
+    GIANT → GR ≥ 0.85
+    TAIL  → GR ≥ 0.50 AND tail_dominance > 0.30
+    HARD  → otherwise
+
+  GLOBAL MARGIN REFERENCE (models.py)
+  ─────────────────────────────────────
+    m(L) = GR − 0.95  (all classes; non-FULL always negative)
+
+  GAP SCALE (core/gap.py)
+  ────────────────────────
+    Primary: IQR(Δ)
+    Fallback chain: IQR=0 → median → max → 1.0 (degenerate)
+
+  κ GRID (core/gap.py)
+  ─────────────────────
+    N_KAPPA = 100, KAPPA_MIN = 0.01, KAPPA_MAX = 3.0 (log-spaced)
+
+  AUTO κ_CONN (core/continuity.py)
+  ─────────────────────────────────
+    First κ where GR ≥ 85% of max(GR) across sweep (min target 10%)
+
+  STRUC-PERC-I TIER MAP (struc_perc_export.py)  [NEW v1.0.1]
+  ─────────────────────────────────────────────
+    FULL_PERCOLATION            → FULL
+    GIANT_COMPONENT_PERCOLATION → GIANT
+    TAIL_FRAGMENTATION          → TAIL
+    HARD_FRAGMENTATION          → HARD
+
+  FIELD GENERATOR DEFAULTS (field_generator_adapter.py)  [NEW v1.0.2]
+  ──────────────────────────────────────────────────────
+    eps_gr    = 0.02   (GR invariance tolerance)
+    eps_kappa = 0.05   (κ invariance tolerance)
+    Standard grid resolution: 21 × 21 = 441 points over [0.8, 1.2]²
+
+  STITCHING (components/stitching.py)
+  ─────────────────────────────────────
+    GAMMA_MB = 2.0   (Merge-Boundary-as-Glue weight)
+    N_MIN    = 4     (minimum viable ladder length)
+
+  SENSITIVITY (sensitivity.py)
+  ─────────────────────────────
+    delta=0.5, n_trials=40, seed=42 (deterministic)
+    Flip threshold: flip_rate < 10% → canonical_stable = True
+
+  SCHEMA HASH (models.py)  [NEW v1.0.2]
+  ────────────────────────
+    SHA-256(encoding_id | verdict | GR_6dp | kappa_conn_6dp | n)[:8]
+
+
+================================================================================
+20. ERROR HANDLING
+================================================================================
+
+  ValueError
+  ──────────
+  CLEPipeline.analyze() raises if ladder has < 2 elements post-canonicalize.
+  FieldGeneratorAdapter.load_grid() raises if schema is unrecognised.
+  StrucPercExportAdapter.load() raises if schema is unrecognised.
+
+    try:
+        cst = pipeline.analyze(values)
+    except ValueError as e:
+        print("Pipeline error:", e)
+
+    try:
+        dg = fg.load_grid(grid_data)
+    except ValueError as e:
+        print("Unknown Field Generator schema:", e)
+
+  analyze_batch() never raises — failed items return placeholder CST with
+  verdict="HARD" and metadata["error"] = str(exception).
+
+  VALIDATION WARNINGS (non-fatal)
+  ────────────────────────────────
+  All adapters provide validate() returning a list of warning strings:
+
+    warnings = adapter.validate(clo)
+    for w in warnings:
+        print("WARN:", w)
+
+  Common warnings:
+    "[enc] Ladder length N < 4 (n-poverty risk)"
+    "[enc] No raw ladder values — loaded from summary.json without raw_ladder="
+    "[enc] n = 0 — n missing from export"
+    "[enc] run_status = 'STOPPED' — PARTIAL run"
+    "[enc] No deformation grid → w_rigidity will be zeroed"
+    "[enc] No Δ-lift result → w_delta will be zeroed"
+    "[enc] n_iso = N — stitching defects present"
+
+  FieldGeneratorAdapter.validate_grid() warnings:
+    "Field Generator grid contains zero points"
+    "Only N grid points — minimum useful is 3×3=9"
+    "Grid has N points (< 441 = standard 21×21)"
+    "Rigidity fraction = 0.0 despite FULL reference — check tolerances"
+    "Rigidity fraction = 1.0 — tolerances may be too loose"
+
+
+================================================================================
+21. RUNNING THE TESTS
+================================================================================
+
+  ALL TESTS
+  ─────────
+    cd cle
+    python -m unittest discover tests/ -v
+    # Expected: Ran 245 tests in ~0.4s, OK
+
+  PER-MODULE
+  ──────────
+    python -m unittest tests.test_components              -v   # 34 tests
+    python -m unittest tests.test_evaluator               -v   # 28 tests
+    python -m unittest tests.test_pipeline                -v   # 48 tests
+    python -m unittest tests.test_struc_perc_export       -v   # 63 tests  [v1.0.1]
+    python -m unittest tests.test_field_generator_adapter -v   # 44 tests  [v1.0.2]
+    python -m unittest tests.test_cir_provenance          -v   # 28 tests  [v1.0.2]
+
+  TEST COVERAGE BY MODULE
+  ───────────────────────
+
+  test_components.py (34)
+    TestMargin, TestRigidity, TestStitching, TestDeltaLift,
+    TestCrossChart, TestPredictivity, TestNormalization, TestFunctional
+
+  test_evaluator.py (28)
+    TestHeliumFamily, TestOxideFamily, TestNeutrinoFamily,
+    TestEdgeCases, TestStrucJsonAdapter, TestExport
+
+  test_pipeline.py (48)
+    TestCanonicalize, TestGapExtraction, TestScale, TestUnionFind,
+    TestBuildComponents, TestKappaSweep, TestVerdicts, TestTailDominance,
+    TestCLEPipeline, TestListAdapter, TestCsvAdapter, TestJsonAdapter,
+    TestPipelineToEvaluator
+
+  test_struc_perc_export.py (63)  [NEW v1.0.1]
+    TestSchemaDetection, TestTierNormalisation, TestParseSummary,
+    TestParseLegacy, TestParseBridge, TestAdapterLoadFromDict,
+    TestAdapterLoadFromFile, TestCIRFields, TestIntegrationWithEvaluator,
+    TestValidation
+
+  test_field_generator_adapter.py (44)  [NEW v1.0.2]
+    TestSchemaDetection, TestTierNormalisation, TestParseGridJson,
+    TestParseCleBundle, TestParseFlatCamel, TestLoadGrid,
+    TestRigidityFraction, TestPatchClo, TestValidateGrid,
+    TestIntegrationWithEvaluator
+
+  test_cir_provenance.py (28)  [NEW v1.0.2]
+    TestMakeProvenance, TestSchemaHash, TestCIRProvenanceAsDict,
+    TestProvenancePropagation, TestSchemaHashReproducibility
+
+
+================================================================================
+22. KNOWN LIMITATIONS
+================================================================================
+
+  L1. Family size
+      K < 3: normalization unreliable (constant-family fallback to 0.5).
+      K ≥ 3 minimum; K ≥ 5 recommended.
+
+  L2. Cross-chart stability with K = 2
+      Variance from one other encoding is unreliable.  Interpret cautiously.
+
+  L3. No deformation grid → Component 2 excluded
+      Populate grids via Field Generator and FieldGeneratorAdapter.
+
+  L4. Global margin reference
+      GIANT, TAIL, and HARD systems all have m < 0 by the global reference.
+      A FULL system at GR = 0.951 (m = +0.001) always outranks a GIANT
+      system at GR = 0.949 (m = −0.001), regardless of other components.
+
+  L5. Weight sensitivity
+      Equal weights are a baseline.  Derive domain-specific weights from
+      rank-loss minimization on K ≥ 10 labeled encodings.
+
+  L6. No genealogy tracking
+      topology_signature provides a compressed κ trajectory but not
+      component merger/ancestry chains.  Future module.
+
+  L7. CIR v1.1 — single adapter step only
+      Provenance records one adapter step.  Multi-stage pre-processing
+      pipelines (spectral extraction → normalization → Δ-lifting) are not
+      yet individually trackable.  Transform history planned for CIR v2.0.
+
+  L8. summary.json carries no ladder values
+      Schema A (summary.json) does not export the ladder sequence.
+      Supply raw_ladder= explicitly when loading from summary.json if you
+      need canonical_ladder populated.  Structural observables (m, GR, κ,
+      n_iso) are always present regardless.
+
+  L9. Schema hash is not cryptographic
+      The schema hash is a fast fingerprint for corpus bookkeeping and
+      reproducibility checking.  It is not a security primitive.
+
+
+================================================================================
+23. QUICK-REFERENCE CHEAT SHEET
+================================================================================
+
+  IMPORT SHORTCUTS
+  ────────────────
+    from cle import (CLEvaluator, StrucJsonAdapter, StrucPercExportAdapter,
+                     export_json, export_csv,
+                     CIRProvenance, CIR_VERSION, make_provenance)
+    from cle.pipeline import CLEPipeline
+    from cle.adapters.struc_perc_export      import StrucPercExportAdapter
+    from cle.adapters.field_generator_adapter import FieldGeneratorAdapter
+    from cle.adapters.list_adapter  import ListAdapter
+    from cle.adapters.csv_adapter   import CsvAdapter
+    from cle.adapters.json_adapter  import JsonAdapter
+    from cle.models import CanonicalLadderObject, StrucPercResult
+
+  LOAD REAL STRUC-PERC-I OUTPUT  [v1.0.1]
+  ───────────────────────────────
+    clo = StrucPercExportAdapter().load(
+        "summary.json", encoding_id="raw", system_id="He"
+    )
+
+  PATCH WITH FIELD GENERATOR GRID  [v1.0.2]
+  ──────────────────────────────────
+    fg  = FieldGeneratorAdapter()
+    dg  = fg.load_grid("grid.json")                        # → DeformationGridResult
+    clo = fg.patch_clo(clo, "grid.json")                   # → patched CIR
+
+  ONE-LINER PIPELINE
+  ──────────────────
+    cst = CLEPipeline().analyze([1.0, 2.3, 5.1, 8.7, 9.0], domain="atomic")
+
+  ONE-LINER EVALUATE
+  ──────────────────
+    result = CLEvaluator().evaluate(family)
+    print(result.canonical_encoding_id)
+
+  EXPORT
+  ──────
+    export_json(result, "out/result.json")
+    export_csv( result, "out/result.csv")
+
+  CHECK PROVENANCE  [v1.0.2]
+  ─────────────────
+    p = clo.provenance
+    print(p.cir_version, p.adapter_id, p.source_schema, p.schema_hash)
+
+  REPRODUCIBILITY CHECK  [v1.0.2]
+  ─────────────────────
+    assert clo_a.provenance.schema_hash == clo_b.provenance.schema_hash
+
+  DETECT PARTIAL RUN  [v1.0.1]
+  ───────────────────
+    if clo.provenance and clo.provenance.notes:
+        print("Caveats:", clo.provenance.notes)
+
+  RAW vs CANONICAL  [v1.0.1]
+  ─────────────────
+    print(len(clo.raw_ladder))       # original values
+    print(len(clo.canonical_ladder)) # after sort + dedup + NaN removal
+    print(len(clo.ladder))           # same as canonical_ladder (alias)
+
+  CHECK SENSITIVITY
+  ─────────────────
+    s = result.sensitivity
+    print(f"Stable: {s['canonical_stable']}  ρ̄={s['overall_stability']:.3f}")
+    for k, v in s["per_weight"].items():
+        print(f"  {k}: impact={v['impact']:.3f}  flips={v['flip_rate']:.0%}")
+
+  ACCESS NORMALIZED COMPONENTS
+  ─────────────────────────────
+    for r in result.results:
+        nc = r.components_normalized
+        print(r.rank, r.encoding_id, f"C={r.c_score:.4f}",
+              f"m={nc.m_tilde:.3f}  Ω={nc.omega_tilde:.3f}",
+              f"ds={nc.d_stitch_inv:.3f}  RΔ={nc.r_delta:.3f}")
+
+  RUN TESTS
+  ─────────
+    python -m unittest discover tests/ -v   # 245 tests, OK
+
+================================================================================
+  END OF GUIDE
+  CLE v1.0.2  —  UNNS Substrate Research Program
+================================================================================

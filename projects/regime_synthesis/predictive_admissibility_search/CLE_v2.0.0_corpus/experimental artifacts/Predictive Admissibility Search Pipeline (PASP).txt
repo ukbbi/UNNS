@@ -1,0 +1,378 @@
+Predictive Admissibility Search — End-to-End Pipeline
+Overview
+
+This pipeline constructs a unified structural-comparison framework for evaluating realizability trajectories across heterogeneous domains using the UNNS / STRUC-PERC-I methodology.
+
+The system transforms heterogeneous raw scientific datasets into:
+
+canonicalized realizability ladders,
+STRUC-PERC-I structural descriptors,
+compressed 5D admissibility vectors,
+pairwise similarity matrices across synthetic and real domains.
+
+The architecture intentionally separates:
+
+raw domain ingestion,
+canonicalization,
+structural analysis,
+vector construction,
+similarity-space analysis.
+
+This ensures that STRUC-PERC-I operates exclusively on canonical realizability trajectories rather than raw scientific file formats.
+
+Global Architecture
+CLE_PILOT_I/
+
+├── raw/
+│   ├── helium/
+│   ├── cosmology/
+│   ├── neutrino/
+│   └── protein/
+│
+├── canonical/
+│   ├── helium/
+│   ├── cosmology/
+│   ├── neutrino/
+│   └── protein/
+│
+├── adversarial/
+│   ├── raw/
+│   └── canonical/
+│
+├── adapters/
+│   ├── helium_adapter.py
+│   ├── cosmology_adapter.py
+│   ├── neutrino_adapter.py
+│   └── protein_adapter.py
+│
+├── canonicalize_real_ladders.py
+│
+├── struc_perc_i/
+│
+└── similarity/
+Stage 1 — Synthetic Adversarial Ladder Generation
+Goal
+
+Construct synthetic ladder corpora designed to imitate or perturb realizability trajectories while lacking domain-grounded structural semantics.
+
+These corpora serve as adversarial controls.
+
+Synthetic Classes
+1. Uniform
+
+Randomly distributed realizability levels.
+
+Properties:
+
+low continuity,
+weak clustering,
+weak persistence.
+2. Pareto
+
+Heavy-tail realizability distributions.
+
+Properties:
+
+localized persistence,
+long-tail fragmentation,
+pseudo-hierarchical structure.
+3. Random Walk
+
+Sequential stochastic trajectories.
+
+Properties:
+
+local continuity,
+temporal correlation,
+unstable persistence.
+4. Shuffle
+
+Real-domain ladders with ordering destroyed.
+
+Properties:
+
+preserved value spectrum,
+destroyed realizability ordering,
+broken anisotropic continuity.
+Outputs
+CLE_PILOT_I/adversarial/raw/
+Stage 2 — Canonicalization
+Goal
+
+Convert all raw datasets into a unified ladder representation.
+
+The canonical representation is:
+
+sorted realizability trajectory
+
+with:
+
+duplicates removed,
+invalid values removed,
+monotonic ordering enforced,
+standardized CSV output.
+Real-Domain Canonicalization
+Core Principle
+
+Raw scientific files are never analyzed directly by STRUC-PERC-I.
+
+Instead:
+
+raw scientific representation
+            ↓
+domain adapter
+            ↓
+canonical realizability ladder
+            ↓
+STRUC-PERC-I analysis
+Adapter Architecture
+
+Each scientific domain uses an independent adapter.
+
+helium_adapter.py
+Input
+raw/helium/*.csv
+Tasks
+identify energy-level columns,
+extract numeric spectra,
+remove invalid states,
+construct monotonic realizability ladders.
+Output
+canonical/helium/*.csv
+cosmology_adapter.py
+Input
+raw/cosmology/*.json
+Tasks
+parse cosmological transition arrays,
+flatten nested structures,
+extract realizability trajectories,
+canonicalize ordered state ladders.
+Output
+canonical/cosmology/*.csv
+neutrino_adapter.py
+Input
+raw/neutrino/*.txt
+Tasks
+sanitize ROOT-export artifact names,
+extract numeric columns,
+flatten histogram-style data,
+construct monotonic trajectories.
+Output
+canonical/neutrino/*.csv
+protein_adapter.py
+Input
+raw/protein/*.npy
+Tasks
+flatten MSM transition populations,
+extract realizability distributions,
+canonicalize trajectory ordering.
+Output
+canonical/protein/*.csv
+Unified Canonicalization Controller
+canonicalize_real_ladders.py
+
+This script orchestrates all adapters.
+
+Responsibilities:
+
+detect available adapters,
+execute domain-specific canonicalization,
+validate canonical outputs,
+maintain unified directory structure.
+Adversarial Canonicalization
+
+Synthetic corpora are canonicalized using the same pipeline as real domains.
+
+This guarantees:
+
+identical preprocessing rules
+
+for both:
+
+real ladders,
+adversarial ladders.
+
+This removes preprocessing asymmetry.
+
+Stage 3 — STRUC-PERC-I Structural Analysis
+Goal
+
+Analyze canonical realizability ladders using full PRP percolation geometry.
+
+STRUC-PERC-I Responsibilities
+
+For each ladder:
+
+construct PRP vulnerability graph,
+evaluate admissibility continuity,
+detect fragmentation behavior,
+compute giant-component persistence,
+measure anisotropic persistence structure.
+STRUC-PERC-I Outputs
+
+For every ladder:
+
+struc_perc_batch_results.csv
+
+and optional:
+
+struc_per.json
+Output Locations
+Real Domains
+canonical/<domain>/<domain>_STRUC-PERC-I_output/
+Adversarial Domains
+adversarial/raw/canonical/<class>/<class>_STRUC-PERC-I_output/
+Stage 4 — 5D Structural Vector Construction
+Goal
+
+Compress STRUC-PERC-I descriptors into a unified admissibility vector representation.
+
+Vector Definition
+
+For every ladder:
+
+v(L) =
+(
+    P_depth,
+    sigma2_GR,
+    frag_rate,
+    adm_persist,
+    aniso_persist
+)
+Descriptor Meaning
+P_depth
+
+Connectivity persistence depth.
+
+Derived from:
+
+kappa_connect
+sigma2_GR
+
+Giant-component structural variance proxy.
+
+Derived from:
+
+giantRatio / GR
+frag_rate
+
+Fragmentation tendency.
+
+Derived from:
+
+isolatedFraction
+adm_persist
+
+Admissibility persistence.
+
+Computed as:
+
+1 - frag_rate
+aniso_persist
+
+Anisotropic persistence proxy.
+
+Derived from:
+
+tailDominance
+Vector Construction Scripts
+Real Domains
+construct_real_5d_vectors.py
+
+Produces:
+
+real_STRUC_5D_vectors.csv
+Adversarial Domains
+construct_adversarial_5d_vectors.py
+
+Produces:
+
+adversarial_STRUC_5D_proxy_vectors.csv
+Stage 5 — Similarity Matrix Construction
+Goal
+
+Embed all vectorized ladders into a shared similarity geometry.
+
+Pairwise Similarities Computed
+1. Adversarial ↔ Real
+synthetic ladder
+        vs
+real ladder
+
+Used to evaluate discriminative structural power.
+
+2. Within-Adversarial
+synthetic
+        vs
+synthetic
+
+Used to measure synthetic manifold spread.
+
+3. Real ↔ Real
+real
+    vs
+real
+
+Used to evaluate admissibility manifold coherence.
+
+Similarity Engine
+compute_similarity_matrices.py
+
+Responsibilities:
+
+load 5D vector corpora,
+normalize feature space,
+compute pairwise similarities,
+export similarity tables,
+compute corpus statistics,
+generate falsification diagnostics.
+Similarity Outputs
+similarity_outputs/
+
+containing:
+
+adversarial_vs_real_similarity.csv
+within_random_similarity.csv
+real_vs_real_similarity.csv
+similarity_statistics.csv
+falsification_report.txt
+Pipeline Invariants
+
+The pipeline enforces:
+
+1. Canonical symmetry
+
+All domains use identical canonicalization principles.
+
+2. Structural separation
+
+STRUC-PERC-I only analyzes canonical trajectories.
+
+Never raw scientific files.
+
+3. Adapter isolation
+
+Each scientific domain remains independently maintainable.
+
+4. Reproducibility
+
+All stages export explicit intermediate datasets.
+
+5. Metric composability
+
+The similarity layer operates only on standardized 5D vectors.
+
+Final Pipeline Summary
+raw scientific data
+        ↓
+domain adapters
+        ↓
+canonical realizability ladders
+        ↓
+STRUC-PERC-I structural analysis
+        ↓
+5D admissibility vectors
+        ↓
+pairwise similarity matrices
+        ↓
+structural manifold analysis
