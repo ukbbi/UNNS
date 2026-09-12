@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multi-Clock Recurrence Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1440px;margin:0 auto;padding:40px 32px 120px}
+
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 120% at 90% 50%,rgba(0,200,240,.06),transparent);pointer-events:none}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.04em;max-width:760px;margin-bottom:18px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-coral{color:var(--coral);border-color:var(--coral);background:rgba(224,96,64,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+.vf,.vg,.vt,.vh,.vv,.vd{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid;border-radius:2px;white-space:nowrap}
+.vf{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.08)}
+.vg{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.08)}
+.vt{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.08)}
+.vh{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.08)}
+.vv{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.08)}
+.vd{color:var(--text2);border-color:var(--dim);background:rgba(58,80,112,.08)}
+
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+.bridge-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.bridge-card{background:var(--panel);border:1px solid var(--border2);padding:14px 16px}
+.bridge-val{font-family:var(--display);font-size:20px;color:var(--accent);line-height:1;margin:4px 0}
+.bridge-lbl{font-size:8px;color:var(--text2);letter-spacing:.08em;font-family:var(--mono)}
+.pair-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:9px;font-family:var(--mono)}
+.pair-a{color:var(--blue)}
+.pair-b{color:var(--amber)}
+.pair-c{color:var(--green)}
+.pair-dist{color:var(--accent);font-size:10px}
+.pair-lbl{color:var(--dim)}
+.arrow{color:var(--dim)}
+
+.kappa-bar-wrap{display:flex;align-items:center;gap:8px;margin:3px 0}
+.kappa-bar-track{height:4px;background:var(--border2);flex:1;min-width:60px;position:relative}
+.kappa-bar-fill{height:100%;position:absolute;left:0;top:0}
+.kappa-val{font-family:var(--mono);font-size:9px;min-width:52px;text-align:right}
+.kappa-id{font-family:var(--mono);font-size:9px;color:var(--text2);min-width:140px}
+
+.td-bar-wrap{display:flex;align-items:center;gap:8px;margin:3px 0}
+.td-bar-track{height:6px;background:var(--border2);flex:1;position:relative}
+.td-bar-fill{height:100%;position:absolute;left:0;top:0}
+.td-val{font-family:var(--mono);font-size:9px;min-width:40px;text-align:right}
+
+.special-banner{border:1px solid var(--amber);border-left:3px solid var(--amber);background:rgba(240,160,48,.05);padding:12px 16px;margin-bottom:10px}
+.special-title{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:5px;font-family:var(--mono)}
+.special-banner.boundary{border-color:var(--violet)}
+.special-banner.boundary .special-title{color:var(--violet)}
+.special-banner.fail{border-color:var(--red)}
+.special-banner.fail .special-title{color:var(--red)}
+
+.corpus-bar{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:9px;font-family:var(--mono)}
+.cb-track{flex:1;height:4px;background:var(--border2);position:relative;min-width:80px}
+.cb-fill{height:100%;position:absolute;left:0;top:0}
+.cb-lbl{min-width:140px;color:var(--text2)}
+.cb-val{min-width:60px;text-align:right;color:var(--text)}
+
+.theory-row{display:grid;grid-template-columns:210px 1fr auto;gap:8px;padding:.4rem 0;border-bottom:.5px solid var(--border2);font-size:10px;align-items:start}
+.theory-row:last-child{border-bottom:none}
+.theory-hdr{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.08em;display:grid;grid-template-columns:210px 1fr auto;gap:8px;padding-bottom:.4rem;font-family:var(--mono)}
+.conf{color:var(--green);font-family:var(--mono);font-size:9px;white-space:nowrap}
+.new{color:var(--amber);font-family:var(--mono);font-size:9px;white-space:nowrap}
+.neg{color:var(--red);font-family:var(--mono);font-size:9px;white-space:nowrap}
+
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+.hashline{font-family:var(--mono);font-size:8.5px;color:var(--text2);word-break:break-all;line-height:1.9}
+.hashline b{color:var(--accent);font-weight:400}
+
+.pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:0;font-family:var(--mono);font-size:9px;margin:10px 0}
+.pipe-step{background:var(--panel2);border:1px solid var(--border2);padding:6px 12px;color:var(--text)}
+.pipe-step.active{border-color:var(--accent);color:var(--accent)}
+.pipe-arrow{color:var(--dim);padding:0 8px}
+
+.ladder{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.ladder-step{display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--border2);background:var(--panel2)}
+.ladder-lv{font-family:var(--display);font-size:11px}
+.ladder-desc{font-size:9.5px;color:var(--text2)}
+.ladder-desc b{color:var(--text)}
+
+@media(max-width:900px){.row2,.row3{grid-template-columns:1fr}.bridge-row{grid-template-columns:1fr}.theory-row,.theory-hdr{grid-template-columns:130px 1fr auto}.ladder-step{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · UNNS_MULTI_CLOCK_RECURRENCE BRANCH · MC_GRAMMAR_v001 · 2026-08-27</div>
+  <h1>Multi-Clock Recurrence Analytics</h1>
+  <div class="hero-sub">Structural-admissibility study of quasi-periodic, two-clock temporal order — a diagnostic representation bake-off across four candidate coordinates, converging on a frozen source-torus-anchored fractional-cover grammar (D_2clk → [P_src; J_frac | M_frac] + C_coll), calibrated on independent golden-ratio two-clock development data, then stress-tested prospectively against a genuinely unseen external-model candidate and retrospectively against the historical TIME-CRYSTAL-I C003 domain-boundary case.</div>
+  <div class="badges">
+    <span class="badge b-green">13 CANONICAL RECORDS INGESTED · 4 REPRESENTATIONS BAKED OFF</span>
+    <span class="badge b-blue">FROZEN GRAMMAR MC_GRAMMAR_v001 · 2026-08-27</span>
+    <span class="badge b-green">DEVELOPMENT REPLAY: DTQC 4/4 SUPPORTED · CONTROLS 0/16 SUPPORTED</span>
+    <span class="badge b-red">PROSPECTIVE P001 → CANDIDATE REJECTED (control matched expectation)</span>
+    <span class="badge b-violet">C003 HISTORICAL RETEST → STILL OUTSIDE GRAMMAR, BUT J_frac=0.911 M_frac=0.596</span>
+    <span class="badge b-green">PRE-FREEZE MALZ–SMITH SPECIFICITY CHALLENGE (v003) → PASS, RECORDS LATER JOINED DEVELOPMENT CORPUS</span>
+    <span class="badge b-amber">GOLDEN-RATIO DOMAIN ONLY (v001)</span>
+    <span class="badge b-dim">BLIND → LOCK → REVEAL, SAME FIREWALL AS TIME-CRYSTAL-I</span>
+    <span class="badge b-coral">C003 EXCLUDED FROM ALL DEVELOPMENT / CALIBRATION / SELECTION</span>
+    <span class="badge b-dim">SOURCE: RESEARCH_FIREWALL · REP_STUDY_v002 · GRAMMAR_DEV_v001 · GRAMMAR_SELECT_v001 · GRAMMAR_FREEZE_v001 · PROSPECTIVE_P01 · C003_FINAL_v001</span>
+  </div>
+  <div class="hero-meta">
+    <span>Chain: neutral ingestion → representation bake-off → drive-torus diagnostic → locked Zhu v002 transfer test (partial failure) → fractional-cover v003 → locked Malz–Smith specificity challenge (pass) → 4-rep study v002 (Luo + reclassified Zhu + Malz–Smith) → grammar dev (nulls/robustness) → grammar select → grammar freeze → prospective test → C003 historical retest</span>
+    <span>Frozen grammar SHA-256: 8ae9b0d9…39e4bba556d6</span>
+    <span>Status: grammar FROZEN · prospective CLOSED (failure preserved) · C003 CLOSED (boundary preserved) · Malz–Smith pre-freeze specificity CLOSED (pass, incorporated into development)</span>
+  </div>
+</div>
+
+<!-- ═══ §1 BRANCH OVERVIEW ═══ -->
+<div class="sec-label"><span class="sec-num">§1</span> BRANCH OVERVIEW — FROM NAIVE RECURRENCE TO A FROZEN MULTI-CLOCK GRAMMAR</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">13</div><div class="stat-lbl">NEUTRAL-INGESTION RECORDS</div></div>
+  <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">CANDIDATE REPRESENTATIONS TESTED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">3</div><div class="stat-lbl">TEMPORAL-CORE COORDINATES (P_src, J_frac, M_frac)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">4/4</div><div class="stat-lbl">DTQC POSITIVES SUPPORTED AT FREEZE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">0/16</div><div class="stat-lbl">CONTROLS SUPPORTED AT FREEZE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1</div><div class="stat-lbl">PROSPECTIVE CANDIDATE — REJECTED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--violet)">1</div><div class="stat-lbl">C003 HISTORICAL RETEST — BOUNDARY CONFIRMED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">1</div><div class="stat-lbl">PRE-FREEZE SPECIFICITY CHALLENGE — PASS</div></div>
+  <div class="stat"><div class="stat-val">0.12</div><div class="stat-lbl">FROZEN M_frac RAW GATE</div></div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §1.1</div>
+  <div class="finding-title">Three successive representations were tried and abandoned before a specific, robust multi-clock coordinate was found</div>
+  <p>The branch firewall (00_PROTOCOL/RESEARCH_FIREWALL.md) explicitly quarantines the historical TIME-CRYSTAL-I candidate C003 from every development stage — it may not be used to calibrate, select, or threshold anything, and may only be evaluated once, after the grammar is frozen. Development proceeded through four representation families: source-free vector-depth recurrence (fails — not multi-clock-specific), source-defined frequency-lattice alignment (fails — too permissive), source-defined drive-torus regression at integer depth (fails — DTQC not maximal among regimes), and finally a fractional-cover decomposition beyond the integer parent torus (succeeds — separates DTQC positives from every available control family by AUC 1.0). Each failure was preserved as a negative result rather than quietly discarded, mirroring the TIME-CRYSTAL-I rigidity-sector precedent.</p>
+</div>
+
+<!-- ═══ §2 FIREWALL & PIPELINE ═══ -->
+<div class="sec-label"><span class="sec-num">§2</span> RESEARCH FIREWALL & DEVELOPMENT CHAIN</div>
+
+<div class="panel">
+  <div class="panel-title">NON-NEGOTIABLE CONSTRAINTS <span class="psub">· 00_PROTOCOL/RESEARCH_FIREWALL.md</span></div>
+  <div class="pipeline">
+    <span class="pipe-step active">neutral ingestion</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">representation bake-off</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">drive-torus diagnostic</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">Zhu transfer test</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">fractional-cover v003</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">Malz–Smith specificity</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">4-rep study v002</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">grammar dev (nulls+robustness)</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">grammar select</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">grammar freeze</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">prospective test</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">C003 retest</span>
+  </div>
+  <p style="font-size:10.5px;color:var(--text);margin-top:6px">1. C003 is a historical domain-boundary case and is excluded from development, calibration, representation selection, threshold selection, and validation. 2. ZHU_2026 began as a holdout; a locked v002 transfer test returned PARTIAL_TRANSFER_WITH_COVER_DEPTH_FAILURE, after which ZHU_FIG1_C1/C3 were reclassified as retrospective/development evidence (§5) — not independent validation of the final grammar. 3. MOON_2025 raw data are access-restricted and unused throughout. 4. Development proceeds from independent sources → neutral ingestion → diagnostic representation tests → validation → only then metric/threshold freeze. 5. No target-frequency leakage, synthetic evidence, post-hoc threshold tuning, or retrospective rewriting of the TIME-CRYSTAL-I verdict is permitted. 6. Development-stage methods (v001, v002) are diagnostic-only and emit no admissibility verdicts.</p>
+</div>
+
+<div class="row2" style="align-items:start">
+  <div class="panel">
+    <div class="panel-title">CORPUS_v001 — 13 INGESTED + 3 RESERVED <span class="psub">· 04_CORPUS/CORPUS_v001.json</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Source</th><th>Domain</th><th>Records</th><th>Role(s)</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>HUANG_2025</td><td>continuous-time spin dynamics</td><td>3 (LC, QP, CHAOS)</td><td>periodic / quasiperiodic / chaotic controls</td><td><span class="vf">INGESTED</span></td></tr>
+          <tr><td>LUO_2026</td><td>Rydberg-chain numerical DTQC</td><td>10 (M, F, EE×LOW/DTQC/HIGH, N=12/32/40)</td><td>DTQC development + secondary + breakdown/decoupled controls</td><td><span class="vf">INGESTED</span></td></tr>
+          <tr><td>MOON_2025</td><td>experimental Fibonacci DTQC / time rondeau</td><td>—</td><td>experimental development, pending</td><td><span class="vh">ACCESS_RESTRICTED</span></td></tr>
+          <tr><td>ZHU_2026</td><td>experimental DTQC</td><td>—</td><td>holdout → locked transfer test → reclassified development</td><td><span class="vd">VALIDATION_CONSUMED → DEVELOPMENT (see §5)</span></td></tr>
+          <tr><td>TC_PROSPECTIVE_01 (HIST_C003)</td><td>experimental Z2 DTQC</td><td>—</td><td>historical boundary case</td><td><span class="vv">DO_NOT_CALIBRATE</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">CORPUS_STATUS_v002.json addendum: ZHU_2026 state moved HOLDOUT → VALIDATION_CONSUMED (locked ZHU_VALIDATION_v001, outcome PARTIAL_TRANSFER_WITH_COVER_DEPTH_FAILURE) → ZHU_FIG1_C1/C3 subsequently reclassified DTQC_POSITIVE development evidence in REP_CORPUS_v002 (C1's M_frac=0.138611 sets the frozen gate's lower bound, §10) · HIST_C003 remains DO_NOT_CALIBRATE, unchanged.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">REP_CORPUS_v002 — CORE + AUXILIARY PANELS</div>
+    <p style="font-size:10.5px;color:var(--text);margin-bottom:8px"><b style="color:var(--text)">Core panel</b> (full source-defined golden-ratio two-clock records, source_ratio = φ = 1.618033988749895 throughout): Luo 2026 (6 entanglement trajectories: LOW/DTQC/HIGH × N=12/32), Zhu 2026 (2 experimental DTQC: Fig.1 C1, C3 — reclassified from holdout after a locked v002 transfer test, §5; not independent validation), Malz–Smith 2021 (12 experimental qubit-tomography trajectories: 6 topological, 6 trivial — reclassified as development controls after a pre-freeze locked specificity challenge, §7).</p>
+    <p style="font-size:10.5px;color:var(--text)"><b style="color:var(--text)">Auxiliary panel</b> (source-free cross-chart controls, JPR/FL/FC undefined — no explicit two-clock source): Huang 2025 (LC, QP, CHAOS), TIME-CRYSTAL-I integer-recurrence records (C001, C002, C002_CTRL, NRCTRL) — evaluated only via the source-free vector-depth representation, for cross-chart comparison. C003 fully excluded from this corpus.</p>
+    <div class="caution">20 core + 7 auxiliary = 27 records in REP_CORPUS_v002 · all core records share the golden-ratio branch; different-ratio robustness explicitly untested at this stage (REP_STUDY_v002 limitation).</div>
+  </div>
+</div>
+
+<!-- ═══ §3 BAKE-OFF v001 ═══ -->
+<div class="sec-label"><span class="sec-num">§3</span> REPRESENTATION BAKE-OFF v001 — FIRST-PASS, DIAGNOSTIC ONLY</div>
+
+<div class="panel">
+  <div class="panel-title">RESULT — NONE OF THE THREE FIRST-PASS REPRESENTATIONS IS SUFFICIENT ALONE <span class="psub">· 13 records · frequency lattice / observable-derived torus / vector recurrence</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>id</th><th>role</th><th>lattice gain (bins)</th><th>torus R² (2d)</th><th>rec best-pair</th></tr></thead>
+      <tbody>
+        <tr><td>LUO_M_N32</td><td>DTQC_DEVELOPMENT</td><td style="color:var(--green)">23.6635</td><td>—</td><td>0.8068</td></tr>
+        <tr><td>LUO_F_N40</td><td>DTQC_DEVELOPMENT_SECONDARY</td><td style="color:var(--green)">23.7627</td><td>—</td><td>0.7193</td></tr>
+        <tr><td>LUO_EE_DTQC_N32</td><td>DTQC_DEVELOPMENT</td><td style="color:var(--amber)">19.0464</td><td style="color:var(--amber)">0.7171 (not maximal!)</td><td style="color:var(--amber)">0.7153</td></tr>
+        <tr><td>LUO_EE_LOW_N32</td><td>LOW_FREQ_APERIODIC_CONTROL</td><td style="color:var(--dim)">2.5947 (weak)</td><td>0.9254</td><td>0.4433</td></tr>
+        <tr><td>LUO_EE_HIGH_N32</td><td>HIGH_FREQ_DECOUPLED_CONTROL</td><td style="color:var(--red)">16.4302 (strong despite decoupling!)</td><td>0.9235</td><td style="color:var(--red)">0.8849 (exceeds DTQC!)</td></tr>
+        <tr><td>HUANG_QP</td><td>ADJACENT_QUASIPERIODIC</td><td>—</td><td>—</td><td style="color:var(--dim)">0.9991 (near-saturated, non-specific)</td></tr>
+        <tr><td>HUANG_CHAOS</td><td>CHAOTIC_CONTROL</td><td>—</td><td>—</td><td style="color:var(--dim)">0.9990 (near-saturated, non-specific)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Full corpus in BAKEOFF_RESULTS.csv (13 records × 29 columns) · negative result reproducible across N=12/N=32 · conclusion: need a source-defined drive-phase torus plus a coupling-sensitive coordinate, not a purely spectral or purely recurrent one.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §3.1</div>
+  <div class="finding-title">Every single-coordinate first-pass representation is fooled by at least one control</div>
+  <p>Frequency-lattice alignment ranks the high-frequency decoupled control (16.4302) above the DTQC-positive record on the same statistic family, and vector recurrence ranks the same decoupled control (0.8849) above DTQC (0.7153) — while the observable-derived torus fails to make DTQC's R² maximal among the three regimes at all (0.7171, below the low-frequency control's 0.9254). None of these three representations is discarded as useless — frequency-lattice and vector-depth both survive as supporting, non-gating charts in the eventual compact grammar (§10) — but none is DTQC-specific on its own.</p>
+</div>
+
+<!-- ═══ §4 DRIVE TORUS ═══ -->
+<div class="sec-label"><span class="sec-num">§4</span> DRIVE-TORUS + COUPLING DIAGNOSTIC v002 — SOURCE-DEFINED PHASE TORUS</div>
+
+<div class="panel">
+  <div class="panel-title">SOURCE-DEFINED TORUS (θ_L = 2πx, θ_R = 2πφx) VS OBSERVABLE-DERIVED TORUS <span class="psub">· six Luo Fig.3 entanglement trajectories</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Regime</th><th>N</th><th>best depth</th><th>full R² (cv)</th><th>axis-only R²</th><th>mixed interaction gain</th><th>mean S</th></tr></thead>
+      <tbody>
+        <tr><td>Low-frequency aperiodic</td><td>32</td><td>2</td><td>0.1213</td><td>0.0697</td><td>0.0515</td><td>0.5853</td></tr>
+        <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">Intermediate DTQC</td><td>32</td><td>2</td><td style="color:var(--green)">0.9409</td><td>0.7167</td><td style="color:var(--green)">0.2242</td><td>0.2425</td></tr>
+        <tr><td>High-frequency decoupled</td><td>32</td><td>2</td><td>0.6976</td><td>0.5972</td><td>0.1004</td><td>0.0719</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">N=12 values near-identical to N=32 (not a finite-size artifact) · all six records independently select cover depth d=2, so depth alone is not DTQC-specific · ordering DTQC &gt; high &gt; low survives ×5/×10 downsample, first-75% truncation, and 2% RMS noise</div>
+</div>
+
+<div class="special-banner">
+  <div class="special-title">⚑ MIXED INTERACTION GAIN IS THE FIRST COORDINATE TO RANK DTQC ABOVE BOTH SAME-SYSTEM CONTROLS — AND COUPLING RUNS BACKWARDS</div>
+  <p style="font-size:10.5px;margin-top:6px;color:var(--text)">DTQC's mixed interaction gain (0.2242) is <b style="color:var(--amber)">≈2.23×</b> the high-frequency decoupled control's (0.1004) and <b style="color:var(--amber)">≈4.35×</b> the low-frequency control's (0.0515) — the first single number in the entire branch that ranks DTQC strictly above both controls. But the physical coupling-strength proxy (mean entanglement entropy S) runs in the <i>opposite</i> order: low=0.5853 &gt; DTQC=0.2425 &gt; high=0.0719. Multi-clock torus organization and collective coupling strength are not the same axis — echoing the "temporal structure ≠ collective admissibility" lesson later stated explicitly in the project summary. Specificity against generic (non-DTQC) two-clock quasiperiodicity was not yet established at this stage — that came later, from the Malz–Smith specificity challenge (§7).</p>
+</div>
+
+<!-- ═══ §5 ZHU LOCKED TRANSFER TEST ═══ -->
+<div class="sec-label"><span class="sec-num">§5</span> LOCKED ZHU v002 TRANSFER TEST — HOLDOUT CONSUMED, NOT INDEPENDENT VALIDATION</div>
+
+<div class="panel">
+  <div class="panel-title">PRE-REGISTERED TRANSFER TEST OF THE v002 DRIVE-TORUS METHOD ON A HELD-OUT EXTERNAL SOURCE <span class="psub">· ZHU_VALIDATION_v001 · 04_CORPUS/CORPUS_STATUS_v002.json</span></div>
+  <p style="font-size:10.5px;color:var(--text);margin-bottom:8px">ZHU_2026 entered the branch as a protected holdout under the research firewall (00_PROTOCOL/RESEARCH_FIREWALL.md: "ZHU_2026 is reserved as a holdout and must not be analyzed during development"). Before any Zhu data were analyzed, a locked test — ZHU_VALIDATION_v001 — was pre-registered to ask a narrow external-transfer question: does the source-defined drive-torus + coupling method frozen at v002 (§4) generalize to an independent experimental DTQC source it had never seen? This was designed and executed as a genuine holdout test, not as a source of development evidence.</p>
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-val" style="color:var(--amber)">PARTIAL</div><div class="stat-lbl">PARTIAL TRANSFER — COVER-DEPTH FAILURE</div></div>
+    <div class="stat"><div class="stat-val" style="font-size:16px">HOLDOUT →<br>CONSUMED</div><div class="stat-lbl">CORPUS STATE TRANSITION</div></div>
+    <div class="stat"><div class="stat-val">v002</div><div class="stat-lbl">METHOD UNDER TEST</div></div>
+    <div class="stat"><div class="stat-val">2</div><div class="stat-lbl">RECORDS RELEASED (FIG.1 C1, C3)</div></div>
+  </div>
+  <div class="caution">CORPUS_STATUS_v002.json addendum, ZHU_2026: previous_state = HOLDOUT / DO_NOT_ANALYZE → current_state = VALIDATION_CONSUMED · locked_validation = ZHU_VALIDATION_v001 · validation_outcome = PARTIAL_TRANSFER_WITH_COVER_DEPTH_FAILURE · v003_use = RETROSPECTIVE_ONLY_NOT_VALIDATION.</div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">WHAT "PARTIAL TRANSFER" MEANT <span class="psub">· 05_METHODS/FRACTIONAL_COVER/FC_SPEC_v003.md rationale note</span></div>
+  <p style="font-size:10.5px;color:var(--text)">The locked test found that Zhu's joint source-clock organization <i>does</i> transfer — the underlying two-clock structure the v002 method is built to detect is genuinely present in the external data. But v002's own cover-depth selector, <code>argmax_d full_r2_cv(d)</code>, failed to pick it out correctly on the Zhu records: a method that worked by construction on the Luo development set did not transfer cleanly to an independent source. This mixed outcome — real signal, wrong selector — is exactly what motivated <b style="color:var(--text)">fractional-cover v003</b> (§6), whose spec note reads verbatim: "Successor to v002 after Zhu external-transfer test showed joint source-clock organization transfers but v002's <code>argmax_d full_r2_cv(d)</code> depth selector does not."</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §5.1</div>
+  <div class="finding-title">Zhu is retrospective development evidence, not independent validation — the label matters</div>
+  <p>Because ZHU_VALIDATION_v001 returned a partial, method-revising result rather than a clean pass or fail, the two released records (Fig.1 C1, C3) were reclassified DTQC_POSITIVE and folded into REP_CORPUS_v002 as development evidence (§2) — most consequentially, ZHU_FIG1_C1's fractional mixed gain (M_frac = 0.138611, §6) became the empirical lower bound that sets the frozen grammar's raw M_frac gate (§10). A record that helps define a threshold cannot also be used to independently validate that threshold: Zhu's role in this branch is retrospective and formative, not confirmatory. The only genuinely pre-freeze, held-out specificity test in this branch is the Malz–Smith challenge (§7).</p>
+</div>
+
+<!-- ═══ §6 FRACTIONAL COVER v003 ═══ -->
+<div class="sec-label"><span class="sec-num">§6</span> FRACTIONAL-COVER DECOMPOSITION v003 — BEYOND THE INTEGER PARENT TORUS</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">MAIN DEVELOPMENT TABLE <span class="psub">· N=32 · six Luo Fig.3 trajectories</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Regime</th><th>Parent R²</th><th>Frac. axis gain</th><th>Frac. mixed gain</th><th>Frac. total gain</th></tr></thead>
+        <tbody>
+          <tr><td>LOW</td><td>0.002072</td><td>0.076870</td><td>0.051774</td><td>0.128645</td></tr>
+          <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">DTQC</td><td>0.012515</td><td style="color:var(--green)">0.717709</td><td style="color:var(--green)">0.224366</td><td style="color:var(--green)">0.942075</td></tr>
+          <tr><td>HIGH</td><td>0.035786</td><td>0.598050</td><td>0.100526</td><td>0.698576</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">d=1 = integer parent lattice B_Z; d=2,3,4 fractional; robustness at base d_frac: downsample ×5/×10, first 75%, noise σ=0.02·std, seed 20260826.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">ZHU 2026 RETROSPECTIVE <span class="psub">· motivated v003, not independent validation (Zhu was used to design v003)</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Record</th><th>Parent R²</th><th>Frac. axis gain</th><th>Frac. mixed gain</th><th>Frac. total gain</th></tr></thead>
+        <tbody>
+          <tr><td>C1</td><td>0.600458</td><td>−0.043640</td><td style="color:var(--green)">0.138611</td><td>0.094971</td></tr>
+          <tr><td>C3</td><td>0.522323</td><td>−0.011398</td><td style="color:var(--green)">0.300533</td><td>0.289135</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:10px;color:var(--text2);margin-top:10px">Zhu's fractional-mixed-gain values are strongly positive despite near-zero/negative fractional axis gain — the first hint that the <i>mixed</i> term, not the axis or total term, is where the specific signal lives. This directly motivated M_frac = FC_frac_mixed_gain becoming the eventual primary decision coordinate (§10).</p>
+  </div>
+</div>
+
+<!-- ═══ §7 MALZ-SMITH SPECIFICITY (PRE-FREEZE) ═══ -->
+<div class="sec-label"><span class="sec-num">§7</span> PRE-FREEZE SPECIFICITY CHALLENGE — MALZ–SMITH 2021 TOPOLOGICAL FLOQUET QUBIT</div>
+
+<div class="panel">
+  <div class="panel-title">FALSIFICATION TEST OF FRACTIONAL-COVER v003, NOT A POSITIVE-DTQC VALIDATION <span class="psub">· 12 experimental IBM-qubit tomography runs, two incommensurate drive clocks</span></div>
+  <p style="font-size:10.5px;color:var(--text);margin-bottom:8px">Pre-analysis lock written before reading any numeric data. Question: does merely having <i>two incommensurate clocks</i> — with no DTQC order at all — automatically produce v003's positive fractional-cover signature? If yes, v003 is not specific and the whole branch's central claim collapses.</p>
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-val" style="color:var(--green)">PASS</div><div class="stat-lbl">PASS_STRONG_SPECIFICITY_CHALLENGE</div></div>
+    <div class="stat"><div class="stat-val">12</div><div class="stat-lbl">EXPERIMENTAL SOURCE RECORDS</div></div>
+    <div class="stat"><div class="stat-val">36</div><div class="stat-lbl">SCALAR COMPONENT RECORDS (X/Y/Z)</div></div>
+    <div class="stat"><div class="stat-val">0</div><div class="stat-lbl">CLASSIFICATION THRESHOLDS / VERDICTS EMITTED</div></div>
+  </div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">MEDIAN parent_full_r2_cv BY REGIME & COMPONENT</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>Topological (C=−1)</th><th>Trivial (C=0)</th></tr></thead>
+        <tbody>
+          <tr><td>X</td><td>0.863377</td><td>0.404665</td></tr>
+          <tr><td>Y</td><td>0.864897</td><td>0.310316</td></tr>
+          <tr><td>Z</td><td>0.899285</td><td>−0.136661</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Both regimes anchor strongly to the integer parent torus (as expected — genuine two-clock experimental data) — this is precisely the P_src signal, not the M_frac signal.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">MEDIAN frac_total_gain BY REGIME & COMPONENT — THE SPECIFICITY RESULT</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>Topological (C=−1)</th><th>Trivial (C=0)</th></tr></thead>
+        <tbody>
+          <tr><td>X</td><td style="color:var(--red)">−0.004914</td><td style="color:var(--red)">−0.026201</td></tr>
+          <tr><td>Y</td><td style="color:var(--red)">−0.007267</td><td style="color:var(--red)">−0.029130</td></tr>
+          <tr><td>Z</td><td style="color:var(--red)">−0.008673</td><td style="color:var(--red)">−0.161759</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Every cell negative — contrasts sharply with Luo DTQC (frac_total ≈ +0.942) and Zhu retrospective (also positive). Two incommensurate clocks alone do NOT produce v003's fractional-cover signature — a direct falsification test the grammar's core intuition survived.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §7.1</div>
+  <div class="finding-title">v003 is not fooled by mere two-clock incommensurability, but this is not proof it IS a DTQC classifier</div>
+  <p>Across 0.6 ≤ M ≤ 3.4 (both the topological C=−1 and trivial C=0 regimes of the Malz–Smith Floquet qubit), median fractional total gain stayed negative in all 6 regime×component cells, and robustness checks (downsample ×5/×10, first-75% truncation, 2% noise) kept the regime medians negative throughout. Sign counts: only 1/18 topological and 2/18 trivial scalar records showed a positive frac_total_gain at all — consistent with noise, not signal. This is a genuine specificity result, but the report is explicit about its own limit: it demonstrates v003 does not fire on generic two-clock quasiperiodicity, not that it is a validated DTQC detector in general.</p>
+  <p style="margin-top:8px">This was a locked, pre-freeze challenge — executed and interpreted before REP_STUDY_v002 — not an independent validation run against the finished grammar. Its 12 records were subsequently incorporated into REP_CORPUS_v002 as development controls (§2), most visibly anchoring the QP_NON_DTQC_TOPO and QP_NON_DTQC_TRIVIAL role rows in the Four-Representation Study's role-level medians (§8). Nothing in this branch was checked against Malz–Smith data held out after the grammar was frozen.</p>
+</div>
+
+<!-- ═══ §8 FOUR-REP STUDY ═══ -->
+<div class="sec-label"><span class="sec-num">§8</span> FOUR-REPRESENTATION STUDY v002 — VECTOR-DEPTH · JPR · FREQUENCY-LATTICE · FRACTIONAL-COVER</div>
+
+<div class="panel">
+  <div class="panel-title">ROLE-LEVEL MEDIANS ACROSS ALL FOUR REPRESENTATIONS <span class="psub">· REP_STUDY_v002/GROUP_SUMMARY.json</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Role</th><th>VD family contrast</th><th>JPR parent gain (P_src)</th><th>JPR cover advantage (J_frac)</th><th>FL peak contrast</th><th>FC parent R²</th><th>FC mixed gain (M_frac)</th><th>FC total gain</th></tr></thead>
+      <tbody>
+        <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">DTQC_POSITIVE</td><td>0.0611</td><td>0.3088</td><td>0.3616</td><td>2.8956</td><td>0.2674</td><td style="color:var(--green)">0.2244</td><td>0.6156</td></tr>
+        <tr><td>MULTICLOCK_BREAKDOWN_LOW</td><td>0.0022</td><td>0.1427</td><td>0.3981</td><td>1.0812</td><td>0.0020</td><td style="color:var(--red)">0.0528</td><td>0.1300</td></tr>
+        <tr><td>MULTICLOCK_DECOUPLED_HIGH</td><td>0.0144</td><td>0.0699</td><td>0.6025</td><td>5.4555</td><td>0.0358</td><td style="color:var(--red)">0.1005</td><td>0.6986</td></tr>
+        <tr><td>QP_NON_DTQC_TOPO</td><td>0.2699</td><td>0.6309</td><td>−0.2552</td><td>1.3103</td><td>0.8798</td><td style="color:var(--red)">−0.0092</td><td>−0.0163</td></tr>
+        <tr><td>QP_NON_DTQC_TRIVIAL</td><td>0.0816</td><td>0.1575</td><td>−0.0771</td><td>0.6620</td><td>0.1883</td><td style="color:var(--red)">−0.0549</td><td>−0.0898</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">FC mixed gain (M_frac) is the only column where DTQC_POSITIVE sits strictly above every control role · JPR cover advantage (J_frac) separates DTQC from the two Malz-Smith non-DTQC roles but not from the two Luo same-system controls · frequency lattice remains too permissive (HIGH control's 5.4555 exceeds DTQC's 2.8956).</div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">M_frac (FRACTIONAL MIXED-CLOCK GAIN) — ROLE MEDIANS</div>
+    <div style="margin-top:8px">
+      <div class="kappa-bar-wrap"><span class="kappa-id" style="color:var(--green)">DTQC_POSITIVE</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:100%;background:var(--green)"></div></div><span class="kappa-val" style="color:var(--green)">0.2244</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">MULTICLOCK_DECOUPLED_HIGH</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:45%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.1005</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">MULTICLOCK_BREAKDOWN_LOW</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:24%;background:var(--dim)"></div></div><span class="kappa-val" style="color:var(--dim)">0.0528</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">QP_NON_DTQC_TOPO</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--red)"></div></div><span class="kappa-val" style="color:var(--red)">−0.0092</span></div>
+      <div class="kappa-bar-wrap"><span class="kappa-id">QP_NON_DTQC_TRIVIAL</span><div class="kappa-bar-track"><div class="kappa-bar-fill" style="width:0%;background:var(--red)"></div></div><span class="kappa-val" style="color:var(--red)">−0.0549</span></div>
+    </div>
+    <div class="caution">Frozen raw gate M_frac ≥ 0.12 (dashed reference) sits between DTQC (0.2244) and every control's median.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">REPRESENTATION AGREEMENT <span class="psub">· fractional depth chosen by JPR vs FC · 20 core records</span></div>
+    <p style="font-size:10.5px;color:var(--text)">All 6 Luo records and both Zhu records: JPR and FC <b style="color:var(--green)">agree</b> on fractional depth, and both prefer the fractional cover over the integer parent. All 12 Malz–Smith records: JPR still selects an integer/fractional depth mechanically, but <b style="color:var(--red)">does not prefer</b> the fractional cover over the parent torus, and FC's fractional gain is negative — 18/20 core records show consistent cross-representation behavior; only 2 (MS_M0p8, MS_M1p4) show a depth disagreement between JPR and FC, both still correctly non-DTQC by FC sign.</p>
+    <div class="caution">Median absolute JPR-cover-advantage change under origin shift = 0.001629, clock exchange = 0.002242, affine transform = 0.000000 — the invariance checkpoint that let J_frac later serve as a stable (if non-gating) chart coordinate.</div>
+  </div>
+</div>
+
+<!-- ═══ §9 GRAMMAR DEV ═══ -->
+<div class="sec-label"><span class="sec-num">§9</span> GRAMMAR DEVELOPMENT v001 — NULLS, ROBUSTNESS, CONTROL DISCRIMINATION</div>
+
+<div class="panel">
+  <div class="panel-title">PAIRWISE AUC — M_frac (FC MIXED GAIN) IS THE ONLY PERFECT DISCRIMINANT</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Metric</th><th>vs Luo LOW</th><th>vs Luo HIGH</th><th>vs Malz-Smith topological</th><th>vs Malz-Smith trivial</th></tr></thead>
+      <tbody>
+        <tr><td>JPR_cover_advantage (J_frac)</td><td style="color:var(--red)">0.500</td><td style="color:var(--red)">0.500</td><td style="color:var(--green)">1.000</td><td style="color:var(--green)">1.000</td></tr>
+        <tr><td>FC_frac_mixed_gain (M_frac)</td><td style="color:var(--green)">1.000</td><td style="color:var(--green)">1.000</td><td style="color:var(--green)">1.000</td><td style="color:var(--green)">1.000</td></tr>
+        <tr><td>FC_frac_total_gain</td><td>0.750</td><td style="color:var(--red)">0.500 (fails)</td><td>1.000</td><td>1.000</td></tr>
+        <tr><td>JPR_parent_gain (P_src, raw)</td><td>0.750</td><td>0.750</td><td style="color:var(--red)">0.125 (inverted)</td><td>0.708</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">M_frac AUC = 1.000 against every one of the four control families — the only metric with this property, which is exactly why it became the primary decision coordinate rather than a supporting chart · P_src's raw magnitude is not discriminative on its own (Malz-Smith topological QP has AUC 0.125, i.e. inverted) — this is why P_src is retained only as a null-significance gate, never a raw-magnitude threshold (§10).</div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">NULL-MODEL PERCENTILES <span class="psub">· median DTQC-positive percentile under each null</span></div>
+    <div style="font-size:10px;font-family:var(--mono);color:var(--text2);line-height:2">
+      JPR_cover_advantage · phase-label-permute null percentile — DTQC <span style="color:var(--green)">0.803</span> · Luo-low 0.990 · Luo-high 1.000 · Malz-topo 0.000 · Malz-trivial 0.045<br>
+      FC_frac_mixed_gain · median DTQC percentile — TIME_PERMUTE <span style="color:var(--green)">1.000</span> · BLOCK_SHUFFLE <span style="color:var(--green)">1.000</span> · FOURIER_PHASE <span style="color:var(--green)">0.990</span>
+    </div>
+    <div class="caution">FC_frac_total_gain, despite strong raw values, fails DTQC-vs-Luo-HIGH discrimination (AUC 0.500) — dropped from the compact grammar for this reason (§10).</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">ROLE COORDINATES <span class="psub">· 08_OUTPUTS/GRAMMAR_DEV_v001/ROLE_COORDINATES.json</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>role</th><th>JPR parent gain</th><th>JPR cover adv.</th><th>FC parent R²</th><th>FC mixed gain</th><th>FC total gain</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">DTQC_POSITIVE</td><td>0.3088</td><td>0.3616</td><td>0.2674</td><td style="color:var(--green)">0.2244</td><td>0.6156</td></tr>
+          <tr><td>MULTICLOCK_BREAKDOWN_LOW</td><td>0.1427</td><td>0.3981</td><td>0.0020</td><td style="color:var(--red)">0.0528</td><td>0.1300</td></tr>
+          <tr><td>MULTICLOCK_DECOUPLED_HIGH</td><td>0.0699</td><td>0.6025</td><td>0.0358</td><td style="color:var(--red)">0.1005</td><td>0.6986</td></tr>
+          <tr><td>QP_NON_DTQC_TOPO</td><td>0.6309</td><td>−0.2552</td><td>0.8798</td><td style="color:var(--red)">−0.0092</td><td>−0.0163</td></tr>
+          <tr><td>QP_NON_DTQC_TRIVIAL</td><td>0.1575</td><td>−0.0771</td><td>0.1883</td><td style="color:var(--red)">−0.0549</td><td>−0.0898</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ §10 GRAMMAR SELECT ═══ -->
+<div class="sec-label"><span class="sec-num">§10</span> COMPACT GRAMMAR SELECTION — SELECT / DROP DECISIONS</div>
+
+<div class="panel">
+  <div class="panel-title">COORDINATE_SELECTION.csv — ALL 8 CANDIDATE COORDINATES, FULL DERIVATION</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Coordinate</th><th>Symbol</th><th>Same-system min AUC</th><th>Generic-QP min AUC</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>JPR_parent_gain</td><td>P_src</td><td>0.750</td><td>0.125</td><td><span class="vg">SELECT — NULL ANCHOR GATE</span></td></tr>
+        <tr><td>JPR_cover_advantage</td><td>J_frac</td><td>0.500</td><td>1.000</td><td><span class="vt">SELECT — CHART COORDINATE, NOT A GATE</span></td></tr>
+        <tr><td>FC_parent_full_r2</td><td>P_FC</td><td>0.500</td><td>0.0833</td><td><span class="vh">DROP — REDUNDANT (ρ≈0.887 with P_src)</span></td></tr>
+        <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">FC_frac_mixed_gain</td><td style="color:var(--green)">M_frac</td><td style="color:var(--green)">1.000</td><td style="color:var(--green)">1.000</td><td><span class="vf">SELECT — PRIMARY TEMPORAL GATE</span></td></tr>
+        <tr><td>FC_frac_total_gain</td><td>T_frac</td><td>0.500</td><td>1.000</td><td><span class="vh">DROP — REDUNDANT (ρ≈0.949 with M_frac)</span></td></tr>
+        <tr><td>vector-depth family</td><td>VD</td><td>—</td><td>—</td><td><span class="vd">SUPPORTING CHART ONLY</span></td></tr>
+        <tr><td>frequency lattice</td><td>FL</td><td>—</td><td>—</td><td><span class="vd">SUPPORTING CHART ONLY</span></td></tr>
+        <tr><td>source-native collective evidence</td><td>C_coll</td><td>—</td><td>—</td><td><span class="vv">PHYSICAL EXTENSION, NOT A TEMPORAL GATE</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">"Same-system min AUC" = worst-case discrimination against the physically closest control (Luo LOW/HIGH); "generic-QP min AUC" = worst-case against the physically unrelated Malz-Smith quasiperiodic controls · full reasoning strings preserved in COORDINATE_SELECTION.csv.</div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">M_frac RAW-GATE DERIVATION <span class="psub">· GRAMMAR_CANDIDATE_v001.json</span></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text);background:var(--panel2);padding:10px 12px;margin-bottom:8px;border:1px solid var(--border2)">
+      min(DTQC-positive development) = 0.138611 (Zhu C1, reclassified from the locked v002 transfer-test holdout, §5)<br>
+      max(control development) = 0.100526<br>
+      midpoint = 0.119568<br>
+      <span style="color:var(--accent)">rounded candidate gate = 0.12</span>
+    </div>
+    <p style="font-size:10px;color:var(--text2)">development_replay at selection: DTQC-positive core satisfied 4/4; control core satisfied 0/16.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-title">M_GATE ROBUSTNESS <span class="psub">· 30-row perturbation sweep; one raw-gate crossing found</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Role</th><th>Variant</th><th>Records</th><th>Gate count</th><th>Median M</th></tr></thead>
+        <tbody>
+          <tr><td>DTQC_POSITIVE</td><td>all 6 variants</td><td>4</td><td style="color:var(--green)">4/4</td><td>0.2243 – 0.2291</td></tr>
+          <tr><td>MULTICLOCK_BREAKDOWN_LOW</td><td>all 6 variants</td><td>2</td><td style="color:var(--green)">0/2</td><td>0.0527 – 0.0544</td></tr>
+          <tr><td>MULTICLOCK_DECOUPLED_HIGH</td><td>5 of 6 variants</td><td>2</td><td style="color:var(--green)">0/2</td><td>0.1005 – 0.1005</td></tr>
+          <tr style="background:rgba(224,64,64,.06)"><td style="color:var(--red)">MULTICLOCK_DECOUPLED_HIGH</td><td style="color:var(--red)">PREFIX_0.75</td><td>2</td><td style="color:var(--red)">2/2 (crosses raw gate)</td><td style="color:var(--red)">0.1480</td></tr>
+          <tr><td>QP_NON_DTQC_TOPO / TRIVIAL</td><td>all 6 variants</td><td>12</td><td style="color:var(--green)">0/12</td><td>negative throughout</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">The only robustness transformation in which a control crosses the raw M_frac threshold: truncating the high-frequency decoupled control to its first 75% pushes both records' raw M_frac over 0.12 (median 0.1480 vs. 0.12). This is not a frozen-grammar false positive: both HIGH records already fail the base M_frac≥0.12 condition before this transform is applied. The robustness transforms are an additional stability requirement on the base classification, not alternative classification inputs in their own right — the crossing is preserved as a documented boundary condition of the raw gate considered in isolation.</div>
+  </div>
+</div>
+
+<!-- ═══ §11 FROZEN GRAMMAR ═══ -->
+<div class="sec-label"><span class="sec-num">§11</span> THE FROZEN GRAMMAR — MC_GRAMMAR_v001</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">GRAMMAR STRUCTURE <span class="psub">· FROZEN 2026-08-27 · pre-prospective</span></div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);background:var(--panel2);padding:10px 12px;margin-bottom:8px;border:1px solid var(--border2)">
+      D_2clk → [ P_src ; J_frac | M_frac ] + C_coll
+    </div>
+    <p style="font-size:10px;color:var(--text2);line-height:1.9">
+      <b style="color:var(--text)">D_2clk</b> — exactly two externally specified incommensurate source clocks; genuine time-domain observable; ratio from source metadata, not fitted; no inverse-FFT/synthetic reconstruction. Supported ratio domain v001: <b style="color:var(--amber)">golden-ratio branch only</b>.<br><br>
+      <b style="color:var(--blue)">P_src</b> (source-torus anchor, gate) — metric JPR_parent_gain; null PHASE_LABEL_PERMUTE, 99 surrogates; gate p_upper ≤ 0.10; fail → SOURCE_UNANCHORED.<br><br>
+      <b style="color:var(--violet)">J_frac</b> (chart coordinate, non-gating) — JPR_cover_advantage = max<sub>d=2,3,4</sub> JPR(d) − JPR(1).<br><br>
+      <b style="color:var(--green)">M_frac</b> (primary decision coordinate, gate) — FC_frac_mixed_gain at d* = argmax<sub>d</sub> FC_frac_total_gain(d); raw gate ≥ 0.12; null FOURIER_PHASE, 49 surrogates, ridge α=1e-9, 5-fold CV; gate p_upper ≤ 0.10.<br><br>
+      <b style="color:var(--text)">C_coll</b> — separate physical extension; COLLECTIVE_NOT_ASSESSED / COLLECTIVE_EVIDENCE_UNAVAILABLE / COLLECTIVE_EVIDENCE_AVAILABLE_FOR_DOMAIN_SPECIFIC_REVIEW; no universal numeric gate.
+    </p>
+  </div>
+  <div class="panel">
+    <div class="panel-title">STATE PRECEDENCE LADDER <span class="psub">· first match wins</span></div>
+    <div class="ladder">
+      <div class="ladder-step" style="border-left:3px solid var(--dim)"><span class="ladder-lv" style="color:var(--text2)">OUTSIDE_CHART_DOMAIN</span><span class="ladder-desc">not a genuine two-clock time-domain record</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--amber)"><span class="ladder-lv" style="color:var(--amber)">OUTSIDE_EMPIRICALLY_QUALIFIED_RATIO_DOMAIN</span><span class="ladder-desc">source ratio outside the golden-ratio branch (v001)</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--red)"><span class="ladder-lv" style="color:var(--red)">SOURCE_UNANCHORED</span><span class="ladder-desc">fails P_src phase-label-permute null (p_upper &gt; 0.10)</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--red)"><span class="ladder-lv" style="color:var(--red)">MIXED_ORGANIZATION_WEAK</span><span class="ladder-desc">M_frac below raw gate 0.12</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--coral)"><span class="ladder-lv" style="color:var(--coral)">MIXED_ORGANIZATION_SPECTRAL_NULL</span><span class="ladder-desc">fails M_frac Fourier-phase null (p_upper &gt; 0.10)</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--violet)"><span class="ladder-lv" style="color:var(--violet)">MIXED_ORGANIZATION_UNSTABLE</span><span class="ladder-desc">raw gate fails to hold under one or more of the 6 stability transforms</span></div>
+      <div class="ladder-step" style="border-left:3px solid var(--green)"><span class="ladder-lv" style="color:var(--green)">TEMPORAL_CORE_SUPPORTED</span><span class="ladder-desc">P_src anchored, M_frac ≥ 0.12, Fourier-null passed, stable under all 6 transforms</span></div>
+    </div>
+    <div class="caution">Stability transforms: origin shift (0.371 lower-clock cycles), clock exchange, affine state transform (scale 1.7, offset 0.31), ×5 downsample, first 0.75 of trajectory, additive noise σ=0.02·std.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">DEVELOPMENT REPLAY AT FREEZE <span class="psub">· GRAMMAR_FREEZE_v001/README.md · all pre-freeze data, no prospective/C003 data</span></div>
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-val" style="color:var(--green)">4/4</div><div class="stat-lbl">DTQC POSITIVES → TEMPORAL_CORE_SUPPORTED</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--red)">0/2</div><div class="stat-lbl">LUO LOW CONTROLS SUPPORTED</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--red)">0/2</div><div class="stat-lbl">LUO HIGH CONTROLS SUPPORTED</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--red)">0/6</div><div class="stat-lbl">MALZ-SMITH TOPOLOGICAL SUPPORTED</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--red)">0/6</div><div class="stat-lbl">MALZ-SMITH TRIVIAL SUPPORTED</div></div>
+  </div>
+  <div class="caution">All 16 controls fail through SOURCE_UNANCHORED or MIXED_ORGANIZATION_WEAK — no post-hoc rule was added to force this separation; it falls out of the frozen P_src / M_frac gates directly. Excluded non-decision quantities (explicitly, by name): vector-depth recurrence, raw frequency-lattice alignment, FC parent full R², FC fractional total gain, any composite scalar, any hard J_frac threshold, fractional-depth agreement.</div>
+</div>
+
+<!-- ═══ §12 PROSPECTIVE P01 ═══ -->
+<div class="sec-label"><span class="sec-num">§12</span> PROSPECTIVE TEST — P01 · AN EXTERNAL-MODEL CANDIDATE THE GRAMMAR HAD NEVER SEEN</div>
+
+<div class="panel">
+  <div class="panel-title">BLIND → LOCK → REVEAL <span class="psub">· same firewall discipline as TC_PROSPECTIVE_01</span></div>
+  <div class="pipeline">
+    <span class="pipe-step active">pre-registered transfer parameters</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">generate A/B trajectories</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">cryptographic mapping commitment</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">blind analysis (frozen grammar)</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">quantitative lock</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">reveal</span><span class="pipe-arrow">→</span>
+    <span class="pipe-step active">commitment verification</span>
+  </div>
+  <p style="font-size:10.5px;color:var(--text);margin-top:6px">Candidate source: an external theoretical model transfer (Marripour–Abouie 2026 Hamiltonian family), not any record used in development. Pre-registered: L=4 periodic chain, J=5.5, h=0.3, 100 paired disorder realizations, initial |+x⟩<sup>⊗L</sup>, ensemble-averaged m<sub>x</sub>(t), 64 drive periods, 16 samples/period, Ω/ω<sub>d</sub> = 1/φ. Two frequency-scale conditions tested blind: ω<sub>d</sub>=12 (candidate hypothesis: long-lived prethermal quasiperiodic order) and ω<sub>d</sub>=1 (control hypothesis: rapid heating / loss of order). Deliberately adapted to the golden-ratio domain rather than the paper's published √2/4 ratio.</p>
+</div>
+
+<div class="bridge-row">
+  <div class="bridge-card">
+    <div class="bridge-lbl">P001_A — REVEALED: LOW_FREQ_BREAKDOWN_CONTROL_HYPOTHESIS</div>
+    <div class="bridge-val" style="color:var(--red)">SOURCE_UNANCHORED</div>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2)">P_src p=0.14 · J_frac=−0.0383 · M_frac=−0.0140 · Fourier p=0.60 · M_robust_min=−0.2024</div>
+    <div style="margin-top:8px"><span class="vf">EXPECTATION MET</span> <span style="font-size:9px;color:var(--text2);font-family:var(--mono)">predeclared NOT_TEMPORAL_CORE_SUPPORTED</span></div>
+    <div class="caution">Worst robustness variant: DOWNSAMPLE_5 (M_frac → −0.2024).</div>
+  </div>
+  <div class="bridge-card">
+    <div class="bridge-lbl">P001_B — REVEALED: HIGH_FREQ_CANDIDATE_HYPOTHESIS</div>
+    <div class="bridge-val" style="color:var(--red)">MIXED_ORGANIZATION_WEAK</div>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2)">P_src p=0.01 · J_frac=−0.1664 · M_frac=−0.3300 · Fourier p=1.00 · M_robust_min=−1.0245</div>
+    <div style="margin-top:8px"><span class="vh">EXPECTATION NOT MET</span> <span style="font-size:9px;color:var(--text2);font-family:var(--mono)">predeclared TEMPORAL_CORE_SUPPORTED</span></div>
+    <div class="caution">Worst robustness variant: PREFIX_0.75 (M_frac → −1.0245, its steepest drop).</div>
+  </div>
+</div>
+
+<div class="special-banner fail">
+  <div class="special-title">⚑ PROSPECTIVE_FAILURE_CANDIDATE_REJECTED — the frozen grammar failed its first genuinely blind test</div>
+  <p style="font-size:10.5px;margin-top:6px;color:var(--text)">The pre-registered high-frequency candidate (P001_B, ω<sub>d</sub>=12) was expected to show TEMPORAL_CORE_SUPPORTED and instead returned MIXED_ORGANIZATION_WEAK with strongly negative M_frac (−0.330) — the opposite sign from every development-stage DTQC-positive record. The control (P001_A) behaved exactly as predeclared. Per the pre-registered protocol, this failure <b style="color:var(--amber)">cannot be repaired</b> by changing thresholds, nulls, robustness transforms, the ratio domain, the representation, or the mapping after the fact — doing so would require declaring a new grammar version, not patching v001. MC_GRAMMAR_v001 therefore cannot be presented as a universal multi-clock temporal grammar. This does not itself disprove the external model's predicted quasiperiodic/prethermal order — it shows only that the frozen UNNS grammar did not admit this pre-registered trajectory.</p>
+</div>
+
+<!-- ═══ §13 C003 RETEST ═══ -->
+<div class="sec-label"><span class="sec-num">§13</span> C003 HISTORICAL RETEST — THE DOMAIN BOUNDARY, REVISITED WITH A NEW CHART</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">UNDER THE OLD TIME-CRYSTAL-I INTEGER GRAMMAR <span class="psub">· frozen v1.1.0 record, unchanged</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Run</th><th>q0</th><th>C</th><th>F</th><th>p</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>C003 (candidate)</td><td>6</td><td>0.198765</td><td>0.093433</td><td>0.960199</td><td><span class="vh">NO_TEMPORAL_ORDER</span></td></tr>
+          <tr><td>C003_CTRL</td><td>6</td><td>0.094640</td><td>0.030874</td><td>0.995025</td><td><span class="vh">NO_TEMPORAL_ORDER</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">UNDER THE NEW FROZEN MULTI-CLOCK GRAMMAR <span class="psub">· MC_GRAMMAR_v001, evaluated once, after prospective reveal</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Run</th><th>P_src p</th><th>J_frac</th><th>M_frac</th><th>Fourier p</th><th>State</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(144,96,224,.06)"><td style="color:var(--violet)">C003 (Fig.1d, candidate)</td><td style="color:var(--red)">1.000</td><td style="color:var(--green)">0.910688</td><td style="color:var(--green)">0.596092</td><td style="color:var(--green)">0.020</td><td><span class="vh">SOURCE_UNANCHORED</span></td></tr>
+          <tr><td>C003_CTRL (Fig.1b, breakdown)</td><td style="color:var(--green)">0.010</td><td style="color:var(--red)">−0.593846</td><td style="color:var(--red)">−0.003958</td><td>0.780</td><td><span class="vh">MIXED_ORGANIZATION_WEAK</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">C003 M_robust_min = 0.595093 (stable across all 6 transforms) · C003_CTRL M_robust_min = −0.558942.</div>
+  </div>
+</div>
+
+<div class="special-banner boundary">
+  <div class="special-title">⚑ THE BOUNDARY HOLDS — BUT FOR A COMPLETELY DIFFERENT, AND MORE INFORMATIVE, REASON</div>
+  <p style="font-size:10.5px;margin-top:6px;color:var(--text)">C003 is still not admitted — <code>C003_REMAINS_OUTSIDE_FROZEN_MULTI_CLOCK_GRAMMAR</code> — but it fails at the <i>source-torus-anchor</i> gate (P_src p=1.000, the worst possible value), not at the mixed-organization gate. Its M_frac (0.596) is nearly <b style="color:var(--amber)">5× the frozen raw gate</b> of 0.12, and its J_frac (0.911) is the largest fractional-cover advantage seen anywhere in this report — the new coordinates cleanly separate C003 from its own matched breakdown control (M_frac 0.596 vs. −0.004; J_frac 0.911 vs. −0.594), which is exactly the opposite pattern from the control, whose parent-torus anchor holds (p=0.010) while its fractional organization is null. State precedence still routes C003 to a rejection (SOURCE_UNANCHORED is checked before M_frac), so this is not a positive admission — it is a sharper diagnosis of <i>why</i> the historical boundary exists: <b style="color:var(--violet)">weak parent-torus anchoring + very strong fractional organization</b>, the near-inverse of what MC_GRAMMAR_v001 was built to expect (parent organization → fractional organization). The grammar was not changed for C003, and this result is read alongside the P001 prospective failure as further evidence the grammar is not universally permissive.</p>
+</div>
+
+<!-- ═══ §14 STRUCTURAL INTERPRETATION ═══ -->
+<div class="sec-label"><span class="sec-num">§14</span> STRUCTURAL INTERPRETATION — CLAIMS SUPPORTED vs CLAIMS DELIBERATELY NOT MADE</div>
+
+<div class="panel">
+  <div class="panel-title">CLAIM LEDGER</div>
+  <div class="theory-hdr"><span>Claim</span><span>Status</span><span></span></div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">M_frac is the strongest development-stage discriminator among the tested coordinates</span>
+    <span>AUC = 1.000 against all four development control families. The fractional-cover representation passed the pre-freeze Malz–Smith specificity challenge (§7); M_frac itself was established afterward, in the four-representation study (§8), where it is negative in the same Malz–Smith controls</span>
+    <span class="conf">✓ DEMONSTRATED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Closure magnitude / raw parent-torus anchoring alone identifies multi-clock admissibility</span>
+    <span>Malz-Smith topological QP anchors as strongly as any DTQC record (parent R² ≈ 0.87–0.90) yet has negative fractional gain throughout</span>
+    <span class="neg">✗ EXPLICITLY NOT CLAIMED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Frozen grammar generalizes to an unseen external theoretical-model candidate</span>
+    <span>P001 — candidate expectation NOT met; PROSPECTIVE_FAILURE_CANDIDATE_REJECTED</span>
+    <span class="neg">✗ NOT DEMONSTRATED (failure preserved)</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">MC_GRAMMAR_v001 is a universal multi-clock temporal grammar</span>
+    <span>Directly contradicted by the P001 prospective failure</span>
+    <span class="neg">✗ EXPLICITLY NOT CLAIMED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Historical C003 is admitted by the new grammar (retrofitting the old boundary away)</span>
+    <span>C003 remains outside — SOURCE_UNANCHORED — despite very strong M_frac/J_frac; the grammar was not adjusted for it</span>
+    <span class="neg">✗ EXPLICITLY NOT CLAIMED / NOT ATTEMPTED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">C003's fractional organization is real and distinguishes it sharply from its own control</span>
+    <span>M_frac 0.596 (candidate) vs −0.004 (control), remains robust across all six frozen transforms; base J_frac 0.911 vs −0.594 strongly separates candidate and control</span>
+    <span class="conf">✓ DEMONSTRATED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Parent-anchored multi-clock order and fractional-primary multi-clock order are the same phenomenon</span>
+    <span>C003 shows weak parent anchoring + very strong fractional organization; its control shows the near-inverse — the two axes can decouple</span>
+    <span class="neg">✗ NOT DEMONSTRATED (evidence for a second structural mode instead)</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Multi-clock temporal organization is the same axis as collective physical coupling</span>
+    <span>Drive-torus organization order (DTQC&gt;HIGH&gt;LOW) is reversed relative to mean entanglement entropy order (LOW&gt;DTQC&gt;HIGH)</span>
+    <span class="neg">✗ EXPLICITLY REFUTED</span>
+  </div>
+  <div class="theory-row">
+    <span style="color:var(--text2)">Two incommensurate clocks alone (no DTQC order) produce a positive fractional-cover signature</span>
+    <span>Malz-Smith specificity test: all 6 regime×component medians negative (pre-freeze test; its records were later reclassified as development controls, §7)</span>
+    <span class="neg">✗ EXPLICITLY REFUTED (specificity holds)</span>
+  </div>
+</div>
+
+<!-- ═══ §15 REPRODUCIBILITY ═══ -->
+<div class="sec-label"><span class="sec-num">§15</span> REPRODUCIBILITY & PROVENANCE ARCHITECTURE</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">FROZEN GRAMMAR / STAGE HASHES</div>
+    <div class="hashline">
+      Frozen grammar (MC_GRAMMAR_v001 / FROZEN_GRAMMAR.json)<br><b>8ae9b0d91dba41332dac58392b84a222f6c63b6323b8ddb616ce39e4bba556d6</b><br><br>
+      Prospective P01 grammar archive (as loaded for blind analysis)<br><b>f49d5553c5bd7fa878dbaca5fb04ae5ee5a20fb14564a0fafb4da1d1ebb7c925</b><br><br>
+      P001 mapping commitment (expected == recomputed at reveal)<br><b>02b3c7b7dd25f4769d1094bde8db99997e0ad0de1532c6148c38427c8043caf1</b><br><br>
+      Malz–Smith raw archive (qubit-topological-floquet-v2.0.zip, 41,780,798 bytes)<br><b>1f1d9b4acbc64ec0facc563bef5884ac50c865bbddee2d464da25146cff6d9b0</b>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">FIREWALL DISCIPLINE, BY STAGE</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Stage</th><th>C003 loaded?</th><th>Thresholds changed?</th><th>Nulls changed?</th></tr></thead>
+        <tbody>
+          <tr><td>Grammar development / selection / freeze</td><td><span class="vf">false</span></td><td>—</td><td>—</td></tr>
+          <tr><td>Prospective P01 (blind analysis)</td><td><span class="vf">false</span></td><td><span class="vf">false</span></td><td><span class="vf">false</span></td></tr>
+          <tr><td>Prospective P01 (reveal)</td><td><span class="vf">false</span></td><td><span class="vf">false</span></td><td><span class="vf">false</span></td></tr>
+          <tr><td>C003 final evaluation</td><td><span class="vt">true (only after P001 reveal)</span></td><td><span class="vf">false</span></td><td><span class="vf">false</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">C003_FINAL_v001/C003_FINAL_AUDIT.json: adapter_changes_after_metrics=false · C003_used_in_grammar_development=false throughout every prior stage.</div>
+  </div>
+</div>
+
+<!-- ═══ §16 SYNTHESIS ═══ -->
+<div class="sec-label"><span class="sec-num">§16</span> SYNTHESIS & NEXT RESEARCH DIRECTION</div>
+
+<div class="panel">
+  <div class="panel-title">CURRENT STRONGEST BOUNDED CONCLUSION</div>
+  <p style="font-size:11px;color:var(--text);line-height:1.85">A fractional-cover-based multi-clock grammar (MC_GRAMMAR_v001) was developed independently of the historical C003 boundary case. The final development corpus contains four DTQC-positive records from Luo and Zhu and sixteen controls from Luo and Malz–Smith; the selected M_frac coordinate separates all four positives from all sixteen controls in the development replay. The underlying fractional-cover representation also survived a pre-freeze independent-source specificity challenge (Malz–Smith, §7) before M_frac itself was established in the later four-representation study; the Malz–Smith records were subsequently incorporated into grammar development as controls. Its first genuinely prospective test — a pre-registered external theoretical-model candidate — failed: the frozen grammar did not admit the trajectory predicted to show prethermal quasiperiodic order. Re-examined under this same frozen grammar, C003 remains unadmitted, but now for a diagnosed reason — a failed source-torus anchor rather than weak fractional organization — with fractional-cover values (J_frac≈0.91, M_frac≈0.60) among the strongest seen anywhere in this report and cleanly separated from its own matched control.</p>
+  <p style="font-size:9.5px;color:var(--text2);line-height:1.8;margin-top:8px">Neither failure is treated as fatal to the branch: both were pre-registered as possible outcomes, both were preserved rather than repaired after the fact, and both narrow rather than close the research question. The emerging picture is not "one multi-clock grammar" but a distinction between parent-anchored and fractional-primary multi-clock order that the current grammar's state-precedence ladder was not designed to separate — C003 may be the first empirical instance of the second mode.</p>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">READY FOR</div>
+    <div style="font-size:10px;font-family:var(--mono);color:var(--text2);line-height:2">
+      · independent methodological review<br>
+      · a second, larger prospective campaign (single blind pairs are underpowered)<br>
+      · design of a source-anchoring-relaxed grammar variant for the fractional-primary regime<br>
+      · non-golden-ratio domain extension, tested on new unseen data<br>
+      · manuscript preparation alongside the TIME-CRYSTAL-I integer-depth result
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">NEXT SCIENTIFIC QUESTION</div>
+    <p style="font-size:10.5px;color:var(--text)">Not "does MC_GRAMMAR_v001 detect more DTQCs?" but: <i>is parent-anchored multi-clock order structurally distinct from fractional-primary multi-clock order, and if so, does a grammar variant that gates on M_frac without requiring P_src anchoring admit C003 while still rejecting P001_B and all sixteen development controls?</i> Any such variant is a new grammar version, tested on new unseen candidates — never retrofitted onto C003 or P001 directly.</p>
+  </div>
+</div>
+
+<!-- ═══ FOOTNOTE ═══ -->
+<div style="margin-top:50px;padding-top:16px;border-top:1px solid var(--border2);font-size:8px;color:var(--dim);font-family:var(--mono);line-height:1.8">
+  <strong style="color:var(--text2)">MULTI-CLOCK RECURRENCE ANALYTICS — UNNS Substrate Research Program · 2026-08-27</strong><br>
+  Branch: UNNS_MULTI_CLOCK_RECURRENCE · Grammar: MC_GRAMMAR_v001 (frozen, SHA-256 8ae9b0d9…39e4bba556d6) · D_2clk → [P_src; J_frac | M_frac] + C_coll<br>
+  Development corpus: 13 neutral-ingestion records (Huang 2025 LC/QP/CHAOS · Luo 2026 10 Rydberg-chain DTQC/breakdown/decoupled records) feeding a 27-record representation-study corpus — 4 DTQC positives (Luo×2, Zhu×2, the latter reclassified from a holdout) + 16 controls (Luo×4, Malz–Smith×12, reclassified after a pre-freeze specificity challenge) + 7 auxiliary cross-chart records · development replay at freeze: 4/4 DTQC positives supported, 0/16 controls supported<br>
+  Prospective campaign: P01 · external Marripour–Abouie 2026 model transfer · outcome PROSPECTIVE_FAILURE_CANDIDATE_REJECTED (control matched expectation, candidate did not) · failure preserved, not repaired<br>
+  Historical retest: C003 (TIME-CRYSTAL-I domain boundary) re-evaluated once under MC_GRAMMAR_v001 after P001 reveal — outcome C003_REMAINS_OUTSIDE_FROZEN_MULTI_CLOCK_GRAMMAR, state SOURCE_UNANCHORED, with J_frac=0.9107 / M_frac=0.5961 far above every development threshold<br>
+  Pre-freeze specificity challenge: Malz–Smith 2021 topological Floquet qubit — PASS_STRONG_SPECIFICITY_CHALLENGE, locked before REP_STUDY_v002; its 12 records were then incorporated into the development corpus as controls (not independent validation of the final grammar) — see §7<br>
+  Zhu 2026: began as a holdout; locked v002 transfer test → PARTIAL_TRANSFER_WITH_COVER_DEPTH_FAILURE; C1/C3 then reclassified as DTQC-positive development evidence (C1 sets the frozen M_frac gate's lower bound, 0.138611) — not independent validation — see §5<br>
+  Caution: all core development/validation records share the golden-ratio branch — non-golden-ratio robustness is untested · single blind candidate/control pair in P01 is not a statistically powered prospective campaign · C_coll (collective sector) has no universal numeric gate and was not assessed for P001 · MOON_2025 and ZHU_2026 raw provenance remain access-restricted / partially consumed respectively — see §2
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>

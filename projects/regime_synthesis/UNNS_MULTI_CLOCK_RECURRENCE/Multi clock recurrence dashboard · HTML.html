@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Clock Recurrence Dashboard</title>
+<style>
+:root{
+  --bg:#040810;--panel:#07101e;--panel2:#0a1628;--border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --violet:#9060e0;--gold:#d4a020;--blue:#4ab0f0;--coral:#e06040;
+  --text:#b8cce0;--dim:#3a5070;--text2:#6080a0;
+  --mono:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:48px 20px 80px}
+
+.shell{width:100%;max-width:980px}
+
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:36px 32px 28px;
+}
+.hero::before{
+  content:'';position:absolute;
+  top:-60px;left:50%;transform:translateX(-50%);
+  width:640px;height:260px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,200,240,.13),transparent 70%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--blue) 20%,var(--accent) 50%,var(--violet) 80%,transparent 100%);
+}
+
+.eye{
+  font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:var(--dim);
+  margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
+}
+.eye-right{letter-spacing:.14em;color:rgba(0,200,240,.4)}
+
+.hero-title-block{margin-bottom:22px;position:relative;z-index:1}
+.hero-label{
+  font-family:var(--mono);font-size:clamp(11px,1.6vw,14px);
+  letter-spacing:.28em;color:rgba(0,200,240,.5);
+  margin-bottom:6px;font-weight:400;
+}
+.hero-name{
+  font-family:var(--mono);
+  font-size:clamp(17px,2.7vw,28px);
+  letter-spacing:.02em;line-height:1.22;
+  color:var(--accent);text-wrap:balance;
+}
+.hero-name-sub{
+  font-family:var(--mono);
+  font-size:clamp(11px,1.7vw,16px);
+  color:rgba(0,200,240,.55);letter-spacing:.02em;
+  margin-top:8px;
+}
+.hero-sub{
+  font-family:var(--mono);font-size:clamp(8px,1.05vw,10.5px);
+  letter-spacing:.06em;color:var(--text2);
+  margin-top:12px;line-height:1.75;max-width:820px;
+}
+
+/* ═══ DIAGRAM ═══ */
+.hero-diagram{
+  margin:18px 0;width:100%;overflow:hidden;
+  border:1px solid var(--border2);background:rgba(4,8,16,.6);
+}
+.hero-diagram svg{display:block;width:100%}
+
+.hero-principle{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.05em;
+  color:var(--text2);margin-top:4px;position:relative;z-index:1;
+}
+.hero-principle::before{content:'';flex:0 0 18px;height:1px;background:var(--gold)}
+.hero-principle em{color:var(--gold);font-style:normal}
+.hero-principle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* status pills */
+.status{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0 8px}
+.pill{font-family:var(--mono);font-size:7.5px;letter-spacing:.1em;padding:3px 10px;
+  border-radius:2px;border:1px solid}
+.p-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.p-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.p-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.p-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.p-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.p-dim{color:var(--dim);border-color:var(--dim)}
+
+/* ═══════════════════════════════════════════════
+   GROUP HEADERS
+═══════════════════════════════════════════════ */
+.group-head{
+  display:flex;align-items:baseline;gap:12px;
+  margin:44px 0 14px;padding-top:6px;
+}
+.group-head::after{content:'';flex:1;height:1px;background:var(--border2);align-self:center}
+.group-tier{font-family:var(--mono);font-size:9px;letter-spacing:.22em;font-weight:700}
+.group-title{font-family:var(--sans);font-size:13px;color:var(--text);letter-spacing:.01em}
+.group-note{
+  font-family:var(--mono);font-size:9.5px;color:var(--text2);line-height:1.7;
+  margin-bottom:14px;max-width:760px;
+}
+
+/* CARDS */
+.cards{display:grid;gap:14px;margin-bottom:6px}
+.cards-3{grid-template-columns:repeat(3,1fr)}
+.cards-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:760px){.cards-3{grid-template-columns:1fr}.cards-4{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.cards-4{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--border);padding:18px 16px;
+  display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
+  text-decoration:none;color:inherit;transition:border-color .18s,transform .18s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.tier-a::before{background:linear-gradient(90deg,var(--accent),var(--blue))}
+.tier-b::before{background:linear-gradient(90deg,var(--amber),var(--gold))}
+.tier-c::before{background:linear-gradient(90deg,var(--violet),var(--blue))}
+.card:hover{border-color:rgba(0,200,240,.32);transform:translateY(-2px)}
+.card:hover .card-arrow{opacity:1;transform:translateX(0)}
+
+.card-type{font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:var(--dim)}
+.card-icon{font-size:21px;line-height:1;margin:1px 0}
+.card-icon-wrap{margin:1px 0;color:var(--text)}
+.card-icon-wrap svg{display:block}
+.card-title{font-family:var(--mono);font-size:10.8px;color:var(--accent);
+  letter-spacing:.02em;line-height:1.4;min-height:2.8em}
+.card-desc{font-size:9.5px;color:var(--text2);line-height:1.7;flex:1}
+.card-meta{font-family:var(--mono);font-size:7.5px;color:var(--dim);
+  border-top:1px solid var(--border);padding-top:7px;margin-top:2px}
+.card-arrow{font-size:10px;color:var(--accent);opacity:.4;
+  transform:translateX(-4px);transition:all .18s;align-self:flex-end}
+
+/* FOOTER */
+.foot{
+  margin-top:52px;padding-top:16px;border-top:1px solid var(--border2);
+  font-family:var(--mono);font-size:8px;color:var(--dim);line-height:1.9;
+}
+.foot a{color:var(--dim);text-decoration:none}
+.foot a:hover{color:var(--text2)}
+.foot-title{color:var(--text2)}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ═══════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════ -->
+<div class="hero">
+
+  <div class="eye">
+    <span>UNNS SUBSTRATE RESEARCH PROGRAM</span>
+    <span class="eye-right">unns.tech</span>
+  </div>
+
+  <div class="hero-title-block">
+    <div class="hero-label">MULTI-CLOCK RECURRENCE</div>
+    <div class="hero-name">
+      Beyond Integer Depth: Multi-Clock Recurrence,<br>Prospective Falsification, and a Fractional-Primary Boundary
+    </div>
+    <div class="hero-name-sub">MC_GRAMMAR_v001 · UNNS_MULTI_CLOCK_RECURRENCE branch</div>
+    <div class="hero-sub">
+      Source-Torus Anchoring &nbsp;·&nbsp; Fractional-Cover Decomposition &nbsp;·&nbsp; Blind Prospective Transfer Test &nbsp;·&nbsp; Historical C003 Boundary, Revisited
+    </div>
+  </div>
+
+  <!-- ═══ MAIN DIAGRAM ═══ -->
+  <div class="hero-diagram">
+  <svg viewBox="0 0 860 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="barGreen2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#00dd88"/>
+        <stop offset="1" stop-color="#00dd88" stop-opacity=".35"/>
+      </linearGradient>
+      <linearGradient id="barDim2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4ab0f0"/>
+        <stop offset="1" stop-color="#4ab0f0" stop-opacity=".3"/>
+      </linearGradient>
+      <linearGradient id="barRed2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e04040"/>
+        <stop offset="1" stop-color="#e04040" stop-opacity=".35"/>
+      </linearGradient>
+      <marker id="arr-g0" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 L1.5,3.5Z" fill="#d4a020" opacity=".9"/>
+      </marker>
+    </defs>
+
+    <rect width="860" height="200" fill="#040c18"/>
+    <line x1="430" y1="0" x2="430" y2="200" stroke="#0a1828" stroke-width=".5"/>
+
+    <!-- ════════════ LEFT: M_frac ROLE MEDIANS ════════════ -->
+    <text x="20" y="16" font-family="Courier New" font-size="7.5" fill="#3a5070" letter-spacing="1.5">M_frac — ROLE-LEVEL MEDIANS (REP_STUDY_v002)</text>
+    <text x="20" y="27" font-family="Courier New" font-size="6" fill="#2a3848">fractional mixed-clock gain · frozen raw gate 0.12</text>
+
+    <!-- axes -->
+    <line x1="34" y1="150" x2="410" y2="150" stroke="#0e2035" stroke-width="1"/>
+    <line x1="34" y1="40" x2="34" y2="180" stroke="#0e2035" stroke-width="1"/>
+    <text x="30" y="43" font-family="Courier New" font-size="6" fill="#3a5070" text-anchor="end">0.25</text>
+    <text x="30" y="153" font-family="Courier New" font-size="6" fill="#3a5070" text-anchor="end">0</text>
+    <text x="30" y="181" font-family="Courier New" font-size="6" fill="#3a5070" text-anchor="end">−0.06</text>
+
+    <!-- gate line at 0.12 -> y = 150 - (0.12/0.25)*110 = 150-52.8=97.2 -->
+    <line x1="34" y1="97.2" x2="410" y2="97.2" stroke="#e04040" stroke-width=".8" stroke-dasharray="3,2"/>
+    <text x="406" y="94" font-family="Courier New" font-size="6" fill="#e04040" text-anchor="end">gate 0.12</text>
+
+    <!-- bars: baseline at y=150, scale 110px per 0.25 above, 20px per 0.06 below -->
+    <!-- DTQC 0.2244 -> h=98.7 -->
+    <rect x="44" y="51.3" width="52" height="98.7" fill="url(#barGreen2)"/>
+    <text x="70" y="163" font-family="Courier New" font-size="6.3" fill="#00dd88" text-anchor="middle" font-weight="bold">DTQC+</text>
+    <text x="70" y="45" font-family="Courier New" font-size="6" fill="#00dd88" text-anchor="middle">0.224</text>
+
+    <!-- Luo LOW 0.0528 -> h=23.2 -->
+    <rect x="110" y="126.8" width="52" height="23.2" fill="url(#barDim2)" fill-opacity=".8"/>
+    <text x="136" y="163" font-family="Courier New" font-size="6.3" fill="#6080a0" text-anchor="middle">LOW</text>
+    <text x="136" y="123" font-family="Courier New" font-size="6" fill="#6080a0" text-anchor="middle">0.053</text>
+
+    <!-- Luo HIGH 0.1005 -> h=44.2 -->
+    <rect x="176" y="105.8" width="52" height="44.2" fill="url(#barDim2)" fill-opacity=".8"/>
+    <text x="202" y="163" font-family="Courier New" font-size="6.3" fill="#6080a0" text-anchor="middle">HIGH</text>
+    <text x="202" y="102" font-family="Courier New" font-size="6" fill="#6080a0" text-anchor="middle">0.101</text>
+
+    <!-- Malz topo -0.0092 -> h=4.0 below -->
+    <rect x="242" y="150" width="52" height="4" fill="url(#barRed2)" fill-opacity=".9"/>
+    <text x="268" y="163" font-family="Courier New" font-size="6.3" fill="#e04040" text-anchor="middle">MS-TOPO</text>
+    <text x="268" y="172" font-family="Courier New" font-size="6" fill="#e04040" text-anchor="middle">−0.009</text>
+
+    <!-- Malz trivial -0.0549 -> h=24.2 below -->
+    <rect x="308" y="150" width="52" height="24.2" fill="url(#barRed2)" fill-opacity=".9"/>
+    <text x="334" y="163" font-family="Courier New" font-size="6.3" fill="#e04040" text-anchor="middle">MS-TRIV</text>
+    <text x="334" y="192" font-family="Courier New" font-size="6" fill="#e04040" text-anchor="middle">−0.055</text>
+
+    <text x="220" y="197" font-family="Courier New" font-size="5.5" font-style="italic" fill="#3a5070" text-anchor="middle">only M_frac places DTQC strictly above every control family (AUC 1.000, 4/4)</text>
+
+    <!-- ════════════ RIGHT: PROSPECTIVE + HISTORICAL CAMPAIGN ════════════ -->
+    <text x="768" y="16" font-family="Courier New" font-size="6.5" fill="#3a5070" text-anchor="middle" letter-spacing="1.2">PROSPECTIVE P001 &amp; HISTORICAL C003 RETEST</text>
+    <text x="768" y="26" font-family="Courier New" font-size="5.5" fill="#2a3848" text-anchor="middle">blind → lock → reveal, same firewall as TIME-CRYSTAL-I</text>
+
+    <!-- P001_A box -->
+    <rect x="440" y="34" width="412" height="42" rx="2" fill="rgba(0,221,136,.05)" stroke="#00dd88" stroke-opacity=".35" stroke-width=".8"/>
+    <text x="450" y="47" font-family="Courier New" font-size="7" fill="#00dd88" letter-spacing=".3">P001_A — control hypothesis (low-frequency breakdown)</text>
+    <text x="450" y="59" font-family="Courier New" font-size="6.3" fill="#8090a0">P_src p=0.14 &#160; J_frac=−0.038 &#160; M_frac=−0.014</text>
+    <text x="450" y="70" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">predeclared NOT_TEMPORAL_CORE_SUPPORTED → expectation met</text>
+    <rect x="748" y="40" width="96" height="12" rx="1" fill="rgba(0,221,136,.15)" stroke="#00dd88" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="796" y="48.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#00dd88" text-anchor="middle" letter-spacing=".3">SOURCE_UNANCHORED</text>
+
+    <!-- P001_B box -->
+    <rect x="440" y="82" width="412" height="42" rx="2" fill="rgba(224,64,64,.06)" stroke="#e04040" stroke-opacity=".4" stroke-width=".8"/>
+    <text x="450" y="95" font-family="Courier New" font-size="7" fill="#e04040" letter-spacing=".3">P001_B — candidate hypothesis (external model transfer)</text>
+    <text x="450" y="107" font-family="Courier New" font-size="6.3" fill="#8090a0">P_src p=0.01 &#160; J_frac=−0.166 &#160; M_frac=−0.330</text>
+    <text x="450" y="118" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">predeclared TEMPORAL_CORE_SUPPORTED → expectation NOT met</text>
+    <rect x="716" y="88" width="128" height="12" rx="1" fill="rgba(224,64,64,.15)" stroke="#e04040" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="780" y="96.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#e04040" text-anchor="middle" letter-spacing=".3">PROSPECTIVE FAILURE</text>
+
+    <!-- C003 box -->
+    <rect x="440" y="130" width="412" height="42" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".4" stroke-width=".8" stroke-dasharray="5,3"/>
+    <text x="450" y="143" font-family="Courier New" font-size="7" fill="#9060e0" letter-spacing=".3">C003 — historical experimental ℤ₂ DTQC, retested once</text>
+    <text x="450" y="155" font-family="Courier New" font-size="6.3" fill="#8090a0">P_src p=1.000 &#160; J_frac=0.911 &#160; M_frac=0.596 (≈5× the gate)</text>
+    <text x="450" y="166" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">weak parent anchor + strongest fractional signal in the study</text>
+    <rect x="716" y="136" width="128" height="12" rx="1" fill="rgba(144,96,224,.15)" stroke="#9060e0" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="780" y="144.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#9060e0" text-anchor="middle" letter-spacing=".3">SOURCE_UNANCHORED · BOUNDARY</text>
+
+    <text x="768" y="184" font-family="Courier New" font-size="5.5" fill="#2a4050" text-anchor="middle" letter-spacing="1">frozen gates: P_src p≤0.10 · M_frac≥0.12 · Fourier p≤0.10 · stable under 6 transforms</text>
+  </svg>
+  </div><!-- /hero-diagram -->
+
+  <div class="hero-principle">
+    <em>A frozen grammar that fails honestly is worth more than one that quietly adapts.</em>
+    &nbsp; The same fractional-cover coordinates that gave every development record a clean verdict also failed a genuine blind test — and then re-diagnosed, rather than dissolved, the old TIME-CRYSTAL-I boundary.
+  </div>
+
+</div><!-- /hero -->
+
+<!-- ═══════════════════════════════════════════════
+     STATUS
+═══════════════════════════════════════════════ -->
+<div class="status">
+  <span class="pill p-blue">FROZEN GRAMMAR MC_GRAMMAR_v001 · 2026-08-27</span>
+  <span class="pill p-green">DEVELOPMENT REPLAY: DTQC 4/4 SUPPORTED · CONTROLS 0/16 SUPPORTED</span>
+  <span class="pill p-green">PRE-FREEZE MALZ–SMITH SPECIFICITY CHALLENGE → PASS</span>
+  <span class="pill p-red">PROSPECTIVE P001 → CANDIDATE REJECTED</span>
+  <span class="pill p-violet">C003 HISTORICAL RETEST → J_frac=0.911, M_frac=0.596, STILL OUTSIDE GRAMMAR</span>
+  <span class="pill p-amber">GOLDEN-RATIO DOMAIN ONLY · v001</span>
+  <span class="pill p-dim">BLIND → LOCK → REVEAL, SAME FIREWALL AS TIME-CRYSTAL-I</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PRIMARY — THIS STUDY
+═══════════════════════════════════════════════ -->
+<div class="group-head">
+  <span class="group-tier" style="color:var(--accent)">PRIMARY</span>
+  <span class="group-title">This study — Multi-Clock Recurrence, UNNS_MULTI_CLOCK_RECURRENCE branch</span>
+</div>
+<div class="group-note">The companion manuscript, its full analytics trace, and the underlying corpus for the fractional-cover grammar above.</div>
+
+<div class="cards cards-3">
+
+  <a class="card tier-a" href="https://unns.tech/media/unns/UNNS_MULTI_CLOCK_RECURRENCE/Beyond_Integer_Depth.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Manuscript · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">Beyond Integer Depth: Multi-Clock<br>Recurrence, Prospective Falsification,<br>and a Fractional-Primary Boundary</div>
+    <div class="card-desc">The companion manuscript. Develops the frozen source-torus-anchored fractional-cover grammar D_2clk → [P_src; J_frac | M_frac] + C_coll, reports a genuinely blind prospective transfer test that the grammar failed, and reopens the historical C003 boundary case once, after reveal.</div>
+    <div class="card-meta">UNNS Research Collective · Aug 2026</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-a" href="https://unns.tech/media/unns/UNNS_MULTI_CLOCK_RECURRENCE/MULTI_CLOCK_RECURRENCE_ANALYTICS.html" target="_blank" rel="noopener">
+    <div class="card-type">Analytics · HTML</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="5" y="13" width="3.4" height="8"/><rect x="10.3" y="7" width="3.4" height="14"/><rect x="15.6" y="10.5" width="3.4" height="10.5"/></svg></div>
+    <div class="card-title">Multi-Clock Recurrence<br>Analytics Dashboard</div>
+    <div class="card-desc">Interactive analytics across all sixteen sections: the representation bake-off, the locked Zhu transfer test, fractional-cover decomposition, the pre-freeze Malz–Smith specificity challenge, grammar freeze, the P001 prospective campaign, and the C003 historical retest, with reproducibility hashes throughout.</div>
+    <div class="card-meta">§1–§16 · frozen grammar SHA-256 8ae9b0d9…39e4bba556d6</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-a" href="https://unns.tech/media/unns/UNNS_MULTI_CLOCK_RECURRENCE/UNNS_MULTI_CLOCK_RECURRENCE.zip" target="_blank" rel="noopener">
+    <div class="card-type">Data &amp; Corpus · ZIP</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg></div>
+    <div class="card-title">Data and Corpus<br>Construction</div>
+    <div class="card-desc">Complete branch archive: research firewall protocol, the 13-record neutral-ingestion corpus (Huang, Luo, Zhu, Malz–Smith), all four baked-off representations, locked transfer-test and specificity-challenge runs, grammar development/selection/freeze artifacts, and the P001 blind-lock-reveal materials.</div>
+    <div class="card-meta">13 ingested records · 27-record representation study · locked runs + hashes</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECONDARY — CONNECTED PRECURSOR
+═══════════════════════════════════════════════ -->
+<div class="group-head">
+  <span class="group-tier" style="color:var(--amber)">SECONDARY</span>
+  <span class="group-title">Connected precursor — TIME-CRYSTAL-I, the integer-depth grammar this branch extends</span>
+</div>
+<div class="group-note">Multi-clock recurrence exists because TIME-CRYSTAL-I's integer-depth closure metric hit a domain boundary at C003 and deliberately left a multi-clock successor as future work. These are that earlier chamber's own primary sources.</div>
+
+<div class="cards cards-3">
+
+  <a class="card tier-b" href="https://unns.tech/media/unns/time_crystal/Prospective_Structural_Classification_of_Discrete_Time-Crystalline_Recurrence.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Manuscript · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">Prospective Structural<br>Classification of Discrete<br>Time-Crystalline Recurrence</div>
+    <div class="card-desc">Introduces the frozen recurrence-depth closure metric C(q), recurrence-family contrast F, and shuffle-null significance p. Reports a blind prospective campaign on three candidates and the quasi-periodic domain boundary at C003 that this branch was written to address.</div>
+    <div class="card-meta">UNNS Research Collective · 18 pages · Aug 2026</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-b" href="https://unns.tech/media/unns/time_crystal/time_crystal.zip" target="_blank" rel="noopener">
+    <div class="card-type">Data &amp; Corpus · ZIP</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg></div>
+    <div class="card-title">Data and Corpus<br>Construction</div>
+    <div class="card-desc">TIME-CRYSTAL-I_v1.1.0 chamber archive: blind protocol, frozen rules/schema, external reveal tooling, the C001–C003 prospective candidates with ground truth and locked runs, plus the raw 57-qubit ingestion dataset.</div>
+    <div class="card-meta">84 raw .dat files · 3 prospective candidates · locked runs + hashes</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-b" href="https://unns.tech/media/unns/time_crystal/time_crystalline_behavior_analytics.html" target="_blank" rel="noopener">
+    <div class="card-type">Analytics · HTML</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="5" y="13" width="3.4" height="8"/><rect x="10.3" y="7" width="3.4" height="14"/><rect x="15.6" y="10.5" width="3.4" height="10.5"/></svg></div>
+    <div class="card-title">Time-Crystalline Behavior<br>Analytics Dashboard</div>
+    <div class="card-desc">Interactive analytics across all thirteen sections: closure-spectrum charts, the ten-record validation corpus, the six-verdict hierarchy ladder, the rigidity-sector negative result, and the two-regime structural interpretation that motivated a multi-clock successor.</div>
+    <div class="card-meta">§1–§13 · blind → lock → reveal → interpret</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FOUNDATIONAL — UNNS SUBSTRATE THEORY
+═══════════════════════════════════════════════ -->
+<div class="group-head">
+  <span class="group-tier" style="color:var(--violet)">FOUNDATIONAL</span>
+  <span class="group-title">UNNS Substrate theory — the admissibility framework both chambers instantiate</span>
+</div>
+<div class="group-note">Multi-clock recurrence is one empirical chamber inside the wider UNNS admissibility program. These four cross-domain manuscripts develop the general theory of admissible structure, representation-dependence, and bounded rigidity that the grammar-freeze/prospective-test discipline above is a specific instance of.</div>
+
+<div class="cards cards-4">
+
+  <a class="card tier-c" href="https://ukbbi.github.io/UNNS/canonical/chamber_pre-k/The%20UNNS%20Observability%E2%80%93Admissibility%20Duality%20Theorem.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Theorem · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">The UNNS Observability–Admissibility<br>Duality Theorem</div>
+    <div class="card-desc">Formalizes admissibility constraints and observability projections as dual mechanisms: constraints can reveal latent structure, projections can erase it exactly and deterministically, with no noise or approximation involved. Reframes Bell-test completeness assumptions and raises implications for DI-QKD security claims, demonstrated across two chambers.</div>
+    <div class="card-meta">Canonical chamber pre-K · ukbbi.github.io/UNNS</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-c" href="https://ukbbi.github.io/UNNS/unns-substrate-foundations/structural_regimes/Bounded%20Structural%20Rigidity%20and%20Representation-Driven%20Structure.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Phase Study · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">Bounded Structural Rigidity<br>and Representation-Driven<br>Structure</div>
+    <div class="card-desc">First systematic phase-mapping of the UNNS Substrate: 93 datasets across 11 physical domains, 22,817 evaluations on a 17×17 parameter grid. Finds every admissible ladder has a finite stability region with zero inter-class transitions, and that representation choice — not parameter deformation — is the primary driver of structural variation.</div>
+    <div class="card-meta">STRUC-PERC-I instrument · Apr 2026</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-c" href="https://unns.tech/media/unns/boundary-mediated_structural_continuity/Admissible%20Cluster%20Geometry.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Manifold Geometry · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">Admissible Cluster<br>Geometry</div>
+    <div class="card-desc">Recoverable connectivity in realizability space. Across metallic-glass, neutrino-detector, and protein-folding corpora, admissible systems organize into coherent basins joined by sparse continuity corridors; fragmentation is typically one isolated node, not collapse, and recovers fully under a Δ-lifting transformation.</div>
+    <div class="card-meta">4 basin types · 5 fixed κ_conn values · 1,316 evaluations</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card tier-c" href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/The_Universal_Structural_Law_v6.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Universal Law · PDF</div>
+    <div class="card-icon-wrap"><svg class="card-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8.5 12h7M8.5 15.5h7M8.5 9h4"/></svg></div>
+    <div class="card-title">Admissibility Bounds<br>on Ordering Instability<br>(USL)</div>
+    <div class="card-desc">Empirical investigation of inv(P_ε; L) ≤ ν(V_ε(L)) across 3,073 physical ladders spanning thirteen domains — nuclear physics to cosmology — with a 99.7% perfect-admissibility rate and structural pressure confined to a narrow band across 41 orders of magnitude in scale.</div>
+    <div class="card-meta">STRUC-I chamber · v6 · 3,073 ladders · 13 domains</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════ -->
+<div class="foot">
+  <span class="foot-title">MULTI-CLOCK RECURRENCE DASHBOARD — UNNS Substrate Research Program · 2026</span><br>
+  Branch: UNNS_MULTI_CLOCK_RECURRENCE · Grammar: MC_GRAMMAR_v001 (frozen, SHA-256 8ae9b0d9…39e4bba556d6) · D_2clk → [P_src; J_frac | M_frac] + C_coll<br>
+  Primary sources link to unns.tech/media/unns/UNNS_MULTI_CLOCK_RECURRENCE/ · connected precursor sources link to unns.tech/media/unns/time_crystal/ · foundational theory links to ukbbi.github.io/UNNS and unns.tech/media/unns/<br>
+  <a href="https://unns.tech" target="_blank" rel="noopener">unns.tech</a>
+  &nbsp;·&nbsp; UNNS Substrate Research Program
+</div>
+
+</div><!-- /shell -->
+
+</body>
+</html>
