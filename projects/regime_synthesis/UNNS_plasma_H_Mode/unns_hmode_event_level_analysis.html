@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNNS-H Mode — TCV + TokaMark Edge-Admissibility Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1440px;margin:0 auto;padding:40px 32px 120px}
+
+/* HERO */
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 120% at 90% 50%,rgba(0,200,240,.05),transparent);pointer-events:none}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.04em;max-width:760px;margin-bottom:18px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-coral{color:var(--coral);border-color:var(--coral);background:rgba(224,96,64,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* SECTION LABELS */
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+/* TABLES */
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+/* VERDICT BADGES */
+.vf,.vg,.vt,.vh{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid;border-radius:2px;white-space:nowrap}
+.vf{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.08)}
+.vg{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.08)}
+.vt{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.08)}
+.vh{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.08)}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+/* BIDIRECTIONAL MARGIN BARS */
+.mb-row{display:flex;align-items:center;gap:8px;margin:3px 0}
+.mb-id{font-family:var(--mono);font-size:9px;color:var(--text2);min-width:48px}
+.mb-track{flex:1;height:7px;background:var(--border2);position:relative}
+.mb-zero{position:absolute;left:50%;top:0;width:1px;height:100%;background:var(--dim)}
+.mb-neg{position:absolute;right:50%;top:0;height:100%;background:var(--red)}
+.mb-pos{position:absolute;left:50%;top:0;height:100%;background:var(--green)}
+.mb-amb{position:absolute;top:0;height:100%;background:var(--amber)}
+.mb-val{font-family:var(--mono);font-size:9px;min-width:52px;text-align:right}
+.mb-extra{font-family:var(--mono);font-size:8px;color:var(--dim);flex:1}
+
+/* SCORE BARS (0→1 range) */
+.sb-row{display:flex;align-items:center;gap:6px;margin:2px 0}
+.sb-id{font-family:var(--mono);font-size:8px;color:var(--text2);min-width:22px}
+.sb-track{width:90px;height:5px;background:var(--border2);position:relative}
+.sb-fill{height:100%;position:absolute;left:0;top:0}
+.sb-val{font-family:var(--mono);font-size:8px;min-width:34px;text-align:right}
+
+/* LAYOUT */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* CAUTION */
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+/* CODE BLOCK */
+.code-block{background:var(--bg);border:1px solid var(--border2);padding:12px 16px;font-family:var(--mono);font-size:9px;color:var(--text);line-height:1.8;margin-top:8px}
+.ck{color:var(--accent)}.cv{color:var(--green)}.cc{color:var(--dim)}
+
+/* SCOPE BLOCK */
+.scope{border:1px solid var(--border2);border-left:3px solid;padding:12px 16px;margin-bottom:10px;font-size:10.5px;color:var(--text);line-height:1.7}
+.scope.green{border-left-color:var(--green)}.scope.red{border-left-color:var(--red)}.scope.blue{border-left-color:var(--blue)}
+.scope-lbl{font-family:var(--mono);font-size:8px;letter-spacing:.1em;margin-bottom:6px}
+.scope.green .scope-lbl{color:var(--green)}.scope.red .scope-lbl{color:var(--red)}.scope.blue .scope-lbl{color:var(--blue)}
+
+/* SEPARATOR */
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+svg{max-width:100%}
+@media(max-width:900px){.row2,.row3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-eye">UNNS PLASMA BOUNDARY CONFINEMENT PROGRAM · UNNS-H MODE PROJECT · EDGE-ADMISSIBILITY ANALYTICS DASHBOARD · 2026</div>
+  <h1>TCV + TokaMark Edge-Admissibility Analytics</h1>
+  <div class="hero-sub">First event-level UNNS-H Mode model — m_edge_event = C_edge_capacity − F_route_fragmentation — validated against 9 reviewed TCV suspect-transition shots from Zenodo record 14996664. Three non-overlapping structural corridors emerge under strict-ordering validation. The dashboard also reports the TokaMark/MAST time-window recovery gate, where HARDENED_v0_2 labels order L_MODE, LH_TRANSITION, and H_MODE_STABLE windows in the expected m_edge_conf sequence.</div>
+  <div class="badges">
+    <span class="badge b-green">PASS · STRICT ORDERING</span>
+    <span class="badge b-green">9 / 9 SHOTS ASSIGNED</span>
+    <span class="badge b-green">3 NON-OVERLAPPING CORRIDORS</span>
+    <span class="badge b-blue">4 BRANCH FAMILIES</span>
+    <span class="badge b-blue">STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0</span>
+    <span class="badge b-amber">EDGE-DIVERTOR BRANCH · mean m = +0.660</span>
+    <span class="badge b-amber">LEAKAGE BRANCHES · mean range −0.473 to −0.307</span>
+    <span class="badge b-red">EVENT-LEVEL PILOT · NOT CROSS-MACHINE</span>
+    <span class="badge b-dim">SOURCE: TCV Zenodo 14996664</span>
+    <span class="badge b-blue">92-EVENT FULL CORPUS EXTENSION (v0.2)</span>
+    <span class="badge b-blue">AUC m_edge vs ILH = 0.690 · p = 0.0022</span>
+    <span class="badge b-amber">TOKAMARK m_edge(t) FIRST TRACE · SHOT 12063</span>
+    <span class="badge b-green">PHYSICAL WINDOW GATE 1 · PASS · HARDENED_v0_2</span>
+    <span class="badge b-green">L &lt; LH_TRANSITION &lt; H_MODE_STABLE IN m_edge_conf</span>
+  </div>
+  <div class="hero-meta">
+    <span>Model: m_edge_event v0.1 · edge_admissibility_event_model.py</span>
+    <span>Corpus: tcv_lh_events_canonical.csv · 92 events total · 9 manually reviewed</span>
+    <span>Instruments: STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0 · edge_event_model_validator.py</span>
+    <span>Status: TCV event validation complete · full corpus extension complete · TokaMark physical-window gate passed</span>
+  </div>
+</div>
+
+<!-- ═══ §1 VALIDATION SUMMARY ═══ -->
+<div class="sec-label"><span class="sec-num">§1</span> VALIDATION SUMMARY — 9 SHOTS · PASS_STRICT_ORDERING</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">PASS</div><div class="stat-lbl">STATE SEPARATION</div></div>
+  <div class="stat"><div class="stat-val">9</div><div class="stat-lbl">REVIEWED SHOTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">4</div><div class="stat-lbl">NEGATIVE LEAKAGE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">2</div><div class="stat-lbl">BOUNDARY AMBIGUOUS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">3</div><div class="stat-lbl">POSITIVE BOUNDARY</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">1</div><div class="stat-lbl">MIXED ILH (68001)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">−0.794</div><div class="stat-lbl">MIN m (69807)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">+0.793</div><div class="stat-lbl">MAX m (68719)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--gold)">0.476</div><div class="stat-lbl">AMB→POS GAP</div></div>
+  <div class="stat"><div class="stat-val">92</div><div class="stat-lbl">FULL CORPUS EVENTS (v0.2)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">0.690</div><div class="stat-lbl">AUC m_edge vs ILH</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">PASS</div><div class="stat-lbl">WINDOW GATE 1 · HARDENED v0.2</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRICT ORDERING VERIFICATION</div>
+    <div style="font-size:9px;font-family:var(--mono);margin-bottom:10px;color:var(--text2)">Both ordering conditions must hold for PASS_STRICT_ORDERING</div>
+    <div style="font-size:10px;font-family:var(--mono);margin-bottom:6px">
+      max(negative_leakage) = <span style="color:var(--red)">−0.227</span> &nbsp;&lt;&nbsp; min(boundary_ambiguous) = <span style="color:var(--amber)">−0.074</span> &nbsp;<span style="color:var(--green)">✓</span>
+    </div>
+    <div style="font-size:10px;font-family:var(--mono)">
+      max(boundary_ambiguous) = <span style="color:var(--amber)">+0.052</span> &nbsp;&lt;&nbsp; min(positive_boundary) = <span style="color:var(--green)">+0.528</span> &nbsp;<span style="color:var(--green)">✓</span>
+    </div>
+    <div class="caution">Gap between ambiguous maximum and positive minimum: 0.476 margin units · no overlap between any pair of states</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">STATE-LEVEL MARGIN RANGES</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>State</th><th>n</th><th>Mean</th><th>Min</th><th>Max</th><th>Std</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--red)">negative_leakage_margin</td><td>4</td><td style="color:var(--red)">−0.458</td><td style="color:var(--red)">−0.794</td><td style="color:var(--red)">−0.227</td><td style="color:var(--dim)">0.267</td></tr>
+          <tr><td style="color:var(--amber)">boundary_ambiguous_margin</td><td>2</td><td style="color:var(--amber)">−0.011</td><td style="color:var(--amber)">−0.074</td><td style="color:var(--amber)">+0.052</td><td style="color:var(--dim)">0.089</td></tr>
+          <tr><td style="color:var(--green)">positive_boundary_margin</td><td>3</td><td style="color:var(--green)">+0.660</td><td style="color:var(--green)">+0.528</td><td style="color:var(--green)">+0.793</td><td style="color:var(--dim)">0.133</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §1.1</div>
+  <div class="finding-title">Three non-overlapping corridors emerge from the event-level edge-admissibility margin under strict-ordering validation — the first validated event-level form of the UNNS-H Mode boundary-admissibility hypothesis</div>
+  <p>The event-level margin m_edge_event = C_edge_capacity − F_route_fragmentation separates all 9 reviewed TCV shots into three strictly non-overlapping states. The decisive structural result is the gap between the edge-divertor response branch (mean m = +0.660) and the three leakage branches (mean range −0.473 to −0.307). Power-balance, transport, and timing branches load the negative side exclusively; the edge-divertor response branch occupies the positive side exclusively. This is not explained by total heating power alone — three high-power ILH=1 shots still land in the negative leakage corridor, while all three positive boundary shots are defined by edge-response dominance with low transport and power-balance fragmentation scores.</p>
+</div>
+
+<!-- ═══ §2 FORMAL MODEL ═══ -->
+<div class="sec-label"><span class="sec-num">§2</span> FORMAL MODEL — m_edge_event = C − F</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">MODEL EQUATIONS</div>
+    <div class="code-block">
+<span class="ck">m_edge_event</span> = <span class="cv">C_edge_capacity</span> − <span class="cc" style="color:var(--red)">F_route_fragmentation</span><br><br>
+<span class="cc"># Fragmentation pressure (leakage drivers)</span><br>
+<span class="cc" style="color:var(--red)">F_route_fragmentation</span> = weighted_mean(<br>
+&nbsp;&nbsp;<span class="cv">S_power_balance</span>,  <span class="cc"># P_total, P_loss vs P_LH threshold</span><br>
+&nbsp;&nbsp;<span class="cv">S_transport</span>,       <span class="cc"># chi_eff elevation, P_loss pressure</span><br>
+&nbsp;&nbsp;<span class="cv">S_timing</span>           <span class="cc"># transition event timing spread</span><br>
+)<br><br>
+<span class="cc"># Edge capacity (route-preservation drivers)</span><br>
+<span class="ck">C_edge_capacity</span> = weighted_mean(<br>
+&nbsp;&nbsp;<span class="cv">S_edge_response</span>,            <span class="cc"># candidate divertor/edge signal</span><br>
+&nbsp;&nbsp;<span class="cv">density_support_percentile</span>,  <span class="cc"># n_e vs Ryter density threshold</span><br>
+&nbsp;&nbsp;<span class="cv">species_position_percentile</span>, <span class="cc"># H/He ion species composition</span><br>
+&nbsp;&nbsp;<span class="cv">geometry_stability</span>          <span class="cc"># q95, kappa, delta geometry</span><br>
+)
+    </div>
+    <div class="caution">All score components normalized to [0,1] · m_edge_event ∈ [−1, +1] · v0.1 · pilot-corpus weights</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">TRANSLATION MAP — PLASMA ↔ UNNS</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Plasma Term</th><th>UNNS Term</th><th>Component</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text2)">L-mode turbulence</td><td>Low-margin transport regime</td><td style="color:var(--red)">F &gt; C</td></tr>
+          <tr><td style="color:var(--text2)">L→H transition</td><td>Admissibility threshold crossing</td><td>m crosses zero</td></tr>
+          <tr><td style="color:var(--text2)">Edge transport barrier</td><td>Boundary-route preservation layer</td><td style="color:var(--green)">S_edge_response ↑</td></tr>
+          <tr><td style="color:var(--text2)">H-mode candidate event</td><td>Positive boundary margin (event-level)</td><td style="color:var(--green)">m_edge_event &gt; 0</td></tr>
+          <tr><td style="color:var(--text2)">Power threshold P_LH</td><td>Route fragmentation driver</td><td style="color:var(--red)">S_power_balance</td></tr>
+          <tr><td style="color:var(--text2)">Transport channel</td><td>Leakage pressure</td><td style="color:var(--red)">S_transport</td></tr>
+          <tr><td style="color:var(--text2)">Divertor/edge response signal</td><td>Edge-response signature (capacity)</td><td style="color:var(--green)">S_edge_response</td></tr>
+          <tr><td style="color:var(--text2)">Radial geometry q95,κ,δ</td><td>Route stabilization geometry</td><td>geometry_stability</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Corridor states: negative_leakage_margin = event is leakage-like · boundary_ambiguous_margin = event near threshold · positive_boundary_margin = event shows edge-response dominance</div>
+  </div>
+</div>
+
+<!-- ═══ §3 PER-SHOT MARGIN SEPARATION ═══ -->
+<div class="sec-label"><span class="sec-num">§3</span> PER-SHOT MARGIN SEPARATION — 9 SHOTS · ORDERED NEG → POS</div>
+
+<div class="panel">
+  <div class="panel-title">m_edge_event — ALL 9 REVIEWED TCV SHOTS (bar centre = m = 0)</div>
+  <div style="margin-top:10px">
+    <div style="font-size:8px;font-family:var(--mono);color:var(--dim);display:flex;margin-bottom:6px">
+      <span style="min-width:48px"></span>
+      <span style="flex:1;text-align:center;color:var(--red)">← LEAKAGE</span>
+      <span style="width:1px"></span>
+      <span style="flex:1;text-align:center;color:var(--green)">BOUNDARY RESPONSE →</span>
+      <span style="min-width:52px"></span>
+    </div>
+
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--blue)">69807</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-neg" style="width:39.7%"></div>
+      </div>
+      <span class="mb-val" style="color:var(--red)">−0.794</span>
+      <span class="mb-extra">ILH=0 · mixed_power_transport_timing · strong_negative</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--blue)">69668</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-neg" style="width:27.6%"></div>
+      </div>
+      <span class="mb-val" style="color:var(--red)">−0.552</span>
+      <span class="mb-extra">ILH=0 · transport_timing_corridor · strong_negative</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--blue)">67992</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-neg" style="width:12.9%;opacity:.7"></div>
+      </div>
+      <span class="mb-val" style="color:var(--red)">−0.258</span>
+      <span class="mb-extra">ILH=1 · power_transport_corridor · moderate_negative</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--blue)">68001</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-neg" style="width:11.4%;opacity:.7"></div>
+      </div>
+      <span class="mb-val" style="color:var(--red)">−0.227</span>
+      <span class="mb-extra">ILH=1;0 · power_transport_corridor · moderate_negative</span>
+    </div>
+
+    <div style="height:6px"></div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--amber)">69913</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-amb" style="width:3.7%;right:50%;left:auto"></div>
+      </div>
+      <span class="mb-val" style="color:var(--amber)">−0.074</span>
+      <span class="mb-extra">ILH=1 · timing_dominant_corridor · ambiguous_boundary</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--amber)">68206</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-amb" style="width:2.6%;left:50%"></div>
+      </div>
+      <span class="mb-val" style="color:var(--amber)">+0.052</span>
+      <span class="mb-extra">ILH=1 · power_balance_corridor · ambiguous_boundary</span>
+    </div>
+
+    <div style="height:6px"></div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--green)">66445</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-pos" style="width:26.4%;opacity:.75"></div>
+      </div>
+      <span class="mb-val" style="color:var(--green)">+0.528</span>
+      <span class="mb-extra">ILH=1 · edge_divertor_response_corridor · strong_positive</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--green)">69892</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-pos" style="width:32.9%;opacity:.85"></div>
+      </div>
+      <span class="mb-val" style="color:var(--green)">+0.658</span>
+      <span class="mb-extra">ILH=1 · edge_divertor_response_corridor · strong_positive</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="color:var(--green)">68719</span>
+      <div class="mb-track">
+        <div class="mb-zero"></div>
+        <div class="mb-pos" style="width:39.7%"></div>
+      </div>
+      <span class="mb-val" style="color:var(--green)">+0.793</span>
+      <span class="mb-extra">ILH=1 · edge_divertor_response_corridor · strong_positive</span>
+    </div>
+  </div>
+  <div class="caution">Bar scale: each 50% of half-track = 1.0 margin unit · zero line at track centre · ILH: 0 = H-mode not obtained · 1 = obtained · 1;0 = mixed · gap between max(negative)=−0.227 and min(ambiguous)=−0.074 confirmed</div>
+</div>
+
+<!-- ═══ §4 BRANCH-FAMILY MEANS ═══ -->
+<div class="sec-label"><span class="sec-num">§4</span> BRANCH-FAMILY MEAN MARGINS — 4 FAMILIES</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">MEAN m_edge_event BY BRANCH FAMILY</div>
+    <div style="margin-top:8px">
+      <div style="font-size:9px;color:var(--dim);font-family:var(--mono);margin-bottom:8px">bar centre = m = 0 · scale: 50% = 1.0 unit</div>
+
+      <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:4px">LEAKAGE BRANCHES</div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:90px;font-size:8.5px;color:var(--coral)">timing_branch</span>
+        <div class="mb-track"><div class="mb-zero"></div><div class="mb-neg" style="width:23.7%;background:var(--coral)"></div></div>
+        <span class="mb-val" style="color:var(--coral)">−0.473</span>
+        <span class="mb-extra">n=3 · S_timing dominant</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:90px;font-size:8.5px;color:var(--red)">transport_branch</span>
+        <div class="mb-track"><div class="mb-zero"></div><div class="mb-neg" style="width:22.9%"></div></div>
+        <span class="mb-val" style="color:var(--red)">−0.458</span>
+        <span class="mb-extra">n=4 · S_transport dominant</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:90px;font-size:8.5px;color:var(--amber)">power_balance</span>
+        <div class="mb-track"><div class="mb-zero"></div><div class="mb-neg" style="width:15.3%;background:var(--amber)"></div></div>
+        <span class="mb-val" style="color:var(--amber)">−0.307</span>
+        <span class="mb-extra">n=4 · S_power_balance dominant</span>
+      </div>
+
+      <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin:10px 0 4px">BOUNDARY RESPONSE BRANCH</div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:90px;font-size:8.5px;color:var(--green)">edge_divertor</span>
+        <div class="mb-track"><div class="mb-zero"></div><div class="mb-pos" style="width:33.0%"></div></div>
+        <span class="mb-val" style="color:var(--green)">+0.660</span>
+        <span class="mb-extra">n=3 · S_edge_response dominant</span>
+      </div>
+    </div>
+    <div class="caution">Gap between power_balance (−0.307) and edge_divertor (+0.660) = 0.967 margin units · largest structural gap in pilot</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">BRANCH SCORE FINGERPRINTS <span class="psub">· MEAN COMPONENT VALUES</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Branch</th><th>n</th><th>mean m</th><th>mean C</th><th>mean F</th><th>S_pb</th><th>S_tr</th><th>S_er</th><th>S_ti</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--coral)">timing</td><td>3</td>
+            <td style="color:var(--red)">−0.473</td><td>0.144</td><td style="color:var(--red)">0.617</td>
+            <td>0.442</td><td>0.676</td><td style="color:var(--dim)">0.042</td><td style="color:var(--violet)">0.752</td>
+          </tr>
+          <tr>
+            <td style="color:var(--red)">transport</td><td>4</td>
+            <td style="color:var(--red)">−0.458</td><td>0.323</td><td style="color:var(--red)">0.781</td>
+            <td style="color:var(--amber)">0.798</td><td style="color:var(--red)">0.980</td><td style="color:var(--dim)">0.169</td><td>0.529</td>
+          </tr>
+          <tr>
+            <td style="color:var(--amber)">power_balance</td><td>4</td>
+            <td style="color:var(--red)">−0.307</td><td>0.430</td><td style="color:var(--amber)">0.737</td>
+            <td style="color:var(--red)">0.955</td><td style="color:var(--amber)">0.784</td><td style="color:var(--dim)">0.210</td><td>0.429</td>
+          </tr>
+          <tr style="background:rgba(0,221,136,.04)">
+            <td style="color:var(--green)">edge_divertor</td><td>3</td>
+            <td style="color:var(--green)">+0.660</td><td style="color:var(--green)">0.821</td><td style="color:var(--dim)">0.161</td>
+            <td style="color:var(--dim)">0.212</td><td style="color:var(--dim)">0.106</td><td style="color:var(--green)">0.970</td><td style="color:var(--dim)">0.167</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">edge_divertor: S_edge_response = 0.970 · S_transport = 0.106 · structural inversion of transport_branch (S_tr=0.980, S_er=0.169)</div>
+  </div>
+</div>
+
+<!-- ═══ §5 C vs F SCATTER ═══ -->
+<div class="sec-label"><span class="sec-num">§5</span> EDGE CAPACITY vs ROUTE FRAGMENTATION — GEOMETRIC SEPARATION</div>
+
+<div class="panel">
+  <div class="panel-title">C_edge_capacity vs F_route_fragmentation — m = 0 DIAGONAL · ALL 9 SHOTS</div>
+  <svg viewBox="0 0 580 490" xmlns="http://www.w3.org/2000/svg" style="font-family:'Courier New',monospace;display:block;margin-top:8px">
+    <!-- Plot background -->
+    <rect x="65" y="20" width="480" height="430" fill="#07101e"/>
+    <!-- Quadrant shading -->
+    <polygon points="65,450 545,20 65,20" fill="rgba(0,221,136,0.04)"/>
+    <polygon points="65,450 545,450 545,20" fill="rgba(224,64,64,0.04)"/>
+    <!-- Grid lines -->
+    <line x1="185" y1="20" x2="185" y2="450" stroke="#0c1a2e" stroke-width="1"/>
+    <line x1="305" y1="20" x2="305" y2="450" stroke="#0c1a2e" stroke-width="1"/>
+    <line x1="425" y1="20" x2="425" y2="450" stroke="#0c1a2e" stroke-width="1"/>
+    <line x1="65" y1="343" x2="545" y2="343" stroke="#0c1a2e" stroke-width="1"/>
+    <line x1="65" y1="237" x2="545" y2="237" stroke="#0c1a2e" stroke-width="1"/>
+    <line x1="65" y1="130" x2="545" y2="130" stroke="#0c1a2e" stroke-width="1"/>
+    <!-- m=0 diagonal -->
+    <line x1="65" y1="450" x2="545" y2="20" stroke="#3a5070" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <!-- Axes -->
+    <line x1="65" y1="450" x2="545" y2="450" stroke="#0e2035" stroke-width="1.5"/>
+    <line x1="65" y1="450" x2="65" y2="20" stroke="#0e2035" stroke-width="1.5"/>
+    <!-- X axis ticks -->
+    <line x1="65" y1="450" x2="65" y2="457" stroke="#3a5070" stroke-width="1"/>
+    <text x="65" y="470" text-anchor="middle" fill="#6080a0" font-size="9">0</text>
+    <line x1="185" y1="450" x2="185" y2="457" stroke="#3a5070" stroke-width="1"/>
+    <text x="185" y="470" text-anchor="middle" fill="#6080a0" font-size="9">0.25</text>
+    <line x1="305" y1="450" x2="305" y2="457" stroke="#3a5070" stroke-width="1"/>
+    <text x="305" y="470" text-anchor="middle" fill="#6080a0" font-size="9">0.50</text>
+    <line x1="425" y1="450" x2="425" y2="457" stroke="#3a5070" stroke-width="1"/>
+    <text x="425" y="470" text-anchor="middle" fill="#6080a0" font-size="9">0.75</text>
+    <line x1="545" y1="450" x2="545" y2="457" stroke="#3a5070" stroke-width="1"/>
+    <text x="545" y="470" text-anchor="middle" fill="#6080a0" font-size="9">1.0</text>
+    <text x="305" y="487" text-anchor="middle" fill="#3a5070" font-size="9" font-style="italic">F_route_fragmentation →</text>
+    <!-- Y axis ticks -->
+    <line x1="65" y1="450" x2="58" y2="450" stroke="#3a5070" stroke-width="1"/>
+    <text x="54" y="454" text-anchor="end" fill="#6080a0" font-size="9">0</text>
+    <line x1="65" y1="343" x2="58" y2="343" stroke="#3a5070" stroke-width="1"/>
+    <text x="54" y="347" text-anchor="end" fill="#6080a0" font-size="9">0.25</text>
+    <line x1="65" y1="237" x2="58" y2="237" stroke="#3a5070" stroke-width="1"/>
+    <text x="54" y="241" text-anchor="end" fill="#6080a0" font-size="9">0.50</text>
+    <line x1="65" y1="130" x2="58" y2="130" stroke="#3a5070" stroke-width="1"/>
+    <text x="54" y="134" text-anchor="end" fill="#6080a0" font-size="9">0.75</text>
+    <line x1="65" y1="20" x2="58" y2="20" stroke="#3a5070" stroke-width="1"/>
+    <text x="54" y="24" text-anchor="end" fill="#6080a0" font-size="9">1.0</text>
+    <text x="20" y="237" text-anchor="middle" fill="#3a5070" font-size="9" font-style="italic" transform="rotate(-90,20,237)">C_edge_capacity ↑</text>
+    <!-- Quadrant labels -->
+    <text x="130" y="38" fill="rgba(0,221,136,0.5)" font-size="9" font-weight="700">C &gt; F</text>
+    <text x="390" y="442" fill="rgba(224,64,64,0.5)" font-size="9" font-weight="700">F &gt; C</text>
+    <!-- m=0 label -->
+    <text x="500" y="52" fill="#3a5070" font-size="8.5" transform="rotate(-40,500,52)">m = 0</text>
+    <!-- NEG LEAKAGE: circles (red) -->
+    <!-- 69807: F=0.934, C=0.140 → x=513, y=391 -->
+    <circle cx="513" cy="391" r="8" fill="#e04040" opacity="0.85"/>
+    <text x="513" y="395" text-anchor="middle" fill="#fff" font-size="7">807</text>
+    <!-- 69668: F=0.663, C=0.112 → x=383, y=403 -->
+    <circle cx="383" cy="403" r="8" fill="#e04040" opacity="0.85"/>
+    <text x="383" y="407" text-anchor="middle" fill="#fff" font-size="7">668</text>
+    <!-- 67992: F=0.753, C=0.495 → x=427, y=242 -->
+    <circle cx="427" cy="242" r="8" fill="#e04040" opacity="0.70"/>
+    <text x="427" y="246" text-anchor="middle" fill="#fff" font-size="7">992</text>
+    <!-- 68001: F=0.773, C=0.546 → x=436, y=221 -->
+    <circle cx="436" cy="221" r="8" fill="#e04040" opacity="0.70"/>
+    <text x="436" y="225" text-anchor="middle" fill="#fff" font-size="7">001</text>
+    <!-- AMB: diamonds (amber) -->
+    <!-- 69913: F=0.253, C=0.179 → x=187, y=375 -->
+    <polygon points="187,365 197,375 187,385 177,375" fill="#f0a030" opacity="0.9"/>
+    <text x="187" y="379" text-anchor="middle" fill="#fff" font-size="7">913</text>
+    <!-- 68206: F=0.488, C=0.540 → x=299, y=223 -->
+    <polygon points="299,213 309,223 299,233 289,223" fill="#f0a030" opacity="0.9"/>
+    <text x="299" y="227" text-anchor="middle" fill="#fff" font-size="7">206</text>
+    <!-- POS BOUNDARY: triangles (green) -->
+    <!-- 66445: F=0.218, C=0.746 → x=170, y=137 -->
+    <polygon points="170,127 180,147 160,147" fill="#00dd88" opacity="0.9"/>
+    <text x="170" y="145" text-anchor="middle" fill="#040810" font-size="7">445</text>
+    <!-- 69892: F=0.230, C=0.888 → x=175, y=77 -->
+    <polygon points="175,67 185,87 165,87" fill="#00dd88" opacity="0.9"/>
+    <text x="175" y="85" text-anchor="middle" fill="#040810" font-size="7">892</text>
+    <!-- 68719: F=0.036, C=0.829 → x=82, y=102 -->
+    <polygon points="82,92 92,112 72,112" fill="#00dd88" opacity="0.9"/>
+    <text x="82" y="110" text-anchor="middle" fill="#040810" font-size="7">719</text>
+    <!-- Legend -->
+    <rect x="370" y="60" width="162" height="76" fill="#07101e" stroke="#0c1a2e"/>
+    <circle cx="385" cy="76" r="7" fill="#e04040" opacity="0.85"/>
+    <text x="398" y="80" fill="#b8cce0" font-size="9">Negative leakage (n=4)</text>
+    <polygon points="385,92 395,102 385,112 375,102" fill="#f0a030" opacity="0.9"/>
+    <text x="398" y="106" fill="#b8cce0" font-size="9">Boundary ambiguous (n=2)</text>
+    <polygon points="385,118 395,132 375,132" fill="#00dd88" opacity="0.9"/>
+    <text x="398" y="129" fill="#b8cce0" font-size="9">Positive boundary (n=3)</text>
+  </svg>
+  <div class="caution">Dashed diagonal = m = 0 (C = F). Upper-left: C dominates (boundary-response regime). Lower-right: F dominates (leakage regime). Shot labels = last 3 digits of shot number. Shots 67992 (992) and 68001 (001) have moderate C but high F — capacity is non-zero but fragmentation dominates.</div>
+</div>
+
+<!-- ═══ §6 CORRIDOR TAXONOMY ═══ -->
+<div class="sec-label"><span class="sec-num">§6</span> CORRIDOR TAXONOMY — m_edge_event AXIS · ALL 9 SHOTS</div>
+
+<div class="panel">
+  <div class="panel-title">STRUCTURAL CORRIDOR TAXONOMY — TCV EVENT-LEVEL PILOT</div>
+  <svg viewBox="0 0 760 190" xmlns="http://www.w3.org/2000/svg" style="font-family:'Courier New',monospace;display:block;margin-top:8px">
+    <!-- Zone backgrounds -->
+    <rect x="50" y="68" width="330" height="44" fill="rgba(224,64,64,0.07)"/>
+    <rect x="355" y="60" width="42" height="60" fill="rgba(240,160,48,0.12)"/>
+    <rect x="380" y="68" width="330" height="44" fill="rgba(0,221,136,0.07)"/>
+    <!-- Axis -->
+    <line x1="50" y1="110" x2="710" y2="110" stroke="#0e2035" stroke-width="2"/>
+    <!-- m=0 -->
+    <line x1="380" y1="55" x2="380" y2="165" stroke="#3a5070" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <text x="380" y="52" text-anchor="middle" fill="#6080a0" font-size="9">m = 0</text>
+    <!-- Shot markers -->
+    <!-- 69807: x=118 -->
+    <circle cx="118" cy="110" r="7" fill="#e04040"/>
+    <text x="118" y="100" text-anchor="middle" fill="#e04040" font-size="8.5" font-weight="700">69807</text>
+    <text x="118" y="130" text-anchor="middle" fill="#e04040" font-size="8">−0.794</text>
+    <!-- 69668: x=198 -->
+    <circle cx="198" cy="110" r="7" fill="#e04040"/>
+    <text x="198" y="100" text-anchor="middle" fill="#e04040" font-size="8.5" font-weight="700">69668</text>
+    <text x="198" y="130" text-anchor="middle" fill="#e04040" font-size="8">−0.552</text>
+    <!-- 67992: x=295 -->
+    <circle cx="295" cy="110" r="7" fill="#e04040" opacity="0.75"/>
+    <text x="295" y="100" text-anchor="middle" fill="#e04040" font-size="8.5" font-weight="700">67992</text>
+    <text x="295" y="130" text-anchor="middle" fill="#e04040" font-size="8">−0.258</text>
+    <!-- 68001: x=305 (stagger up) -->
+    <circle cx="305" cy="94" r="7" fill="#e04040" opacity="0.75"/>
+    <text x="305" y="84" text-anchor="middle" fill="#e04040" font-size="8.5" font-weight="700">68001</text>
+    <text x="305" y="74" text-anchor="middle" fill="#e04040" font-size="8">−0.227</text>
+    <!-- 69913: x=356 -->
+    <circle cx="356" cy="110" r="7" fill="#f0a030"/>
+    <text x="356" y="152" text-anchor="middle" fill="#f0a030" font-size="8.5" font-weight="700">69913</text>
+    <text x="356" y="163" text-anchor="middle" fill="#f0a030" font-size="8">−0.074</text>
+    <!-- 68206: x=397 -->
+    <circle cx="397" cy="110" r="7" fill="#f0a030"/>
+    <text x="397" y="152" text-anchor="middle" fill="#f0a030" font-size="8.5" font-weight="700">68206</text>
+    <text x="397" y="163" text-anchor="middle" fill="#f0a030" font-size="8">+0.052</text>
+    <!-- 66445: x=554 -->
+    <circle cx="554" cy="110" r="7" fill="#00dd88" opacity="0.85"/>
+    <text x="554" y="100" text-anchor="middle" fill="#00dd88" font-size="8.5" font-weight="700">66445</text>
+    <text x="554" y="130" text-anchor="middle" fill="#00dd88" font-size="8">+0.528</text>
+    <!-- 69892: x=597 -->
+    <circle cx="597" cy="110" r="7" fill="#00dd88" opacity="0.9"/>
+    <text x="597" y="100" text-anchor="middle" fill="#00dd88" font-size="8.5" font-weight="700">69892</text>
+    <text x="597" y="130" text-anchor="middle" fill="#00dd88" font-size="8">+0.658</text>
+    <!-- 68719: x=642 -->
+    <circle cx="642" cy="110" r="7" fill="#00dd88"/>
+    <text x="642" y="100" text-anchor="middle" fill="#00dd88" font-size="8.5" font-weight="700">68719</text>
+    <text x="642" y="130" text-anchor="middle" fill="#00dd88" font-size="8">+0.793</text>
+    <!-- Zone labels -->
+    <text x="205" y="76" text-anchor="middle" fill="rgba(224,64,64,0.7)" font-size="9" font-weight="700">NEGATIVE LEAKAGE MARGIN</text>
+    <text x="376" y="185" text-anchor="middle" fill="rgba(240,160,48,0.8)" font-size="8">AMBIGUOUS</text>
+    <text x="530" y="76" text-anchor="middle" fill="rgba(0,221,136,0.7)" font-size="9" font-weight="700">POSITIVE BOUNDARY MARGIN</text>
+    <!-- Axis endpoints -->
+    <text x="50" y="182" text-anchor="middle" fill="#3a5070" font-size="9">−1.0</text>
+    <text x="710" y="182" text-anchor="middle" fill="#3a5070" font-size="9">+1.0</text>
+    <!-- Validated range brackets -->
+    <line x1="118" y1="144" x2="305" y2="144" stroke="rgba(224,64,64,0.35)" stroke-width="1.5"/>
+    <line x1="118" y1="141" x2="118" y2="147" stroke="rgba(224,64,64,0.35)" stroke-width="1.5"/>
+    <line x1="305" y1="141" x2="305" y2="147" stroke="rgba(224,64,64,0.35)" stroke-width="1.5"/>
+    <line x1="554" y1="144" x2="642" y2="144" stroke="rgba(0,221,136,0.35)" stroke-width="1.5"/>
+    <line x1="554" y1="141" x2="554" y2="147" stroke="rgba(0,221,136,0.35)" stroke-width="1.5"/>
+    <line x1="642" y1="141" x2="642" y2="147" stroke="rgba(0,221,136,0.35)" stroke-width="1.5"/>
+  </svg>
+  <div class="caution">Shot positions on m_edge_event axis · Validated ranges: negative [−0.794, −0.227] · ambiguous [−0.074, +0.052] · positive [+0.528, +0.793] · gap between ambiguous max (+0.052) and positive min (+0.528) = 0.476</div>
+</div>
+
+<!-- ═══ §7 FULL VALIDATION TABLE ═══ -->
+<div class="sec-label"><span class="sec-num">§7</span> FULL VALIDATION TABLE — 9 SHOTS · ALL MODEL FIELDS</div>
+
+<div class="panel">
+  <div class="panel-title">PER-SHOT VALIDATION RESULTS <span class="psub">· tcv_edge_event_model_validation.csv</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>SHOT</th><th>ILH</th><th>m_edge_event</th><th>State</th><th>Corridor</th>
+          <th>Dom. F term</th><th>Dom. C term</th><th>Support level</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--blue)">69807</td><td style="color:var(--dim)">0</td>
+          <td style="color:var(--red)">−0.7937</td>
+          <td><span class="vh">neg_leakage</span></td>
+          <td style="color:var(--dim)">mixed_power_transport_timing</td>
+          <td style="color:var(--coral)">S_transport</td><td style="color:var(--dim)">geometry_stability</td>
+          <td style="color:var(--red)">strong_negative</td>
+        </tr>
+        <tr>
+          <td style="color:var(--blue)">69668</td><td style="color:var(--dim)">0</td>
+          <td style="color:var(--red)">−0.5516</td>
+          <td><span class="vh">neg_leakage</span></td>
+          <td style="color:var(--dim)">transport_timing_corridor</td>
+          <td style="color:var(--coral)">S_transport</td><td style="color:var(--dim)">geometry_stability</td>
+          <td style="color:var(--red)">strong_negative</td>
+        </tr>
+        <tr>
+          <td style="color:var(--blue)">67992</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--red)">−0.2583</td>
+          <td><span class="vh">neg_leakage</span></td>
+          <td style="color:var(--dim)">power_transport_corridor</td>
+          <td style="color:var(--amber)">S_power_balance</td><td style="color:var(--dim)">geometry_stability</td>
+          <td style="color:var(--amber)">moderate_negative</td>
+        </tr>
+        <tr>
+          <td style="color:var(--blue)">68001</td><td style="color:var(--amber)">1;0</td>
+          <td style="color:var(--red)">−0.2271</td>
+          <td><span class="vh">neg_leakage</span></td>
+          <td style="color:var(--dim)">power_transport_corridor</td>
+          <td style="color:var(--amber)">S_power_balance</td><td style="color:var(--dim)">geometry_stability</td>
+          <td style="color:var(--amber)">moderate_negative</td>
+        </tr>
+        <tr>
+          <td style="color:var(--blue)">69913</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--amber)">−0.0739</td>
+          <td><span class="vt">boundary_amb</span></td>
+          <td style="color:var(--dim)">timing_dominant_corridor</td>
+          <td style="color:var(--violet)">S_timing</td><td style="color:var(--dim)">geometry_stability</td>
+          <td style="color:var(--amber)">ambiguous_boundary</td>
+        </tr>
+        <tr>
+          <td style="color:var(--blue)">68206</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--amber)">+0.0522</td>
+          <td><span class="vt">boundary_amb</span></td>
+          <td style="color:var(--dim)">power_balance_corridor</td>
+          <td style="color:var(--amber)">S_power_balance</td><td style="color:var(--blue)">density_support</td>
+          <td style="color:var(--amber)">ambiguous_boundary</td>
+        </tr>
+        <tr style="background:rgba(0,221,136,.03)">
+          <td style="color:var(--blue)">66445</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--green)">+0.5276</td>
+          <td><span class="vf">pos_boundary</span></td>
+          <td style="color:var(--green)">edge_divertor_response</td>
+          <td style="color:var(--violet)">S_timing</td><td style="color:var(--green)">S_edge_response</td>
+          <td style="color:var(--green)">strong_positive</td>
+        </tr>
+        <tr style="background:rgba(0,221,136,.03)">
+          <td style="color:var(--blue)">69892</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--green)">+0.6583</td>
+          <td><span class="vf">pos_boundary</span></td>
+          <td style="color:var(--green)">edge_divertor_response</td>
+          <td style="color:var(--amber)">S_power_balance</td><td style="color:var(--green)">S_edge_response</td>
+          <td style="color:var(--green)">strong_positive</td>
+        </tr>
+        <tr style="background:rgba(0,221,136,.03)">
+          <td style="color:var(--blue)">68719</td><td style="color:var(--dim)">1</td>
+          <td style="color:var(--green)">+0.7931</td>
+          <td><span class="vf">pos_boundary</span></td>
+          <td style="color:var(--green)">edge_divertor_response</td>
+          <td style="color:var(--amber)">S_power_balance</td><td style="color:var(--green)">S_edge_response</td>
+          <td style="color:var(--green)">strong_positive</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">ILH: 0 = H-mode not obtained · 1 = H-mode obtained · 1;0 = mixed (both outcomes in record) · Dom. F term = dominant fragmentation component · Dom. C term = dominant capacity component</div>
+</div>
+
+<!-- ═══ §8 SCORE COMPONENTS ═══ -->
+<div class="sec-label"><span class="sec-num">§8</span> SCORE COMPONENT BREAKDOWN — S_pb · S_tr · S_er · S_ti</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">FRAGMENTATION SCORES <span class="psub">· S_power_balance · S_transport · S_timing</span></div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:8px">bar width = score value · scale 0→1</div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:4px">— S_power_balance —</div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">807</span><div class="sb-track"><div class="sb-fill" style="width:94.5%;background:var(--amber)"></div></div><span class="sb-val" style="color:var(--amber)">0.945</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">668</span><div class="sb-track"><div class="sb-fill" style="width:29.9%;background:var(--amber)"></div></div><span class="sb-val">0.299</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">992</span><div class="sb-track"><div class="sb-fill" style="width:96.1%;background:var(--amber)"></div></div><span class="sb-val" style="color:var(--amber)">0.961</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">001</span><div class="sb-track"><div class="sb-fill" style="width:98.9%;background:var(--amber)"></div></div><span class="sb-val" style="color:var(--amber)">0.989</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">913</span><div class="sb-track"><div class="sb-fill" style="width:8.3%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.083</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">206</span><div class="sb-track"><div class="sb-fill" style="width:92.5%;background:var(--amber)"></div></div><span class="sb-val" style="color:var(--amber)">0.925</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">445</span><div class="sb-track"><div class="sb-fill" style="width:24.0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.240</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">892</span><div class="sb-track"><div class="sb-fill" style="width:29.5%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.295</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">719</span><div class="sb-track"><div class="sb-fill" style="width:10.3%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.103</span></div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin:8px 0 4px">— S_transport —</div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">807</span><div class="sb-track"><div class="sb-fill" style="width:99.0%;background:var(--red)"></div></div><span class="sb-val" style="color:var(--red)">0.990</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">668</span><div class="sb-track"><div class="sb-fill" style="width:99.7%;background:var(--red)"></div></div><span class="sb-val" style="color:var(--red)">0.997</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">992</span><div class="sb-track"><div class="sb-fill" style="width:95.9%;background:var(--red)"></div></div><span class="sb-val" style="color:var(--red)">0.959</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">001</span><div class="sb-track"><div class="sb-fill" style="width:97.3%;background:var(--red)"></div></div><span class="sb-val" style="color:var(--red)">0.973</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">913</span><div class="sb-track"><div class="sb-fill" style="width:4.0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.040</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">206</span><div class="sb-track"><div class="sb-fill" style="width:21.2%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.212</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">445</span><div class="sb-track"><div class="sb-fill" style="width:13.5%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.135</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">892</span><div class="sb-track"><div class="sb-fill" style="width:18.2%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.182</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">719</span><div class="sb-track"><div class="sb-fill" style="width:0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.000</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">CAPACITY SCORES <span class="psub">· S_edge_response · S_timing</span></div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:8px">bar width = score value · scale 0→1</div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:4px">— S_edge_response (capacity) —</div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">807</span><div class="sb-track"><div class="sb-fill" style="width:6.3%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.063</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">668</span><div class="sb-track"><div class="sb-fill" style="width:4.4%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.044</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">992</span><div class="sb-track"><div class="sb-fill" style="width:28.2%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.282</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">001</span><div class="sb-track"><div class="sb-fill" style="width:28.7%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.287</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">913</span><div class="sb-track"><div class="sb-fill" style="width:1.9%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.019</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">206</span><div class="sb-track"><div class="sb-fill" style="width:20.7%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.207</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">445</span><div class="sb-track"><div class="sb-fill" style="width:97.0%;background:var(--green)"></div></div><span class="sb-val" style="color:var(--green)">0.970</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">892</span><div class="sb-track"><div class="sb-fill" style="width:94.5%;background:var(--green)"></div></div><span class="sb-val" style="color:var(--green)">0.945</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">719</span><div class="sb-track"><div class="sb-fill" style="width:99.6%;background:var(--green)"></div></div><span class="sb-val" style="color:var(--green)">0.996</span></div>
+    <div style="font-size:8px;color:var(--dim);font-family:var(--mono);margin:8px 0 4px">— S_timing —</div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">807</span><div class="sb-track"><div class="sb-fill" style="width:85.6%;background:var(--violet)"></div></div><span class="sb-val" style="color:var(--violet)">0.856</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">668</span><div class="sb-track"><div class="sb-fill" style="width:70.0%;background:var(--violet)"></div></div><span class="sb-val" style="color:var(--violet)">0.700</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">992</span><div class="sb-track"><div class="sb-fill" style="width:27.1%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.271</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">001</span><div class="sb-track"><div class="sb-fill" style="width:28.8%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.288</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">913</span><div class="sb-track"><div class="sb-fill" style="width:70.0%;background:var(--violet)"></div></div><span class="sb-val" style="color:var(--violet)">0.700</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--blue)">206</span><div class="sb-track"><div class="sb-fill" style="width:30.0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.300</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">445</span><div class="sb-track"><div class="sb-fill" style="width:29.0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.290</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">892</span><div class="sb-track"><div class="sb-fill" style="width:20.9%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.209</span></div>
+    <div class="sb-row"><span class="sb-id" style="color:var(--green)">719</span><div class="sb-track"><div class="sb-fill" style="width:0%;background:var(--dim)"></div></div><span class="sb-val" style="color:var(--dim)">0.000</span></div>
+    <div class="caution">Green shot IDs = positive_boundary_margin · Blue = negative_leakage or ambiguous · Pattern: positive shots have S_er ≥ 0.945 and S_transport ≤ 0.182 — structural inversion of leakage shots</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.1</div>
+  <div class="finding-title">S_edge_response and S_transport are structurally anti-correlated across the corridor partition — edge-response dominance is not just high capacity; it co-occurs with near-zero transport fragmentation</div>
+  <p>The three positive boundary shots (66445, 69892, 68719) share S_edge_response ≥ 0.945 and S_transport ≤ 0.182. The four negative leakage shots have S_transport ≥ 0.960 and S_edge_response ≤ 0.287. Shot 69913 (boundary ambiguous) has the non-timing components all low (S_pb = 0.083, S_tr = 0.040, S_er = 0.019), while S_timing = 0.700 is the only elevated term — its near-zero margin reflects single-channel timing fragmentation with no compensating capacity or transport structure. Shot 68001 carries mixed ILH (1;0) and sits in the negative leakage corridor (m = −0.227), suggesting that its mixed outcome may reflect a discharge where the event-level structure was fragmentation-dominated despite eventual H-mode access.</p>
+</div>
+
+<!-- ═══ §9 ILH ALIGNMENT ═══ -->
+<div class="sec-label"><span class="sec-num">§9</span> ILH ALIGNMENT — MODEL vs EXPERIMENTAL INDICATOR</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">ILH CATEGORY SUMMARY</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>ILH Category</th><th>n</th><th>Mean m</th><th>Min m</th><th>Max m</th><th>Std</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--red)">ILH=0 (no H-mode)</td><td>2</td><td style="color:var(--red)">−0.673</td><td style="color:var(--red)">−0.794</td><td style="color:var(--red)">−0.552</td><td style="color:var(--dim)">0.171</td></tr>
+          <tr><td style="color:var(--green)">ILH=1 (H-mode)</td><td>6</td><td style="color:var(--green)">+0.283</td><td style="color:var(--red)">−0.258</td><td style="color:var(--green)">+0.793</td><td style="color:var(--dim)">0.432</td></tr>
+          <tr><td style="color:var(--amber)">ILH=1;0 (mixed)</td><td>1</td><td style="color:var(--red)">−0.227</td><td style="color:var(--red)">−0.227</td><td style="color:var(--red)">−0.227</td><td style="color:var(--dim)">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">ILH=0: both shots in strong negative leakage · ILH=1: spreads across all three corridors (1 neg, 2 amb, 3 pos) · model is a structural scorer, not a binary outcome classifier</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">ILH=1 SHOT DISTRIBUTION ACROSS CORRIDORS</div>
+    <div style="font-size:10.5px;color:var(--text);line-height:1.7;margin-top:6px">
+      Of the 6 ILH=1 shots: <span style="color:var(--red)">1 falls in negative leakage (67992)</span>, <span style="color:var(--amber)">2 fall in boundary ambiguous (69913, 68206)</span>, and <span style="color:var(--green)">3 fall in positive boundary (66445, 69892, 68719)</span>. The mixed-ILH shot 68001 is treated separately and lies in the negative leakage corridor.
+    </div>
+    <div style="font-size:10px;color:var(--text2);line-height:1.65;margin-top:8px">
+      The spread is expected: ILH=1 marks that H-mode was eventually reached in the discharge, but the model scores events at the moment of transition. Some ILH=1 discharges may have had complex multi-stage transitions, explaining negative event-level scores. The positive boundary corridor is defined by edge-response dominance, not by ILH outcome alone.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ §10 SCOPE ═══ -->
+<div class="sec-label"><span class="sec-num">§10</span> SCOPE AND LIMITATIONS</div>
+
+<div class="scope green">
+  <div class="scope-lbl">WHAT THIS RESULT ESTABLISHES</div>
+  The 9-shot TCV pilot validates the event-level edge-admissibility margin with strict ordering across three non-overlapping corridors. The 92-event full corpus extension (v0.2) confirms three-corridor structure survives at scale, with real ILH association (AUC 0.690, permutation p = 0.0022). A first m_edge(t) trace was constructed for TokaMark/MAST public shot 12063. The physical window analysis (HARDENED_v0_2) passes its first gate: on 5 TokaMark shots, H_MODE_STABLE windows sit higher in m_edge_conf than L_MODE windows from the same shots — all five within-shot H-minus-L deltas are positive (range +1.062 to +1.326).
+</div>
+<div class="scope red">
+  <div class="scope-lbl">WHAT THIS RESULT DOES NOT ESTABLISH</div>
+  The full corpus shows standard plasma variables already classify ILH at AUC = 1.0; m_edge_event does not improve binary ILH prediction. The physical window labels remain at hardening level 2_SUPPORTED: internally consistent but not externally anchored to expert-verified L-H timing. TCV positive-boundary corridor time traces for shots 66445, 69892, and 68719 are still missing, blocking full corridor-resolved m_edge(t) validation. No cross-machine replication has been performed. The v0.1 m_edge(t) margin inflates positive readings in incomplete-diagnostic shots; m_edge_conf(t) mitigates this but requires further testing.
+</div>
+<div class="scope blue">
+  <div class="scope-lbl">WHAT MUST BE TESTED NEXT</div>
+  External anchoring of the 5 recovered H_MODE_STABLE windows (shots 12007, 12017, 12046, 12055, 12063) against shot-log or publication L-H timing — or a falsification panel of diagnostic-complete shots where no H-mode is expected. Obtain a time-resolved positive-boundary discharge to enable one-discharge-per-corridor m_edge(t) validation. Cross-machine replication (FAIR MAST) remains the critical generality test.
+  <div style="font-size:9px;color:var(--dim);margin-top:8px;font-family:var(--mono)">Falsifiability: window gate would be invalidated if externally-anchored L-H timing places the recovered H_MODE_STABLE windows outside the expected post-transition interval, or if a comparable falsification panel achieves similar m_edge_conf separation without genuine H-mode access.</div>
+</div>
+
+<!-- ═══ §11 DATA PROVENANCE ═══ -->
+<div class="sec-label"><span class="sec-num">§11</span> DATA PROVENANCE AND INSTRUMENT RECORD</div>
+
+<div class="panel">
+  <div class="panel-title">PIPELINE STAGES — UNNS-H MODE PROJECT</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Stage</th><th>Instrument / File</th><th>Output</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--blue)">Raw ingestion</td><td>tcv_zenodo_adapter.py</td><td>tcv_lh_events_canonical.csv (92 rows)</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">STRUC-I baseline</td><td>STRUC-I v1.0.4 (chamber)</td><td>chamber_struc_i_v1_0_4_results.json</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Percolative test</td><td>STRUC-PERC-I v2.5.0 (batch)</td><td>struc_perc_batch_results.csv / .json</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Fragment-isolate mapping</td><td>tcv_fragment_isolate_mapper.py</td><td>tcv_fragment_gap_map.csv (569 KB)</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Suspect-shot review</td><td>tcv_suspect_shot_reviewer.py</td><td>tcv_suspect_shot_review.csv (9 shots)</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Manual physical review</td><td>TCV_Manual_Physical_Review_Nine_Shots.csv</td><td>Doc 10: 9 shots reviewed</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Event-level model (v0.1)</td><td>edge_admissibility_event_model.py</td><td>tcv_edge_event_model_scores.csv</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">9-shot validation</td><td>edge_event_model_validator.py</td><td>tcv_edge_event_model_validation*.csv/json</td><td><span class="vf">PASS · STRICT ORDERING</span></td></tr>
+        <tr><td style="color:var(--blue)">Full corpus extension (v0.2)</td><td>full_corpus_edge_event_extension.py</td><td>tcv_full_corpus_edge_event_scores.csv · summary.json</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Standard-variable comparison</td><td>full_corpus_edge_event_extension.py</td><td>tcv_full_corpus_standard_vs_unns_comparison.csv</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">TokaMark metadata scan</td><td>tokamark_metadata_candidate_scanner.py</td><td>Doc 17: candidate shot inventory</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">TokaMark m_edge(t) probe</td><td>tokamark_m_edge_t_probe.py</td><td>Doc 19: shot 12063 first trace</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Cross-shot comparison</td><td>tokamark_cross_shot_m_edge_comparator.py</td><td>Doc 21: 12063 vs 11830</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">5-shot panel</td><td>tokamark_moderate_confidence_panel_runner.py</td><td>Doc 27: 12063 ranked #1</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Physical window labeling</td><td>tokamark_physical_window_label_analyzer.py</td><td>Doc 29: L_MODE / LH_TRANSITION / H_MODE_STABLE</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">Label hardening (v0.1→v0.2)</td><td>tokamark_physical_label_hardening_template.py</td><td>HARDENED_v0_1 → v0.2 labels</td><td><span class="vf">Complete</span></td></tr>
+        <tr><td style="color:var(--blue)">H_MODE_STABLE evidence recovery</td><td>tokamark_hmode_stable_evidence_reviewer.py</td><td>Doc 33: 5 shots · GATE 1 PASS</td><td><span class="vf">PASS · 2_SUPPORTED</span></td></tr>
+        <tr><td style="color:var(--amber)">Analytics dashboard</td><td>This document</td><td>unns_hmode_event_level_analysis.html</td><td><span class="vg">Current</span></td></tr>
+        <tr><td style="color:var(--dim)">External anchoring / falsification</td><td>—</td><td>Doc 34 (planned)</td><td><span class="vt">Next</span></td></tr>
+        <tr><td style="color:var(--dim)">Positive-boundary time trace</td><td>—</td><td>shots 66445, 69892, 68719 targeted</td><td><span class="vt">Next</span></td></tr>
+        <tr><td style="color:var(--dim)">Full m_edge(t) per-corridor validation</td><td>—</td><td>—</td><td><span class="vh">Blocked on pos. trace</span></td></tr>
+        <tr><td style="color:var(--dim)">Cross-machine (FAIR MAST)</td><td>—</td><td>—</td><td><span class="vh">Not yet</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ §12 FULL CORPUS EXTENSION ═══ -->
+<div class="sec-label"><span class="sec-num">§12</span> FULL CORPUS EXTENSION (v0.2) — 92 EVENTS · TCV ZENODO</div>
+
+<div class="stat-grid" style="margin-bottom:14px">
+  <div class="stat"><div class="stat-val">92</div><div class="stat-lbl">CANONICAL EVENTS</div></div>
+  <div class="stat"><div class="stat-val">66</div><div class="stat-lbl">UNIQUE SHOTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">68</div><div class="stat-lbl">BOUNDARY AMBIGUOUS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">13</div><div class="stat-lbl">POSITIVE BOUNDARY</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">11</div><div class="stat-lbl">NEGATIVE LEAKAGE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">0.690</div><div class="stat-lbl">AUC m_edge vs ILH</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">+0.242</div><div class="stat-lbl">ILH1−ILH0 MEAN DIFF</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0.0022</div><div class="stat-lbl">PERMUTATION p</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">FULL CORPUS STATE DISTRIBUTION <span class="psub">· v0.2 TAG-FREE GENERALIZATION</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>State</th><th>n</th><th>Mean m</th><th>Min m</th><th>Max m</th><th>CI 95% lo</th><th>CI 95% hi</th><th>ILH1 rate</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--amber)">boundary_ambiguous_margin</td><td style="color:var(--amber)">68</td><td style="color:var(--amber)">−0.038</td><td>−0.199</td><td>+0.182</td><td>−0.061</td><td>−0.015</td><td>0.956</td></tr>
+          <tr><td style="color:var(--red)">negative_leakage_margin</td><td style="color:var(--red)">11</td><td style="color:var(--red)">−0.356</td><td>−0.664</td><td>−0.207</td><td>−0.450</td><td>−0.270</td><td>0.636</td></tr>
+          <tr style="background:rgba(0,221,136,.03)"><td style="color:var(--green)">positive_boundary_margin</td><td style="color:var(--green)">13</td><td style="color:var(--green)">+0.341</td><td>+0.223</td><td>+0.585</td><td>+0.297</td><td>+0.395</td><td>0.923</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Full corpus is boundary-near: 68/92 events in ambiguous zone · full corpus ≠ suspect subset · ambiguous dominance is expected and correct</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">MODEL COMPARISON — LOO AUC FOR ILH=1</div>
+    <div style="margin-top:8px">
+      <div style="font-size:9px;color:var(--dim);font-family:var(--mono);margin-bottom:8px">standard plasma variables vs UNNS margin · logistic regression LOO</div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:130px;font-size:8px;color:var(--text2)">standard_core</span>
+        <div class="mb-track"><div class="mb-pos" style="width:50%;background:var(--green)"></div></div>
+        <span class="mb-val" style="color:var(--green)">1.000</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:130px;font-size:8px;color:var(--text2)">std_core + UNNS</span>
+        <div class="mb-track"><div class="mb-pos" style="width:50%;background:var(--green)"></div></div>
+        <span class="mb-val" style="color:var(--green)">1.000</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:130px;font-size:8px;color:var(--text2)">std_edge_inclusive</span>
+        <div class="mb-track"><div class="mb-pos" style="width:50%;background:var(--green)"></div></div>
+        <span class="mb-val" style="color:var(--green)">1.000</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:130px;font-size:8px;color:var(--text2)">UNNS_components</span>
+        <div class="mb-track"><div class="mb-pos" style="width:19.6%;background:var(--blue)"></div></div>
+        <span class="mb-val" style="color:var(--blue)">0.696</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:130px;font-size:8px;color:var(--text2)">UNNS_margin_only</span>
+        <div class="mb-track"><div class="mb-pos" style="width:15.5%;background:var(--blue)"></div></div>
+        <span class="mb-val" style="color:var(--blue)">0.655</span>
+      </div>
+    </div>
+    <div class="caution">Standard variables dominate binary ILH classification · m_edge_event does not improve AUC · UNNS contribution at this stage is structural organization, not superior binary prediction</div>
+  </div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">SINGLE-VARIABLE AUC RANKING <span class="psub">· vs ILH=1 · top and bottom</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Variable</th><th>AUC for ILH=1</th><th>Rank</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--green)">dWmhd_dt_candidate_MW</td><td style="color:var(--green)">0.9985</td><td style="color:var(--dim)">#1 (best)</td></tr>
+          <tr><td style="color:var(--green)">kappa</td><td style="color:var(--green)">0.9077</td><td style="color:var(--dim)">#2</td></tr>
+          <tr><td>I_p_MA</td><td>0.7440</td><td style="color:var(--dim)">#3</td></tr>
+          <tr><td>Wmhd_J</td><td>0.7277</td><td style="color:var(--dim)">#4</td></tr>
+          <tr style="background:rgba(74,176,240,.04)"><td style="color:var(--blue)">m_edge_event</td><td style="color:var(--blue)">0.690</td><td style="color:var(--blue)">#13 of 27</td></tr>
+          <tr><td>S_timing</td><td>0.422</td><td style="color:var(--dim)">#22</td></tr>
+          <tr><td>C_edge_capacity</td><td>0.487</td><td style="color:var(--dim)">near chance</td></tr>
+          <tr><td style="color:var(--red)">chi_eff_candidate</td><td style="color:var(--red)">0.122</td><td style="color:var(--dim)">inverted (high chi → ILH=0)</td></tr>
+          <tr><td style="color:var(--red)">S_power_balance</td><td style="color:var(--red)">0.144</td><td style="color:var(--dim)">inverted (high pb → ILH=0)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">AUC &lt; 0.5 = inverted predictor · chi_eff and S_power_balance are inversely associated with ILH · m_edge_event = real but mid-ranked signal</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">TIME-RESOLVED PROBE — LH_DATA.h5 · 6 SHOTS</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Shot</th><th>ILH</th><th>m_edge state</th><th>post/pre Te grad. ratio</th><th>post/pre Te ratio</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--blue)">66464</td><td>1</td><td style="color:var(--amber)">boundary_ambiguous</td><td style="color:var(--green)">2.15</td><td>2.31</td></tr>
+          <tr><td style="color:var(--blue)">66465</td><td>1</td><td style="color:var(--amber)">boundary_ambiguous</td><td style="color:var(--green)">2.56</td><td>1.84</td></tr>
+          <tr><td style="color:var(--blue)">66468</td><td>1</td><td style="color:var(--amber)">boundary_ambiguous</td><td style="color:var(--green)">1.94</td><td>2.04</td></tr>
+          <tr><td style="color:var(--blue)">66527</td><td>1</td><td style="color:var(--amber)">boundary_ambiguous</td><td style="color:var(--green)">1.66</td><td>1.85</td></tr>
+          <tr><td style="color:var(--blue)">66530</td><td>0</td><td style="color:var(--red)">negative_leakage</td><td style="color:var(--dim)">null</td><td style="color:var(--dim)">null</td></tr>
+          <tr><td style="color:var(--blue)">72681</td><td>1</td><td style="color:var(--amber)">boundary_ambiguous</td><td style="color:var(--green)">1.50</td><td>2.24</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">5/6 boundary-ambiguous ILH=1 shots show post/pre Te gradient ratio &gt;1 — consistent with edge profile sharpening · no positive-boundary trace yet available · shot 66530 (ILH=0, negative) shows null post-transition values</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §12.1</div>
+  <div class="finding-title">Full corpus three-corridor structure survives v0.2 generalization — but the corpus is boundary-near, and standard plasma variables already classify ILH at AUC = 1.0</div>
+  <p>The tag-free v0.2 margin separates 92 TCV events into three non-overlapping states with statistically significant ILH association (AUC 0.690, permutation p = 0.0022). However, 74% of events (68/92) are boundary-ambiguous — the full corpus sits near the admissibility threshold, not in the branch-rich extreme positions that characterized the 9-shot reviewed set. The UNNS margin does not improve binary ILH classification over standard plasma variables (LOO AUC 1.000 with or without m_edge_event). The correct interpretation is structural organization, not superior prediction: m_edge_event reorganizes the TCV event table into leakage-like, boundary-ambiguous, and edge-response corridors, revealing how power-balance, transport, timing, and edge-response terms oppose each other in an event-level boundary-admissibility model.</p>
+</div>
+
+<!-- ═══ §13 TOKAMARK TEMPORAL PROBE ═══ -->
+<div class="sec-label"><span class="sec-num">§13</span> TOKAMARK/MAST TEMPORAL PROBE — m_edge(t) FIRST TRACE</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">m_edge(t) — SHOT 12063 · FIRST PUBLIC TRACE</div>
+    <p style="font-size:10.5px;color:var(--text);line-height:1.7;margin-bottom:10px">
+      Shot 12063 (MAST/TokaMark, public HTTP) was the highest-ranked candidate in metadata scan and 5-shot panel. It is the first discharge for which a time-resolved UNNS-H Mode margin m_edge(t) was constructed from public diagnostic arrays.
+    </p>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:8px">Trace character:</div>
+    <div class="mb-row">
+      <span class="mb-id" style="min-width:110px;font-size:8px;color:var(--amber)">boundary_amb.</span>
+      <div class="mb-track"><div class="mb-neg" style="width:15%;background:var(--amber)"></div></div>
+      <span class="mb-extra">dominant region · mostly near-zero margin</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="min-width:110px;font-size:8px;color:var(--green)">positive excur.</span>
+      <div class="mb-track"><div class="mb-pos" style="width:12%;background:var(--green)"></div></div>
+      <span class="mb-extra">short positive windows · internally coherent</span>
+    </div>
+    <div class="mb-row">
+      <span class="mb-id" style="min-width:110px;font-size:8px;color:var(--red)">negative intv.</span>
+      <div class="mb-track"><div class="mb-neg" style="width:10%;background:var(--red)"></div></div>
+      <span class="mb-extra">negative leakage intervals · power/transport dominated</span>
+    </div>
+    <div class="caution">v0.1 trace: not uniformly positive — confirms margin is not trivially labeling whole shot · positive windows show C &gt; F + reduced power-balance pressure · no L-H transition time anchored yet</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">5-SHOT PANEL RANKING <span class="psub">· MODERATE-CONFIDENCE CANDIDATES</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Rank</th><th>Shot</th><th>Panel Result</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--green)">1</td><td style="color:var(--green)">12063</td><td><span class="vf">structurally strongest</span></td><td style="color:var(--dim)">Dα + soft-X + Te profile evidence</td></tr>
+          <tr><td>2</td><td style="color:var(--blue)">11876</td><td><span class="vg">active</span></td><td style="color:var(--dim)">reduced confidence vs 12063</td></tr>
+          <tr><td>3</td><td style="color:var(--blue)">11776</td><td><span class="vt">confidence-limited</span></td><td style="color:var(--dim)">missing critical diagnostics</td></tr>
+          <tr><td>4</td><td style="color:var(--blue)">11768</td><td><span class="vt">confidence-limited</span></td><td style="color:var(--dim)">missing critical diagnostics</td></tr>
+          <tr><td>5</td><td style="color:var(--blue)">11830</td><td><span class="vh">weakest</span></td><td style="color:var(--dim)">low soft-X · weaker Dα</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel" style="margin-top:10px;background:rgba(224,64,64,.05);border-left:3px solid var(--red)">
+      <div class="panel-title" style="color:var(--red)">v0.1 DIAGNOSTIC CONFIDENCE FLAW</div>
+      <p style="font-size:10px;color:var(--text);line-height:1.65">Shots 11776 and 11768 show high positive-boundary fraction with m_edge_raw(t) despite missing critical diagnostics. The v0.1 margin confuses structural edge-capacity signal with diagnostic absence (reduced fragmentation evidence). The m_edge_conf(t) = diagnostic-confidence-weighted margin was introduced to penalize incomplete-diagnostic shots while preserving 12063's structure.</p>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §13.1</div>
+  <div class="finding-title">Shot 12063 identified as structurally stronger than comparable TokaMark candidates, but v0.1 margin is not trustworthy at scale — diagnostic-confidence weighting (m_edge_conf) is required</div>
+  <p>The 5-shot panel consistently ranks shot 12063 first. Its positive windows are internally coherent: C_edge_capacity &gt; F_route_fragmentation with edge-response contribution and reduced power-balance pressure in several windows. The cross-shot comparison to 11830 confirmed reference_structurally_stronger. However, shots 11776 and 11768 showed inflated positive-boundary fractions due to missing diagnostics — a structural flaw in v0.1 that must be addressed before broader TokaMark scaling. The m_edge_conf(t) = m_edge_raw(t) × Q_diag(t) penalization scheme was defined in response.</p>
+</div>
+
+<!-- ═══ §14 PHYSICAL WINDOW RECOVERY GATE ═══ -->
+<div class="sec-label"><span class="sec-num">§14</span> PHYSICAL WINDOW RECOVERY GATE — HARDENED_v0_2 · KEY NEW RESULT</div>
+
+<div class="stat-grid" style="margin-bottom:14px">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">PASS</div><div class="stat-lbl">FIRST GATE DECISION</div></div>
+  <div class="stat"><div class="stat-val">17</div><div class="stat-lbl">ELIGIBLE WINDOWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">6</div><div class="stat-lbl">L_MODE WINDOWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">6</div><div class="stat-lbl">LH_TRANSITION WINDOWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">5</div><div class="stat-lbl">H_MODE_STABLE WINDOWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">5/5</div><div class="stat-lbl">WITHIN-SHOT L&lt;H DELTAS</div></div>
+</div>
+
+<div class="panel" style="border-left:3px solid var(--gold);background:rgba(212,160,32,.05)">
+  <div class="panel-title" style="color:var(--gold)">GATE 1 DECISION — physical_window_analysis_passes_first_gate</div>
+  <p style="font-size:10.5px;color:var(--text);line-height:1.7;margin-bottom:10px">
+    After conservative relabeling (HARDENED_v0_1) suppressed H_MODE_STABLE windows for lacking external anchoring, the v0.2 recovery gate restored only those windows with sufficient independent internal physical evidence from Dα, profile-gradient, soft-X, and power-density context. The non-circularity rule was enforced: labels were recovered from physical evidence fields, not from the UNNS margin itself. The UNNS audit columns were applied only after labeling, to test alignment.
+  </p>
+  <div style="font-size:9px;font-family:var(--mono);color:var(--amber)">Hardening level: 2_SUPPORTED — internally consistent but not externally anchored to expert-verified L-H timing records</div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">BY-LABEL RESULT — m_edge_conf MEDIAN</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Label</th><th>Windows</th><th>Shots</th><th>Duration (s)</th><th>m_edge_conf median</th><th>conf+ fraction</th><th>Q_diag median</th><th>P_miss_crit median</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(224,64,64,.05)"><td style="color:var(--red)">L_MODE</td><td>6</td><td>6</td><td>0.390</td><td style="color:var(--red)">−1.120</td><td style="color:var(--dim)">0</td><td style="color:var(--red)">0.06</td><td style="color:var(--red)">1.0</td></tr>
+          <tr style="background:rgba(240,160,48,.05)"><td style="color:var(--amber)">LH_TRANSITION</td><td>6</td><td>6</td><td>0.115</td><td style="color:var(--amber)">−0.289</td><td style="color:var(--dim)">0</td><td>0.889</td><td>0.011</td></tr>
+          <tr style="background:rgba(0,221,136,.05)"><td style="color:var(--green)">H_MODE_STABLE</td><td>5</td><td>5</td><td>0.336</td><td style="color:var(--green)">+0.053</td><td style="color:var(--green)">0.261</td><td style="color:var(--green)">1.0</td><td style="color:var(--green)">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:9px;font-family:var(--mono);color:var(--text2)">Ordering confirmed:</div>
+    <div style="margin-top:4px">
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:80px;font-size:8.5px;color:var(--red)">L_MODE</span>
+        <div class="mb-track"><div class="mb-neg" style="width:50%;background:var(--red)"></div></div>
+        <span class="mb-val" style="color:var(--red)">−1.120</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:80px;font-size:8.5px;color:var(--amber)">LH_TRANS.</span>
+        <div class="mb-track"><div class="mb-neg" style="width:12%;background:var(--amber)"></div></div>
+        <span class="mb-val" style="color:var(--amber)">−0.289</span>
+      </div>
+      <div class="mb-row">
+        <span class="mb-id" style="min-width:80px;font-size:8.5px;color:var(--green)">H_STABLE</span>
+        <div class="mb-track"><div class="mb-pos" style="width:2.6%;background:var(--green)"></div></div>
+        <span class="mb-val" style="color:var(--green)">+0.053</span>
+      </div>
+    </div>
+    <div class="caution">L_MODE median Q_diag = 0.06 (poor diagnostic quality) · L_MODE P_missing_critical = 1 (all L_MODE windows have missing critical diagnostics) · H_MODE_STABLE Q_diag = 1, P_missing_critical = 0 — the ordering reflects both structural signal and diagnostic quality improvement</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">WITHIN-SHOT L→H RECOVERY — THE KEY RESULT</div>
+    <p style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:10px">For each shot: H_MODE_STABLE m_edge_conf median minus L_MODE m_edge_conf median</p>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Shot</th><th>L_MODE m_edge_conf</th><th>LH_TRANS m_edge_conf</th><th>H_STABLE m_edge_conf</th><th>Δ (H−L)</th><th>conf+ fraction</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--blue)">12007</td><td style="color:var(--red)">−1.120</td><td style="color:var(--amber)">−0.174</td><td style="color:var(--green)">−0.038</td><td style="color:var(--green)">+1.082</td><td style="color:var(--dim)">0</td></tr>
+          <tr><td style="color:var(--blue)">12017</td><td style="color:var(--red)">−1.120</td><td style="color:var(--amber)">−0.030</td><td style="color:var(--green)">−0.058</td><td style="color:var(--green)">+1.062</td><td style="color:var(--dim)">0</td></tr>
+          <tr><td style="color:var(--blue)">12046</td><td style="color:var(--red)">−1.120</td><td style="color:var(--amber)">−0.498</td><td style="color:var(--green)">+0.206</td><td style="color:var(--green)">+1.326</td><td style="color:var(--green)">0.514</td></tr>
+          <tr><td style="color:var(--blue)">12055</td><td style="color:var(--red)">−1.120</td><td style="color:var(--amber)">−0.265</td><td style="color:var(--green)">+0.196</td><td style="color:var(--green)">+1.316</td><td style="color:var(--green)">0.481</td></tr>
+          <tr style="background:rgba(0,221,136,.04)"><td style="color:var(--blue)">12063</td><td style="color:var(--red)">−1.120</td><td style="color:var(--amber)">−0.313</td><td style="color:var(--green)">+0.053</td><td style="color:var(--green)">+1.173</td><td style="color:var(--green)">0.261</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px">
+      <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:6px">Within-shot H−L deltas (all positive):</div>
+      <div class="mb-row"><span class="mb-id" style="min-width:44px;font-size:8.5px;color:var(--blue)">12046</span><div class="mb-track"><div class="mb-pos" style="width:46.3%;background:var(--green)"></div></div><span class="mb-val" style="color:var(--green)">+1.326</span></div>
+      <div class="mb-row"><span class="mb-id" style="min-width:44px;font-size:8.5px;color:var(--blue)">12055</span><div class="mb-track"><div class="mb-pos" style="width:45.9%;background:var(--green)"></div></div><span class="mb-val" style="color:var(--green)">+1.316</span></div>
+      <div class="mb-row"><span class="mb-id" style="min-width:44px;font-size:8.5px;color:var(--blue)">12063</span><div class="mb-track"><div class="mb-pos" style="width:40.8%;background:var(--green)"></div></div><span class="mb-val" style="color:var(--green)">+1.173</span></div>
+      <div class="mb-row"><span class="mb-id" style="min-width:44px;font-size:8.5px;color:var(--blue)">12007</span><div class="mb-track"><div class="mb-pos" style="width:37.7%;background:var(--green)"></div></div><span class="mb-val" style="color:var(--green)">+1.082</span></div>
+      <div class="mb-row"><span class="mb-id" style="min-width:44px;font-size:8.5px;color:var(--blue)">12017</span><div class="mb-track"><div class="mb-pos" style="width:37.0%;background:var(--green)"></div></div><span class="mb-val" style="color:var(--green)">+1.062</span></div>
+    </div>
+    <div class="caution">Within-shot comparison controls for shot-specific baseline · L_MODE windows occupy the diagnostic-confidence floor in this first window set; the result should therefore be read as a confidence-corrected structural separation, not a raw-margin-only separation · H_MODE_STABLE windows always sit higher in the same shot · This is the strongest result of the v0.2 gate</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §14.1 — GATE 1 RESULT</div>
+  <div class="finding-title">Within-shot L→H ordering confirmed: H_MODE_STABLE windows sit higher in m_edge_conf than L_MODE windows from the same 5 TokaMark shots — all deltas positive, range +1.062 to +1.326</div>
+  <p>After conservative physical relabeling and diagnostic-confidence correction, H_MODE_STABLE windows produce higher m_edge_conf medians than L_MODE windows in every shot where both labels are present. The across-label ordering is L_MODE (−1.120) &lt; LH_TRANSITION (−0.289) &lt; H_MODE_STABLE (+0.053). This is the ordering the UNNS-H Mode model predicts. The result passes the first gate for physical window analysis. However, it does not constitute final validation: labels are internally supported (2_SUPPORTED) but not externally anchored to expert-reviewed L-H transition times. External anchoring or a falsification stress test is required before this result can be treated as a physical validation claim.</p>
+</div>
+
+<!-- ═══ §10 (updated heading) now §10 ═══ -->
+
+<div style="margin-top:50px;padding-top:16px;border-top:1px solid var(--border2);font-size:8px;color:var(--dim);font-family:var(--mono);line-height:1.8">
+  <strong style="color:var(--text2)">UNNS-H MODE PROJECT — TCV + TOKAMARK ANALYTICS DASHBOARD · 2026</strong><br>
+  Program: UNNS Plasma Boundary Confinement Program · unns.tech<br>
+  Model: m_edge_event = C_edge_capacity − F_route_fragmentation · v0.1 (9-shot) / v0.2 (92-event) · m_edge_conf(t) (TokaMark time-resolved)<br>
+  TCV validation: edge_event_model_validator.py · PASS_STRICT_ORDERING · 9 reviewed shots · 3 non-overlapping corridors<br>
+  Full corpus: 92 events · 66 unique shots · ILH_1=84 · ILH_0=8 · AUC=0.690 · p=0.0022 · standard variables AUC=1.000 (dominates)<br>
+  TokaMark: public HTTP access · shot 12063 first m_edge(t) trace · 5-shot panel · confidence revision (m_edge_conf)<br>
+  Physical window gate: HARDENED_v0_2 · 5 recovered H_MODE_STABLE windows · all within-shot L→H deltas positive · level 2_SUPPORTED<br>
+  Data: TCV Zenodo 14996664 · TokaMark/MAST public HTTP metadata and array endpoints<br>
+  Caution: physical window labels are internally supported only — not externally anchored · TCV positive-boundary corridor time traces (shots 66445, 69892, 68719) still missing for corridor-resolved m_edge(t) validation · v0.1 margin inflates incomplete-diagnostic shots · m_edge_conf mitigates but not fully validated · Dα candidate signal unconfirmed
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>
