@@ -1,0 +1,406 @@
+UNNS STRUCTURAL PIPELINE — ZTF LIGHTCURVE → STRUC_PERC ANALYSIS
+
+==================================================
+0. FOLDER STRUCTURE
+==================================================
+
+ZTF20acobvxk_20260504/
+│
+├── detections.csv
+├── non_detections.csv
+├── prepare_lightcurve.py
+├── processed_lightcurve.csv
+├── generate_ladders_real.py
+├── ladder_mass.txt
+├── ladder_energy.txt
+├── ladder_pt.txt
+├── struc_perc_output/
+└── ZTF20acobvxk_20260504.zip
+
+
+==================================================
+1. INPUT DATA
+==================================================
+
+Primary:
+- detections.csv          (ZTF detections)
+- non_detections.csv      (optional, for completeness)
+
+Requirements:
+- Must contain time column (MJD or equivalent)
+- Must contain magnitude or flux column
+- No corrupted rows
+
+
+==================================================
+2. LIGHTCURVE PREPARATION
+==================================================
+
+Script:
+    prepare_lightcurve.py
+
+Run:
+    python prepare_lightcurve.py
+
+Output:
+    processed_lightcurve.csv
+
+Processing rules:
+- Sort by time (ascending)
+- Convert magnitude to numeric
+- Remove NaN / invalid rows
+- Ensure monotonic time ordering
+
+Expected output format:
+    mjd,mag,flux,...
+
+
+==================================================
+3. LADDER GENERATION (CORE STEP)
+==================================================
+
+Script:
+    generate_ladders_real.py
+
+Run:
+    python generate_ladders_real.py
+
+Outputs:
+    ladder_mass.txt
+    ladder_energy.txt
+    ladder_pt.txt
+
+
+------------------------------------------
+3.1 MASS LADDER
+------------------------------------------
+Definition:
+    raw magnitude sequence
+
+Represents:
+    observable structural ordering
+
+
+------------------------------------------
+3.2 ENERGY LADDER
+------------------------------------------
+Definition:
+    E = 10^(-0.4 * mag)
+
+Represents:
+    integrated / smoothed structure
+
+
+------------------------------------------
+3.3 MOMENTUM (pt) LADDER
+------------------------------------------
+Definition:
+    pt = diff(energy)
+
+Represents:
+    local structural change / instability
+
+
+------------------------------------------
+3.4 FORMAT REQUIREMENT (CRITICAL)
+------------------------------------------
+
+Each ladder MUST be:
+
+    x1
+    x2
+    x3
+    ...
+
+Rules:
+- NO headers
+- NO commas
+- NO text
+- ONLY numeric values
+- At least 3 values required
+
+
+==================================================
+4. STRUC_PERC ANALYSIS
+==================================================
+
+Open:
+    struc_perc_i_v2_5_0.html
+
+------------------------------------------
+4.1 SINGLE LADDER RUN
+------------------------------------------
+
+- Drop one ladder file
+- Click "RUN FULL PRP"
+
+
+------------------------------------------
+4.2 BATCH RUN (RECOMMENDED)
+------------------------------------------
+
+- Drop:
+    ladder_mass.txt
+    ladder_energy.txt
+    ladder_pt.txt
+
+- Click:
+    RUN BATCH
+
+
+------------------------------------------
+4.3 OUTPUT FILES
+------------------------------------------
+
+Generated in:
+    struc_perc_output/
+
+Files:
+    summary.json
+    components.csv
+    layers.csv
+
+
+==================================================
+5. STRUCTURAL METRICS (FROM summary.json)
+==================================================
+
+Key fields:
+
+- verdict.class
+- giant_ratio
+- kappa_connect
+- kappa_plateau
+- fragmentation_index
+- components_final
+
+
+Interpretation:
+
+FULL_PERCOLATION:
+    fully connected structure
+
+HARD_FRAGMENTATION:
+    broken structure
+
+NEAR-CRITICAL:
+    almost connected (giant_ratio ~ 0.9+)
+
+
+==================================================
+6. MULTI-LADDER DECISION LOGIC
+==================================================
+
+Compare all three ladders:
+
+CASE A:
+    mass + energy + pt → percolate
+    → REAL PHYSICAL STRUCTURE
+
+CASE B:
+    only one percolates
+    → CHANNEL-SPECIFIC ARTIFACT
+
+CASE C:
+    none percolate
+    → NOISE / NON-STRUCTURAL
+
+
+==================================================
+7. YOUR CURRENT RESULT (INTERPRETED)
+==================================================
+
+energy → near-percolation
+mass   → fragmented
+pt     → fragmented
+
+Conclusion:
+    NOT invariant
+    NOT explosion
+    NEAR-CRITICAL STRUCTURE
+
+
+==================================================
+8. FRACTURE DETECTION (OPTIONAL)
+==================================================
+
+Goal:
+    find structural break point
+
+Method:
+
+    load ladder
+    compute gaps = diff(ladder)
+    find max gap
+
+Interpretation:
+    max gap = structural fracture location
+
+
+==================================================
+9. ADVANCED EXTENSION — TIME EVOLUTION
+==================================================
+
+Modify pipeline:
+
+processed_lightcurve.csv
+    ↓
+sliding window segmentation
+    ↓
+generate ladders per window
+    ↓
+run STRUC_PERC per window
+
+
+Output:
+    kappa(t)
+    fragmentation(t)
+
+Goal:
+    detect regime transitions over time
+
+
+==================================================
+10. FINAL PIPELINE FLOW
+==================================================
+
+detections.csv
+    ↓
+prepare_lightcurve.py
+    ↓
+processed_lightcurve.csv
+    ↓
+generate_ladders_real.py
+    ↓
+ladder_mass / energy / pt
+    ↓
+STRUC_PERC
+    ↓
+summary.json + components + layers
+    ↓
+multi-ladder comparison
+    ↓
+structural classification
+
+==================================================
+12. TARGET PHENOMENON — TIME-LOCAL MARGIN COLLAPSE
+==================================================
+
+Goal:
+Detect localized structural collapse in time-evolving systems.
+
+Core Question:
+Does the system exhibit a margin-collapse signature:
+
+```
+    m(L_t) ↓
+
+aligned with physical transition events?
+```
+
+---
+
+## 12.1 WHY GLOBAL ANALYSIS FAILS
+
+Global ladder:
+mixes all phases of evolution
+
+Result:
+hides local collapse events
+
+Therefore:
+FULL_PERCOLATION (global) ≠ no explosion
+
+---
+
+## 12.2 REQUIRED TRANSFORMATION
+
+Replace:
+
+```
+full ladder → STRUC_PERC
+```
+
+With:
+
+```
+sliding window over time
+```
+
+---
+
+## 12.3 TIME-RESOLVED PIPELINE
+
+processed_lightcurve.csv
+↓
+sliding window segmentation (size = W)
+↓
+for each window:
+extract subsequence
+↓
+generate ladder (energy)
+↓
+run STRUC_PERC
+↓
+extract:
+giant_ratio(t)
+kappa_connect(t)
+fragmentation(t)
+
+---
+
+## 12.4 OUTPUT
+
+time_resolved_results.csv
+
+Columns:
+
+```
+t_center
+giant_ratio
+kappa_connect
+fragmentation
+n_points
+```
+
+---
+
+## 12.5 TARGET SIGNATURE
+
+Explosion / transition signature:
+
+```
+giant_ratio(t) ↓
+fragmentation(t) ↑
+```
+
+Interpretation:
+
+```
+localized admissibility breakdown
+```
+
+---
+
+## 12.6 INTERPRETATION RULES
+
+CASE A:
+sharp dip in giant_ratio
+→ structural collapse (event detected)
+
+CASE B:
+smooth curve
+→ no explosive regime
+
+CASE C:
+oscillatory pattern
+→ multi-phase dynamics
+
+---
+
+# END TARGET PHENOMENON BLOCK
+
+
+==================================================
+END OF PIPELINE
+==================================================
