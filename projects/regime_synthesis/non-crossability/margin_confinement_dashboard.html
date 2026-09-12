@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNNS | Margin-Confinement Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:            #010409;
+            --panel-bg:      rgba(13, 17, 23, 0.85);
+            --accent-blue:   #00d2ff;
+            --accent-purple: #9d50bb;
+            --accent-green:  #2de888;
+            --accent-amber:  #f5b942;
+            --accent-teal:   #3ddab8;
+            --accent-red:    #ff3e3e;
+            --text:          #e6edf3;
+            --subtext:       #8b949e;
+            --border:        rgba(48, 54, 61, 0.6);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(0, 210, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 100% 100%, 60px 60px, 60px 60px;
+        }
+
+        /* ─── Header ─── */
+        header {
+            padding: 0.85rem 2rem;
+            background: rgba(1, 4, 9, 0.96);
+            border-bottom: 1px solid var(--accent-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-group { display: flex; align-items: center; gap: 14px; }
+
+        .logo {
+            width: 30px; height: 30px;
+            background: var(--accent-blue);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: pulse 4s infinite ease-in-out;
+            flex-shrink: 0;
+        }
+
+        .logo-text { font-weight: 700; letter-spacing: 2px; font-size: 0.95rem; }
+
+        .header-right { display: flex; gap: 14px; align-items: center; }
+
+        .status-pill {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 0.2rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        .status-pill.green {
+            background: rgba(45, 232, 136, 0.1);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* ─── Grid ─── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            padding: 18px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* ─── Panel base ─── */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.25s;
+        }
+
+        .panel:hover { border-color: rgba(0, 210, 255, 0.45); }
+
+        .panel-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--subtext);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header .ph-tag {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            color: var(--accent-blue);
+        }
+
+        /* ─── Hero panel ─── */
+        .hero-panel { grid-column: span 2; }
+
+        .hero-panel h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 0.8rem;
+            background: linear-gradient(to right, #fff 40%, var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero-desc {
+            max-width: 680px;
+            color: var(--subtext);
+            font-size: 1rem;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+
+        /* manuscript CTA inside hero */
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-blue);
+            color: #00111f;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .hero-cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* ─── Metrics strip ─── */
+        .metric-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .metric {
+            flex: 1;
+            min-width: 110px;
+            padding: 13px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .metric-val {
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .metric-val.blue   { color: var(--accent-blue); }
+        .metric-val.green  { color: var(--accent-green); }
+        .metric-val.amber  { color: var(--accent-amber); }
+        .metric-val.teal   { color: var(--accent-teal); }
+        .metric-val.purple { color: var(--accent-purple); }
+
+        .metric-label { font-size: 0.72rem; color: var(--subtext); line-height: 1.4; }
+
+        /* ─── Voyager feed ─── */
+        .live-feed {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #00e070;
+            height: 186px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 224, 112, 0.15);
+            padding: 10px 12px;
+            border-radius: 5px;
+            line-height: 1.55;
+        }
+
+        /* ─── Neutrino stats ─── */
+        .neut-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .neut-stat {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .neut-stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .neut-stat-label { font-size: 0.67rem; color: var(--subtext); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ─── Minimal principle panel ─── */
+        .principle-panel {
+            background: linear-gradient(135deg, rgba(13, 17, 23, 0.9), rgba(157, 80, 187, 0.08));
+            grid-column: span 2;
+        }
+
+        .principle-quote {
+            font-size: 1rem;
+            line-height: 1.85;
+            color: #d0e0f8;
+            border-left: 3px solid var(--accent-purple);
+            padding-left: 18px;
+            margin: 14px 0;
+        }
+
+        /* ─── Companion manuscripts ─── */
+        .companions-panel { grid-column: span 3; }
+
+        .comp-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .comp-card {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.25s, background 0.25s;
+            text-decoration: none;
+        }
+
+        .comp-card:hover {
+            border-color: rgba(0, 210, 255, 0.4);
+            background: rgba(0, 210, 255, 0.04);
+        }
+
+        .comp-role {
+            font-size: 0.63rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .comp-card:nth-child(1) .comp-role { color: var(--accent-blue); }
+        .comp-card:nth-child(2) .comp-role { color: var(--accent-amber); }
+        .comp-card:nth-child(3) .comp-role { color: var(--accent-purple); }
+        .comp-card:nth-child(4) .comp-role { color: var(--accent-teal); }
+
+        .comp-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .comp-desc {
+            font-size: 0.78rem;
+            color: var(--subtext);
+            line-height: 1.55;
+            flex: 1;
+        }
+
+        .comp-link {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        /* ─── Tags ─── */
+        .tag-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+
+        .tag {
+            font-size: 0.62rem;
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--subtext);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── Footer ─── */
+        .footer-note {
+            grid-column: span 3;
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--subtext);
+            font-size: 0.82rem;
+            border-top: 1px solid var(--border);
+            margin-top: 4px;
+        }
+
+        /* ─── Animations ─── */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50%       { opacity: 1; transform: scale(1.06); filter: drop-shadow(0 0 8px var(--accent-blue)); }
+        }
+
+        @keyframes drift {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-28px); }
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 1100px) {
+            .comp-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .hero-panel,
+            .principle-panel,
+            .companions-panel,
+            .footer-note { grid-column: span 1; }
+            .comp-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ─── Interactive Boundary Monitor ─── */
+        .bm-readouts {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .bm-readout {
+            flex: 1;
+            min-width: 60px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 7px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bm-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .bm-val.blue   { color: var(--accent-blue); }
+        .bm-val.green  { color: var(--accent-green); }
+        .bm-val.amber  { color: var(--accent-amber); }
+        .bm-val.teal   { color: var(--accent-teal); }
+        .bm-val.red    { color: var(--accent-red); }
+        .bm-readout .bm-label {
+            font-size: 0.58rem;
+            color: var(--subtext);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            line-height: 1.3;
+        }
+        .canvas-wrap {
+            position: relative;
+            border-radius: 5px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        .canvas-wrap canvas { display: block; width: 100%; }
+        .bm-tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(3,8,18,0.94);
+            border: 1px solid rgba(0,210,255,0.3);
+            border-radius: 5px;
+            padding: 7px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            line-height: 1.75;
+            color: var(--text);
+            display: none;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        .bm-tooltip .tt-name  { color: var(--accent-blue); font-weight: 700; margin-bottom: 2px; }
+        .bm-tooltip .tt-safe  { color: var(--accent-green); }
+        .bm-tooltip .tt-danger{ color: var(--accent-red); }
+        .bm-controls {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .bm-ctrl-label {
+            font-size: 0.65rem;
+            color: var(--subtext);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        .forcing-slider {
+            flex: 1;
+            min-width: 80px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(to right,
+                var(--accent-green) 0%,
+                var(--accent-amber) 60%,
+                var(--accent-red) 100%);
+            outline: none;
+            cursor: pointer;
+        }
+        .forcing-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            border: 2px solid #e6edf3;
+            cursor: pointer;
+            box-shadow: 0 0 7px rgba(0,210,255,0.55);
+        }
+        .forcing-slider::-moz-range-thumb {
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            border: 2px solid #e6edf3;
+            cursor: pointer;
+        }
+        .bm-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,210,255,0.3);
+            background: rgba(0,210,255,0.06);
+            color: var(--accent-blue);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .bm-btn:hover { background: rgba(0,210,255,0.13); border-color: rgba(0,210,255,0.55); }
+        .bm-btn.active { background: rgba(255,62,62,0.12); border-color: rgba(255,62,62,0.5); color: var(--accent-red); }
+        .bm-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .bm-leg-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.6rem;
+            color: var(--subtext);
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid transparent;
+            transition: border-color 0.15s, color 0.15s, opacity 0.15s;
+        }
+        .bm-leg-item:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+        .bm-leg-item.active { border-color: rgba(255,255,255,0.18); color: var(--text); }
+        .bm-leg-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-group">
+        <div class="logo"></div>
+        <span class="logo-text">UNNS SUBSTRATE</span>
+    </div>
+    <div class="header-right">
+        <div class="status-pill green">0 Crossings Detected</div>
+        <div class="status-pill">SYS OK</div>
+        <div class="status-pill" id="clock">--:--:--</div>
+    </div>
+</header>
+
+<main class="dashboard-grid">
+
+    <!-- ══ HERO ══ -->
+    <section class="panel hero-panel">
+        <div class="panel-header">
+            <span>Core Framework — STRUC-PERC-I v2.5.0</span>
+            <span class="ph-tag">Foundational Manuscript</span>
+        </div>
+        <h1>Margin-Confinement Law</h1>
+        <p class="hero-desc">
+            A structural invariance proof: once a system is represented inside the admissible
+            region ℳ<sub>adm</sub>, identity-preserving dynamics cannot cross the boundary
+            m(L<sub>t</sub>) = 0. Systems approach collapse asymptotically, generating the
+            <strong>Forced Coherent Collapse (FCC)</strong> regime — trapped near the boundary,
+            never through it.
+        </p>
+        <a class="hero-cta"
+           href="https://unns.tech/media/unns/non-crossability/The Margin-Confinement Law.pdf"
+           target="_blank" rel="noopener">
+            Open Manuscript → PDF
+        </a>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:-6px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:-6px;">
+
+    <a class="hero-cta"
+       style="background:rgba(0,210,255,0.12);
+              color:var(--accent-blue);
+              border:1px solid rgba(0,210,255,0.25);"
+       href="https://unns.tech/media/unns/non-crossability/neutrino_corpus_analysis.html"
+       target="_blank" rel="noopener">
+        Open Corpus Analysis →
+    </a>
+
+    <a class="hero-cta"
+       style="background:rgba(45,232,136,0.12);
+              color:var(--accent-green);
+              border:1px solid rgba(45,232,136,0.25);"
+       href="https://unns.tech/media/unns/non-crossability/data_analysis_corpus.zip"
+       target="_blank" rel="noopener">
+        Download Corpus →
+    </a>
+
+</div>
+
+    <a class="hero-cta"
+       style="background:rgba(45,232,136,0.12);color:var(--accent-green);border:1px solid rgba(45,232,136,0.25);"
+       href="https://unns.tech/media/unns/non-crossability/neutrino_roots.zip"
+       target="_blank" rel="noopener">
+        Download Pipeline →
+    </a>
+</div>
+        <div class="metric-group">
+            <div class="metric">
+                <div class="metric-val green">0</div>
+                <div class="metric-label">Genuine crossings<br>p &lt; 3.0×10⁻⁴ at 99% CI</div>
+            </div>
+            <div class="metric">
+                <div class="metric-val blue">15,401</div>
+                <div class="metric-label">Evaluations<br>across 16 domains</div>
+            </div>
+            <div class="metric">
+                <div class="metric-val teal">9/9</div>
+                <div class="metric-label">Δ-lifting recovery<br>100% RISC fragments → Full</div>
+            </div>
+            <div class="metric">
+                <div class="metric-val amber">34</div>
+                <div class="metric-label">FCC-like states in Δ-space<br>up from 5 raw (6.8×)</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ BOUNDARY MONITOR ══ -->
+    <section class="panel">
+        <div class="panel-header">
+            <span>Boundary Monitor — Interactive</span>
+            <span class="ph-tag">∂ℳ<sub>adm</sub></span>
+        </div>
+
+        <!-- Live readouts -->
+        <div class="bm-readouts">
+            <div class="bm-readout">
+                <span class="bm-val blue" id="readout-margin">0.284</span>
+                <span class="bm-label">Min m(L<sub>t</sub>)</span>
+            </div>
+            <div class="bm-readout">
+                <span class="bm-val green" id="readout-gr">1.000</span>
+                <span class="bm-label">Min GR</span>
+            </div>
+            <div class="bm-readout">
+                <span class="bm-val amber" id="readout-td">0.748</span>
+                <span class="bm-label">Max TD</span>
+            </div>
+            <div class="bm-readout">
+                <span class="bm-val teal" id="readout-fcc">2 / 5</span>
+                <span class="bm-label">FCC zone</span>
+            </div>
+            <div class="bm-readout">
+                <span class="bm-val green" id="readout-cross">0</span>
+                <span class="bm-label">Crossings</span>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-wrap">
+            <canvas id="bm-canvas" height="220"></canvas>
+            <div class="bm-tooltip" id="bm-tooltip">
+                <div class="tt-name" id="tt-name"></div>
+                <div id="tt-body"></div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bm-controls">
+            <span class="bm-ctrl-label">Forcing →</span>
+            <input type="range" class="forcing-slider" id="forcing-slider"
+                   min="0" max="100" value="35">
+            <span class="bm-val blue" id="forcing-val"
+                  style="font-size:.78rem;min-width:30px;">35%</span>
+            <button class="bm-btn" id="btn-push">Impulse</button>
+            <button class="bm-btn" id="btn-reset">Reset</button>
+        </div>
+
+        <!-- Domain legend -->
+        <div class="bm-legend" id="bm-legend"></div>
+
+        <div class="tag-row">
+            <span class="tag">Invariant Manifold</span>
+            <span class="tag">Non-Crossable</span>
+            <span class="tag">FCC Regime</span>
+            <span class="tag">Lyapunov Bounded</span>
+            <span class="tag">RISC Safe</span>
+        </div>
+    </section>
+
+    <!-- ══ VOYAGER FEED ══ -->
+    <section class="panel">
+        <div class="panel-header">
+            <span>Heliospheric Corpus</span>
+            <span class="ph-tag">Voyager 1 |B|</span>
+        </div>
+        <div class="live-feed" id="voyager-feed">
+[VGR1] CORPUS: 3,500 windows loaded
+[VGR1] MAG_LADDER: admissibility scan ACTIVE
+[VGR1] GIANT_RATIO: 0.974 — FULL
+[VGR1] BOUNDARY_STATUS: ADMISSIBLE
+        </div>
+        <p style="font-size: 0.8rem; margin-top: 10px; color: var(--subtext);">
+            97.4% Full percolation across a 7-year heliopause approach and crossing.
+            First long-duration non-crossability trajectory. Zero HARD events.
+        </p>
+    </section>
+
+    <!-- ══ NEUTRINO CORPUS ══ -->
+    <section class="panel">
+        <div class="panel-header">
+            <span>Neutrino Detector Corpus</span>
+            <span class="ph-tag">Stage 1 + 2</span>
+        </div>
+        <div class="neut-grid">
+            <div class="neut-stat">
+                <div class="neut-stat-val" style="color: var(--accent-purple);">67</div>
+                <div class="neut-stat-label">Ladders · 5 repr. groups</div>
+            </div>
+            <div class="neut-stat">
+                <div class="neut-stat-val" style="color: var(--accent-green);">9/9</div>
+                <div class="neut-stat-label">Δ-recovery rate · 100%</div>
+            </div>
+            <div class="neut-stat">
+                <div class="neut-stat-val" style="color: var(--accent-amber);">6</div>
+                <div class="neut-stat-label">RISC matched pairs</div>
+            </div>
+            <div class="neut-stat">
+                <div class="neut-stat-val" style="color: var(--accent-teal);">0</div>
+                <div class="neut-stat-label">USL violations</div>
+            </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--subtext); line-height: 1.6;">
+            Δ-lifting (ΔL = |x<sub>i+1</sub> − x<sub>i</sub>|) recovers Full percolation
+            in all fragmented ladders. Continuity was not recreated — it was uncovered.
+        </p>
+    </section>
+
+    <!-- ══ RISC PANEL ══ -->
+    <section class="panel">
+        <div class="panel-header">
+            <span>RISC Monitor</span>
+            <span class="ph-tag">Repr.-Induced Collapse</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--subtext); margin-bottom: 14px;">
+            The same source, genuinely in ℳ<sub>adm</sub>, produces different classes
+            depending on the observational chart. Key matched pairs:
+        </p>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 2;">
+            <div style="display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px;">
+                <span style="color:var(--accent-red);min-width:90px;">TMVA HARD</span>
+                <span style="color:var(--subtext);">→</span>
+                <span style="color:var(--accent-green);">deepL FULL</span>
+                <span style="color:var(--subtext);font-size:.68rem;margin-left:auto;">h_SigSB_2 · max</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px;">
+                <span style="color:var(--accent-amber);min-width:90px;">TMVA TAIL ×5</span>
+                <span style="color:var(--subtext);">→</span>
+                <span style="color:var(--accent-green);">deepL FULL</span>
+                <span style="color:var(--subtext);font-size:.68rem;margin-left:auto;">hSigSB, significance</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <span style="color:var(--accent-amber);min-width:90px;">ANY HARD</span>
+                <span style="color:var(--subtext);">→</span>
+                <span style="color:var(--accent-teal);">Δ FULL</span>
+                <span style="color:var(--subtext);font-size:.68rem;margin-left:auto;">9/9 · 100%</span>
+            </div>
+        </div>
+        <div class="tag-row">
+            <span class="tag">Observational Collapse</span>
+            <span class="tag">Not Ontological</span>
+            <span class="tag">Chart-Dependent</span>
+        </div>
+    </section>
+
+    <!-- ══ MINIMAL PRINCIPLE ══ -->
+    <section class="panel principle-panel">
+        <div class="panel-header">
+            <span>Minimal Structural Principle</span>
+            <span class="ph-tag">Corpus-Scoped</span>
+        </div>
+        <blockquote class="principle-quote">
+            Admissible structures tend to <strong>preserve or recover relational continuity</strong>
+            under identity-preserving evolution and locality-preserving representation transforms.
+            Structural collapse, in the sense relevant to realizability geometry,
+            is <strong>asymptotic rather than trans-boundary</strong>.
+        </blockquote>
+        <div class="metric-group" style="margin-top: 16px;">
+            <div class="metric">
+                <div class="metric-val blue" style="font-size:1.2rem;">Theorem 1</div>
+                <div class="metric-label">Forbidden collapse — IPF flows cannot cross ∂ℳ<sub>adm</sub></div>
+            </div>
+            <div class="metric">
+                <div class="metric-val teal" style="font-size:1.2rem;">Conjecture 1</div>
+                <div class="metric-label">Locality-preserving transforms preserve admissibility</div>
+            </div>
+            <div class="metric">
+                <div class="metric-val amber" style="font-size:1.2rem;">FCC</div>
+                <div class="metric-label">Near-boundary asymptotic state — locally relational coherence</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ COMPANION MANUSCRIPTS ══ -->
+    <section class="panel companions-panel">
+        <div class="panel-header">
+            <span>Framework Manuscripts</span>
+            <span class="ph-tag">Four-Document Architecture</span>
+        </div>
+        <div class="comp-grid">
+            <a class="comp-card"
+               href="https://unns.tech/media/unns/non-crossability/The Margin-Confinement Law.pdf"
+               target="_blank" rel="noopener">
+                <span class="comp-role">Central Theorem</span>
+                <span class="comp-title">The Margin-Confinement Law</span>
+                <span class="comp-desc">Proves structural non-crossability in admissibility space via the background chain invariant and Lyapunov confinement functional. Introduces RISC, FCC, Δ-lifting, and representation-covariant admissibility. 15,401 evaluations · 0 crossings.</span>
+                <span class="comp-link">Open PDF →</span>
+            </a>
+            <a class="comp-card"
+               href="https://unns.tech/media/unns/extreme_physical_transitions/BeyondFragmentation.pdf"
+               target="_blank" rel="noopener">
+                <span class="comp-role">Empirical Boundary Dynamics</span>
+                <span class="comp-title">Beyond Fragmentation</span>
+                <span class="comp-desc">Establishes the empirical geometry of confinement across supernovae, Voyager heliosphere transport, nuclear seismic events, and detector corpora. Discovers FCC as a coherent near-boundary regime. The empirical precursor the Law explains.</span>
+                <span class="comp-link">Open PDF →</span>
+            </a>
+            <a class="comp-card"
+               href="https://unns.tech/media/unns/Monotonicity/Percolative_Realizability_Principle.pdf"
+               target="_blank" rel="noopener">
+                <span class="comp-role">Percolative Foundation</span>
+                <span class="comp-title">Percolative Realizability Principle</span>
+                <span class="comp-desc">Defines realizability through graph-theoretic connectivity and giant component persistence. Introduces Full, Giant, Tail, and Hard fragmentation classes via vulnerability graphs. The operational percolative layer underlying all admissibility evaluation.</span>
+                <span class="comp-link">Open PDF →</span>
+            </a>
+            <a class="comp-card"
+               href="https://unns.tech/media/unns/Monotonicity/The_Universal_Structural_Law_v6.pdf"
+               target="_blank" rel="noopener">
+                <span class="comp-role">Foundational Constraint</span>
+                <span class="comp-title">Universal Structural Law v6</span>
+                <span class="comp-desc">Establishes the foundational admissibility constraint governing all realizable ordered physical sequences. Defines ℳ<sub>adm</sub> and the USL inequality inv(P;L) ≤ ν(V(L)). The root axiom from which all downstream confinement results derive.</span>
+                <span class="comp-link">Open PDF →</span>
+            </a>
+        </div>
+    </section>
+
+<a class="comp-card"
+   href="https://unns.tech/media/unns/structural_regimes/Bounded Structural Rigidity and Representation-Driven Structure.pdf"
+   target="_blank" rel="noopener">
+
+    <span class="comp-role">Representation Geometry</span>
+
+    <span class="comp-title">
+        Bounded Structural Rigidity and Representation-Driven Structure
+    </span>
+
+    <span class="comp-desc">
+        Establishes how admissible structures preserve or distort coherence
+        under representation transforms. Introduces structural rigidity,
+        representation-dependent observability, and bounded deformation
+        regimes underlying RISC behavior, Δ-recovery, and locality-preserving
+        continuity reconstruction.
+    </span>
+
+    <span class="comp-link">Open PDF →</span>
+
+</a>
+
+    <a class="comp-card"
+   href="https://unns.tech/media/unns/non-crossability/neutrino_corpus_analysis.html"
+   target="_blank" rel="noopener">
+    <span class="comp-role">Interactive Analysis</span>
+    <span class="comp-title">Neutrino Corpus Analysis</span>
+    <span class="comp-desc">
+        Interactive admissibility analysis of neutrino detector corpora,
+        including RISC matched pairs, Δ-lifting recovery, FCC emergence,
+        phase-space mapping, and representation-covariant realizability
+        evaluation across TMVA and deepL reconstruction spaces.
+    </span>
+    <span class="comp-link">Open Analysis →</span>
+</a>
+
+<a class="comp-card"
+   href="https://unns.tech/media/unns/non-crossability/data_analysis_corpus.zip"
+   target="_blank" rel="noopener">
+    <span class="comp-role">Corpus Archive</span>
+    <span class="comp-title">Full Data Analysis Corpus</span>
+    <span class="comp-desc">
+        Complete structural analysis archive containing ladders,
+        Δ-representations, STRUC-PERC-I outputs, FCC evaluations,
+        RISC comparisons, neutrino detector datasets, and
+        cross-domain admissibility analysis results.
+    </span>
+    <span class="comp-link">Download Archive →</span>
+</a>
+
+<a class="comp-card"
+   href="https://unns.tech/media/unns/non-crossability/neutrino_roots.zip"
+   target="_blank" rel="noopener">
+    <span class="comp-role">Pipeline Archive</span>
+    <span class="comp-title">Neutrino Extraction & Δ-Lifting Pipeline</span>
+    <span class="comp-desc">
+        Complete ROOT extraction and Δ-space recovery pipeline including
+        extract_neutrino_ladders.py, delta_txt_ladder.py, raw ladders,
+        Δ-ladders, and STRUC-PERC-I compatible corpus generation tools.
+    </span>
+    <span class="comp-link">Download Pipeline →</span>
+</a>
+    <!-- ══ FOOTER ══ -->
+    <div class="footer-note">
+        UNNS Substrate Research Program &copy; 2026 &nbsp;·&nbsp; STRUC-I v1.0.4 &nbsp;·&nbsp; STRUC-PERC-I v2.5.0 &nbsp;·&nbsp; unns.tech
+    </div>
+
+</main>
+
+<script>
+    /* ── Live clock ── */
+    function updateClock() {
+        document.getElementById('clock').textContent =
+            new Date().toTimeString().slice(0, 8);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /* ── Voyager telemetry feed ── */
+    const feed = document.getElementById('voyager-feed');
+    const logs = [
+        '[VGR1] GR: 0.974 — FULL_PERCOLATION',
+        '[VGR1] CONN_MARGIN: 0.081 (STABLE)',
+        '[VGR1] TD: 0.312 — admissible',
+        '[VGR1] BOUNDARY_STATUS: NON-CROSSABLE',
+        '[VGR1] HELIOSHEATH: 3,500 windows processed',
+        '[VGR1] FCC_ZONE: approach detected',
+        '[VGR1] MARGIN_FLOOR: 0.0+ — confinement active',
+        '[VGR1] DELTA_SPACE_LIFT: SUCCESS',
+        '[VGR1] USL_VIOLATIONS: 0',
+        '[VGR1] HARD_EVENTS: 0 (all RISC artifacts)',
+    ];
+    let logIdx = 0;
+    setInterval(() => {
+        const line = document.createElement('div');
+        line.textContent = logs[logIdx % logs.length];
+        logIdx++;
+        feed.appendChild(line);
+        if (feed.children.length > 10) feed.removeChild(feed.firstChild);
+    }, 2200);
+
+    /* ════════════════════════════════════════════
+       INTERACTIVE BOUNDARY MONITOR
+    ════════════════════════════════════════════ */
+    const BM_DOMAINS = [
+        { id:'voyager',  name:'Voyager 1 |B|',    color:'#00d2ff', GR:0.974, TD:0.312, n:3500, baseMargin:0.52, rate:0.38, phase:0,             wobble:0.040, wobbleFreq:0.9 },
+        { id:'nk',       name:'NK Nuclear',        color:'#f5b942', GR:0.971, TD:0.997, n:29,   baseMargin:0.68, rate:0.55, phase:Math.PI*0.3,   wobble:0.025, wobbleFreq:1.4 },
+        { id:'neutrino', name:'Neutrino deepL',    color:'#9d50bb', GR:1.000, TD:0.998, n:67,   baseMargin:0.42, rate:0.62, phase:Math.PI*0.7,   wobble:0.015, wobbleFreq:1.1 },
+        { id:'seismic',  name:'Nevada Seismic',    color:'#2de888', GR:1.000, TD:0.445, n:20,   baseMargin:0.74, rate:0.29, phase:Math.PI*1.1,   wobble:0.050, wobbleFreq:0.7 },
+        { id:'sn',       name:'Supernova SN Ia',   color:'#3ddab8', GR:1.000, TD:0.891, n:20,   baseMargin:0.58, rate:0.45, phase:Math.PI*1.6,   wobble:0.030, wobbleFreq:1.2 },
+    ];
+
+    let bmForcing       = 0.35;
+    let bmImpulse       = 0;
+    let bmT             = 0;
+    let bmHovered       = null;
+    let bmActive        = new Set(BM_DOMAINS.map(d => d.id));
+    const TRAIL_LEN     = 200;
+    const BM_BOUND_FRAC = 0.13;
+    const BM_FCC_FRAC   = 0.10;
+
+    const bmTrails = {};
+    BM_DOMAINS.forEach(d => { bmTrails[d.id] = []; });
+
+    const bmCanvas  = document.getElementById('bm-canvas');
+    const bmCtx     = bmCanvas.getContext('2d');
+
+    function bmResize() {
+        const r = bmCanvas.parentElement.getBoundingClientRect();
+        bmCanvas.width  = r.width;
+        bmCanvas.height = 220;
+    }
+    bmResize();
+    window.addEventListener('resize', bmResize);
+
+    function bmMarginToY(m, H) {
+        const by = H * BM_BOUND_FRAC;
+        return by + m * (H * 0.94 - by);
+    }
+
+    function bmCalcMargin(domain, time, f) {
+        const ef  = Math.min(f + bmImpulse, 0.96);
+        const dec = domain.baseMargin * Math.exp(-domain.rate * ef * time * 0.04);
+        const fl  = 0.026 + (1 - ef) * 0.04;
+        const wob = domain.wobble * Math.sin(time * domain.wobbleFreq + domain.phase);
+        return Math.max(fl, dec + wob);
+    }
+
+    function bmCalcX(time, W, di) {
+        return (time * (0.8 + di * 0.04) * 0.38) % (W + 60) - 30;
+    }
+
+    function bmDraw() {
+        const W = bmCanvas.width, H = bmCanvas.height;
+        const BY  = H * BM_BOUND_FRAC;
+        const fccB = BY + H * BM_FCC_FRAC;
+
+        bmCtx.clearRect(0, 0, W, H);
+
+        /* Forbidden region */
+        const fg = bmCtx.createLinearGradient(0, 0, 0, BY);
+        fg.addColorStop(0, 'rgba(255,30,30,0.26)');
+        fg.addColorStop(1, 'rgba(255,30,30,0.05)');
+        bmCtx.fillStyle = fg;
+        bmCtx.fillRect(0, 0, W, BY);
+
+        /* FCC zone */
+        const fcg = bmCtx.createLinearGradient(0, BY, 0, fccB);
+        fcg.addColorStop(0, 'rgba(245,185,66,0.13)');
+        fcg.addColorStop(1, 'rgba(245,185,66,0.02)');
+        bmCtx.fillStyle = fcg;
+        bmCtx.fillRect(0, BY, W, fccB - BY);
+
+        /* Labels */
+        bmCtx.font = '600 8px "JetBrains Mono", monospace';
+        bmCtx.textAlign = 'left';
+        bmCtx.fillStyle = 'rgba(255,62,62,0.65)';
+        bmCtx.fillText('FORBIDDEN  m < 0', 8, BY - 4);
+        bmCtx.fillStyle = 'rgba(245,185,66,0.60)';
+        bmCtx.fillText('FCC ZONE  m → 0⁺', 8, fccB - 3);
+        bmCtx.fillStyle = 'rgba(45,232,136,0.50)';
+        bmCtx.fillText('ADMISSIBLE  m > 0', 8, H - 4);
+
+        /* Boundary line */
+        bmCtx.save();
+        bmCtx.shadowColor = '#ff3e3e';
+        bmCtx.shadowBlur  = 14;
+        bmCtx.strokeStyle = 'rgba(255,62,62,0.88)';
+        bmCtx.lineWidth   = 1.5;
+        bmCtx.beginPath();
+        bmCtx.moveTo(0, BY); bmCtx.lineTo(W, BY);
+        bmCtx.stroke();
+        bmCtx.restore();
+
+        /* Trajectories */
+        BM_DOMAINS.forEach((domain, di) => {
+            if (!bmActive.has(domain.id)) return;
+            const trail = bmTrails[domain.id];
+            if (trail.length < 2) return;
+
+            const isH  = bmHovered === domain.id;
+            const baseA = isH ? 1 : (bmHovered ? 0.32 : 0.82);
+
+            /* Trail */
+            for (let i = 1; i < trail.length; i++) {
+                const p0 = trail[i-1], p1 = trail[i];
+                const prog   = i / trail.length;
+                const inFCC  = p1.y < fccB;
+                bmCtx.beginPath();
+                bmCtx.moveTo(p0.x, p0.y);
+                bmCtx.lineTo(p1.x, p1.y);
+                bmCtx.strokeStyle  = domain.color;
+                bmCtx.lineWidth    = isH ? (inFCC ? 2.2 : 1.6) : (inFCC ? 1.6 : 1.1);
+                bmCtx.globalAlpha  = baseA * prog * (inFCC ? 0.9 : 0.7);
+                bmCtx.stroke();
+                bmCtx.globalAlpha  = 1;
+            }
+
+            /* Dot */
+            const last  = trail[trail.length - 1];
+            const inFCC = last.y < fccB;
+            bmCtx.save();
+            bmCtx.globalAlpha = baseA;
+            bmCtx.shadowColor = domain.color;
+            bmCtx.shadowBlur  = isH ? 18 : (inFCC ? 14 : 9);
+            bmCtx.fillStyle   = domain.color;
+            bmCtx.beginPath();
+            bmCtx.arc(last.x, last.y, isH ? 5.5 : (inFCC ? 5 : 4), 0, Math.PI*2);
+            bmCtx.fill();
+
+            /* FCC ring */
+            if (inFCC) {
+                bmCtx.globalAlpha  = 0.28 * baseA * (0.5 + 0.5*Math.sin(bmT*0.08 + di));
+                bmCtx.strokeStyle  = domain.color;
+                bmCtx.lineWidth    = 1;
+                bmCtx.beginPath();
+                bmCtx.arc(last.x, last.y, 10 + 4*Math.sin(bmT*0.06 + di), 0, Math.PI*2);
+                bmCtx.stroke();
+            }
+            bmCtx.restore();
+
+            /* Label */
+            if (isH || !bmHovered) {
+                bmCtx.save();
+                bmCtx.globalAlpha = isH ? 0.92 : 0.40;
+                bmCtx.fillStyle   = domain.color;
+                bmCtx.font        = `${isH?700:500} ${isH?9.5:8}px "JetBrains Mono", monospace`;
+                bmCtx.textAlign   = last.x > W*0.72 ? 'right' : 'left';
+                const lx = last.x > W*0.72 ? last.x - 9 : last.x + 9;
+                const ly = Math.max(BY + 13, last.y - 7);
+                bmCtx.fillText(domain.name, lx, ly);
+                bmCtx.restore();
+            }
+        });
+    }
+
+    function bmUpdateReadouts() {
+        const H   = bmCanvas.height;
+        const BY  = H * BM_BOUND_FRAC;
+        const fccB = BY + H * BM_FCC_FRAC;
+        let minM = 1, minGR = 1, maxTD = 0, fccN = 0;
+
+        BM_DOMAINS.forEach((d, di) => {
+            if (!bmActive.has(d.id)) return;
+            const m  = bmCalcMargin(d, bmT, bmForcing);
+            if (m < minM) minM = m;
+            const gr = Math.max(0.92, d.GR - (bmForcing*0.04 + bmImpulse*0.08));
+            if (gr < minGR) minGR = gr;
+            const td = Math.min(0.9985, d.TD * (1 + bmForcing*0.15));
+            if (td > maxTD) maxTD = td;
+            const t2 = bmTrails[d.id];
+            if (t2.length && t2[t2.length-1].y < fccB) fccN++;
+        });
+
+        document.getElementById('readout-margin').textContent = minM.toFixed(3);
+        document.getElementById('readout-gr').textContent     = minGR.toFixed(3);
+        document.getElementById('readout-td').textContent     = maxTD.toFixed(3);
+        document.getElementById('readout-fcc').textContent    = `${fccN}/${bmActive.size}`;
+        document.getElementById('readout-cross').textContent  = '0';
+
+        const mel = document.getElementById('readout-margin');
+        mel.className = minM < 0.06 ? 'bm-val red' : minM < 0.15 ? 'bm-val amber' : 'bm-val blue';
+    }
+
+    let bmLast = null;
+    function bmTick(ts) {
+        if (!bmLast) bmLast = ts;
+        const dt = Math.min((ts - bmLast) / 16.67, 3);
+        bmLast = ts;
+        bmT += dt;
+        if (bmImpulse > 0) bmImpulse = Math.max(0, bmImpulse - 0.008*dt);
+
+        const W = bmCanvas.width, H = bmCanvas.height;
+        BM_DOMAINS.forEach((d, di) => {
+            if (!bmActive.has(d.id)) return;
+            const m = bmCalcMargin(d, bmT, bmForcing);
+            const x = bmCalcX(bmT, W, di);
+            const y = bmMarginToY(m, H);
+            bmTrails[d.id].push({x, y, m});
+            if (bmTrails[d.id].length > TRAIL_LEN) bmTrails[d.id].shift();
+        });
+
+        bmUpdateReadouts();
+        bmDraw();
+        requestAnimationFrame(bmTick);
+    }
+
+    /* Controls */
+    document.getElementById('forcing-slider').addEventListener('input', function() {
+        bmForcing = this.value / 100;
+        const fv  = document.getElementById('forcing-val');
+        fv.textContent = this.value + '%';
+        fv.className   = bmForcing > 0.75 ? 'bm-val red' : bmForcing > 0.5 ? 'bm-val amber' : 'bm-val blue';
+        fv.style.fontSize = '.78rem';
+    });
+
+    document.getElementById('btn-push').addEventListener('click', function() {
+        bmImpulse = 0.44;
+        this.classList.add('active');
+        setTimeout(() => this.classList.remove('active'), 1100);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        bmForcing = 0.35;
+        bmImpulse = 0;
+        document.getElementById('forcing-slider').value = 35;
+        const fv = document.getElementById('forcing-val');
+        fv.textContent = '35%';
+        fv.className = 'bm-val blue';
+        fv.style.fontSize = '.78rem';
+        BM_DOMAINS.forEach(d => { bmTrails[d.id] = []; });
+        bmT = 0; bmLast = null;
+    });
+
+    /* Tooltip / hover */
+    const bmTip  = document.getElementById('bm-tooltip');
+    const bmTtN  = document.getElementById('tt-name');
+    const bmTtB  = document.getElementById('tt-body');
+
+    bmCanvas.addEventListener('mousemove', e => {
+        const r  = bmCanvas.getBoundingClientRect();
+        const mx = (e.clientX - r.left) * (bmCanvas.width  / r.width);
+        const my = (e.clientY - r.top)  * (bmCanvas.height / r.height);
+
+        let closest = null, closestD = 26;
+        BM_DOMAINS.forEach(d => {
+            if (!bmActive.has(d.id)) return;
+            const tr = bmTrails[d.id];
+            if (!tr.length) return;
+            const last = tr[tr.length-1];
+            const dist = Math.hypot(mx - last.x, my - last.y);
+            if (dist < closestD) { closestD = dist; closest = d; }
+        });
+
+        if (closest) {
+            bmHovered = closest.id;
+            const m   = bmCalcMargin(closest, bmT, bmForcing);
+            const gr  = Math.max(0.92, closest.GR - (bmForcing*0.04 + bmImpulse*0.08));
+            const td  = Math.min(0.9985, closest.TD * (1 + bmForcing*0.15));
+            const H   = bmCanvas.height;
+            const inFCC = m < (BM_FCC_FRAC / (1 - BM_BOUND_FRAC)) * 1.4;
+
+            bmTtN.textContent = closest.name;
+            bmTtB.innerHTML   = [
+                `m(L<sub>t</sub>) = <span class="${m<0.08?'tt-danger':'tt-safe'}">${m.toFixed(4)}</span>`,
+                `GR = <span class="tt-safe">${gr.toFixed(3)}</span>`,
+                `TD = ${td.toFixed(3)}`,
+                `n  = ${closest.n}`,
+                `Status: <span class="${inFCC?'tt-danger':'tt-safe'}">${inFCC?'FCC zone':'admissible'}</span>`,
+            ].join('<br>');
+
+            const tipX = Math.min(e.clientX - r.left + 12, r.width  - 175);
+            const tipY = Math.min(e.clientY - r.top  + 12, r.height - 105);
+            bmTip.style.left         = tipX + 'px';
+            bmTip.style.top          = tipY + 'px';
+            bmTip.style.display      = 'block';
+            bmTip.style.borderColor  = closest.color + '55';
+        } else {
+            bmHovered = null;
+            bmTip.style.display = 'none';
+        }
+    });
+
+    bmCanvas.addEventListener('mouseleave', () => {
+        bmHovered = null;
+        bmTip.style.display = 'none';
+    });
+
+    /* Legend */
+    const bmLegEl = document.getElementById('bm-legend');
+    BM_DOMAINS.forEach(d => {
+        const item = document.createElement('div');
+        item.className   = 'bm-leg-item active';
+        item.dataset.id  = d.id;
+        item.innerHTML   = `<span class="bm-leg-dot" style="background:${d.color}"></span>${d.name}`;
+        item.addEventListener('click', () => {
+            if (bmActive.has(d.id)) {
+                if (bmActive.size === 1) return;
+                bmActive.delete(d.id);
+                item.classList.remove('active');
+                item.style.opacity = '0.38';
+            } else {
+                bmActive.add(d.id);
+                bmTrails[d.id] = [];
+                item.classList.add('active');
+                item.style.opacity = '1';
+            }
+        });
+        bmLegEl.appendChild(item);
+    });
+
+    /* Start boundary monitor */
+    requestAnimationFrame(bmTick);
+</script>
+
+</body>
+</html>
