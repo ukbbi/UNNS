@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Color Confinement — UNNS Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --charge:#c0d830;--frac:#e050c0;--comp:#50c0e0;--absent:#e09030;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1480px;margin:0 auto;padding:40px 32px 120px}
+
+/* HERO */
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 140% at 92% 50%,rgba(0,200,240,.05),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:linear-gradient(to bottom,transparent,var(--charge),var(--frac),var(--comp),var(--absent),transparent)}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.03em;max-width:860px;margin-bottom:18px;line-height:1.7}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-charge{color:var(--charge);border-color:var(--charge);background:rgba(192,216,48,.07)}
+.b-frac{color:var(--frac);border-color:var(--frac);background:rgba(224,80,192,.07)}
+.b-gold{color:var(--gold);border-color:var(--gold);background:rgba(212,160,32,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* SECTION */
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+/* TABLES */
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+/* VERDICTS */
+.vfp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--green);color:var(--green);background:rgba(0,221,136,.08);border-radius:2px;white-space:nowrap}
+.vhf{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--red);color:var(--red);background:rgba(224,64,64,.08);border-radius:2px;white-space:nowrap}
+.vgp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.08);border-radius:2px;white-space:nowrap}
+.vts{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--amber);color:var(--amber);background:rgba(240,160,48,.08);border-radius:2px;white-space:nowrap}
+.vst{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--charge);color:var(--charge);background:rgba(192,216,48,.08);border-radius:2px;white-space:nowrap}
+.vbs{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--violet);color:var(--violet);background:rgba(144,96,224,.08);border-radius:2px;white-space:nowrap}
+.vwp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.05);border-radius:2px;white-space:nowrap}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+/* PRINCIPLE BOX */
+.principle{background:rgba(0,200,240,.04);border:1px solid rgba(0,200,240,.2);border-left:3px solid var(--accent);padding:14px 18px;margin-bottom:10px}
+.principle-eye{font-size:8px;letter-spacing:.16em;color:var(--accent);font-family:var(--mono);margin-bottom:6px}
+.principle p{font-size:11.5px;color:var(--text);line-height:1.75}
+.principle code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* LAYER CARDS */
+.layer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.layer-card{background:var(--panel);border:1px solid var(--border2);padding:12px 14px;position:relative;overflow:hidden}
+.layer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.lc-a::before{background:var(--charge)}
+.lc-b::before{background:var(--frac)}
+.lc-c::before{background:var(--comp)}
+.lc-d::before{background:var(--absent)}
+.layer-card-id{font-family:var(--display);font-size:20px;font-weight:700;line-height:1;margin-bottom:2px}
+.lc-a .layer-card-id{color:var(--charge)}
+.lc-b .layer-card-id{color:var(--frac)}
+.lc-c .layer-card-id{color:var(--comp)}
+.lc-d .layer-card-id{color:var(--absent)}
+.layer-card-name{font-size:8px;font-family:var(--mono);color:var(--text2);letter-spacing:.08em;margin-bottom:8px}
+.layer-card-n{font-family:var(--display);font-size:30px;line-height:1;margin-bottom:3px}
+.layer-card-sub{font-size:8px;color:var(--text2);font-family:var(--mono)}
+.layer-card-examples{font-size:9px;color:var(--dim);margin-top:8px;font-family:var(--mono);border-top:1px solid var(--border2);padding-top:6px;line-height:1.7}
+
+/* BRIDGE MAP */
+.bridge-map{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.bridge-card{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.bridge-id{font-family:var(--display);font-size:14px;font-weight:700;margin-bottom:4px}
+.bridge-desc{font-size:8px;color:var(--text2);font-family:var(--mono);margin-bottom:8px;letter-spacing:.04em}
+.b-score{font-family:var(--display);font-size:11px;margin:2px 0;display:flex;justify-content:space-between;align-items:center}
+.b-score-lbl{font-size:8px;color:var(--text2)}
+
+/* PRESSURE BAR */
+.pb-bar{display:flex;align-items:center;gap:6px;margin:2px 0}
+.pb-track{flex:1;height:6px;background:var(--border2);position:relative;min-width:60px;border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;position:absolute;left:0;top:0}
+.pb-val{font-family:var(--mono);font-size:9px;min-width:44px;text-align:right}
+.pb-lbl{font-family:var(--mono);font-size:8px;color:var(--text2);min-width:60px}
+
+/* CONTROL TABLE */
+.cc-row{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;padding:3px 0;border-bottom:.5px solid var(--border2);font-size:9px;align-items:center;font-family:var(--mono)}
+.cc-row:last-child{border-bottom:none}
+.cc-head{font-size:8px;color:var(--dim);letter-spacing:.08em;display:grid;grid-template-columns:1fr auto auto auto;gap:6px;padding-bottom:3px;font-family:var(--mono)}
+
+/* TWO-COL GRID */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+
+/* CAUTION */
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+/* PHASE CHAIN */
+.chain{display:flex;align-items:center;gap:0;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.chain-node{background:var(--panel);border:1px solid var(--border2);padding:8px 12px;font-size:8px;font-family:var(--mono);letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+.chain-node.done{border-color:var(--green);color:var(--green)}
+.chain-node.gold{border-color:var(--gold);color:var(--gold)}
+.chain-arrow{font-size:10px;color:var(--dim);padding:0 4px;flex-shrink:0}
+
+/* CLOSING BOX */
+.closing{background:rgba(212,160,32,.04);border:1px solid rgba(212,160,32,.25);border-left:3px solid var(--gold);padding:16px 20px;margin-top:28px}
+.closing h3{font-family:var(--display);font-size:12px;color:var(--gold);letter-spacing:.1em;margin-bottom:10px}
+.closing p{font-size:10.5px;color:var(--text);line-height:1.8;margin-bottom:8px}
+.closing p:last-child{margin-bottom:0}
+.closing code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* SCOPE NOTE */
+.scope{font-size:9px;color:var(--dim);background:var(--panel2);border:1px solid var(--border2);padding:8px 12px;margin-bottom:10px;font-family:var(--mono);line-height:1.6}
+
+/* SEP */
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+@media(max-width:1100px){.bridge-map{grid-template-columns:repeat(3,1fr)}.layer-grid{grid-template-columns:repeat(2,1fr)}.row4{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.row2,.row3,.row4{grid-template-columns:1fr}.bridge-map{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · COLOR CONFINEMENT REGIME SYNTHESIS · DATA SEED v0.1.1 · 2026-07-12</div>
+  <h1>Color Confinement</h1>
+  <div class="hero-sub">Content analytics for the <strong style="color:var(--accent)">Color confinement.zip</strong> package: a source-indexed QCD data seed plus an eleven-report UNNS diagnostic chain running static-source spectra and Baker flux-tube profiles through STRUC-I admissibility and STRUC-PERC-I connectivity chambers, culminating in a derived boundary-pressure coordinate Π_boundary(r) and a Phase&nbsp;II cross-regime comparison plan. 161 files · 4 primary QCD sources · 12 reports · 15 figures · 9 chamber ladders.</div>
+  <div class="badges">
+    <span class="badge b-green">01–05 DIAGNOSTIC CHAIN COMPLETE</span>
+    <span class="badge b-green">06–08 CHAMBER ALIGNMENT COMPLETE</span>
+    <span class="badge b-green">09–10 BOUNDARY-PRESSURE PROXY COMPLETE</span>
+    <span class="badge b-green">11 FINAL SYNTHESIS COMPLETE</span>
+    <span class="badge b-charge">Π_BOUNDARY(r): STRUC-I STABLE STRUCTURE · Ak=1.000</span>
+    <span class="badge b-charge">Π_BOUNDARY(r): STRUC-PERC-I FULL_PERCOLATION</span>
+    <span class="badge b-frac">FLUX PEAK/WIDTH: LOCAL FRAGMENTATION</span>
+    <span class="badge b-comp b-blue">STATIC GAP01: CONNECTED · GAP12: FRAGMENTED</span>
+    <span class="badge b-amber">QC: 30 ACCEPT · 9 REVIEW · 2 EXCLUDE (of 41 profiles)</span>
+    <span class="badge b-gold">12 PHASE II CROSS-REGIME PLAN — PLANNING STAGE</span>
+    <span class="badge b-dim">SOURCES: BULAVA 2019/2024 · BAKER 2024 · CARDOSO 2013</span>
+    <span class="badge b-dim">STATUS: NOT A DERIVATION OF QCD CONFINEMENT</span>
+  </div>
+  <div class="hero-meta">
+    <span>Instruments: STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0</span>
+    <span>Package: color_confinement_data_seed_v0.1.1_provenance</span>
+    <span>Core priority: static Q-Q̄ potential · string-breaking thresholds · flux-tube profiles</span>
+    <span>Pointwise rows parsed: 1090 (flux) + 57 (static) + 17 (proxy)</span>
+    <span>Status: seed pack, not a raw lattice-data repository</span>
+  </div>
+</div>
+
+<!-- ════════════════════ §0 PROGRAM SEQUENCE ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§0</span> REPORT CHAIN — 12 DOCUMENTS</div>
+<div class="chain">
+  <div class="chain-node done">01<br>First Confinement Diagnostic</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">02<br>Repair-Threshold Analysis</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">03<br>Flux-Tube Sep. Extension</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">04<br>Baker Flux QC</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">05<br>Review-Separately Rows</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">06–08<br>Chamber Alignment + Synthesis</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">09–10<br>Boundary-Pressure Proxy</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">11<br>Final Synthesis</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node gold" style="border-style:dashed">12<br>Phase II Cross-Regime Plan</div>
+</div>
+
+<div class="principle">
+  <div class="principle-eye">INTEGRATED PRINCIPLE — ADMISSIBILITY-BY-CLOSURE</div>
+  <p><strong style="color:var(--accent)">Internal reality ≠ external admissibility.</strong> Colored constituents may be internally real, but isolated colored externalization is not the admissible output. The observable route is tensioned, localized, and repaired into color-neutral composite channels: <code>internal colored coordinate → attempted route extension → localized route tension → repair-threshold window → admissible color-neutral composite route</code>. This is a structural UNNS reading of confinement — explicitly not a derivation of QCD confinement.</p>
+</div>
+
+<!-- ════════════════════ §1 CORPUS OVERVIEW ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§1</span> CORPUS OVERVIEW — PACKAGE CONTENT ANALYTICS</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">161</div><div class="stat-lbl">TOTAL FILES IN PACKAGE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">4</div><div class="stat-lbl">PRIMARY ARXIV SOURCES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">18</div><div class="stat-lbl">MARKDOWN REPORTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">15</div><div class="stat-lbl">DIAGNOSTIC FIGURES (PNG)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">5</div><div class="stat-lbl">FORMAL PDF REPORTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">9</div><div class="stat-lbl">CHAMBER-READY LADDERS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">12</div><div class="stat-lbl">CHAMBER OUTPUT FILES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">10</div><div class="stat-lbl">RAW .agr ANCILLARY FILES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">8</div><div class="stat-lbl">PROCESSING SCRIPTS (.py)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">1090</div><div class="stat-lbl">FLUX POINTWISE ROWS PARSED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">57</div><div class="stat-lbl">STATIC ENERGY-LEVEL ROWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">5</div><div class="stat-lbl">DATA-STATUS PROVENANCE TAGS</div></div>
+</div>
+
+<div class="layer-grid">
+  <div class="layer-card lc-a">
+    <div class="layer-card-id">A</div>
+    <div class="layer-card-name">DATA SEED + PROVENANCE</div>
+    <div class="layer-card-n" style="color:var(--charge)">~24</div>
+    <div class="layer-card-sub">manifest, README, source_registry, DATA_STATUS_GUIDE, 5 seed CSVs, 2 validators</div>
+    <div class="layer-card-examples">manifest.json · source_registry.csv<br>string_tension_seed.csv · next_data_acquisition_queue.csv<br>validate_pack.py · validate_provenance.py</div>
+  </div>
+  <div class="layer-card lc-b">
+    <div class="layer-card-id">B</div>
+    <div class="layer-card-name">CORE DATA + RAW ANCILLARY</div>
+    <div class="layer-card-n" style="color:var(--frac)">~27</div>
+    <div class="layer-card-sub">data/01–03 (17 files) + raw_ancillary Baker .agr (10 files)</div>
+    <div class="layer-card-examples">bulava2019_model_reconstructed_pointwise_E_levels.csv<br>baker2024_pointwise_Ex_FULL_NP...csv<br>Ex_FULL-NP_beta7.158d10a.agr · QCD_large_distances.agr</div>
+  </div>
+  <div class="layer-card lc-c">
+    <div class="layer-card-id">C</div>
+    <div class="layer-card-name">REPORTS + CHAMBER I/O</div>
+    <div class="layer-card-n" style="color:var(--comp)">~69</div>
+    <div class="layer-card-sub">reports/ (48 files) + chamber_inputs (11) + chamber_outputs (12) − overlap</div>
+    <div class="layer-card-examples">11_color_confinement_final_synthesis.md<br>boundary_pressure_proxy_ladder.csv<br>chamber_struc_i_v1_0_4_results.json</div>
+  </div>
+  <div class="layer-card lc-d">
+    <div class="layer-card-id">D</div>
+    <div class="layer-card-name">SCRIPTS + QUEUE</div>
+    <div class="layer-card-n" style="color:var(--absent)">~9</div>
+    <div class="layer-card-sub">scripts/ (8 .py) + extraction_queue (1 csv)</div>
+    <div class="layer-card-examples">generate_chamber_inputs.py<br>extend_baker_flux_profiles_across_separations.py<br>pointwise_data_acquisition_queue.csv</div>
+  </div>
+</div>
+
+<div class="scope">Counts above are content-analytic tallies of the extracted package (161 files total), grouped by functional role rather than raw directory listing — several files (e.g. QC tables, trusted summaries) sit at the seam between "reports" and "chamber inputs" and are counted once, under their primary function. Two of the twelve numbered reports (09/10, boundary-pressure proxy) do not yet have companion PDFs; only 01, 02, 03 and the Regime Synthesis Note were rendered to PDF at time of packaging.</div>
+
+<!-- ════════════════════ §2 SOURCE PROVENANCE ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§2</span> SOURCE PROVENANCE — 4 PRIMARY REFERENCES</div>
+
+<div class="panel">
+  <div class="panel-title">CANONICAL SOURCE REGISTRY <span class="psub">· source_registry.csv</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>source_id</th><th>Title</th><th>Year</th><th>arXiv</th><th>Primary use</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--charge)">Bulava2019_string_breaking</td><td>String breaking by light and strange quarks in QCD</td><td>2019</td><td>1902.04006</td><td>static Q-Q̄ spectrum; r_c / r_cs thresholds</td><td><span class="vst">PRIMARY</span></td></tr>
+        <tr><td style="color:var(--charge)">Bulava2024_mass_dependence</td><td>Quark-mass dependence of the potential energy between static colour sources</td><td>2024</td><td>2403.00754</td><td>ensemble metadata; physical-point tension</td><td><span class="vst">PRIMARY</span></td></tr>
+        <tr><td style="color:var(--frac)">Baker2024_flux_tube_full_QCD</td><td>Unveiling the flux tube structure in full QCD</td><td>2024</td><td>2409.20168</td><td>flux-tube simulation + pointwise Ex(x_t)</td><td><span class="vst">PRIMARY</span></td></tr>
+        <tr><td style="color:var(--absent)">Cardoso2013_SU3_flux_tube</td><td>Inside the SU(3) quark-antiquark QCD flux tube</td><td>2013</td><td>1302.3633</td><td>pure-gauge reference / control (not yet extracted)</td><td><span class="vwp">SECONDARY / QUEUED</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Every row in the package carries source_id, source_url/arXiv/DOI, source_location, and a row_provenance tag (one of 9 controlled values — see DATA_STATUS_GUIDE.md). Cardoso2013 is registered but not yet extracted into any data table.</div>
+</div>
+
+<!-- ════════════════════ §3 DIAGNOSTIC 01 ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§3</span> DIAGNOSTIC 01 — FIRST CONFINEMENT DIAGNOSTIC</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">57</div><div class="stat-lbl">STATIC ENERGY ROWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">0.707–1.607</div><div class="stat-lbl">SEPARATION RANGE (fm)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">31</div><div class="stat-lbl">FLUX PROFILE ROWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">0.738</div><div class="stat-lbl">SOURCE SEPARATION (fm)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">0.343</div><div class="stat-lbl">PEAK Ex FULL (GeV²)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">0.245</div><div class="stat-lbl">PEAK Ex NP (GeV²)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0.551</div><div class="stat-lbl">NP FWHM ESTIMATE (fm)</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">UNNS WORKING MAP <span class="psub">· diagnostic 01</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Physics item</th><th>UNNS interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>quark separation r</td><td style="color:var(--text)">route-extension coordinate</td></tr>
+        <tr><td>static spectrum V0(r), V1(r), V2(r)</td><td style="color:var(--text)">boundary-pressure / route-tension spectrum</td></tr>
+        <tr><td>string-breaking threshold</td><td style="color:var(--text)">repair-threshold marker</td></tr>
+        <tr><td>two-meson / screened channel</td><td style="color:var(--text)">repaired admissible composite channel</td></tr>
+        <tr><td>flux-tube transverse profile Ex(x_t)</td><td style="color:var(--text)">localized route geometry</td></tr>
+        <tr><td>absence of free color in ordinary spectrum</td><td style="color:var(--text)">non-externalizable internal coordinate</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">Data status: static levels are MODEL_RECONSTRUCTION_FROM_REPORTED_PARAMETERS_NOT_RAW_DATA (diagonalized from the published Bulava 2019 3×3 Hamiltonian). Flux profile is AUTHOR_ANCILLARY_POINTWISE_DATA. Not sufficient for fitting a new potential curve or publishing a quantitative confinement result.</div>
+</div>
+
+<!-- ════════════════════ §4 DIAGNOSTIC 02 ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§4</span> DIAGNOSTIC 02 — REPAIR-THRESHOLD ANALYSIS</div>
+
+<div class="panel">
+  <div class="panel-title">REPORTED REPAIR-THRESHOLD MARKERS <span class="psub">· 17 rows inside threshold window</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>symbol</th><th>channel</th><th>reported r [fm]</th><th>nearest reconstructed r [fm]</th><th>gap V1−V0 [GeV]</th><th>gap V2−V1 [GeV]</th><th>d(gap01)/dr</th><th>d(gap12)/dr</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--charge)">r_c</td><td>light static-light threshold</td><td>1.224 ± 0.015</td><td>1.22094</td><td>0.08970</td><td>0.04594</td><td>−0.2114</td><td>−0.2126</td></tr>
+        <tr><td style="color:var(--frac)">r_cs</td><td>strange static-strange threshold</td><td>1.293 ± 0.016</td><td>1.28520</td><td>0.08642</td><td>0.04639</td><td>−0.0158</td><td>+0.3857</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">UNNS reading: <code style="color:var(--charge);font-family:var(--mono)">stretched color route → threshold-window approach → competing screened channel → repaired admissible color-neutral composite route</code>. The two reported thresholds mark the light and strange screening channels, treated as repair-threshold markers rather than free-color externalization points.</div>
+</div>
+
+<!-- ════════════════════ §5 DIAGNOSTICS 03–05 ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§5</span> DIAGNOSTICS 03–05 — FLUX-TUBE SEPARATION EXTENSION, QC, REVIEW</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">1090</div><div class="stat-lbl">POINTWISE ROWS PARSED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">41</div><div class="stat-lbl">PROFILES REPRESENTED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">10</div><div class="stat-lbl">SOURCE .agr FILES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">30</div><div class="stat-lbl">QC: ACCEPT_FOR_TREND</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">9</div><div class="stat-lbl">QC: REVIEW_SEPARATELY</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">2</div><div class="stat-lbl">QC: EXCLUDE_FROM_TREND</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">0.723–1.060</div><div class="stat-lbl">TRUSTED d RANGE (fm)</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">TRUSTED TREND DATASET <span class="psub">· ACCEPT_FOR_TREND only</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>component</th><th>n</th><th>d range [fm]</th><th>peak range [GeV²]</th><th>FWHM range [fm]</th><th>mean area</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--charge)">FULL</td><td>15</td><td>0.723–1.060</td><td>0.195–0.387</td><td>0.530–0.663</td><td>0.195</td></tr>
+          <tr><td style="color:var(--frac)">NP</td><td>15</td><td>0.723–1.060</td><td>0.126–0.274</td><td>0.544–0.723</td><td>0.152</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">DESCRIPTIVE TREND SLOPES <span class="psub">· trusted rows only, not a fitted law</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>component</th><th>quantity</th><th>slope vs d</th><th>correlation r</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--charge)">FULL</td><td>peak</td><td>−0.4885</td><td>−0.960</td></tr>
+          <tr><td style="color:var(--charge)">FULL</td><td>fwhm</td><td>+0.3711</td><td>+0.964</td></tr>
+          <tr><td style="color:var(--charge)">FULL</td><td>area</td><td>−0.1919</td><td>−0.969</td></tr>
+          <tr><td style="color:var(--frac)">NP</td><td>peak</td><td>−0.2939</td><td>−0.908</td></tr>
+          <tr><td style="color:var(--frac)">NP</td><td>fwhm</td><td>+0.4207</td><td>+0.928</td></tr>
+          <tr><td style="color:var(--frac)">NP</td><td>area</td><td>−0.0818</td><td>−0.825</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Reading: peak field weakens and width broadens modestly with increasing separation — interpreted as route redistribution, not route disappearance.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">REVIEW-SEPARATELY DISPOSITION <span class="psub">· 05_baker_review_separately_rows.md · 9 rows</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>decision class</th><th>count</th><th>meaning</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--blue)">KEEP_SEPARATE_QUALITATIVE_STRING_BREAKING</td><td>3</td><td>paper-defined profiles, distinct source convention</td></tr>
+        <tr><td style="color:var(--amber)">EXCLUDE_FROM_INTERPRETATION_FOR_NOW</td><td>2</td><td>boundary/noise-dominated, FWHM is a parsing artifact</td></tr>
+        <tr><td style="color:var(--violet)">NORMALIZE_LATER_QUALITATIVE_ONLY</td><td>2</td><td>low SNR, unstable width — needs normalization review</td></tr>
+        <tr><td style="color:var(--comp)">KEEP_SEPARATE_LARGE_DISTANCE_CONTROL</td><td>1</td><td>large-distance profile, separate error convention</td></tr>
+        <tr><td style="color:var(--red)">EXCLUDE_FROM_TREND_KEEP_AS_OUTLIER_NOTE</td><td>1</td><td>ordinary NP file but wide FWHM / low peak significance</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">None of these 9 rows are discarded — they are held as a separate qualitative/control evidence class rather than mixed into the main FULL/NP trend.</div>
+</div>
+
+<!-- ════════════════════ §6 CHAMBER PROCESSING ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§6</span> §§6–8 · CHAMBER PROCESSING — STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0</div>
+
+<div class="scope">Nine chamber-ready single-column ladders were generated from QC-clean tables and run through both chambers: STRUC-I tests admissibility under perturbation (regime / state / mean Aκ); STRUC-PERC-I tests gap-connectivity (verdict / giantRatio / κ_connect). Ladders derive only from QC-accepted rows — REVIEW_SEPARATELY rows are excluded from chamber input.</div>
+
+<div class="panel">
+  <div class="panel-title">STRUC-I × STRUC-PERC-I — ALL 9 LADDERS</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>ladder</th><th>n</th><th>STRUC-I regime / state</th><th>mean Aκ</th><th>min Aκ</th><th>STRUC-PERC-I verdict</th><th>giantRatio</th><th>κ_connect</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--charge)">flux_FULL_area_trusted</td><td>15</td><td><span class="vst">GP / Weak Persist.</span></td><td>0.99996</td><td>0.9990</td><td><span class="vfp">FULL_PERCOLATION</span></td><td>1.000</td><td>40.02</td></tr>
+        <tr><td style="color:var(--charge)">flux_FULL_peak_trusted</td><td>15</td><td><span class="vst">GP / Weak Persist.</span></td><td>0.95826</td><td>0.8605</td><td><span class="vhf">HARD_FRAGMENTATION</span></td><td>0.857</td><td>—</td></tr>
+        <tr><td style="color:var(--charge)">flux_FULL_width_trusted</td><td>15</td><td><span class="vst">GP / Weak Persist.</span></td><td>0.99999</td><td>0.9995</td><td><span class="vhf">HARD_FRAGMENTATION</span></td><td>0.857</td><td>—</td></tr>
+        <tr><td style="color:var(--frac)">flux_NP_area_trusted</td><td>13</td><td><span class="vst">GP / Weak Persist.</span></td><td>0.99974</td><td>0.9975</td><td><span class="vfp">FULL_PERCOLATION</span></td><td>1.000</td><td>10.00</td></tr>
+        <tr><td style="color:var(--frac)">flux_NP_peak_trusted</td><td>13</td><td><span class="vst">GP / Weak Persist.</span></td><td>0.99558</td><td>0.9805</td><td><span class="vfp">FULL_PERCOLATION</span></td><td>1.000</td><td>4.01</td></tr>
+        <tr><td style="color:var(--frac)">flux_NP_width_trusted</td><td>13</td><td><span class="vst">GP / Weak Persist.</span></td><td>1.00000</td><td>1.0000</td><td><span class="vhf">HARD_FRAGMENTATION</span></td><td>0.923</td><td>—</td></tr>
+        <tr><td style="color:var(--comp)">static_gap01_repair_window</td><td>17</td><td><span class="vgp">GP / Stable Structure</span></td><td>0.99849</td><td>0.9740</td><td><span class="vfp">FULL_PERCOLATION</span></td><td>1.000</td><td>10.00</td></tr>
+        <tr><td style="color:var(--comp)">static_gap12_repair_window</td><td>17</td><td><span class="vgp">GP / Stable Structure</span></td><td>1.00000</td><td>1.0000</td><td><span class="vhf">HARD_FRAGMENTATION</span></td><td>0.941</td><td>—</td></tr>
+        <tr style="background:rgba(212,160,32,.05)"><td style="color:var(--gold)"><strong>boundary_pressure_proxy Π_boundary(r)</strong></td><td>17</td><td><span class="vgp">GP / Stable Structure</span></td><td><strong>1.00000</strong></td><td>1.0000</td><td><span class="vfp">FULL_PERCOLATION</span></td><td><strong>1.000</strong></td><td>10.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">GP = Geometric Persistence. 5 of 8 raw local-descriptor ladders are STRUC-PERC-I connected; peak/width descriptors (local shape sensitivity) tend to fragment while area/gap01 (global route-integral coherence) stay connected. The derived Π_boundary(r) proxy is the only object that is simultaneously perfectly admissible (Aκ=1.000, min Aκ=1.000) <em>and</em> fully percolated (giantRatio=1.000) — see §7.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §6.1</div>
+  <div class="finding-title">Raw local descriptors may fragment; the derived pressure coordinate does not</div>
+  <p>flux_FULL_peak, flux_FULL_width, flux_NP_width, and static_gap12 all reach HARD_FRAGMENTATION under STRUC-PERC-I despite being individually STRUC-I admissible. flux_FULL_area, flux_NP_area, flux_NP_peak, and static_gap01 reach FULL_PERCOLATION. The pattern separates global route-integral coherence (area, gap01) from local shape sensitivity (peak, width, gap12) — and motivates constructing a single coordinatizing observable (§7) rather than reading any one raw ladder as "the" confinement signal.</p>
+</div>
+
+<!-- ════════════════════ §7 BOUNDARY-PRESSURE PROXY ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§7</span> BOUNDARY-PRESSURE PROXY Π_boundary(r) — REPORTS 09–10</div>
+
+<div class="principle">
+  <div class="principle-eye">WORKING DEFINITION · v0.3.0 STATIC_ONLY_EXACT_COLUMNS</div>
+  <p><code style="color:var(--gold)">Π_boundary(r) = w_gap·C_gap(r) + w_thr·C_threshold(r) + w_slope·C_slope(r)</code> &nbsp;(flux term C_flux deliberately removed from the first executable pass — kept symbolic in the v0.1 definition at w_flux=0.15). Effective normalized weights used: gap = 0.412, threshold = 0.353, slope = 0.235. C_gap = channel-gap compression near r_c/r_cs, C_threshold = proximity to the nearest repair marker, C_slope = finite-difference gap-reorganization sharpness. This is a structural UNNS diagnostic variable, not a fitted physical law and not a QCD potential.</p>
+</div>
+
+<div class="row3">
+  <div class="stat"><div class="stat-val" style="color:var(--gold)">0.546</div><div class="stat-lbl">MEAN Π_boundary (17 rows)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0.278</div><div class="stat-lbl">MIN Π_boundary @ r=1.125 fm</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">0.766</div><div class="stat-lbl">MAX Π_boundary @ r=1.221 fm</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">PRESSURE-BAND DISTRIBUTION <span class="psub">· 17 rows</span></div>
+    <div class="pb-bar"><span class="pb-lbl">MILD_TENSION</span><div class="pb-track"><div class="pb-fill" style="width:41%;background:var(--blue)"></div></div><span class="pb-val">7</span></div>
+    <div class="pb-bar"><span class="pb-lbl">ACTIVE_REPAIR_WINDOW</span><div class="pb-track"><div class="pb-fill" style="width:53%;background:var(--amber)"></div></div><span class="pb-val">9</span></div>
+    <div class="pb-bar"><span class="pb-lbl">HIGH_NEAR_REPAIR</span><div class="pb-track"><div class="pb-fill" style="width:6%;background:var(--red)"></div></div><span class="pb-val">1</span></div>
+    <div class="caution">Bands are descriptive/methodological only, not calibrated physical thresholds. The single HIGH_BOUNDARY_PRESSURE_NEAR_REPAIR row sits at r = 1.22094 fm — immediately adjacent to the reported r_c = 1.224 fm light-channel threshold.</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Π_boundary(r) NEAR REPAIR WINDOW <span class="psub">· selected rows</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>r [fm]</th><th>gap01 [GeV]</th><th>gap12 [GeV]</th><th>Π_boundary</th><th>band</th></tr></thead>
+        <tbody>
+          <tr><td>1.12455</td><td>0.1449</td><td>0.0619</td><td>0.278</td><td><span class="vgp">MILD</span></td></tr>
+          <tr><td>1.17275</td><td>0.1096</td><td>0.0558</td><td>0.477</td><td><span class="vgp">MILD</span></td></tr>
+          <tr><td>1.18881</td><td>0.1009</td><td>0.0529</td><td>0.583</td><td><span class="vts">ACTIVE</span></td></tr>
+          <tr><td>1.20488</td><td>0.0942</td><td>0.0495</td><td>0.679</td><td><span class="vts">ACTIVE</span></td></tr>
+          <tr style="background:rgba(224,64,64,.06)"><td><strong>1.22094</strong></td><td>0.0897</td><td>0.0459</td><td><strong>0.766</strong></td><td><span class="vhf">HIGH · near r_c</span></td></tr>
+          <tr><td>1.28520</td><td>0.0864</td><td>0.0464</td><td>0.745</td><td><span class="vts">ACTIVE · near r_cs</span></td></tr>
+          <tr><td>1.30127</td><td>0.0860</td><td>0.0543</td><td>0.750</td><td><span class="vts">ACTIVE</span></td></tr>
+          <tr><td>1.38159</td><td>0.0827</td><td>0.1202</td><td>0.328</td><td><span class="vgp">MILD</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §7.1</div>
+  <div class="finding-title">Π_boundary(r) is the strongest chamber result in the color-confinement chain</div>
+  <p>The proxy ladder is simultaneously STRUC-I Geometric Persistence / Stable Structure (mean Aκ = 1.000, min Aκ = 1.000) and STRUC-PERC-I FULL_PERCOLATION (giantRatio = 1.000, κ_connect = 10, 0 isolated nodes out of 17). No raw local descriptor in the package achieves both properties at once. The proxy therefore acts as a coordinatizing observable: it takes partially fragmented lower-level descriptors (flux peak/width, static gap12) and produces a stable, fully connected pressure coordinate — while its peak value (0.766) falls exactly at r = 1.221 fm, adjacent to the reported light-channel repair threshold r_c = 1.224 fm.</p>
+</div>
+
+<!-- ════════════════════ §8 FINAL SYNTHESIS / PHASE II ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§8</span> REPORT 11 FINAL SYNTHESIS · REPORT 12 PHASE II CROSS-REGIME PLAN</div>
+
+<div class="panel">
+  <div class="panel-title">CROSS-REGIME COMPARISON TABLE <span class="psub">· Phase II planning, not yet executed</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Coordinate</th><th>Color confinement</th><th>H-mode plasma</th><th>Charge-boundary law</th></tr></thead>
+      <tbody>
+        <tr><td>Visible projection</td><td>color-neutral hadrons</td><td>ILH label / H-mode access</td><td>scalar charge conservation</td></tr>
+        <tr><td>Hidden route coordinate</td><td>color / flux-tube route</td><td>edge / confinement route</td><td>charge route / closure tuple</td></tr>
+        <tr><td>Route-extension coord.</td><td>static-source separation r</td><td>event index / time window t</td><td>transition tuple</td></tr>
+        <tr><td>Pressure term</td><td>gap compression, threshold proximity, slope</td><td>F_route fragmentation pressure</td><td>forbidden/constrained boundary pressure</td></tr>
+        <tr><td>Boundary event</td><td>string breaking / repair threshold</td><td>L-H transition</td><td>admissibility / transition boundary</td></tr>
+        <tr><td>Derived global coordinate</td><td style="color:var(--gold)">Π_boundary(r)</td><td>m_edge,event · m_edge,conf(t)</td><td>boundary-route admissibility</td></tr>
+        <tr><td>Chamber outcome</td><td style="color:var(--green)">stable + fully connected</td><td>not yet chamber-tested</td><td>route admissibility vs graph connectivity</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">S_cross(color confinement) = 1.000 (A_STRUC-I=1.000, G_STRUC-PERC-I=1.000). H-mode plasma is the proposed Regime B; its margin ladders (m_edge,event, C_edge, F_route) are registered as READY_FOR_EXTRACTION but not yet chamber-tested at time of this analysis.</div>
+</div>
+
+<div class="closing">
+  <h3>FINAL STRUCTURAL STATEMENT</h3>
+  <p>Color confinement is admissibility-by-closure in a physically grounded regime: the attempted isolated color route does not externalize; it localizes as flux-tube tension; the repair window reorganizes channel structure; the admissible continuation is color-neutral closure. The derived boundary-pressure coordinate <code>Π_boundary(r)</code> is chamber-stable (STRUC-I Aκ=1.000) and fully connected (STRUC-PERC-I giantRatio=1.000) — the first explicit UNNS confinement-pressure object in the program.</p>
+  <p><strong style="color:var(--red)">Explicit non-claims</strong> (stated repeatedly across all 12 reports): this does not derive QCD confinement, Π_boundary is not a physical QCD potential, the proxy weights are not universal, and the static-only proxy is not a final theory. The static-source spectrum is model-reconstructed from published parameters (not raw GEVP lattice points); only one Baker flux-tube profile family has full pointwise coverage; Cardoso2013 remains an unextracted reference source.</p>
+  <p>Recommended next phase: <code>Phase II — Cross-Regime Boundary-Pressure Comparison</code>, testing whether H-mode plasma confinement (and later Ranque-Hilsch separation, gravitational binding, fracture nucleation) reproduces the same pattern — fragmented local descriptors stabilizing into a connected global pressure coordinate.</p>
+</div>
+
+</div>
+</body>
+</html>
