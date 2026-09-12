@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charge Boundary Routing I — UNNS Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --charge:#c0d830;--frac:#e050c0;--comp:#50c0e0;--absent:#e09030;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --display:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1480px;margin:0 auto;padding:40px 32px 120px}
+
+/* HERO */
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 140% at 92% 50%,rgba(0,200,240,.05),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:linear-gradient(to bottom,transparent,var(--charge),var(--frac),var(--comp),var(--absent),transparent)}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.03em;max-width:820px;margin-bottom:18px;line-height:1.7}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-charge{color:var(--charge);border-color:var(--charge);background:rgba(192,216,48,.07)}
+.b-frac{color:var(--frac);border-color:var(--frac);background:rgba(224,80,192,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* SECTION */
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:44px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-num{color:var(--accent);font-size:9px;min-width:28px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:10px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono)}
+.psub{color:var(--dim);font-weight:400}
+
+/* TABLES */
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9px}
+.dt th{color:var(--accent);letter-spacing:.1em;font-weight:700;padding:5px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono)}
+.dt td{padding:4px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:rgba(0,200,240,.03)}
+
+/* VERDICTS */
+.vfp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--green);color:var(--green);background:rgba(0,221,136,.08);border-radius:2px;white-space:nowrap}
+.vhf{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--red);color:var(--red);background:rgba(224,64,64,.08);border-radius:2px;white-space:nowrap}
+.vgp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.08);border-radius:2px;white-space:nowrap}
+.vts{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--amber);color:var(--amber);background:rgba(240,160,48,.08);border-radius:2px;white-space:nowrap}
+.vst{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--charge);color:var(--charge);background:rgba(192,216,48,.08);border-radius:2px;white-space:nowrap}
+.vbs{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--violet);color:var(--violet);background:rgba(144,96,224,.08);border-radius:2px;white-space:nowrap}
+.vwp{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--blue);color:var(--blue);background:rgba(74,176,240,.05);border-radius:2px;white-space:nowrap}
+
+/* FINDINGS */
+.finding{background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--gold);padding:12px 16px;margin-bottom:10px}
+.finding-num{font-family:var(--display);font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px}
+.finding-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.finding p{font-size:10.5px;color:var(--text);line-height:1.7}
+
+/* PRINCIPLE BOX */
+.principle{background:rgba(0,200,240,.04);border:1px solid rgba(0,200,240,.2);border-left:3px solid var(--accent);padding:14px 18px;margin-bottom:10px}
+.principle-eye{font-size:8px;letter-spacing:.16em;color:var(--accent);font-family:var(--mono);margin-bottom:6px}
+.principle p{font-size:11.5px;color:var(--text);line-height:1.75}
+.principle code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* ROUTE LEGEND */
+.rl{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:2px}
+.rl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rl-a{background:var(--charge)}
+.rl-b{background:var(--frac)}
+.rl-c{background:var(--comp)}
+.rl-d{background:var(--absent)}
+
+/* LAYER CARDS */
+.layer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.layer-card{background:var(--panel);border:1px solid var(--border2);padding:12px 14px;position:relative;overflow:hidden}
+.layer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.lc-a::before{background:var(--charge)}
+.lc-b::before{background:var(--frac)}
+.lc-c::before{background:var(--comp)}
+.lc-d::before{background:var(--absent)}
+.layer-card-id{font-family:var(--display);font-size:20px;font-weight:700;line-height:1;margin-bottom:2px}
+.lc-a .layer-card-id{color:var(--charge)}
+.lc-b .layer-card-id{color:var(--frac)}
+.lc-c .layer-card-id{color:var(--comp)}
+.lc-d .layer-card-id{color:var(--absent)}
+.layer-card-name{font-size:8px;font-family:var(--mono);color:var(--text2);letter-spacing:.08em;margin-bottom:8px}
+.layer-card-n{font-family:var(--display);font-size:30px;line-height:1;margin-bottom:3px}
+.layer-card-sub{font-size:8px;color:var(--text2);font-family:var(--mono)}
+.layer-card-examples{font-size:9px;color:var(--dim);margin-top:8px;font-family:var(--mono);border-top:1px solid var(--border2);padding-top:6px;line-height:1.7}
+
+/* BRIDGE MAP */
+.bridge-map{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.bridge-card{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.bridge-id{font-family:var(--display);font-size:14px;font-weight:700;margin-bottom:4px}
+.bridge-desc{font-size:8px;color:var(--text2);font-family:var(--mono);margin-bottom:8px;letter-spacing:.04em}
+.b-score{font-family:var(--display);font-size:11px;margin:2px 0;display:flex;justify-content:space-between;align-items:center}
+.b-score-lbl{font-size:8px;color:var(--text2)}
+
+/* STRUC-I BAR */
+.ak-bar{display:flex;align-items:center;gap:6px;margin:2px 0}
+.ak-track{flex:1;height:3px;background:var(--border2);position:relative;min-width:50px}
+.ak-fill{height:100%;position:absolute;left:0;top:0}
+.ak-val{font-family:var(--mono);font-size:9px;min-width:50px;text-align:right}
+.ak-lbl{font-family:var(--mono);font-size:8px;color:var(--text2);min-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* CONTROL TABLE */
+.cc-row{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;padding:3px 0;border-bottom:.5px solid var(--border2);font-size:9px;align-items:center;font-family:var(--mono)}
+.cc-row:last-child{border-bottom:none}
+.cc-head{font-size:8px;color:var(--dim);letter-spacing:.08em;display:grid;grid-template-columns:1fr auto auto auto;gap:6px;padding-bottom:3px;font-family:var(--mono)}
+
+/* TRANSITION FAMILY */
+.tf-bar{display:flex;align-items:center;gap:6px;margin:2px 0}
+.tf-track{flex:1;height:5px;background:var(--border2);position:relative;min-width:60px}
+.tf-fill{height:100%;position:absolute;left:0;top:0;background:var(--comp)}
+.tf-lbl{font-family:var(--mono);font-size:9px;min-width:220px;color:var(--text2)}
+.tf-n{font-family:var(--mono);font-size:9px;min-width:24px;text-align:right;color:var(--text)}
+
+/* TWO-COL GRID */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* CAUTION */
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+/* PHASE CHAIN */
+.chain{display:flex;align-items:center;gap:0;margin-bottom:14px;overflow-x:auto}
+.chain-node{background:var(--panel);border:1px solid var(--border2);padding:8px 14px;font-size:8px;font-family:var(--mono);letter-spacing:.08em;white-space:nowrap;flex-shrink:0}
+.chain-node.done{border-color:var(--green);color:var(--green)}
+.chain-arrow{font-size:10px;color:var(--dim);padding:0 4px;flex-shrink:0}
+
+/* CLOSING BOX */
+.closing{background:rgba(212,160,32,.04);border:1px solid rgba(212,160,32,.25);border-left:3px solid var(--gold);padding:16px 20px;margin-top:28px}
+.closing h3{font-family:var(--display);font-size:12px;color:var(--gold);letter-spacing:.1em;margin-bottom:10px}
+.closing p{font-size:10.5px;color:var(--text);line-height:1.8;margin-bottom:8px}
+.closing p:last-child{margin-bottom:0}
+.closing code{font-family:var(--mono);color:var(--charge);font-size:10px}
+
+/* SCOPE NOTE */
+.scope{font-size:9px;color:var(--dim);background:var(--panel2);border:1px solid var(--border2);padding:8px 12px;margin-bottom:10px;font-family:var(--mono);line-height:1.6}
+
+/* SEP */
+.sep{height:1px;background:var(--border);margin:2rem 0}
+
+@media(max-width:1100px){.bridge-map{grid-template-columns:repeat(3,1fr)}.layer-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.row2,.row3{grid-template-columns:1fr}.bridge-map{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · CHARGE BOUNDARY ROUTING I · 2026-06-15</div>
+  <h1>Charge Boundary Routing ANALYTICS</h1>
+  <div class="hero-sub">A five-phase structural analysis of electric charge as a boundary-routing problem. Forty particles, composite states, and boundary objects classified across four layers (A–D); bridge geometry across layer interfaces; pairwise same-charge route control (Q/e = +1); seed transition dynamics; and expanded robustness over 38 allowed transitions — processed through STRUC-PERC-I v2.5.0 and STRUC-I v1.0.4.</div>
+  <div class="badges">
+    <span class="badge b-green">PHASE 1 COMPLETE — 40 OBJECTS · 4 LAYERS</span>
+    <span class="badge b-green">PHASE 2 COMPLETE — 5 BRIDGES</span>
+    <span class="badge b-green">PHASE 2C-P COMPLETE — 27/27 FP · 0 HF</span>
+    <span class="badge b-green">PHASE 3 COMPLETE — 9/10 FP · SEED 7</span>
+    <span class="badge b-green">PHASE 3B COMPLETE — 21/21 FP · EXPANDED 38</span>
+    <span class="badge b-green">PHASE 3C COMPLETE — 42/42 FP · 48 BOUNDARY TESTS · 8 GP · 35 SB</span>
+    <span class="badge b-charge">ROUTE / CLOSURE: GEOMETRIC PERSISTENCE</span>
+    <span class="badge b-charge">SAME Q ≠ SAME ROUTE — STABLE STRUCTURE Ak=1.000</span>
+    <span class="badge b-frac">CD · BCD BRIDGES: HARD FRAGMENTATION</span>
+    <span class="badge b-frac">CHARGE VALUE ENCODINGS: TRANSITIONAL</span>
+    <span class="badge b-red">PHASE 3C route_transition: COLLAPSE SB/TS Aκ=0.859 ↓ from 0.985</span>
+    <span class="badge b-green">PHASE 3C closure_transition: STABLE GP/BS Aκ=0.998</span>
+    <span class="badge b-violet">ROUTE_TRANSITION: BOUNDARY-STABILIZED Ak=0.9851</span>
+    <span class="badge b-violet">CLOSURE_TRANSITION: BOUNDARY-STABILIZED Ak=0.9839</span>
+    <span class="badge b-amber">38 TRANSITIONS · 0 CHARGE BALANCE ERRORS</span>
+    <span class="badge b-dim">SOURCES: PDG RPP 2026 · 6 SUMMARY TABLE PDFs</span>
+  </div>
+  <div class="hero-meta">
+    <span>Instruments: STRUC-I v1.0.4 · STRUC-PERC-I v2.5.0</span>
+    <span>Phase 1: 40 objects · Layers A/B/C/D · PDG-sourced / PDG-aligned</span>
+    <span>Phase 2: 5 bridges · AB / BC / CD / ABC / BCD</span>
+    <span>Phase 2C-P: 5 objects / 10 pairs · Q/e = +1 control</span>
+    <span>Phase 3: 7 seed transitions · Phase 3B: 38 expanded transitions</span>
+    <span>Status: all phases complete</span>
+  </div>
+</div>
+
+<!-- ════════════════════ §0 PHASE CHAIN ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§0</span> PROGRAM SEQUENCE</div>
+<div class="chain">
+  <div class="chain-node done">PHASE 1<br>Boundary Classification</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHASE 2<br>Bridge Geometry</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHASE 2C-P<br>Same-Charge Control</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHASE 3<br>Seed Transitions</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHASE 3B<br>Robustness Expansion</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node done">PHASE 3C<br>Forbidden Boundary</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-node" style="border-style:dashed;color:var(--dim)">PHASE 3D<br>Expanded/Ablation</div>
+</div>
+
+<div class="principle">
+  <div class="principle-eye">INTEGRATED PRINCIPLE</div>
+  <p><strong style="color:var(--accent)">Charge conservation is the visible projection; boundary-route preservation is the structural invariant.</strong><br>
+  External Q-value is a scalar projection. Structural route is the admissibility coordinate. Composite closure, fractional confinement, and boundary absence are distinct regimes. Same charge does not imply same route. Allowed transitions preserve route / closure structure.</p>
+</div>
+
+<!-- ════════════════════ §1 CORPUS OVERVIEW ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§1</span> CORPUS OVERVIEW — PHASE 1 · 40 OBJECTS · PDG RPP 2026</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">40</div><div class="stat-lbl">TOTAL CORPUS OBJECTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">14</div><div class="stat-lbl">LAYER A — EXT. CLOSURES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--frac)">12</div><div class="stat-lbl">LAYER B — CONFINED FRAC.</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--comp)">10</div><div class="stat-lbl">LAYER C — COMPOSITES</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--absent)">4</div><div class="stat-lbl">LAYER D — BOUNDARY ABS.</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">6</div><div class="stat-lbl">PDG SOURCE PDFs</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">CLOSURE ERRORS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">8</div><div class="stat-lbl">FREE_INTEGER_CLOSURE</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">12</div><div class="stat-lbl">INTERNAL_FRACTIONAL</div></div>
+</div>
+
+<!-- LAYER CARDS -->
+<div class="layer-grid">
+  <div class="layer-card lc-a">
+    <div class="layer-card-id">A</div>
+    <div class="layer-card-name">FREE EXTERNAL CLOSURE STATES</div>
+    <div class="layer-card-n" style="color:var(--charge)">14</div>
+    <div class="layer-card-sub">FREE_INTEGER (8) · FREE_NEUTRAL (6)</div>
+    <div class="layer-card-examples">e⁻ · e⁺ · μ⁻ · μ⁺ · τ⁻ · νₑ · ν_μ · ν_τ<br>γ · W⁺ · W⁻ · Z⁰ · H · free neutral channels</div>
+    <div class="caution" style="margin-top:6px;border:none;padding:0;font-size:8px">π⁰ treated as composite neutral transition source (Phase 3, T006); not classified as primitive charge carrier in Layer A.</div>
+  </div>
+  <div class="layer-card lc-b">
+    <div class="layer-card-id">B</div>
+    <div class="layer-card-name">CONFINED FRACTIONAL COORDINATES</div>
+    <div class="layer-card-n" style="color:var(--frac)">12</div>
+    <div class="layer-card-sub">INTERNAL_FRACTIONAL_COORDINATE (12)</div>
+    <div class="layer-card-examples">u (+2/3) · d (−1/3) · s (−1/3)<br>c (+2/3) · b (−1/3) · t (+2/3)<br>+ 6 antiquarks</div>
+  </div>
+  <div class="layer-card lc-c">
+    <div class="layer-card-id">C</div>
+    <div class="layer-card-name">COMPOSITE CLOSURES</div>
+    <div class="layer-card-n" style="color:var(--comp)">10</div>
+    <div class="layer-card-sub">COMPOSITE_INTEGER (7) · COMPOSITE_NEUTRAL (3)</div>
+    <div class="layer-card-examples">p (uud→+1) · n (udd→0) · π⁺ · π⁻<br>K⁺ · Δ⁺⁺ · Ω⁻ · η⁰ · Λ⁰ · Σ⁰</div>
+  </div>
+  <div class="layer-card lc-d">
+    <div class="layer-card-id">D</div>
+    <div class="layer-card-name">BOUNDARY ABSENCES</div>
+    <div class="layer-card-n" style="color:var(--absent)">4</div>
+    <div class="layer-card-sub">TERMINAL (1) · UNRESOLVED (1) · CONSTRAINED (2)</div>
+    <div class="layer-card-examples">free quark (not confirmed)<br>magnetic monopole (not confirmed)<br>stable millicharged particle (constrained)</div>
+  </div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">CLOSURE CLASS DISTRIBUTION <span class="psub">· 40 OBJECTS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Closure Class</th><th>Layer</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--charge)">FREE_INTEGER_CLOSURE</td><td>A</td><td>8</td></tr>
+          <tr><td style="color:var(--charge)">FREE_NEUTRAL_CLOSURE</td><td>A</td><td>6</td></tr>
+          <tr><td style="color:var(--frac)">INTERNAL_FRACTIONAL_COORDINATE</td><td>B</td><td>12</td></tr>
+          <tr><td style="color:var(--comp)">COMPOSITE_INTEGER_CLOSURE</td><td>C</td><td>7</td></tr>
+          <tr><td style="color:var(--comp)">COMPOSITE_NEUTRAL_CLOSURE</td><td>C</td><td>3</td></tr>
+          <tr><td style="color:var(--absent)">TERMINAL_FREE_FRACTIONAL</td><td>D</td><td>1</td></tr>
+          <tr><td style="color:var(--absent)">UNRESOLVED_DUAL_BOUNDARY</td><td>D</td><td>1</td></tr>
+          <tr><td style="color:var(--absent)">CONSTRAINED_CHARGE_VIOLATION_BOUNDARY</td><td>D</td><td>1</td></tr>
+          <tr><td style="color:var(--absent)">EXTERNAL_NEUTRALITY_CONSTRAINT</td><td>D</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">ROUTE CLASS DISTRIBUTION <span class="psub">· 40 OBJECTS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Route Class</th><th>Layer</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--charge)">EXTERNAL_CLOSURE</td><td>A</td><td>14</td></tr>
+          <tr><td style="color:var(--frac)">CONFINED_ROUTE</td><td>B</td><td>12</td></tr>
+          <tr><td style="color:var(--comp)">COMPOSITE_CLOSURE</td><td>C</td><td>10</td></tr>
+          <tr><td style="color:var(--absent)">BOUNDARY_ABSENCE</td><td>D</td><td>2</td></tr>
+          <tr><td style="color:var(--absent)">DUAL_BOUNDARY_CANDIDATE</td><td>D</td><td>1</td></tr>
+          <tr><td style="color:var(--absent)">BOUNDARY_CONSTRAINT</td><td>D</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Layer D objects are boundary conditions of the routing system — not failed ladders.</div>
+  </div>
+</div>
+
+<!-- Route Topology Diagram -->
+<div class="panel">
+  <div class="panel-title">CHARGE BOUNDARY ROUTING — ABCD ROUTE TAXONOMY</div>
+  <svg viewBox="0 0 880 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">
+    <!-- background strips -->
+    <rect x="0" y="20" width="210" height="220" rx="4" fill="#07101e" stroke="#0c1a2e" stroke-width="1"/>
+    <rect x="220" y="20" width="200" height="220" rx="4" fill="#07101e" stroke="#0c1a2e" stroke-width="1"/>
+    <rect x="430" y="20" width="200" height="220" rx="4" fill="#07101e" stroke="#0c1a2e" stroke-width="1"/>
+    <rect x="640" y="20" width="230" height="220" rx="4" fill="#07101e" stroke="#0c1a2e" stroke-width="1"/>
+
+    <!-- Layer A -->
+    <text x="105" y="14" font-family="Courier New" font-size="9" fill="#c0d830" text-anchor="middle" letter-spacing="2">LAYER A</text>
+    <rect x="10" y="30" width="190" height="18" rx="2" fill="rgba(192,216,48,.12)" stroke="#c0d830" stroke-width="1"/>
+    <text x="105" y="43" font-family="Courier New" font-size="8" fill="#c0d830" text-anchor="middle">EXTERNAL CLOSURE</text>
+    <!-- A particles -->
+    <g font-family="Courier New" font-size="8" fill="#8090a0">
+      <text x="30" y="70">e⁻  −1</text>
+      <text x="30" y="85">e⁺  +1</text>
+      <text x="30" y="100">μ⁻  −1</text>
+      <text x="30" y="115">τ⁻  −1</text>
+      <text x="30" y="130">W⁺  +1</text>
+      <text x="30" y="145">W⁻  −1</text>
+      <text x="115" y="70">γ   0</text>
+      <text x="115" y="85">Z⁰  0</text>
+      <text x="115" y="100">νₑ  0</text>
+      <text x="115" y="115">ν_μ 0</text>
+      <text x="115" y="130">H   0</text>
+      <text x="115" y="145">…</text>
+    </g>
+    <!-- INTEGER label -->
+    <rect x="12" y="155" width="80" height="14" rx="2" fill="rgba(192,216,48,.08)" stroke="rgba(192,216,48,.3)" stroke-width="1"/>
+    <text x="52" y="165" font-family="Courier New" font-size="7" fill="#c0d830" text-anchor="middle">INTEGER</text>
+    <rect x="100" y="155" width="80" height="14" rx="2" fill="rgba(74,176,240,.08)" stroke="rgba(74,176,240,.3)" stroke-width="1"/>
+    <text x="140" y="165" font-family="Courier New" font-size="7" fill="#4ab0f0" text-anchor="middle">NEUTRAL</text>
+
+    <!-- Layer B -->
+    <text x="320" y="14" font-family="Courier New" font-size="9" fill="#e050c0" text-anchor="middle" letter-spacing="2">LAYER B</text>
+    <rect x="228" y="30" width="185" height="18" rx="2" fill="rgba(224,80,192,.12)" stroke="#e050c0" stroke-width="1"/>
+    <text x="320" y="43" font-family="Courier New" font-size="8" fill="#e050c0" text-anchor="middle">CONFINED ROUTE</text>
+    <g font-family="Courier New" font-size="8" fill="#8090a0">
+      <text x="240" y="70">u  +2/3</text>
+      <text x="240" y="85">d  −1/3</text>
+      <text x="240" y="100">s  −1/3</text>
+      <text x="240" y="115">c  +2/3</text>
+      <text x="240" y="130">b  −1/3</text>
+      <text x="240" y="145">t  +2/3</text>
+      <text x="330" y="70">ū  −2/3</text>
+      <text x="330" y="85">d̄  +1/3</text>
+      <text x="330" y="100">s̄  +1/3</text>
+      <text x="330" y="115">c̄  −2/3</text>
+      <text x="330" y="130">b̄  +1/3</text>
+      <text x="330" y="145">t̄  −2/3</text>
+    </g>
+    <rect x="228" y="155" width="185" height="14" rx="2" fill="rgba(224,80,192,.08)" stroke="rgba(224,80,192,.3)" stroke-width="1"/>
+    <text x="320" y="165" font-family="Courier New" font-size="7" fill="#e050c0" text-anchor="middle">FRACTIONAL — NOT EXTERNALLY FREE</text>
+
+    <!-- BC routing arrows -->
+    <g stroke="#50c0e0" stroke-width="1" fill="none" stroke-dasharray="3,3" opacity=".6">
+      <path d="M230 85 Q215 85 215 105 Q215 125 230 125" marker-end="url(#arr-c)"/>
+      <path d="M230 115 Q215 115 215 135 Q215 155 230 125" marker-end="url(#arr-c)"/>
+    </g>
+
+    <!-- Layer C -->
+    <text x="530" y="14" font-family="Courier New" font-size="9" fill="#50c0e0" text-anchor="middle" letter-spacing="2">LAYER C</text>
+    <rect x="438" y="30" width="185" height="18" rx="2" fill="rgba(80,192,224,.12)" stroke="#50c0e0" stroke-width="1"/>
+    <text x="530" y="43" font-family="Courier New" font-size="8" fill="#50c0e0" text-anchor="middle">COMPOSITE CLOSURE</text>
+    <g font-family="Courier New" font-size="8" fill="#8090a0">
+      <text x="448" y="70">p   uud→+1</text>
+      <text x="448" y="85">n   udd→ 0</text>
+      <text x="448" y="100">π⁺  ud̄→+1</text>
+      <text x="448" y="115">π⁻  ūd→−1</text>
+      <text x="448" y="130">K⁺  us̄→+1</text>
+      <text x="448" y="145">Δ⁺⁺ uuu→+2</text>
+      <text x="570" y="70">Ω⁻  sss→−1</text>
+      <text x="570" y="85">η⁰  →0</text>
+      <text x="570" y="100">Λ⁰  →0</text>
+      <text x="570" y="115">Σ⁰  →0</text>
+    </g>
+    <rect x="438" y="155" width="90" height="14" rx="2" fill="rgba(80,192,224,.08)" stroke="rgba(80,192,224,.3)" stroke-width="1"/>
+    <text x="483" y="165" font-family="Courier New" font-size="7" fill="#50c0e0" text-anchor="middle">INTEGER</text>
+    <rect x="533" y="155" width="85" height="14" rx="2" fill="rgba(74,176,240,.08)" stroke="rgba(74,176,240,.3)" stroke-width="1"/>
+    <text x="575" y="165" font-family="Courier New" font-size="7" fill="#4ab0f0" text-anchor="middle">NEUTRAL</text>
+
+    <!-- CD fragmentation -->
+    <g stroke="#e09030" stroke-width="1.5" fill="none" stroke-dasharray="4,2" opacity=".7">
+      <line x1="632" y1="90" x2="642" y2="90"/>
+      <text x="637" y="89" font-family="Courier New" font-size="7" fill="#e09030" text-anchor="middle">✗</text>
+    </g>
+
+    <!-- Layer D -->
+    <text x="755" y="14" font-family="Courier New" font-size="9" fill="#e09030" text-anchor="middle" letter-spacing="2">LAYER D</text>
+    <rect x="648" y="30" width="215" height="18" rx="2" fill="rgba(224,144,48,.12)" stroke="#e09030" stroke-width="1"/>
+    <text x="755" y="43" font-family="Courier New" font-size="8" fill="#e09030" text-anchor="middle">BOUNDARY ABSENCE</text>
+    <g font-family="Courier New" font-size="8" fill="#5a6870">
+      <text x="660" y="72">free quark         ✗</text>
+      <text x="660" y="90">free ±1/3          ✗</text>
+      <text x="660" y="108">free ±2/3          ✗</text>
+      <text x="660" y="126">magnetic monopole  ✗</text>
+      <text x="660" y="144">millicharged       ≈</text>
+    </g>
+    <rect x="648" y="155" width="215" height="14" rx="2" fill="rgba(224,144,48,.08)" stroke="rgba(224,144,48,.3)" stroke-width="1"/>
+    <text x="755" y="165" font-family="Courier New" font-size="7" fill="#e09030" text-anchor="middle">TERMINAL / NON-GENERABLE BOUNDARY</text>
+
+    <!-- Layer arrows A→B (fragmented) -->
+    <line x1="210" y1="100" x2="220" y2="100" stroke="#3a5070" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="215" y="88" font-family="Courier New" font-size="7" fill="#3a5070" text-anchor="middle">frag</text>
+    <!-- B→C (route-connected) -->
+    <line x1="418" y1="100" x2="430" y2="100" stroke="#50c0e0" stroke-width="1.5"/>
+    <text x="424" y="88" font-family="Courier New" font-size="7" fill="#50c0e0" text-anchor="middle">route</text>
+    <!-- C→D (fragmented) -->
+    <line x1="632" y1="100" x2="640" y2="100" stroke="#e04040" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="636" y="88" font-family="Courier New" font-size="7" fill="#e04040" text-anchor="middle">frag</text>
+
+    <!-- route labels bottom -->
+    <text x="105" y="200" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">FREE EXTERNAL</text>
+    <text x="105" y="210" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">BOUNDARY-RECESSION</text>
+    <text x="320" y="200" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">TURNING-LOCUS</text>
+    <text x="320" y="210" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">CONFINEMENT</text>
+    <text x="530" y="200" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">RECOVERY</text>
+    <text x="530" y="210" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">ROUTING</text>
+    <text x="755" y="200" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">TERMINAL</text>
+    <text x="755" y="210" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="middle">OBSTRUCTION</text>
+
+    <defs>
+      <marker id="arr-c" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 z" fill="#50c0e0"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<!-- ════════════════════ §2 PHASE 1 STRUC-I / STRUC-PERC-I ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§2</span> PHASE 1 — STRUC-PERC-I · STRUC-I RESULTS · ABCD COMBINED</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRUC-PERC-I v2.5.0 <span class="psub">· 6 ABCD LADDER ENCODINGS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>Verdict</th><th>n</th><th>GR</th><th>κ_conn</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text)">absolute_charge</td><td><span class="vhf">HARD FRAG</span></td><td>4</td><td>0.750</td><td>—</td></tr>
+          <tr><td style="color:var(--text)">signed_charge</td><td><span class="vhf">HARD FRAG</span></td><td>7</td><td>0.857</td><td>—</td></tr>
+          <tr><td style="color:var(--text)">boundary_route_coordinate</td><td><span class="vfp">FULL PERC</span></td><td>7</td><td>1.000</td><td>1.000</td></tr>
+          <tr><td style="color:var(--text)">closure_class_code</td><td><span class="vfp">FULL PERC</span></td><td>7</td><td>1.000</td><td>1.000</td></tr>
+          <tr><td style="color:var(--text)">closure_state_code</td><td><span class="vfp">FULL PERC</span></td><td>4</td><td>1.000</td><td>0.010</td></tr>
+          <tr><td style="color:var(--text)">route_class_code</td><td><span class="vfp">FULL PERC</span></td><td>5</td><td>1.000</td><td>0.010</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Bare charge-value encodings (absolute, signed) fragment. Route / closure encodings percolate.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">STRUC-I v1.0.4 <span class="psub">· ABCD COMBINED LADDERS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>Regime / State</th><th>mean Aκ</th><th>min Aκ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text)">route_class_code</td><td><span class="vts">SB / TRANS</span></td><td>0.9194</td><td>0.8980</td></tr>
+          <tr><td style="color:var(--text)">boundary_route_coord</td><td><span class="vts">SB / TRANS</span></td><td>0.8804</td><td>0.8475</td></tr>
+          <tr><td style="color:var(--text)">closure_class_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8814</td><td>0.8490</td></tr>
+          <tr><td style="color:var(--text)">closure_state_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8738</td><td>0.8485</td></tr>
+          <tr><td style="color:var(--text)">absolute_charge</td><td><span class="vts">SB / TRANS</span></td><td>0.8657</td><td>0.8430</td></tr>
+          <tr><td style="color:var(--text)">signed_charge</td><td><span class="vts">SB / TRANS</span></td><td>0.6574</td><td>0.5845</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">Signed charge is the lowest-Aκ encoding; route_class the highest. All remain Structural Boundary / Transitional at the combined-corpus level — correct for a heterogeneous corpus spanning 4 distinct regimes.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §2.1</div>
+  <div class="finding-title">Bare charge-value encodings fragment; route / closure encodings percolate</div>
+  <p>Absolute and signed charge produce HARD_FRAGMENTATION in the ABCD combined ladder, while boundary_route_coordinate, closure_class_code, closure_state_code, and route_class_code all reach FULL_PERCOLATION. This is the first empirical result distinguishing charge-value topology from charge-route topology within the UNNS framework. Signed charge is also the lowest STRUC-I admissibility coordinate (mean Aκ = 0.657), consistent with maximum heterogeneity across the four-layer corpus.</p>
+</div>
+
+<!-- ════════════════════ §3 PHASE 2 BRIDGE GEOMETRY ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§3</span> PHASE 2 — BRIDGE GEOMETRY · 5 BRIDGES · STRUC-PERC-I</div>
+
+<div class="scope">BRIDGE MAP: AB = external↔fractional | BC = fractional↔composite | CD = composite↔boundary | ABC = external/fractional/composite mediation | BCD = fractional/composite/boundary extension</div>
+
+<div class="bridge-map">
+
+  <!-- AB -->
+  <div class="bridge-card">
+    <div class="bridge-id" style="color:var(--charge)">AB</div>
+    <div class="bridge-desc">EXTERNAL → FRACTIONAL</div>
+    <div class="b-score">
+      <span class="b-score-lbl">absolute_charge</span>
+      <span class="vhf">HF</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">signed_charge</span>
+      <span class="vhf">HF</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">boundary_route</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_state</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">route_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="caution" style="margin-top:8px">Magnitude-stable interface. Charge-value fragments; route/closure percolates.</div>
+  </div>
+
+  <!-- BC -->
+  <div class="bridge-card">
+    <div class="bridge-id" style="color:var(--frac)">BC</div>
+    <div class="bridge-desc">FRACTIONAL → COMPOSITE</div>
+    <div class="b-score">
+      <span class="b-score-lbl">absolute_charge</span>
+      <span class="vfp">FP κ=1.0</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">signed_charge</span>
+      <span class="vhf">HF GR=0.857</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">boundary_route</span>
+      <span class="vfp">FP κ=0.75</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_state</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">route_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="caution" style="margin-top:8px">Route-connected, admissibility-transitional. Signed charge still fragments.</div>
+  </div>
+
+  <!-- CD -->
+  <div class="bridge-card">
+    <div class="bridge-id" style="color:var(--absent)">CD</div>
+    <div class="bridge-desc">COMPOSITE → BOUNDARY</div>
+    <div class="b-score">
+      <span class="b-score-lbl">boundary_route</span>
+      <span class="vhf">HF GR=0.875</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_class</span>
+      <span class="vhf">HF GR=0.900</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_state</span>
+      <span class="vhf">HF GR=0.833</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">route_class</span>
+      <span class="vhf">HF GR=0.857</span>
+    </div>
+    <div class="caution" style="margin-top:8px;color:var(--red)">ALL encodings fragment. Layer D terminates the route — not a smooth continuation of Layer C.</div>
+  </div>
+
+  <!-- ABC -->
+  <div class="bridge-card">
+    <div class="bridge-id" style="color:var(--comp)">ABC</div>
+    <div class="bridge-desc">EXT / FRAC / COMPOSITE</div>
+    <div class="b-score">
+      <span class="b-score-lbl">absolute_charge</span>
+      <span class="vfp">FP κ=1.0</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">signed_charge</span>
+      <span class="vhf">HF GR=0.857</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">boundary_route</span>
+      <span class="vhf">HF GR=0.667</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_state</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">route_class</span>
+      <span class="vfp">FP</span>
+    </div>
+    <div class="caution" style="margin-top:8px">Composite mediation restores selected channels, but boundary pressure persists.</div>
+  </div>
+
+  <!-- BCD -->
+  <div class="bridge-card">
+    <div class="bridge-id" style="color:var(--red)">BCD</div>
+    <div class="bridge-desc">FRAC / COMPOSITE / BOUNDARY</div>
+    <div class="b-score">
+      <span class="b-score-lbl">boundary_route</span>
+      <span class="vhf">HF GR=0.778</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_class</span>
+      <span class="vhf">HF GR=0.900</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">closure_state</span>
+      <span class="vhf">HF GR=0.833</span>
+    </div>
+    <div class="b-score">
+      <span class="b-score-lbl">route_class</span>
+      <span class="vhf">HF GR=0.857</span>
+    </div>
+    <div class="caution" style="margin-top:8px;color:var(--red)">ALL fragment once Layer D is added. Terminal extension of BC.</div>
+  </div>
+
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §3.1</div>
+  <div class="finding-title">Charge-value space and charge-route space are not equivalent; boundary absence terminates the route</div>
+  <p>The AB bridge fragments in charge-value coordinates but percolates in route/closure coordinates. The BC bridge is route-connected. The CD and BCD bridges fragment in all encodings — Layer D acts as a topological terminus, not a smooth continuation of the composite-closure layer. The ABC bridge partially recovers through composite mediation but retains boundary pressure. The key result: charge-value connectivity and route/closure connectivity produce genuinely different topological outcomes at every interface.</p>
+</div>
+
+<!-- ════════════════════ §4 PHASE 2C-P SAME-CHARGE CONTROL ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§4</span> PHASE 2C-P — SAME-CHARGE ROUTE CONTROL · Q/e = +1</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">5</div><div class="stat-lbl">CONTROL OBJECTS Q/e = +1</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">10</div><div class="stat-lbl">PAIRWISE ROWS (5C2)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">27</div><div class="stat-lbl">STRUC-PERC FP</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">STRUC-PERC HF</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">1.000</div><div class="stat-lbl">Aκ — struct. route pair</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--charge)">1.000</div><div class="stat-lbl">Aκ — sub-category pair</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">0</div><div class="stat-lbl">CHARGE DIFFERENCES (all pairs)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">6</div><div class="stat-lbl">CROSS-LAYER SAME-Q PAIRS</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">CONTROL OBJECTS <span class="psub">· ALL Q/e = +1</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Object</th><th>Q/e</th><th>Category</th><th>Layer</th><th>Route Class</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--charge)">positron</td><td>+1</td>
+            <td>external lepton</td><td>A</td><td>EXTERNAL_CLOSURE</td>
+          </tr>
+          <tr>
+            <td style="color:var(--comp)">proton</td><td>+1</td>
+            <td>composite baryon</td><td>C</td><td>COMPOSITE_CLOSURE</td>
+          </tr>
+          <tr>
+            <td style="color:var(--comp)">π⁺</td><td>+1</td>
+            <td>composite meson</td><td>C</td><td>COMPOSITE_CLOSURE</td>
+          </tr>
+          <tr>
+            <td style="color:var(--comp)">K⁺</td><td>+1</td>
+            <td>composite strange meson</td><td>C</td><td>COMPOSITE_CLOSURE</td>
+          </tr>
+          <tr>
+            <td style="color:var(--charge)">W⁺</td><td>+1</td>
+            <td>external gauge boson</td><td>A</td><td>EXTERNAL_CLOSURE</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">All five carry Q/e = +1 but occupy different structural routes, categories, and sub-categories.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">PAIR CLASS DISTRIBUTION <span class="psub">· 10 PAIRS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Pair Class</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--amber)">CROSS_LAYER_SAME_CHARGE_PAIR</td><td>6</td></tr>
+          <tr><td style="color:var(--blue)">SAME_LAYER_DIFFERENT_CATEGORY_PAIR</td><td>3</td></tr>
+          <tr><td style="color:var(--green)">SAME_CATEGORY_DIFFERENT_SUBTYPE_PAIR</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px">
+      <div class="caution" style="margin-top:0;border:none;padding:0;color:var(--text2)">All 10 pairwise charge differences = 0.000 (control encoding). Route / closure encodings show nonzero structure throughout.</div>
+    </div>
+  </div>
+</div>
+
+<!-- STRUC-I RESULTS — Phase 2C-P -->
+<div class="panel">
+  <div class="panel-title">STRUC-I v1.0.4 — ALL 27 PAIRWISE ENCODINGS <span class="psub">· SORTED BY mean Aκ</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Encoding</th><th>Regime / State</th><th>mean Aκ</th><th>min Aκ</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--charge)">structural_route_pair_code</td><td><span class="vst">GP / STABLE</span></td><td style="color:var(--charge)">1.0000</td><td style="color:var(--charge)">1.0000</td><td style="color:var(--dim)">⭑ same Q ≠ same route</td></tr>
+        <tr><td style="color:var(--charge)">sub_category_pair_code</td><td><span class="vst">GP / STABLE</span></td><td style="color:var(--charge)">1.0000</td><td style="color:var(--charge)">1.0000</td><td style="color:var(--dim)">⭑ key control result</td></tr>
+        <tr><td style="color:var(--charge)">category_pair_code</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">1.0000</td><td style="color:var(--blue)">1.0000</td><td></td></tr>
+        <tr><td>layer_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9417</td><td>0.9320</td><td></td></tr>
+        <tr><td>gauge_boson_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9414</td><td>0.9255</td><td></td></tr>
+        <tr><td>external_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9411</td><td>0.9170</td><td></td></tr>
+        <tr><td>hadron_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9413</td><td>0.9285</td><td></td></tr>
+        <tr><td>route_class_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9413</td><td>0.9265</td><td></td></tr>
+        <tr><td>closure_class_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9412</td><td>0.9265</td><td></td></tr>
+        <tr><td>composite_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9403</td><td>0.9275</td><td></td></tr>
+        <tr><td>fermion_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9403</td><td>0.9235</td><td></td></tr>
+        <tr><td>meson_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9405</td><td>0.9260</td><td></td></tr>
+        <tr><td>baryon_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9426</td><td>0.9325</td><td></td></tr>
+        <tr><td>boson_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9395</td><td>0.9270</td><td></td></tr>
+        <tr><td>lepton_difference</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.9405</td><td>0.9225</td><td></td></tr>
+        <tr><td>route_distance</td><td><span class="vts">SB / TRANS</span></td><td>0.8968</td><td>0.8515</td><td></td></tr>
+        <tr><td>layer_pair_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8819</td><td>0.8500</td><td></td></tr>
+        <tr><td>closure_class_pair_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8800</td><td>0.8435</td><td></td></tr>
+        <tr><td>pair_class_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8796</td><td>0.8475</td><td></td></tr>
+        <tr><td>route_class_pair_code</td><td><span class="vts">SB / TRANS</span></td><td>0.8803</td><td>0.8515</td><td></td></tr>
+        <tr><td>charge_difference</td><td><span class="vts">SB / TRANS</span></td><td>0.8633</td><td>0.8325</td><td style="color:var(--dim)">constant=0 control</td></tr>
+        <tr><td>sub_category_difference</td><td><span class="vts">SB / TRANS</span></td><td>0.8632</td><td>0.8485</td><td></td></tr>
+        <tr><td>same_charge_pair</td><td><span class="vts">SB / TRANS</span></td><td>0.8602</td><td>0.8395</td><td style="color:var(--dim)">constant=1 control</td></tr>
+        <tr><td>structural_route_difference</td><td><span class="vts">SB / TRANS</span></td><td>0.8610</td><td>0.8485</td><td></td></tr>
+        <tr><td>structural_distance</td><td><span class="vts">SB / TRANS</span></td><td>0.7795</td><td>0.6880</td><td></td></tr>
+        <tr><td>category_difference</td><td><span class="vts">SB / TRANS</span></td><td>0.7513</td><td>0.6975</td><td></td></tr>
+        <tr><td>type_distance</td><td><span class="vts">SB / TRANS</span></td><td>0.7714</td><td>0.6775</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §4.1</div>
+  <div class="finding-title">Same Q/e = +1 does not imply same structural route — the pairwise control validates route separation at Stable Structure level</div>
+  <p>With all 10 pairwise charge differences fixed at exactly 0.000, structural_route_pair_code and sub_category_pair_code reach Geometric Persistence / Stable Structure with mean Aκ = 1.000, min Aκ = 1.000. The trivial same-charge invariant (charge_difference, same_charge_pair) remains Structural Boundary / Transitional. The chamber did not reward the Q/e = +1 invariant — it detected genuine structural route separation among objects sharing identical external charge. This is the clean control result: charge equality is not structural-route equivalence.</p>
+</div>
+
+<!-- ════════════════════ §5 PHASE 3 SEED TRANSITIONS ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§5</span> PHASE 3 — SEED TRANSITION DYNAMICS · 7 TRANSITIONS</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">7</div><div class="stat-lbl">SEED TRANSITIONS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">9/10</div><div class="stat-lbl">STRUC-PERC FP</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">1/10</div><div class="stat-lbl">HF (charged_mult_delta)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">CHARGE BALANCE ERRORS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">0.9999</div><div class="stat-lbl">Aκ route_transition</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">0.9999</div><div class="stat-lbl">Aκ closure_transition</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">SEED TRANSITIONS <span class="psub">· T001–T007</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>ID</th><th>Process</th><th>Decay</th><th>ΔQ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--accent)">T001</td><td>neutron beta decay</td><td>n → p e⁻ ν̄ₑ</td><td>0 → 0</td></tr>
+          <tr><td style="color:var(--accent)">T002</td><td>π⁺ muonic decay</td><td>π⁺ → μ⁺ ν_μ</td><td>+1 → +1</td></tr>
+          <tr><td style="color:var(--accent)">T003</td><td>μ⁻ decay</td><td>μ⁻ → e⁻ ν̄ₑ ν_μ</td><td>−1 → −1</td></tr>
+          <tr><td style="color:var(--accent)">T004</td><td>W⁻ leptonic</td><td>W⁻ → e⁻ ν̄ₑ</td><td>−1 → −1</td></tr>
+          <tr><td style="color:var(--accent)">T005</td><td>W⁺ leptonic</td><td>W⁺ → e⁺ νₑ</td><td>+1 → +1</td></tr>
+          <tr><td style="color:var(--accent)">T006</td><td>π⁰ two-photon</td><td>π⁰ → γγ</td><td>0 → 0</td></tr>
+          <tr><td style="color:var(--accent)">T007</td><td>K⁺ muonic decay</td><td>K⁺ → μ⁺ ν_μ</td><td>+1 → +1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">STRUC-I / STRUC-PERC-I RESULTS <span class="psub">· 10 SEED ENCODINGS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>PERC</th><th>STRUC-I</th><th>mean Aκ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text)">route_transition_code</td><td><span class="vfp">FP</span></td><td><span class="vwp">GP/WEAK</span></td><td style="color:var(--blue)">0.999925</td></tr>
+          <tr><td style="color:var(--text)">closure_transition_code</td><td><span class="vfp">FP</span></td><td><span class="vwp">GP/WEAK</span></td><td style="color:var(--blue)">0.999925</td></tr>
+          <tr><td style="color:var(--text)">transition_class_code</td><td><span class="vfp">FP</span></td><td><span class="vwp">GP/WEAK</span></td><td style="color:var(--blue)">0.999888</td></tr>
+          <tr><td style="color:var(--text)">initial_total_charge</td><td><span class="vfp">FP</span></td><td><span class="vwp">GP/WEAK</span></td><td style="color:var(--blue)">0.957512</td></tr>
+          <tr><td style="color:var(--text)">final_total_charge</td><td><span class="vfp">FP</span></td><td><span class="vwp">GP/WEAK</span></td><td style="color:var(--blue)">0.956487</td></tr>
+          <tr><td style="color:var(--text)">layer_transition_code</td><td><span class="vfp">FP</span></td><td><span class="vts">SB/TRANS</span></td><td>0.929212</td></tr>
+          <tr><td style="color:var(--text)">charged_multiplicity_delta</td><td><span class="vhf" style="font-size:7px">HF GR=0.857</span></td><td><span class="vts">SB/TRANS</span></td><td>0.917212</td></tr>
+          <tr><td style="color:var(--text)">composite_count_delta</td><td><span class="vfp">FP</span></td><td><span class="vts">SB/TRANS</span></td><td>0.888275</td></tr>
+          <tr><td style="color:var(--text)">externalization_delta</td><td><span class="vfp">FP</span></td><td><span class="vts">SB/TRANS</span></td><td>0.881887</td></tr>
+          <tr><td style="color:var(--text)">neutral_multiplicity_delta</td><td><span class="vfp">FP</span></td><td><span class="vts">SB/TRANS</span></td><td>0.803987</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="caution">charged_multiplicity_delta fragments in the 7-seed corpus — diagnostically meaningful, showing transitions are not organized by charged-object count change.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §5.1</div>
+  <div class="finding-title">Allowed transitions preserve route / closure transition structure; raw charge count change does not organize the corpus</div>
+  <p>route_transition_code and closure_transition_code reach Geometric Persistence / Weak Persistence with mean Aκ = 0.9999 — the highest STRUC-I admissibility in the seed corpus. The single HARD_FRAGMENTATION (charged_multiplicity_delta, GR = 0.857, TD = 0.997) is structurally meaningful: allowed transitions are not organized by how many charged objects change. This fragmentation does not recur in Phase 3B, revealing it as a small-corpus sensitivity rather than a persistent feature.</p>
+</div>
+
+<!-- ════════════════════ §6 PHASE 3B EXPANDED ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§6</span> PHASE 3B — EXPANDED TRANSITION ROBUSTNESS · 38 TRANSITIONS</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--green)">38</div><div class="stat-lbl">EXPANDED TRANSITIONS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">7</div><div class="stat-lbl">SEED CONTINUITY</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">31</div><div class="stat-lbl">NEW EXPANSION ROWS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">21/21</div><div class="stat-lbl">STRUC-PERC FP</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">STRUC-PERC HF</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">38/38</div><div class="stat-lbl">CHARGE CONSERVED</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--violet)">0.9851</div><div class="stat-lbl">Aκ route_transition (BS)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--violet)">0.9839</div><div class="stat-lbl">Aκ closure_transition (BS)</div></div>
+</div>
+
+<div class="row2">
+
+  <div class="panel">
+    <div class="panel-title">TRANSITION FAMILY BREAKDOWN <span class="psub">· 38 TRANSITIONS</span></div>
+    <div style="padding:4px 0">
+      <div class="tf-bar"><span class="tf-lbl">seed_continuity</span><div class="tf-track"><div class="tf-fill" style="width:18.4%;background:var(--accent)"></div></div><span class="tf-n">7</span></div>
+      <div class="tf-bar"><span class="tf-lbl">baryon_decay</span><div class="tf-track"><div class="tf-fill" style="width:21.1%;background:var(--comp)"></div></div><span class="tf-n">8</span></div>
+      <div class="tf-bar"><span class="tf-lbl">charged_meson_decay</span><div class="tf-track"><div class="tf-fill" style="width:15.8%;background:var(--comp)"></div></div><span class="tf-n">6</span></div>
+      <div class="tf-bar"><span class="tf-lbl">w_z_mediated_channel</span><div class="tf-track"><div class="tf-fill" style="width:15.8%;background:var(--charge)"></div></div><span class="tf-n">6</span></div>
+      <div class="tf-bar"><span class="tf-lbl">neutral_meson_decay</span><div class="tf-track"><div class="tf-fill" style="width:13.2%;background:var(--blue)"></div></div><span class="tf-n">5</span></div>
+      <div class="tf-bar"><span class="tf-lbl">baryon_resonance_decay</span><div class="tf-track"><div class="tf-fill" style="width:5.3%;background:var(--amber)"></div></div><span class="tf-n">2</span></div>
+      <div class="tf-bar"><span class="tf-lbl">neutral_or_charged_vector_meson_decay</span><div class="tf-track"><div class="tf-fill" style="width:5.3%;background:var(--amber)"></div></div><span class="tf-n">2</span></div>
+      <div class="tf-bar"><span class="tf-lbl">radiative_decay</span><div class="tf-track"><div class="tf-fill" style="width:5.3%;background:var(--violet)"></div></div><span class="tf-n">2</span></div>
+    </div>
+    <div class="caution">8 transition families covering baryon, meson, W/Z-mediated, and radiative decay channels.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">STRUC-I v1.0.4 — PHASE 3B STRONGEST ENCODINGS</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>Regime / State</th><th>mean Aκ</th><th>min Aκ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--violet)">route_transition_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--violet)">0.985100</td><td>0.9765</td></tr>
+          <tr><td style="color:var(--violet)">closure_transition_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--violet)">0.983850</td><td>0.9735</td></tr>
+          <tr><td style="color:var(--violet)">category_transition_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--violet)">0.977625</td><td>0.9645</td></tr>
+          <tr><td style="color:var(--violet)">transition_class_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--violet)">0.977463</td><td>0.9675</td></tr>
+          <tr><td style="color:var(--blue)">transition_family_code</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.967300</td><td>0.9585</td></tr>
+          <tr><td style="color:var(--blue)">layer_transition_code</td><td><span class="vwp">GP / WEAK</span></td><td style="color:var(--blue)">0.953737</td><td>0.9355</td></tr>
+          <tr><td style="color:var(--text2)">composite_count_delta</td><td><span class="vts">SB / TRANS</span></td><td>0.909825</td><td>0.8835</td></tr>
+          <tr><td style="color:var(--text2)">externalization_delta</td><td><span class="vts">SB / TRANS</span></td><td>0.860463</td><td>0.8360</td></tr>
+          <tr><td style="color:var(--text2)">charged_initial_count</td><td><span class="vts">SB / TRANS</span></td><td>0.796963</td><td>0.7735</td></tr>
+          <tr><td style="color:var(--text2)">final_total_charge</td><td><span class="vts">SB / TRANS</span></td><td>0.811837</td><td>0.7695</td></tr>
+          <tr><td style="color:var(--text2)">composite_initial_count</td><td><span class="vts">SB / TRANS</span></td><td>0.637175</td><td>0.5835</td></tr>
+          <tr><td style="color:var(--text2)">charged_multiplicity_delta</td><td><span class="vts">SB / TRANS</span></td><td>0.736212</td><td>0.6960</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 3B full STRUC-PERC-I table -->
+<div class="panel">
+  <div class="panel-title">STRUC-PERC-I v2.5.0 — ALL 21 PHASE 3B ENCODINGS <span class="psub">· 21/21 FULL PERCOLATION · 0 HARD FRAGMENTATION</span></div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>Encoding</th><th>Verdict</th><th>n</th><th>GR</th><th>κ_conn</th>
+          <th>Encoding</th><th>Verdict</th><th>n</th><th>GR</th><th>κ_conn</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>route_transition_code</td><td><span class="vfp">FP</span></td><td>13</td><td>1.000</td><td>0.010</td>
+          <td>closure_transition_code</td><td><span class="vfp">FP</span></td><td>13</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>category_transition_code</td><td><span class="vfp">FP</span></td><td>10</td><td>1.000</td><td>0.010</td>
+          <td>transition_class_code</td><td><span class="vfp">FP</span></td><td>10</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>transition_family_code</td><td><span class="vfp">FP</span></td><td>8</td><td>1.000</td><td>0.010</td>
+          <td>layer_transition_code</td><td><span class="vfp">FP</span></td><td>7</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>composite_count_delta</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+          <td>final_total_charge</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>initial_total_charge</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+          <td>composite_final_count</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>composite_initial_count</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+          <td>external_final_count</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>external_initial_count</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+          <td>neutral_multiplicity_delta</td><td><span class="vfp">FP</span></td><td>3</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>charged_final_count</td><td><span class="vfp">FP</span></td><td>2</td><td>1.000</td><td>0.010</td>
+          <td>charged_initial_count</td><td><span class="vfp">FP</span></td><td>2</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>charged_multiplicity_delta</td><td><span class="vfp">FP</span></td><td>2</td><td>1.000</td><td>0.010</td>
+          <td>externalization_delta</td><td><span class="vfp">FP</span></td><td>2</td><td>1.000</td><td>0.010</td>
+        </tr>
+        <tr>
+          <td>final_multiplicity</td><td><span class="vfp">FP</span></td><td>2</td><td>1.000</td><td>0.750</td>
+          <td colspan="5" style="color:var(--dim)">– – –</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caution">charged_multiplicity_delta — which fragmented in the 7-seed corpus — percolates in Phase 3B. Fragmentation was small-corpus sensitivity, not a structural property of the allowed-transition system.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §6.1</div>
+  <div class="finding-title">Route / closure transition result survives expansion — Phase 3 is not a seven-transition artifact</div>
+  <p>Expanding from 7 to 38 allowed transitions across 8 decay families produces 21/21 FULL_PERCOLATION with zero HARD_FRAGMENTATION. route_transition_code and closure_transition_code advance from Weak Persistence (Phase 3) to Boundary-Stabilized (Phase 3B), strengthening to mean Aκ = 0.985 and 0.984 respectively. The fact that total-charge coordinates become less structurally decisive as the corpus grows (falling from Weak Persistence to Transitional) further concentrates the persistent geometry in route, closure, category, class, family, and layer transition coordinates.</p>
+</div>
+
+
+<!-- ════════════════════ §7 PHASE 3C RESULTS ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§7</span> PHASE 3C — FORBIDDEN &amp; CONSTRAINED BOUNDARY TESTS · 48 ROWS · 6 GROUPS</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-val" style="color:var(--red)">48</div><div class="stat-lbl">TOTAL BOUNDARY TESTS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)">6</div><div class="stat-lbl">CORPUS GROUPS (A–F)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">42/42</div><div class="stat-lbl">STRUC-PERC FP (1 NULL)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0</div><div class="stat-lbl">STRUC-PERC HF</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--blue)">8</div><div class="stat-lbl">STRUC-I GP (3 BS · 5 WP)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--amber)">35</div><div class="stat-lbl">STRUC-I SB (33 TS · 2 NC)</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">0.859</div><div class="stat-lbl">route_transition Aκ ↓ SB/TS</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">0.998</div><div class="stat-lbl">closure_transition Aκ GP/BS</div></div>
+</div>
+
+<!-- GROUP CARDS -->
+<div class="layer-grid" style="grid-template-columns:repeat(6,1fr)">
+  <div class="layer-card" style="border-top:2px solid var(--green)">
+    <div class="layer-card-id" style="color:var(--green)">A</div>
+    <div class="layer-card-name">ALLOWED CONTROLS</div>
+    <div class="layer-card-n" style="color:var(--green)">12</div>
+    <div class="layer-card-sub">Phase 3B interior controls</div>
+  </div>
+  <div class="layer-card" style="border-top:2px solid var(--red)">
+    <div class="layer-card-id" style="color:var(--red)">B</div>
+    <div class="layer-card-name">CHARGE-VIOLATING</div>
+    <div class="layer-card-n" style="color:var(--red)">8</div>
+    <div class="layer-card-sub">Q_i ≠ Q_f by design</div>
+  </div>
+  <div class="layer-card" style="border-top:2px solid var(--frac)">
+    <div class="layer-card-id" style="color:var(--frac)">C</div>
+    <div class="layer-card-name">FREE-FRACTIONAL</div>
+    <div class="layer-card-n" style="color:var(--frac)">8</div>
+    <div class="layer-card-sub">Externalization attempts</div>
+  </div>
+  <div class="layer-card" style="border-top:2px solid var(--amber)">
+    <div class="layer-card-id" style="color:var(--amber)">D</div>
+    <div class="layer-card-name">SELECTION-RULE VIOL.</div>
+    <div class="layer-card-n" style="color:var(--amber)">8</div>
+    <div class="layer-card-sub">B/L-number violations</div>
+  </div>
+  <div class="layer-card" style="border-top:2px solid var(--violet)">
+    <div class="layer-card-id" style="color:var(--violet)">E</div>
+    <div class="layer-card-name">ROUTE-INCOHERENT</div>
+    <div class="layer-card-n" style="color:var(--violet)">8</div>
+    <div class="layer-card-sub">Charge-conserving mocks</div>
+  </div>
+  <div class="layer-card" style="border-top:2px solid var(--absent)">
+    <div class="layer-card-id" style="color:var(--absent)">F</div>
+    <div class="layer-card-name">CONSTRAINED BOUNDARY</div>
+    <div class="layer-card-n" style="color:var(--absent)">4</div>
+    <div class="layer-card-sub">Upper-bounded cases</div>
+  </div>
+</div>
+
+<!-- STRUC-PERC-I + CONNECTIVITY -->
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">STRUC-PERC-I v2.5.0 <span class="psub">· 42 COMPLETED · ALL FP · 0 HF</span></div>
+    <div class="scope" style="margin-bottom:8px">Forbiddenness does NOT appear as graph disconnection. The mixed allowed/forbidden corpus remains globally connected. The boundary is read at the perturbative admissibility level (STRUC-I), not the connectivity level.</div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>Verdict</th><th>κ_conn</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text)">route_transition_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td style="color:var(--dim)">connected at lowest threshold</td></tr>
+          <tr><td style="color:var(--text)">closure_transition_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td></td></tr>
+          <tr><td style="color:var(--text)">allowed_vs_forbidden_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td></td></tr>
+          <tr><td style="color:var(--text)">category_transition_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td></td></tr>
+          <tr><td style="color:var(--text)">transition_family_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td></td></tr>
+          <tr><td style="color:var(--text)">transition_status_code</td><td><span class="vfp">FP</span></td><td>0.010</td><td></td></tr>
+          <tr><td style="color:var(--frac)">boundary_pressure_index</td><td><span class="vfp">FP</span></td><td style="color:var(--amber)">0.562</td><td style="color:var(--amber)">⚑ elevated threshold</td></tr>
+          <tr><td style="color:var(--frac)">free_fractional_externalization_flag</td><td><span class="vfp">FP</span></td><td style="color:var(--red)">0.750</td><td style="color:var(--red)">⚑ high threshold — boundary pressure</td></tr>
+          <tr><td style="color:var(--dim)">allowed_control_flag</td><td><span style="font-family:var(--mono);font-size:8px;padding:2px 6px;border:1px solid var(--dim);color:var(--dim)">NULL</span></td><td>—</td><td style="color:var(--dim)">low-information; excluded</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">STRUC-I v1.0.4 <span class="psub">· REGIME DISTRIBUTION · 43 LADDERS</span></div>
+    <div class="scrollbox">
+      <table class="dt">
+        <thead><tr><th>Encoding</th><th>Regime / State</th><th>mean Aκ</th><th>min Aκ</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--green)">closure_transition_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--green)">0.9979</td><td>0.995</td></tr>
+          <tr><td style="color:var(--green)">category_transition_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--green)">0.9945</td><td>0.989</td></tr>
+          <tr><td style="color:var(--green)">transition_family_code</td><td><span class="vbs">GP / BS</span></td><td style="color:var(--green)">0.9881</td><td>0.981</td></tr>
+          <tr><td style="color:var(--blue)">allowed_vs_forbidden_code</td><td><span class="vwp">GP / WP</span></td><td style="color:var(--blue)">0.9508</td><td>0.919</td></tr>
+          <tr><td style="color:var(--blue)">route_charge_consistency</td><td><span class="vwp">GP / WP</span></td><td style="color:var(--blue)">0.9503</td><td>0.911</td></tr>
+          <tr><td style="color:var(--blue)">closure_charge_consistency</td><td><span class="vwp">GP / WP</span></td><td style="color:var(--blue)">0.9490</td><td>0.919</td></tr>
+          <tr><td style="color:var(--blue)">transition_class_code</td><td><span class="vwp">GP / WP</span></td><td style="color:var(--blue)">0.9302</td><td>0.907</td></tr>
+          <tr><td style="color:var(--amber)">boundary_pressure_index</td><td><span class="vts">SB / TS</span></td><td>0.9178</td><td>0.876</td></tr>
+          <tr><td style="color:var(--amber)">transition_status_code</td><td><span class="vts">SB / TS</span></td><td>0.8857</td><td>0.862</td></tr>
+          <tr><td style="color:var(--amber)">layer_transition_code</td><td><span class="vts">SB / TS</span></td><td>0.8601</td><td>0.820</td></tr>
+          <tr><td style="color:var(--red)">route_transition_code</td><td><span class="vts">SB / TS</span></td><td style="color:var(--red)">0.8592</td><td style="color:var(--red)">0.814</td></tr>
+          <tr><td style="color:var(--dim)">charge_balance_code</td><td><span class="vts">SB / TS</span></td><td>0.8327</td><td>0.808</td></tr>
+          <tr><td style="color:var(--dim)">initial_multiplicity</td><td><span class="vts" style="border-color:var(--red);color:var(--red)">SB / NC</span></td><td>0.6923</td><td>0.666</td></tr>
+          <tr><td style="color:var(--dim)">initial_frac_external_count</td><td><span class="vts" style="border-color:var(--red);color:var(--red)">SB / NC</span></td><td>0.6932</td><td>0.664</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 3B vs 3C CONTRAST — THE CENTRAL RESULT -->
+<div class="panel" style="border-left:3px solid var(--red)">
+  <div class="panel-title" style="color:var(--red)">PHASE 3B vs PHASE 3C — ROUTE-TRANSITION ADMISSIBILITY CONTRAST</div>
+  <div class="scope" style="border-color:rgba(224,64,64,.3);background:rgba(224,64,64,.04);margin-bottom:10px">Phase 3B = 38 allowed transitions. Phase 3C = 48 mixed allowed/forbidden/constrained. STRUC-PERC-I remains connected in both. The STRUC-I contrast is the decisive result.</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Encoding</th><th>Phase 3B State</th><th>Phase 3B Aκ</th><th>Phase 3C State</th><th>Phase 3C Aκ</th><th>Δ</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr style="background:rgba(224,64,64,.06)">
+          <td style="color:var(--red)">route_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9851</td>
+          <td><span class="vts">SB / TS</span></td>
+          <td style="color:var(--red)">0.8592</td>
+          <td style="color:var(--red)">−0.126</td>
+          <td style="color:var(--red)">⚑ ROUTE ADMISSIBILITY COLLAPSE</td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">closure_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9839</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--green)">0.9979</td>
+          <td style="color:var(--green)">+0.014</td>
+          <td style="color:var(--dim)">closure labels remain stable</td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">category_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9776</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--green)">0.9945</td>
+          <td style="color:var(--green)">+0.017</td>
+          <td style="color:var(--dim)">category classification remains stable</td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">transition_family_code</td>
+          <td><span class="vwp">GP / WP</span></td>
+          <td style="color:var(--blue)">0.9673</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--green)">0.9881</td>
+          <td style="color:var(--green)">+0.021</td>
+          <td style="color:var(--dim)">family classification remains stable</td>
+        </tr>
+        <tr style="background:rgba(240,160,48,.05)">
+          <td style="color:var(--amber)">boundary_pressure_index</td>
+          <td style="color:var(--dim)">—</td>
+          <td style="color:var(--dim)">n/a</td>
+          <td><span class="vts">SB / TS</span></td>
+          <td>0.9178</td>
+          <td style="color:var(--dim)">new</td>
+          <td style="color:var(--dim)">boundary pressure below persistence threshold</td>
+        </tr>
+        <tr style="background:rgba(240,160,48,.05)">
+          <td style="color:var(--amber)">transition_status_code</td>
+          <td style="color:var(--dim)">—</td>
+          <td style="color:var(--dim)">n/a</td>
+          <td><span class="vts">SB / TS</span></td>
+          <td>0.8857</td>
+          <td style="color:var(--dim)">new</td>
+          <td style="color:var(--dim)">allowed/forbidden status transitional</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finding" style="border-left-color:var(--red)">
+  <div class="finding-num" style="color:var(--red)">FINDING §7.1 — PHASE 3C</div>
+  <div class="finding-title">Forbiddenness is not graph disconnection — it is route-transition admissibility collapse</div>
+  <p>Phase 3C completes the allowed/forbidden contrast. The 48-row mixed corpus (allowed controls, charge-violating mocks, free-fractional externalization, selection-rule violations, route-incoherent mocks, constrained boundary cases) remains globally connected under STRUC-PERC-I (42/42 Full Percolation, 0 Hard Fragmentation). However, STRUC-I drives route_transition_code from GP/Boundary-Stabilized (Aκ = 0.985 in Phase 3B) to Structural Boundary / Transitional (Aκ = 0.859 in Phase 3C). closure_transition_code, category_transition_code, and transition_family_code remain GP/BS or stronger. The forbidden boundary is therefore a selective collapse of route-transition admissibility — not a gross structural disconnection. Charge balance is necessary but not sufficient: route-transition admissibility is the structural discriminator.</p>
+</div>
+
+<!-- ════════════════════ §8 INTEGRATED FINDINGS ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§8</span> INTEGRATED FINDINGS — SIX-PHASE SYNTHESIS</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.1</div>
+  <div class="finding-title">Charge value alone does not determine charge structure — external Q is a scalar projection</div>
+  <p>Across all six phases, the consistent result is that external charge value Q is insufficient to characterize the structural regime of a charged object. Layer A and Layer C objects may share the same |Q| = 1 while occupying entirely different route classes (EXTERNAL_CLOSURE vs. COMPOSITE_CLOSURE). Five same-charge objects (positron, proton, π⁺, K⁺, W⁺) with Q/e = +1 produce Stable Structure (Aκ = 1.000) in structural_route_pair_code, demonstrating that the route coordinate is non-trivially organized even when charge is fixed.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.2</div>
+  <div class="finding-title">Fractional charge is a confined internal route coordinate — not a failed external closure</div>
+  <p>Layer B quarks carry fractional charge (±1/3, ±2/3) and are INTERNAL_FRACTIONAL_COORDINATEs, not failed external closures. The BC bridge is route-connected (all route/closure encodings reach FULL_PERCOLATION), consistent with a compositional routing relationship between B and C. The CD and BCD bridges fragment, showing that Layer D (boundary absence) terminates the externalization route rather than continuing it. In this framing, confinement is a boundary-routing condition: fractional charge reaches the free-externalization boundary and is routed into confined composite closure instead.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.3</div>
+  <div class="finding-title">Allowed transitions carry route / closure structure independently of charge arithmetic</div>
+  <p>In both Phase 3 and Phase 3B, route_transition_code and closure_transition_code are among the strongest STRUC-I admissibility coordinates, advancing to Boundary-Stabilized in Phase 3B. The raw charge conservation identity (sum Q_initial = sum Q_final) is embedded within a richer structural invariant: route-topology preservation across the transition. Count and multiplicity coordinates are structurally weaker than route / closure transition coordinates — the visible conservation law is necessary but not sufficient as a structural description of the transition.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.4</div>
+  <div class="finding-title">The charge unit is a shared boundary invariant across non-equivalent ladders</div>
+  <p>The positron (primitive lepton route), proton (baryonic composite route), π⁺ (mesonic composite route), K⁺ (strange composite route), and W⁺ (gauge-boson route) all land on Q/e = +1 through structurally non-equivalent internal architectures. This is the charge analogue of the stellar bridge principle: Full(A) ∧ Full(B) ∧ Full(C) does not imply A ≈ B ≈ C. For charge: integer closure of the electron ladder and integer closure of the proton ladder do not imply identical internal structure — they are different regimes sharing one boundary invariant.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-num">FINDING §8.5</div>
+  <div class="finding-title">Charge balance is necessary but not sufficient — the forbidden boundary is route-selective admissibility pressure</div>
+  <p>Phase 3C extends the empirical chain from the allowed interior to the forbidden boundary. The mixed corpus remains globally connected (42/42 FP), but route_transition_code loses Geometric Persistence — dropping from GP/BS (0.985) to SB/TS (0.859). Closure, category, and family encodings remain GP/BS or improve. This selectivity is the key result: the forbidden boundary is not a gross structural disconnection but a targeted collapse of route-transition admissibility. Charge conservation (Σ Q_initial = Σ Q_final) is a necessary condition for structural admissibility; it is not sufficient.</p>
+</div>
+
+<!-- CROSS-PHASE SUMMARY TABLE -->
+<div class="panel">
+  <div class="panel-title">CROSS-PHASE SUMMARY — STRUC-I STRONGEST ENCODINGS</div>
+  <div class="scrollbox">
+    <table class="dt">
+      <thead><tr><th>Phase</th><th>Top Encoding</th><th>Regime / State</th><th>mean Aκ</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--charge)">Phase 1 — static</td>
+          <td>route_class_code</td>
+          <td><span class="vts">SB / TRANS</span></td>
+          <td>0.9194</td>
+          <td style="color:var(--dim)">Heterogeneous 4-layer corpus; transitional is correct</td>
+        </tr>
+        <tr>
+          <td style="color:var(--frac)">Phase 2C-P — control</td>
+          <td>structural_route_pair_code</td>
+          <td><span class="vst">GP / STABLE</span></td>
+          <td style="color:var(--charge)">1.0000</td>
+          <td style="color:var(--dim)">Same Q ≠ same route; stable structure at Aκ = 1</td>
+        </tr>
+        <tr>
+          <td style="color:var(--frac)">Phase 2C-P — control</td>
+          <td>sub_category_pair_code</td>
+          <td><span class="vst">GP / STABLE</span></td>
+          <td style="color:var(--charge)">1.0000</td>
+          <td style="color:var(--dim)">Sub-category distinction preserved at Aκ = 1</td>
+        </tr>
+        <tr>
+          <td style="color:var(--comp)">Phase 3 — dynamics</td>
+          <td>route_transition_code</td>
+          <td><span class="vwp">GP / WEAK</span></td>
+          <td style="color:var(--blue)">0.9999</td>
+          <td style="color:var(--dim)">Seed transitions: route transition geometry dominant</td>
+        </tr>
+        <tr>
+          <td style="color:var(--comp)">Phase 3 — dynamics</td>
+          <td>closure_transition_code</td>
+          <td><span class="vwp">GP / WEAK</span></td>
+          <td style="color:var(--blue)">0.9999</td>
+          <td style="color:var(--dim)">Closure transition equally persistent as route</td>
+        </tr>
+        <tr>
+          <td style="color:var(--violet)">Phase 3B — robustness</td>
+          <td>route_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9851</td>
+          <td style="color:var(--dim)">Advanced to Boundary-Stabilized; survives corpus expansion</td>
+        </tr>
+        <tr>
+          <td style="color:var(--violet)">Phase 3B — robustness</td>
+          <td>closure_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9839</td>
+          <td style="color:var(--dim)">Closure transition also Boundary-Stabilized</td>
+        </tr>
+        <tr>
+          <td style="color:var(--violet)">Phase 3B — robustness</td>
+          <td>category_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9776</td>
+          <td style="color:var(--dim)">Category transition: new boundary-stabilized result</td>
+        </tr>
+        <tr>
+          <td style="color:var(--violet)">Phase 3B — robustness</td>
+          <td>transition_class_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--violet)">0.9775</td>
+          <td style="color:var(--dim)">Transition class: boundary-stabilized</td>
+        </tr>
+        <tr style="background:rgba(224,64,64,.05)">
+          <td style="color:var(--red)">Phase 3C — contrast</td>
+          <td style="color:var(--red)">route_transition_code</td>
+          <td><span class="vts">SB / TS</span></td>
+          <td style="color:var(--red)">0.8592</td>
+          <td style="color:var(--red)">⚑ ROUTE ADMISSIBILITY COLLAPSE — forbidden boundary visible</td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">Phase 3C — contrast</td>
+          <td style="color:var(--green)">closure_transition_code</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--green)">0.9979</td>
+          <td style="color:var(--dim)">Closure stable; boundary is route-selective, not total</td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">Phase 3C — contrast</td>
+          <td style="color:var(--green)">closure/category/family</td>
+          <td><span class="vbs">GP / BS</span></td>
+          <td style="color:var(--green)">0.994–0.998</td>
+          <td style="color:var(--dim)">Structural labels remain persistent across the boundary</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════ §8 SUPPORTED / NOT CLAIMED ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§9</span> EPISTEMIC STATUS — SUPPORTED CLAIMS / NOT CLAIMED</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title">SUPPORTED BY THE COMPLETED CORPUS</div>
+    <div style="font-size:9px;font-family:var(--mono);line-height:2;color:var(--text)">
+      <div style="color:var(--green)">✓ Charge-boundary objects separate into 4 structural layers</div>
+      <div style="color:var(--green)">✓ Primitive external closures, confined fractional coordinates, composite closures, and boundary absences play different roles</div>
+      <div style="color:var(--green)">✓ Charge-value encodings and route/closure encodings produce different chamber behavior</div>
+      <div style="color:var(--green)">✓ Same Q/e = +1 does not imply same structural route</div>
+      <div style="color:var(--green)">✓ Pairwise same-charge structural_route_pair_code: Stable Structure at Aκ = 1.000</div>
+      <div style="color:var(--green)">✓ Phase 3 allowed transitions percolate strongly under STRUC-PERC-I</div>
+      <div style="color:var(--green)">✓ Route-transition and closure-transition encodings reach Geometric Persistence</div>
+      <div style="color:var(--green)">✓ Phase 3 result survives expansion from 7 to 38 transitions</div>
+      <div style="color:var(--green)">✓ Raw total-charge coordinates become less decisive as corpus expands</div>
+      <div style="color:var(--green)">✓ Boundary-route preservation is a stronger structural reading than charge conservation alone</div>
+      <div style="color:var(--green)">✓ Phase 3C mixed corpus remains globally connected under STRUC-PERC-I (42/42 FP)</div>
+      <div style="color:var(--green)">✓ route_transition_code collapses to SB/TS in Phase 3C (from GP/BS in Phase 3B)</div>
+      <div style="color:var(--green)">✓ closure_transition_code remains GP/BS in Phase 3C — the boundary is route-selective</div>
+      <div style="color:var(--green)">✓ Charge balance is necessary but not sufficient for route-transition admissibility</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">NOT CLAIMED BY THIS CORPUS</div>
+    <div style="font-size:9px;font-family:var(--mono);line-height:2;color:var(--text2)">
+      <div style="color:var(--red)">✗ Full derivation of the Standard Model</div>
+      <div style="color:var(--red)">✗ Complete particle-decay database</div>
+      <div style="color:var(--red)">✗ Proof of confinement</div>
+      <div style="color:var(--red)">✗ Proof that all possible transition expansions preserve this exact profile</div>
+      <div style="color:var(--red)">✗ That categorical numeric codes are physical magnitudes</div>
+      <div style="color:var(--red)">✗ That charge value is irrelevant</div>
+      <div style="color:var(--red)">✗ That route structure replaces charge conservation</div>
+      <div style="color:var(--green)">✓ Forbidden / constrained transitions ARE now tested (Phase 3C; 48 tests)</div>
+      <div style="color:var(--red)">✗ That Phase 3C corpus is exhaustive — it is controlled (48 tests), not complete</div>
+      <div style="color:var(--red)">✗ That mock transitions propose physical processes — they are diagnostic constructs</div>
+      <div style="color:var(--red)">✗ That Phase 3C derives Standard Model selection rules</div>
+      <div style="color:var(--dim)">Correct claim: within the tested corpus, charge equality and charge conservation are not sufficient descriptions. Route and closure coordinates carry persistent structural information. Charge balance is necessary but not sufficient for route-transition admissibility.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ §10 NEXT WORK ════════════════════ -->
+<div class="sec-label"><span class="sec-num">§10</span> NEXT WORK — PHASE 3C COMPLETE · PHASE 3D / ABLATION NEXT</div>
+
+<div class="panel">
+  <div class="panel-title">PHASE 3C IS COMPLETE — NEXT RESEARCH BRANCHES</div>
+  <div class="row3" style="margin-top:8px">
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">PHASE 3D</div>
+      <p>Expand Phase 3C from 48 rows to 72–96 rows. Separate mock, constrained, and physically searched channels more finely to localize which group drives route-transition collapse.</p>
+    </div>
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">PHASE 3C-A — ABLATION</div>
+      <p>Run allowed-only, charge-violating-only, free-fractional-only, route-incoherent-only, and constrained-only chamber batches to determine which group contributes most to the route_transition_code collapse.</p>
+    </div>
+    <div class="principle" style="margin-bottom:0">
+      <div class="principle-eye">PHYSICS REFINEMENT</div>
+      <p>Replace selected mock rows with PDG upper-bound channels and selection-rule examples. Ground the Phase 3C boundary-pressure result in experimentally-bounded processes while preserving the same schema.</p>
+    </div>
+  </div>
+  <div class="caution" style="margin-top:10px">The goal is not to change the Phase 3C conclusion, but to localize the boundary mechanism more sharply.</div>
+</div>
+
+<!-- ════════════════════ CLOSING PRINCIPLE ════════════════════ -->
+<div class="sep"></div>
+
+<div class="closing">
+  <h3>FINAL INTEGRATED STATEMENT</h3>
+  <p>Charge Boundary Routing I establishes a routed view of charge. The completed six-phase empirical chain shows that <code>charge value is a projection; structural route is a coordinate; composite closure, fractional confinement, and boundary absence are different regimes; same charge does not imply same route; allowed transitions preserve route / closure structure; forbidden transitions remain connected but lose route-transition admissibility.</code></p>
+  <p>The project does not replace charge conservation. It refines it. The visible law is <code>Σ Q = Σ Q</code>. The structural invariant is: <code>which admissible route / closure transformation carries the charge boundary through the transition?</code> Phase 3C shows that charge balance is necessary but not sufficient for this invariant.</p>
+  <p>Phases 1–3C are complete. The manuscript (v7) is the first complete manuscript candidate. Phase 3D, ablation testing, and physics-aligned refinement are the next research branches.</p>
+</div>
+
+<!-- DATA SOURCE NOTE -->
+<div class="scope" style="margin-top:20px">
+Data sources: PDG RPP 2026 Summary Tables (leptons, gauge/Higgs, quarks, mesons, baryons, searches) · Phase 3B transitions from established branching ratios · Phase 3C corpus: 48 rows, 71 columns, 43 ladders — phase3C_forbidden_constrained_transition_corpus.csv · Chamber results: PHASE3C_FORBIDDEN_BOUNDARY_chamber_comparison_report.txt · All claims scoped to tested corpus · Pilot corpus · Phases 1–3C complete
+</div>
+
+</div><!-- /shell -->
+</body>
+</html>

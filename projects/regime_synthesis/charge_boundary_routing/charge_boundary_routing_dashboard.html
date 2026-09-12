@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charge Boundary Routing I — UNNS</title>
+<style>
+:root{
+  --bg:#040810;--panel:#07101e;--border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --violet:#9060e0;--gold:#d4a020;--charge:#c0d830;--frac:#e050c0;--comp:#50c0e0;
+  --text:#b8cce0;--dim:#3a5070;--text2:#6080a0;
+  --mono:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:48px 20px}
+ 
+.shell{width:100%;max-width:880px}
+ 
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:36px 32px 28px;
+  margin-bottom:0;
+}
+/* Radial glow top-center */
+.hero::before{
+  content:'';position:absolute;
+  top:-60px;left:50%;transform:translateX(-50%);
+  width:600px;height:260px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,200,240,.13),transparent 70%);
+  pointer-events:none;
+}
+/* Bottom gradient rule */
+.hero::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--charge) 20%,var(--comp) 50%,var(--frac) 80%,transparent 100%);
+}
+ 
+/* eyebrow */
+.eye{
+  font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:var(--dim);
+  margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
+}
+.eye-right{letter-spacing:.14em;color:rgba(0,200,240,.4)}
+ 
+/* main title */
+.hero-title-block{margin-bottom:22px;position:relative;z-index:1}
+.hero-label{
+  font-family:var(--mono);font-size:clamp(11px,1.6vw,14px);
+  letter-spacing:.28em;color:rgba(0,200,240,.5);
+  margin-bottom:6px;font-weight:400;
+}
+.hero-name{
+  font-family:var(--mono);
+  font-size:clamp(22px,4.2vw,42px);
+  letter-spacing:.05em;line-height:1;
+  color:var(--accent);
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+}
+.hero-name-i{
+  font-size:.6em;color:rgba(0,200,240,.35);letter-spacing:.12em;
+  border-left:1px solid rgba(0,200,240,.2);padding-left:12px;
+}
+.hero-sub{
+  font-family:var(--mono);font-size:clamp(8px,1.1vw,11px);
+  letter-spacing:.1em;color:var(--text2);
+  margin-top:10px;line-height:1.6;
+}
+ 
+/* ═══ DIAGRAM ═══ */
+.hero-diagram{
+  margin:16px 0;width:100%;overflow:hidden;
+  border:1px solid var(--border2);background:rgba(4,8,16,.6);
+}
+.hero-diagram svg{display:block;width:100%}
+ 
+/* principle strip */
+.hero-principle{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+  color:var(--text2);margin-top:4px;position:relative;z-index:1;
+}
+.hero-principle::before{content:'';flex:0 0 18px;height:1px;background:var(--gold)}
+.hero-principle em{color:var(--gold);font-style:normal}
+.hero-principle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+ 
+/* status pills */
+.status{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0 22px}
+.pill{font-family:var(--mono);font-size:7.5px;letter-spacing:.1em;padding:3px 10px;
+  border-radius:2px;border:1px solid}
+.p-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.p-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.p-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.p-dim{color:var(--dim);border-color:var(--dim)}
+ 
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+@media(max-width:920px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:660px){.cards{grid-template-columns:1fr}}
+ 
+.card{background:var(--panel);border:1px solid var(--border);padding:20px 18px;
+  display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;
+  text-decoration:none;color:inherit;transition:border-color .18s,transform .18s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.c1::before{background:linear-gradient(90deg,var(--accent),var(--comp))}
+.c2::before{background:linear-gradient(90deg,var(--amber),var(--charge))}
+.c3::before{background:linear-gradient(90deg,var(--green),var(--comp))}
+.c4::before{background:linear-gradient(90deg,var(--red),var(--gold),var(--accent))}
+.card:hover{border-color:rgba(0,200,240,.32);transform:translateY(-2px)}
+.card:hover .card-arrow{opacity:1;transform:translateX(0)}
+ 
+.card-type{font-family:var(--mono);font-size:7px;letter-spacing:.18em;color:var(--dim)}
+.card-icon{font-size:24px;line-height:1;margin:1px 0}
+.card-title{font-family:var(--mono);font-size:11.5px;color:var(--accent);
+  letter-spacing:.04em;line-height:1.4}
+.card-desc{font-size:10px;color:var(--text2);line-height:1.75;flex:1}
+.card-meta{font-family:var(--mono);font-size:8px;color:var(--dim);
+  border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
+.card-arrow{font-size:10px;color:var(--accent);opacity:.4;
+  transform:translateX(-4px);transition:all .18s;align-self:flex-end}
+ 
+/* FOOTER */
+.foot{font-family:var(--mono);font-size:8px;color:var(--dim);
+  text-align:center;line-height:2}
+.foot a{color:var(--dim);text-decoration:none}
+.foot a:hover{color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="shell">
+ 
+<!-- ═══════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════ -->
+<div class="hero">
+ 
+  <div class="eye">
+    <span>UNNS SUBSTRATE RESEARCH PROGRAM</span>
+    <span class="eye-right">unns.tech</span>
+  </div>
+ 
+  <div class="hero-title-block">
+    <div class="hero-label">CHARGE BOUNDARY ROUTING</div>
+    <div class="hero-name">
+      Charge Boundary Routing
+      <span class="hero-name-i">DASHBOARD</span>
+    </div>
+    <div class="hero-sub">
+      Fractional Coordinates &nbsp;·&nbsp; Composite Closure &nbsp;·&nbsp; Route-Preserving Transitions &nbsp;·&nbsp; Phases 1–3C
+    </div>
+  </div>
+ 
+  <!-- ═══ MAIN DIAGRAM ═══ -->
+  <div class="hero-diagram">
+  <svg viewBox="0 0 860 188" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <!-- glows -->
+      <filter id="gA" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+        <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.75  0 0 0 0 0.85  0 0 0 0 0.18  0 0 0 0.6 0"/>
+        <feBlend in="SourceGraphic" mode="over"/>
+      </filter>
+      <filter id="gB" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+        <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.85  0 0 0 0 0.18  0 0 0 0 0.75  0 0 0 0.6 0"/>
+        <feBlend in="SourceGraphic" mode="over"/>
+      </filter>
+      <filter id="gC" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+        <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.18  0 0 0 0 0.72  0 0 0 0 0.85  0 0 0 0.6 0"/>
+        <feBlend in="SourceGraphic" mode="over"/>
+      </filter>
+      <filter id="gD" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+        <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0 0.12  0 0 0 0.5 0"/>
+        <feBlend in="SourceGraphic" mode="over"/>
+      </filter>
+      <filter id="glow-line">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <!-- arrow markers -->
+      <marker id="arr-route" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 L1.5,3.5Z" fill="#50c0e0" opacity=".9"/>
+      </marker>
+      <marker id="arr-term" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 L1.5,3.5Z" fill="#e04040" opacity=".8"/>
+      </marker>
+      <marker id="arr-frag" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 L1.5,3.5Z" fill="#3a5070" opacity=".9"/>
+      </marker>
+      <!-- gradient fills -->
+      <linearGradient id="fillA" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c0d830" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#c0d830" stop-opacity=".06"/>
+      </linearGradient>
+      <linearGradient id="fillB" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e050c0" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#e050c0" stop-opacity=".06"/>
+      </linearGradient>
+      <linearGradient id="fillC" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#50c0e0" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#50c0e0" stop-opacity=".06"/>
+      </linearGradient>
+      <linearGradient id="fillD" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e09030" stop-opacity=".18"/>
+        <stop offset="1" stop-color="#e09030" stop-opacity=".04"/>
+      </linearGradient>
+      <linearGradient id="barRoute" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#e04040"/>
+        <stop offset="1" stop-color="#e04040" stop-opacity=".4"/>
+      </linearGradient>
+      <linearGradient id="barClosure" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#00dd88"/>
+        <stop offset="1" stop-color="#00dd88" stop-opacity=".4"/>
+      </linearGradient>
+    </defs>
+ 
+    <!-- ── background ── -->
+    <rect width="860" height="188" fill="#040c18"/>
+    <!-- subtle grid lines -->
+    <line x1="0" y1="94" x2="860" y2="94" stroke="#0a1828" stroke-width=".5"/>
+    <line x1="430" y1="0" x2="430" y2="188" stroke="#0a1828" stroke-width=".5"/>
+ 
+    <!-- ════════════ LEFT: FOUR-LAYER ROUTE ════════════ -->
+ 
+    <!-- Layer A -->
+    <rect x="8" y="20" width="154" height="148" rx="2" fill="url(#fillA)" stroke="#c0d830" stroke-width=".8"/>
+    <rect x="8" y="20" width="154" height="22" rx="2" fill="#c0d830" fill-opacity=".7"/>
+    <text x="85" y="35.5" font-family="Courier New" font-size="8.5" font-weight="bold" fill="#040c18" text-anchor="middle" letter-spacing="1.5">LAYER A</text>
+    <text x="85" y="56" font-family="Courier New" font-size="7" fill="#c0d830" text-anchor="middle" letter-spacing=".5">FREE EXTERNAL</text>
+    <text x="85" y="67" font-family="Courier New" font-size="7" fill="#c0d830" text-anchor="middle" letter-spacing=".5">CLOSURE STATES</text>
+    <line x1="18" y1="76" x2="152" y2="76" stroke="#c0d830" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="85" y="91" font-family="Courier New" font-size="8" font-style="italic" fill="#8090a0" text-anchor="middle">14 objects</text>
+    <text x="85" y="106" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">e±, μ±, τ±, ν</text>
+    <text x="85" y="117" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">γ, W±, Z⁰, H</text>
+    <line x1="18" y1="127" x2="152" y2="127" stroke="#c0d830" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="85" y="141" font-family="Courier New" font-size="6" fill="#c0d830" fill-opacity=".7" text-anchor="middle">FREE_INTEGER (8)</text>
+    <text x="85" y="153" font-family="Courier New" font-size="6" fill="#c0d830" fill-opacity=".7" text-anchor="middle">FREE_NEUTRAL (6)</text>
+    <text x="85" y="168" font-family="Courier New" font-size="5.5" font-style="italic" fill="#3a5070" text-anchor="middle">boundary-recession route</text>
+ 
+    <!-- A→B arrow: dashed grey (charge frags / route percs) -->
+    <line x1="162" y1="94" x2="175" y2="94" stroke="#3a5070" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-frag)"/>
+    <text x="168.5" y="85" font-family="Courier New" font-size="5.5" fill="#2a3848" text-anchor="middle">frag/perc</text>
+ 
+    <!-- Layer B -->
+    <rect x="178" y="20" width="154" height="148" rx="2" fill="url(#fillB)" stroke="#e050c0" stroke-width=".8"/>
+    <rect x="178" y="20" width="154" height="22" rx="2" fill="#e050c0" fill-opacity=".7"/>
+    <text x="255" y="35.5" font-family="Courier New" font-size="8.5" font-weight="bold" fill="#040c18" text-anchor="middle" letter-spacing="1.5">LAYER B</text>
+    <text x="255" y="56" font-family="Courier New" font-size="7" fill="#e050c0" text-anchor="middle" letter-spacing=".5">CONFINED FRACTIONAL</text>
+    <text x="255" y="67" font-family="Courier New" font-size="7" fill="#e050c0" text-anchor="middle" letter-spacing=".5">COORDINATES</text>
+    <line x1="188" y1="76" x2="322" y2="76" stroke="#e050c0" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="255" y="91" font-family="Courier New" font-size="8" font-style="italic" fill="#8090a0" text-anchor="middle">12 objects</text>
+    <text x="255" y="106" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">u, d, s, c, b, t</text>
+    <text x="255" y="117" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">+ 6 antiquarks</text>
+    <line x1="188" y1="127" x2="322" y2="127" stroke="#e050c0" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="255" y="141" font-family="Courier New" font-size="6" fill="#e050c0" fill-opacity=".7" text-anchor="middle">INT. FRACTIONAL (12)</text>
+    <text x="255" y="153" font-family="Courier New" font-size="6" fill="#e050c0" fill-opacity=".7" text-anchor="middle">Q = ±⅓, ±⅔</text>
+    <text x="255" y="168" font-family="Courier New" font-size="5.5" font-style="italic" fill="#3a5070" text-anchor="middle">turning-locus confinement</text>
+ 
+    <!-- B→C arrow: solid cyan (route-connected) -->
+    <line x1="332" y1="94" x2="345" y2="94" stroke="#50c0e0" stroke-width="1.2" marker-end="url(#arr-route)"/>
+    <text x="338.5" y="85" font-family="Courier New" font-size="5.5" fill="#30809a" text-anchor="middle">route-conn.</text>
+ 
+    <!-- Layer C -->
+    <rect x="348" y="20" width="154" height="148" rx="2" fill="url(#fillC)" stroke="#50c0e0" stroke-width=".8"/>
+    <rect x="348" y="20" width="154" height="22" rx="2" fill="#50c0e0" fill-opacity=".7"/>
+    <text x="425" y="35.5" font-family="Courier New" font-size="8.5" font-weight="bold" fill="#040c18" text-anchor="middle" letter-spacing="1.5">LAYER C</text>
+    <text x="425" y="56" font-family="Courier New" font-size="7" fill="#50c0e0" text-anchor="middle" letter-spacing=".5">COMPOSITE</text>
+    <text x="425" y="67" font-family="Courier New" font-size="7" fill="#50c0e0" text-anchor="middle" letter-spacing=".5">CLOSURES</text>
+    <line x1="358" y1="76" x2="492" y2="76" stroke="#50c0e0" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="425" y="91" font-family="Courier New" font-size="8" font-style="italic" fill="#8090a0" text-anchor="middle">10 objects</text>
+    <text x="425" y="106" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">p, n, Δ++, Ω−</text>
+    <text x="425" y="117" font-family="Courier New" font-size="6.5" fill="#5a6870" text-anchor="middle">π±, π⁰, K±, K⁰</text>
+    <line x1="358" y1="127" x2="492" y2="127" stroke="#50c0e0" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="425" y="141" font-family="Courier New" font-size="6" fill="#50c0e0" fill-opacity=".7" text-anchor="middle">COMP. INTEGER (7)</text>
+    <text x="425" y="153" font-family="Courier New" font-size="6" fill="#50c0e0" fill-opacity=".7" text-anchor="middle">COMP. NEUTRAL (3)</text>
+    <text x="425" y="168" font-family="Courier New" font-size="5.5" font-style="italic" fill="#3a5070" text-anchor="middle">recovery routing</text>
+ 
+    <!-- C→D arrow: red dashed (terminus) -->
+    <line x1="502" y1="94" x2="515" y2="94" stroke="#e04040" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-term)"/>
+    <text x="508.5" y="85" font-family="Courier New" font-size="5.5" fill="#803030" text-anchor="middle">terminus</text>
+ 
+    <!-- Layer D -->
+    <rect x="518" y="20" width="148" height="148" rx="2" fill="url(#fillD)" stroke="#e09030" stroke-width=".8" stroke-dasharray="5,3"/>
+    <rect x="518" y="20" width="148" height="22" rx="2" fill="#e09030" fill-opacity=".55"/>
+    <text x="592" y="35.5" font-family="Courier New" font-size="8.5" font-weight="bold" fill="#040c18" text-anchor="middle" letter-spacing="1.5">LAYER D</text>
+    <text x="592" y="56" font-family="Courier New" font-size="7" fill="#e09030" text-anchor="middle" letter-spacing=".5">BOUNDARY</text>
+    <text x="592" y="67" font-family="Courier New" font-size="7" fill="#e09030" text-anchor="middle" letter-spacing=".5">ABSENCES</text>
+    <line x1="528" y1="76" x2="656" y2="76" stroke="#e09030" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="592" y="91" font-family="Courier New" font-size="8" font-style="italic" fill="#8090a0" text-anchor="middle">4 objects</text>
+    <text x="592" y="106" font-family="Courier New" font-size="6" fill="#4a5a60" text-anchor="middle">free quark (not obs.)</text>
+    <text x="592" y="117" font-family="Courier New" font-size="6" fill="#4a5a60" text-anchor="middle">monopole (not obs.)</text>
+    <text x="592" y="128" font-family="Courier New" font-size="6" fill="#4a5a60" text-anchor="middle">charge-viol. mode</text>
+    <text x="592" y="139" font-family="Courier New" font-size="6" fill="#4a5a60" text-anchor="middle">neutrality constraint</text>
+    <line x1="528" y1="148" x2="656" y2="148" stroke="#e09030" stroke-opacity=".2" stroke-width=".5"/>
+    <text x="592" y="163" font-family="Courier New" font-size="5.5" font-style="italic" fill="#3a5070" text-anchor="middle">terminal obstruction</text>
+ 
+    <!-- ════════════ SEPARATOR ════════════ -->
+    <line x1="676" y1="8" x2="676" y2="180" stroke="#0e2035" stroke-width="1"/>
+ 
+    <!-- ════════════ RIGHT: PHASE 3C CONTRAST ════════════ -->
+    <text x="768" y="16" font-family="Courier New" font-size="6.5" fill="#3a5070" text-anchor="middle" letter-spacing="1.5">PHASE 3C CONTRAST</text>
+    <text x="768" y="27" font-family="Courier New" font-size="6" fill="#2a3848" text-anchor="middle">48 boundary tests · 42/42 FP</text>
+ 
+    <!-- Box: route_transition collapse -->
+    <rect x="684" y="33" width="168" height="64" rx="2" fill="rgba(224,64,64,.06)" stroke="#e04040" stroke-opacity=".35" stroke-width=".8"/>
+    <!-- header -->
+    <text x="695" y="47" font-family="Courier New" font-size="6.5" fill="#e04040" letter-spacing=".5">route_transition_code</text>
+    <!-- 3B bar label -->
+    <text x="695" y="59" font-family="Courier New" font-size="6" fill="#5a6070">Phase 3B</text>
+    <!-- 3B bar -->
+    <rect x="730" y="53" width="107" height="8" rx="1" fill="rgba(144,96,224,.15)" stroke="rgba(144,96,224,.3)" stroke-width=".5"/>
+    <rect x="730" y="53" width="105" height="8" rx="1" fill="#9060e0" fill-opacity=".55"/>
+    <text x="840" y="60" font-family="Courier New" font-size="6" fill="#9060e0" text-anchor="end">0.985</text>
+    <!-- 3C bar label -->
+    <text x="695" y="75" font-family="Courier New" font-size="6" fill="#5a6070">Phase 3C</text>
+    <!-- 3C bar (shorter = lower Ak) -->
+    <rect x="730" y="69" width="107" height="8" rx="1" fill="rgba(224,64,64,.1)" stroke="rgba(224,64,64,.3)" stroke-width=".5"/>
+    <rect x="730" y="69" width="92" height="8" rx="1" fill="url(#barRoute)" fill-opacity=".7"/>
+    <text x="840" y="76" font-family="Courier New" font-size="6" fill="#e04040" text-anchor="end">0.859 ↓</text>
+    <!-- collapse badge -->
+    <rect x="684" y="86" width="91" height="9" rx="1" fill="rgba(224,64,64,.15)" stroke="#e04040" stroke-opacity=".4" stroke-width=".5"/>
+    <text x="729" y="93.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#e04040" text-anchor="middle" letter-spacing=".5">SB / TRANSITIONAL</text>
+ 
+    <!-- Box: closure_transition stable -->
+    <rect x="684" y="105" width="168" height="64" rx="2" fill="rgba(0,221,136,.04)" stroke="#00dd88" stroke-opacity=".3" stroke-width=".8"/>
+    <text x="695" y="119" font-family="Courier New" font-size="6.5" fill="#00dd88" letter-spacing=".5">closure_transition_code</text>
+    <!-- 3B bar -->
+    <text x="695" y="131" font-family="Courier New" font-size="6" fill="#5a6070">Phase 3B</text>
+    <rect x="730" y="125" width="107" height="8" rx="1" fill="rgba(144,96,224,.15)" stroke="rgba(144,96,224,.3)" stroke-width=".5"/>
+    <rect x="730" y="125" width="105" height="8" rx="1" fill="#9060e0" fill-opacity=".55"/>
+    <text x="840" y="132" font-family="Courier New" font-size="6" fill="#9060e0" text-anchor="end">0.984</text>
+    <!-- 3C bar (same/higher = stable) -->
+    <text x="695" y="147" font-family="Courier New" font-size="6" fill="#5a6070">Phase 3C</text>
+    <rect x="730" y="141" width="107" height="8" rx="1" fill="rgba(0,221,136,.08)" stroke="rgba(0,221,136,.25)" stroke-width=".5"/>
+    <rect x="730" y="141" width="107" height="8" rx="1" fill="url(#barClosure)" fill-opacity=".7"/>
+    <text x="840" y="148" font-family="Courier New" font-size="6" fill="#00dd88" text-anchor="end">0.998 ↑</text>
+    <!-- stable badge -->
+    <rect x="684" y="158" width="77" height="9" rx="1" fill="rgba(0,221,136,.1)" stroke="#00dd88" stroke-opacity=".35" stroke-width=".5"/>
+    <text x="722" y="165.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#00dd88" text-anchor="middle" letter-spacing=".5">GP / BOUNDARY-STAB</text>
+ 
+    <!-- KEY LABEL bottom right -->
+    <text x="768" y="180" font-family="Courier New" font-size="5.5" fill="#2a4050" text-anchor="middle" letter-spacing="1">connected · route-admissibility degraded</text>
+  </svg>
+  </div><!-- /hero-diagram -->
+ 
+  <div class="hero-principle">
+    <em>Charge is conserved as a value, but structured as a route.</em>
+    &nbsp; Charge conservation is the visible projection; boundary-route preservation is the structural invariant; charge balance is necessary but not sufficient.
+    &nbsp; <a href="https://unns.tech/media/unns/charge_boundary_routing/Charge Boundary-Route Preservation Law.pdf" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">Read the law paper →</a>
+  </div>
+ 
+</div><!-- /hero -->
+ 
+<!-- ═══════════════════════════════════════════════
+     STATUS + CARDS
+═══════════════════════════════════════════════ -->
+<div class="status">
+  <span class="pill p-green">PHASES 1–3C COMPLETE</span>
+  <span class="pill p-green">40 OBJECTS · 5 BRIDGES · 38 ALLOWED</span>
+  <span class="pill p-red">48 BOUNDARY TESTS · ROUTE COLLAPSE Aκ=0.859</span>
+  <span class="pill p-green">CLOSURE STABLE GP/BS Aκ=0.998</span>
+  <span class="pill p-red">BOUNDARY-ROUTE LAW FORMALIZED</span>
+  <span class="pill p-amber">STRUC-I · STRUC-PERC-I v2.5.0</span>
+  <span class="pill p-dim">PDG RPP 2026</span>
+</div>
+ 
+<div class="cards">
+ 
+  <a class="card c1" href="https://unns.tech/media/unns/charge_boundary_routing/Charge_Boundary_Routing.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Manuscript · PDF</div>
+    <div class="card-icon">📄</div>
+    <div class="card-title">Charge Boundary Routing:<br>Fractional Coordinates,<br>Composite Closure, and<br>Route-Preserving Transitions</div>
+    <div class="card-desc">Full working manuscript. Six-phase empirical program: boundary classification, bridge geometry, same-charge route control, seed and expanded transition dynamics, and Phase 3C forbidden/constrained boundary tests. Includes 7 figures, 6 tables, and Appendices A–D.</div>
+    <div class="card-meta">Phases 1–3C · v7 · 37 pages · 2026</div>
+    <div class="card-arrow">→</div>
+  </a>
+ 
+  <a class="card c2" href="https://unns.tech/media/unns/charge_boundary_routing/charge_boundary_routing_i.zip" target="_blank" rel="noopener">
+    <div class="card-type">Data &amp; Corpus · ZIP</div>
+    <div class="card-icon">📦</div>
+    <div class="card-title">Data and Corpus<br>Construction</div>
+    <div class="card-desc">Complete corpus archive: canonical CSVs (Layers A–D, Phase 3B transitions, Phase 3C boundary tests), one-column ladder files, STRUC-PERC-I and STRUC-I chamber result JSONs, derived summaries, and chamber comparison reports.</div>
+    <div class="card-meta">40 objects · 38 + 48 transitions · 6 PDG source tables</div>
+    <div class="card-arrow">→</div>
+  </a>
+ 
+  <a class="card c3" href="https://unns.tech/media/unns/charge_boundary_routing/charge_boundary_routing_i_analytics.html" target="_blank" rel="noopener">
+    <div class="card-type">Analytics · HTML</div>
+    <div class="card-icon">📊</div>
+    <div class="card-title">Charge Boundary Routing<br>Analytics Dashboard</div>
+    <div class="card-desc">Interactive analytics covering all six phases. Route taxonomy diagram, bridge geometry cards, same-charge control bars, seed and expansion comparisons, Phase 3C contrast table (route collapse vs closure stability), cross-phase STRUC-I summary, and epistemic status.</div>
+    <div class="card-meta">§0–§10 · Six-phase · Phase 3C contrast included</div>
+    <div class="card-arrow">→</div>
+  </a>
+ 
+
+  <a class="card c4" href="https://unns.tech/media/unns/charge_boundary_routing/Charge Boundary-Route Preservation Law.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Law Paper · PDF</div>
+    <div class="card-icon">⚖️</div>
+    <div class="card-title">The Charge Boundary-Route<br>Preservation Law</div>
+    <div class="card-desc">The theoretical extraction from Charge Boundary Routing I. It formalizes the central law-level result: charge conservation is the visible projection, boundary-route preservation is the structural invariant, and charge balance is necessary but not sufficient for transition admissibility.</div>
+    <div class="card-meta">Derived law · Route admissibility · Phase 3C evidence</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+</div>
+ 
+<div class="foot">
+  <a href="https://unns.tech" target="_blank" rel="noopener">unns.tech</a>
+  &nbsp;·&nbsp; UNNS Substrate Research Program &nbsp;·&nbsp; 2026
+</div>
+ 
+</div><!-- /shell -->
+</body>
+</html>
