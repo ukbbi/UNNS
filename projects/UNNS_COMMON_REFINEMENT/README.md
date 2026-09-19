@@ -1,77 +1,71 @@
 # UNNS Common Refinement
 
-**Research title:** Common Refinement and Structural Route Closure in the UNNS Substrate
+**Research title:** *Common Refinement and Structural Route Closure in the UNNS Substrate*
+
+> **Core question:** When two factorization routes reach the same endpoint, what structural property guarantees that they admit a common deeper refinement?
+
+---
 
 ## Research question
 
 Given an endpoint equality
 
-[
-ab=cd,
-]
+```text
+ab = cd
+```
 
-when must there exist a common deeper factorization
+when must there exist factors `e, f, g, h` such that
 
-[
-a=ef,qquad
-b=gh,qquad
-c=eg,qquad
-d=fh?
-]
+```text
+a = ef
+b = gh
+c = eg
+d = fh
+```
 
 UNNS reads this as a distinction between **endpoint equivalence** and **structural route closure**:
-two routes may reach the same endpoint without necessarily possessing a common deeper ancestry.
 
-The project began with positive-integer controls, exact non-refinement systems, and affine monoids,
-then used those results to audit the candidate Lean proof of Conway's refinement conjecture for
-omnific integers.
+> Two routes may reach the same endpoint without necessarily possessing a common deeper ancestry.
+
+The project began with positive-integer controls, exact non-refinement systems, and affine monoids, then used those results to audit the candidate Lean proof of Conway's refinement conjecture for omnific integers.
 
 ---
 
-## Central result
+# Central result
 
-The decisive cross-regime property is
+The decisive cross-regime property is:
 
-[
-oxed{	ext{primal factor traceability}.}
-]
+> **Primal factor traceability**
 
-For an element (a), traceability means
+For an element `a`, traceability means:
 
-[
-amid cd
-Longrightarrow
-a=ef,qquad emid c,qquad fmid d.
-]
+```text
+a | cd
+    ↓
+a = ef,   e | c,   f | d
+```
 
-This is exactly the standard algebraic notion that (a) is **primal**.
+This is exactly the standard algebraic notion that `a` is **primal**.
 
-Under the cancellative hypotheses used in the project,
+Under the cancellative hypotheses used in the project:
 
-[
-oxed{
-orall a,operatorname{IsPrimal}(a)
-iff
-	ext{global four-factor refinement}.
-}
-]
+```text
+every element is primal
+        ⇔
+global four-factor refinement
+```
 
-So the common structural law is not gcd structure, unique factorization, atomic freeness, support
-rank, or transfinite descent.
+So the common structural law is **not** gcd structure, unique factorization, atomic freeness, support rank, or transfinite descent.
 
 It is:
 
-[
-oxed{
-	ext{factor traceability}
-iff
-	ext{route closure}.
-}
-]
+```text
+factor traceability  ⇔  route closure
+```
 
-The domain-specific mechanisms differ; the invariant does not.
+The **domain-specific mechanisms differ**; the invariant does not.
 
-See:
+**Primary references**
 
 - `05_UNNS/definitions/ROUTE_TRACEABILITY_EQUIVALENCE.md`
 - `outputs/reports/DECISIVE_COMPARATIVE_SYNTHESIS.md`
@@ -79,86 +73,90 @@ See:
 
 ---
 
-## Integer control regime
+# Integer control regime
 
 For positive integers, the refinement square follows from the classical gcd/coprime mechanism.
 
 Starting with
 
-[
-ab=cd,
-]
+```text
+ab = cd
+```
 
 set
 
-[
-e=gcd(a,c),qquad a=ef,qquad c=eg,qquad gcd(f,g)=1.
-]
+```text
+e = gcd(a,c)
+a = ef
+c = eg
+gcd(f,g) = 1
+```
 
 Then
 
-[
-fb=gd,
-]
+```text
+fb = gd
+```
 
-so coprimality forces
-
-[
-gmid b,qquad fmid d,
-]
-
-and hence
-
-[
-b=gh,qquad d=fh.
-]
-
-The gcd is therefore the **mechanism** establishing traceability, not the cross-domain invariant.
-
-The deterministic control corpus contains 500 verified positive-integer cases.
-
-Primary exact chamber:
-
-`chambers/REF-I/REF_I.py`
-
-Quick test:
+and coprimality forces
 
 ```text
+g | b
+f | d
+```
+
+so
+
+```text
+b = gh
+d = fh
+```
+
+The gcd is therefore the **mechanism establishing traceability**, not the cross-domain invariant.
+
+The deterministic control corpus contains **500 verified positive-integer cases**.
+
+**Primary exact chamber**
+
+```text
+chambers/REF-I/REF_I.py
+```
+
+**Quick test**
+
+```bash
 python chambers/REF-I/REF_I.py 6 10 12 5
 ```
 
 ---
 
-## Exact non-refinement controls
+# Exact non-refinement controls
 
 The flagship failure system is
 
-[
-H=langle2,3angle,
-]
+```text
+H = <2,3>
+```
 
 with
 
-[
-2+4=3+3.
-]
+```text
+2 + 4 = 3 + 3
+```
 
 There is no internal refinement witness.
 
-The same example is also an exact primality failure: the atom (2) participates in the combined
-route (3+3) but cannot be routed into either (3) individually.
+The same example is also an exact primality failure: the atom `2` participates in the combined route `3 + 3` but cannot be routed into either `3` individually.
 
-Thus the project identifies the failure mechanism as
+Therefore:
 
-[
-oxed{
-	ext{loss of factor traceability}
-=
-	ext{loss of common refinement}.
-}
-]
+```text
+loss of factor traceability
+            =
+loss of common refinement
+```
 
-See:
+**References**
 
 - `02_NONREF/systems/NONREF_THEORY.md`
 - `02_NONREF/output/counterexamples.csv`
@@ -166,91 +164,71 @@ See:
 
 ---
 
-## Rank-one route-closure theorem
+# Rank-one route-closure theorem
 
-For a nonzero additive submonoid
+For a nonzero additive submonoid `H ⊆ N₀`, let
 
-[
-Hsubseteqmathbb N_0,
-]
+```text
+m = min(H \ {0})
+γ = gcd(H)
+```
 
-let
+The project establishes:
 
-[
-m=min(Hsetminus{0}),
-qquad
-gamma=gcd(H).
-]
+```text
+H has global refinement
+        ⇔
+m = γ
+        ⇔
+H = γN₀
+```
 
-The project establishes
+Define the **Route-Closure Index**
 
-[
-oxed{
-H	ext{ has global refinement}
-iff
-m=gamma
-iff
-H=gammamathbb N_0.
-}
-]
+```text
+RCI(H) = m / γ
+```
 
-Define the Route-Closure Index
+Then:
 
-[
-operatorname{RCI}(H)=rac{m}{gamma}.
-]
+```text
+RCI(H) = 1  ⇔  global common refinement
+```
 
-Then
+The implementation validation scanned **793 generator families** and verified the constructive counterexample mechanism throughout the tested non-refinable families.
 
-[
-operatorname{RCI}(H)=1
-iff
-	ext{global common refinement}.
-]
+**Reference**
 
-The implementation validation scanned 793 generator families and verified the constructive
-counterexample mechanism throughout the tested non-refinable families.
-
-See:
-
-`02_NONREF/systems/RANK1_ROUTE_CLOSURE_THEOREM.md`
+- `02_NONREF/systems/RANK1_ROUTE_CLOSURE_THEOREM.md`
 
 ---
 
-## Positive affine route-closure theorem
+# Positive affine route-closure theorem
 
-For a positive affine monoid (H), let (mathcal A(H)) be its atom set and let
+For a positive affine monoid `H`, let `A(H)` be its atom set and let
 
-[
-r=operatorname{rank}operatorname{gp}(H).
-]
+```text
+r = rank(gp(H))
+```
 
-Define the Atom-Relation Defect
+Define the **Atom-Relation Defect**
 
-[
-operatorname{ARD}(H)
-=
-|mathcal A(H)|-r.
-]
+```text
+ARD(H) = |A(H)| - r
+```
 
-In the finite positive-affine setting treated here,
+In the finite positive-affine setting treated here:
 
-[
-oxed{
-	ext{global refinement}
-iff
-	ext{every atom is prime}
-iff
-Hcongmathbb N_0^r
-iff
-operatorname{ARD}(H)=0.
-}
-]
+```text
+global refinement
+    ⇔ every atom is prime
+    ⇔ H ≅ N₀^r
+    ⇔ ARD(H) = 0
+```
 
-This shows that lattice saturation or geometric normality alone is not enough: atomic relations can
-destroy factor traceability even in geometrically well-behaved monoids.
+This shows that **lattice saturation or geometric normality alone is not enough**: atomic relations can destroy factor traceability even in geometrically well-behaved monoids.
 
-See:
+**References**
 
 - `02_NONREF/systems/AFFINE_ROUTE_CLOSURE_THEOREM.md`
 - `02_NONREF/output/affine_examples.csv`
@@ -258,76 +236,63 @@ See:
 
 ---
 
-## Candidate Conway proof: structural anatomy
+# Candidate Conway proof: structural anatomy
 
 The audited candidate proof is pinned to:
 
 ```text
-gaearon/conway-refinement
-commit 264445c93b78554c408e99e4e7f663693b4e91ab
+Repository: gaearon/conway-refinement
+Commit:     264445c93b78554c408e99e4e7f663693b4e91ab
 ```
 
-The source-level proof spine is:
+Its load-bearing structural spine is:
 
 ```text
 finite support-class primality
-    ↓
+        ↓
 support-class stratification
-    ↓
+        ↓
 common-tail quotient local refinement
-    ↓
+        ↓
 retained-block factorization
-    ↓
+        ↓
 strict decrease of support-class order type
-    ↓
+        ↓
 primality of the residual by induction
-    ↓
+        ↓
 ambient transport
-    ↓
+        ↓
 primal splice
-    ↓
+        ↓
 global primality
-    ↓
+        ↓
 four-factor refinement
-    ↓
+        ↓
 transport to omnific integers
 ```
 
-The decisive decreasing quantity is
+The decisive decreasing quantity is the **order type of the nonzero support Archimedean classes**.
 
-[
-ho(x)
-=
-operatorname{orderType}
-(	ext{nonzero support Archimedean classes of }x),
-]
+The invariant propagated through the argument is:
 
-while the invariant propagated through the argument is
-
-[
-operatorname{IsPrimal}(x).
-]
+```text
+IsPrimal(x)
+```
 
 The structural summary is therefore:
 
-[
-oxed{
-	ext{rank decreases while factor traceability survives}.
-}
-]
+> **Rank decreases while factor traceability survives.**
 
-See:
+**References**
 
 - `03_OMNIFIC/output/STRUCTURAL_DESCENT_ANATOMY.md`
 - `03_OMNIFIC/output/CONWAY_STRUCTURAL_SPINE.md`
 
 ---
 
-## Verification status of the candidate Conway proof
+# Verification status of the candidate Conway proof
 
 A dedicated verification protocol has been executed against the pinned commit.
-
-Current status:
 
 | Verification layer | Status |
 |---|---|
@@ -335,15 +300,15 @@ Current status:
 | Axiom / proof-trust audit | **PASS** |
 | Exact-commit repository CI build | **PASS** |
 | Dependency-spine audit | **PASS** |
-| Independent mathematical primality→refinement reconstruction | **PASS** |
+| Independent mathematical primality → refinement reconstruction | **PASS** |
 | Independent local targeted final-theorem build | **PASS** |
 | Critical transfinite-step source reconstruction | **PASS** |
 | Independent Lean re-formalization of the critical step | **OPEN** |
 | Independent specialist mathematical review | **OPEN** |
 
-The independent Windows build used Lean 4.31.0 and successfully ran:
+The independent Windows build used **Lean 4.31.0** and successfully ran:
 
-```text
+```bash
 lake build ConwayRefinement.Surreal.OmnificInteger.Refinement.ConwayRefinement
 ```
 
@@ -353,8 +318,7 @@ with:
 Build completed successfully (2649 jobs).
 ```
 
-The exact-commit CI also completed the full repository build and audited 13,114 project declarations,
-whose transitive axiom closure reduced to:
+The exact-commit CI also completed the full repository build and audited **13,114 project declarations**, whose transitive axiom closure reduced to:
 
 ```text
 propext
@@ -362,22 +326,16 @@ Classical.choice
 Quot.sound
 ```
 
-The strongest justified status is therefore:
+### Current strongest justified status
 
-[
-oxed{
-	ext{mechanically verified candidate proof}
-+
-	ext{independent local theorem build}
-+
-	ext{strong source-level audit}
-}
-]
+> **Mechanically verified candidate proof + independent local theorem build + strong source-level audit**
 
-Full independent mathematical confirmation remains incomplete until the critical transfinite step is
-re-formalized independently and the proof receives specialist mathematical review.
+Full independent mathematical confirmation remains incomplete until:
 
-See:
+1. the critical transfinite step is re-formalized independently in Lean;
+2. the proof receives specialist mathematical review.
+
+**Verification references**
 
 - `03_OMNIFIC/verification/CONWAY_VERIFICATION_PROTOCOL.md`
 - `03_OMNIFIC/verification/LOCAL_BUILD_EVIDENCE.md`
@@ -388,36 +346,37 @@ See:
 
 ---
 
-## Reproducible decisive synthesis
+# Reproducible decisive synthesis
 
 The cross-regime synthesis is mechanically reproducible.
 
-Windows runner:
+**Windows runner**
 
-```text
+```bat
 scripts\RUN_SYNTHESIS.bat
 ```
 
-Canonical builder:
+**Canonical builder**
 
-```text
+```bash
 python scripts/BUILD_SYNTHESIS.py
 ```
 
-Check-only mode:
+**Check-only mode**
 
-```text
+```bash
 python scripts/BUILD_SYNTHESIS.py --check
 ```
 
 Pinned canonical inputs:
 
-`scripts/SYNTHESIS_INPUTS.json`
+```text
+scripts/SYNTHESIS_INPUTS.json
+```
 
-The build validates the integer baseline, rank-one failure controls, affine controls, and audited
-Conway evidence before regenerating the approved synthesis artifacts byte-for-byte.
+The build validates the integer baseline, rank-one failure controls, affine controls, and audited Conway evidence before regenerating the approved synthesis artifacts byte-for-byte.
 
-See:
+**References**
 
 - `scripts/README_SYNTHESIS.md`
 - `outputs/records/SYNTHESIS_BUILD.json`
@@ -425,13 +384,13 @@ See:
 
 ---
 
-## Role of the chambers
+# Role of the chambers
 
-The chamber roles are now sharply separated.
+The chamber roles are deliberately separated.
 
 ### REF-I
 
-`REF-I` is the exact algebraic witness/failure layer.
+`REF-I` is the **exact algebraic witness/failure layer**.
 
 ### STRUC-I and STRUC-PERC-I
 
@@ -445,36 +404,28 @@ They must not be used to prove:
 - the affine theorem;
 - Conway refinement.
 
-A legitimate future experiment is to ask whether algebraic loss of factor traceability has a stable
-perturbative/percolative structural phenotype, but such chamber results would remain orthogonal to
-the theorem proof.
+A legitimate future experiment is to ask whether algebraic loss of factor traceability has a stable perturbative or percolative structural phenotype. Such chamber results would remain orthogonal to theorem proof.
 
 ---
 
-## Historical abstractions
+# Historical abstractions
 
-During the investigation, broader transfinite abstractions were built and audited. Those exercises
-helped separate a genuine invariant from proof-specific machinery.
+During the investigation, broader transfinite abstractions were built and audited. Those exercises were useful because they separated a genuine invariant from proof-specific machinery.
 
 The key correction was:
 
-[
-oxed{
-	ext{well-founded descent is a mechanism, not the common law}.
-}
-]
+> **Well-founded descent is a mechanism, not the common law.**
 
-The mature project therefore centers the exact algebraic traceability/refinement equivalence rather
-than the earlier provisional transfinite schemas.
+The mature project therefore centers the exact algebraic **traceability ⇔ refinement** equivalence rather than the earlier provisional transfinite schemas.
 
 ---
 
-## Project structure
+# Project structure
 
 ```text
 UNNS_COMMON_REFINEMENT/
 ├── 01_INTEGER/        positive-integer controls
-├── 02_NONREF/         exact failure systems, rank-one and affine theorems
+├── 02_NONREF/         exact failures, rank-one and affine theorems
 ├── 03_OMNIFIC/        Conway bridge, structural anatomy, verification
 ├── 04_PROOF_MAP/      dependency and realization maps
 ├── 05_UNNS/           structural definitions and theorem interpretations
@@ -489,44 +440,47 @@ UNNS_COMMON_REFINEMENT/
 └── README.md
 ```
 
-Temporary verification clones under `scripts/CONWAY_VERIFY_TMP/` are intentionally ignored by Git.
+Temporary verification clones under
+
+```text
+scripts/CONWAY_VERIFY_TMP/
+```
+
+are intentionally ignored by Git.
 
 ---
 
-## What has been established
+# What has been established
 
-At the current project state:
-
-1. Positive integers provide an exact successful refinement control.
-2. Explicit additive monoids provide exact non-refinement controls.
-3. Rank-one additive submonoids of (mathbb N_0) are classified by (m=gamma).
-4. Positive affine refinement is characterized by prime atoms / atomic independence / (operatorname{ARD}=0).
-5. Across successful and failed regimes, the exact separator is primal factor traceability.
-6. The candidate omnific proof is structurally understood as a transfinite construction of that traceability.
-7. The decisive comparative synthesis is reproducible.
-8. The pinned candidate Conway theorem module has passed an independent local Lean build.
+1. **Positive integers** provide an exact successful refinement control.
+2. **Explicit additive monoids** provide exact non-refinement controls.
+3. **Rank-one additive submonoids of N₀** are classified by `m = γ`.
+4. **Positive affine refinement** is characterized by prime atoms / atomic independence / `ARD = 0`.
+5. Across successful and failed regimes, the exact separator is **primal factor traceability**.
+6. The candidate omnific proof is structurally understood as a **transfinite construction of traceability**.
+7. The decisive comparative synthesis is **reproducible**.
+8. The pinned candidate Conway theorem module has passed an **independent local Lean build**.
 
 ---
 
-## Current frontier
+# Current frontier
 
 The project no longer needs more examples to identify the surviving property.
 
 The two strongest theorem-confirmation tasks still open are:
 
-1. **independent Lean re-formalization of the critical transfinite induction step**;
-2. **independent specialist mathematical review of the Hahn-series / surreal mechanism**.
+1. **Independent Lean re-formalization of the critical transfinite induction step**
+2. **Independent specialist mathematical review of the Hahn-series / surreal mechanism**
 
 Beyond theorem confirmation lies a stronger research problem:
 
-> If common refinement exists, is there a structurally privileged or canonical refinement?
+> **If common refinement exists, is there a structurally privileged or canonical refinement?**
 
-That **Canonical Refinement Problem** is a distinct next stage and should not be conflated with the
-already-solved existence/traceability question.
+That **Canonical Refinement Problem** is a distinct next stage and should not be conflated with the already-solved existence/traceability question.
 
 ---
 
-## Status discipline
+# Status discipline
 
 This repository distinguishes carefully between:
 
@@ -537,7 +491,6 @@ This repository distinguishes carefully between:
 - candidate-proof dependence;
 - UNNS structural interpretation.
 
-In particular, the equivalence between global primality / pre-Schreier structure and four-factor
-refinement is classical algebra. The project contribution is the exact UNNS identification of that
-property as **structural route traceability**, together with the comparative finite-to-transfinite
-synthesis and its reproducible audit trail.
+In particular, the equivalence between global primality / pre-Schreier structure and four-factor refinement is classical algebra.
+
+The project contribution is the exact UNNS identification of that property as **structural route traceability**, together with the comparative finite-to-transfinite synthesis and its reproducible audit trail.
