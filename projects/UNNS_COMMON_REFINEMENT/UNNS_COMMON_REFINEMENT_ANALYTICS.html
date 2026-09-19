@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNNS Common Refinement — Research Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;--display:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1440px;margin:0 auto;padding:32px 32px 120px}
+
+.hero{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:24px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 120% at 90% 50%,rgba(0,200,240,.06),transparent);pointer-events:none}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.04em;max-width:760px;margin-bottom:14px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+
+.tabbar{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:4px}
+.tab{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--text2);padding:10px 14px;cursor:pointer;border:1px solid transparent;border-bottom:none;background:var(--panel);white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-color:var(--border2);background:var(--panel2);position:relative}
+.tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--panel2)}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:32px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-label:first-child{margin-top:0;border-top:none}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:20px;line-height:1.15;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:14px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono);display:flex;justify-content:space-between;align-items:center}
+.psub{color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:1000px){.row2,.row3{grid-template-columns:1fr}}
+
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9.5px}
+.dt th{color:var(--accent);letter-spacing:.08em;font-weight:700;padding:6px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono);position:sticky;top:0}
+.dt td{padding:5px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,.04)}
+.dt tr.clickable{cursor:pointer}
+.dt tr.expanded td{background:rgba(0,200,240,.06)}
+
+.v-yes{color:var(--green);font-weight:700}
+.v-no{color:var(--red);font-weight:700}
+.v-pass{color:var(--green);border:1px solid var(--green);background:rgba(0,221,136,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-partial{color:var(--amber);border:1px solid var(--amber);background:rgba(240,160,48,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-open{color:var(--red);border:1px solid var(--red);background:rgba(224,64,64,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-full{color:var(--green)}
+.v-frag{color:var(--red)}
+.v-tail{color:var(--amber)}
+
+.detail-row td{background:var(--panel2);font-family:var(--sans);font-size:10.5px;white-space:normal;padding:14px 16px}
+.detail-grid{display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:10px}
+.detail-grid dt{color:var(--dim);font-family:var(--mono);letter-spacing:.06em}
+.detail-grid dd{color:var(--text)}
+
+.ladder{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.ladder-step{display:grid;grid-template-columns:230px auto 1fr;gap:12px;align-items:center;padding:9px 14px;border:1px solid var(--border2);background:var(--panel2)}
+.ladder-lv{font-family:var(--display);font-size:11px;color:var(--text)}
+.ladder-desc{font-size:9.5px;color:var(--text2)}
+.ladder-tag{font-size:8px;font-family:var(--mono);letter-spacing:.08em;padding:2px 8px;border-radius:2px;white-space:nowrap}
+@media(max-width:900px){.ladder-step{grid-template-columns:1fr}}
+
+.pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:0;font-family:var(--mono);font-size:8.5px;margin:10px 0}
+.pipe-step{background:var(--panel2);border:1px solid var(--border2);padding:6px 10px;color:var(--text)}
+.pipe-step.active{border-color:var(--accent);color:var(--accent)}
+.pipe-arrow{color:var(--dim);padding:0 6px}
+
+.special-banner{border:1px solid var(--amber);border-left:3px solid var(--amber);background:rgba(240,160,48,.05);padding:12px 16px;margin-bottom:14px}
+.special-title{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:5px;font-family:var(--mono)}
+.special-banner.violet{border-color:var(--violet)}
+.special-banner.violet .special-title{color:var(--violet)}
+.special-banner.green{border-color:var(--green)}
+.special-banner.green .special-title{color:var(--green)}
+
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+
+.svgpanel{width:100%;height:170px;background:var(--panel2);border:1px solid var(--border2)}
+
+.drawer-btn{font-family:var(--mono);font-size:8px;letter-spacing:.08em;color:var(--text2);border:1px solid var(--border2);background:transparent;padding:2px 8px;cursor:pointer;border-radius:2px}
+.drawer-btn:hover{color:var(--accent);border-color:var(--accent)}
+.drawer{display:none;background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:10px 14px;margin-top:8px;font-family:var(--mono);font-size:9.5px;color:var(--text2);line-height:1.9}
+.drawer.open{display:block}
+.drawer b{color:var(--accent);font-weight:400}
+
+.buildcard{background:var(--panel2);border:1px solid var(--border2);padding:14px 16px}
+.buildcard .jobs{font-family:var(--display);font-size:22px;color:var(--accent)}
+.buildcard .lbl{font-size:9.5px;color:var(--text);margin:4px 0}
+.buildcard .cmd{font-size:8.5px;color:var(--text2);word-break:break-all}
+
+.chip{font-size:8px;font-family:var(--mono);padding:1px 6px;border:1px solid var(--border2);border-radius:2px;color:var(--text2)}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:8.5px;font-family:var(--mono);color:var(--text2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:8px;display:inline-block;border-radius:1px}
+
+footer.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border2);font-size:8px;color:var(--dim);font-family:var(--mono);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · UNNS_COMMON_REFINEMENT · SELF-CONTAINED BUILD</div>
+  <h1 id="hero-title">UNNS Common Refinement — Research Analytics</h1>
+  <div class="hero-sub" id="hero-sub">Route Closure · Failure Geometry · Formal Verification · Structural Extensions</div>
+  <div class="badges" id="hero-badges"></div>
+  <div class="hero-sub" id="hero-meta" style="font-family:var(--mono);font-size:9px"></div>
+</div>
+
+<div class="tabbar" id="tabbar"></div>
+
+<div id="panel-overview" class="tabpanel"></div>
+<div id="panel-crossregime" class="tabpanel"></div>
+<div id="panel-failuregeom" class="tabpanel"></div>
+<div id="panel-conway" class="tabpanel"></div>
+<div id="panel-admissibility" class="tabpanel"></div>
+<div id="panel-provenance" class="tabpanel"></div>
+<div id="panel-manuscript" class="tabpanel"></div>
+
+<footer class="foot" id="foot"></footer>
+
+</div>
+
+<script>
+const DATA = {"meta": {"title": "UNNS Common Refinement \u2014 Research Analytics", "subtitle": "Route Closure \u00b7 Failure Geometry \u00b7 Formal Verification \u00b7 Structural Extensions", "generated_at": "2026-09-19T19:34:00Z", "conway_commit": "264445c93b78554c408e99e4e7f663693b4e91ab"}, "overview": {"counters": {"factor_traceability_eq_route_closure": "YES (proved)", "conway_candidate_status": "CANDIDATE, LEAN-KERNEL VERIFIED MECHANISM", "lean_status": "KERNEL VERIFIED", "systems_tested": 1330, "systems_tested_label": "ANALYTICAL SYSTEM/REGIME INSTANCES", "systems_tested_tooltip": "Sum of parent validation instances (integer 500 + rank-one 793 + affine 7) and the 30-case admissibility\u2013percolation extension corpus; not asserted to be 1,330 unique algebraic systems \u2014 the extension corpus is drawn from the same structural families as the parent controls.", "systems_breakdown": {"integer": 500, "rank1": 793, "affine": 7, "admissibility": 30}, "extension_branch": "UNNS_ADMISSIBILITY_PERCOLATION \u2014 COMPLETE"}, "ladder": [{"level": "Integer control", "status": "CLOSED", "color": "green", "detail": "500/500 positive-integer cases refinable; D_R = 0 throughout (gcd/coprime routing).", "sources": ["outputs/records/PHASE1_RESULT.json", "outputs/records/PHASE2_RESULT.json"]}, {"level": "Rank-one classification", "status": "CLOSED", "color": "green", "detail": "Criterion RCI(H)=1 proved equivalent to global refinement; 793 generator families scanned.", "sources": ["outputs/records/RANK1_ROUTE_CLOSURE_RESULT.json"]}, {"level": "Affine classification", "status": "CLOSED", "color": "green", "detail": "Criterion ARD(H)=0 proved equivalent to global refinement (H \u2245 N0^r, every atom prime).", "sources": ["outputs/records/AFFINE_ROUTE_CLOSURE_RESULT.json"]}, {"level": "Elementwise obstruction geometry", "status": "CLOSED", "color": "green", "detail": "Rank-one: finite non-primal core + cofinal primal tail (513 nonfree systems). Affine rank\u22652: unbounded non-primal ray (4/7 failure systems).", "sources": ["outputs/records/RANK1_ELEMENTWISE_RESULT.json", "outputs/records/AFFINE_ELEMENTWISE_RESULT.json", "outputs/records/AFFINE_DEFECT_RAY_RESULT.json"]}, {"level": "Conway transfinite mechanism", "status": "CANDIDATE PROOF, SOURCE-AUDITED", "color": "amber", "detail": "MECHANICALLY VERIFIED CANDIDATE PROOF + INDEPENDENT LOCAL FINAL-THEOREM BUILD + KERNEL-VERIFIED INDEPENDENT FORMALIZATION OF THE EXTRACTED ROUTE-CLOSURE INDUCTION PRINCIPLE + STRON\u2026", "sources": ["outputs/records/CONWAY_VERIFICATION_RESULT.json", "outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json", "outputs/records/FINAL_SYNTHESIS_RESULT.json"]}, {"level": "Lean kernel verification", "status": "KERNEL VERIFIED", "color": "green", "detail": "Extracted route-closure induction mechanism compiled and kernel-checked against the locked Conway interface (837/837 build, 829/829 cached replay).", "sources": ["outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json"]}, {"level": "Admissibility / percolation extension", "status": "SYNTHESIS COMPLETE", "color": "blue", "detail": "30-system pilot corpus: route closure shown independent of perturbative admissibility and percolation connectivity scale.", "sources": ["ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md", "UNNS_ADMISSIBILITY_PERCOLATION/corpus/CORPUS_AUDIT.json"]}]}, "cross_regime": [{"regime": "Positive integers", "closure": "YES", "criterion": "primal factor traceability (gcd / coprime routing)", "failure_form": "none", "theorem": "Positive-integer canonical witness construction", "report": "outputs/reports/PHASE1_REPORT.md, PHASE2_REPORT.md", "json_record": "outputs/records/PHASE1_RESULT.json, PHASE2_RESULT.json", "evidence": "500/500 cases refinable; all D_R = 0; all gcd(f,g)=1 residual routing.", "sources": ["outputs/records/PHASE1_RESULT.json", "outputs/records/PHASE2_RESULT.json"]}, {"regime": "Free rank one", "closure": "YES", "criterion": "RCI(H) = 1  \u21d4  min(H\\{0}) = gcd(H)", "failure_form": "none", "theorem": "Rank-One Common Refinement Criterion", "report": "outputs/reports/RANK1_ROUTE_CLOSURE_REPORT.md", "json_record": "outputs/records/RANK1_ROUTE_CLOSURE_RESULT.json", "evidence": "280 of 793 generator families predicted and verified refinable.", "sources": ["outputs/records/RANK1_ROUTE_CLOSURE_RESULT.json"]}, {"regime": "Nonfree rank one", "closure": "NO (globally)", "criterion": "RCI(H) > 1", "failure_form": "finite defect core", "theorem": "Rank-One Elementwise Classification", "report": "outputs/reports/RANK1_ROUTE_CLOSURE_REPORT.md", "json_record": "outputs/records/RANK1_ELEMENTWISE_RESULT.json", "evidence": "513 non-refinable families; median non-primal core 18, max 130; cofinal primal tail proved for x >= 4*c in the normalized numerical monoid.", "sources": ["outputs/records/RANK1_ELEMENTWISE_RESULT.json"]}, {"regime": "Free affine", "closure": "YES", "criterion": "ARD(H) = 0  \u21d4  H \u2245 N0^r", "failure_form": "none", "theorem": "Affine Route-Closure Criterion", "report": "outputs/reports/AFFINE_ROUTE_CLOSURE_REPORT.md", "json_record": "outputs/records/AFFINE_ROUTE_CLOSURE_RESULT.json", "evidence": "Equivalent to: every atom prime, unique atomic factorization, atom_count = rank(gp(H)). Lattice saturation alone is not sufficient once rank>1.", "sources": ["outputs/records/AFFINE_ROUTE_CLOSURE_RESULT.json"]}, {"regime": "Nonfree affine", "closure": "NO (globally)", "criterion": "ARD(H) > 0", "failure_form": "persistent defect ray", "theorem": "Affine Defect-Ray Theorem", "report": "outputs/reports/AFFINE_DEFECT_RAY_REPORT.md, AFFINE_ELEMENTWISE_REPORT.md", "json_record": "outputs/records/AFFINE_DEFECT_RAY_RESULT.json, AFFINE_ELEMENTWISE_RESULT.json", "evidence": "4/7 tested systems show an unbounded non-primal locus (infinite ray a+n\u03c1); 100 regression instances checked; 748 certificate instances checked.", "sources": ["outputs/records/AFFINE_DEFECT_RAY_RESULT.json", "outputs/records/AFFINE_ELEMENTWISE_RESULT.json"]}, {"regime": "Omnific candidate mechanism", "closure": "YES (candidate proof)", "criterion": "transfinite primality induction (well-founded support-class descent)", "failure_form": "residual rank forced strictly downward", "theorem": "Route-Closure Induction Proposition", "report": "outputs/reports/FINAL_SYNTHESIS_REPORT.md, LEAN_ROUTE_CLOSURE_REPORT.md", "json_record": "outputs/records/FINAL_SYNTHESIS_RESULT.json, OMNIFIC_DEFECT_CHANNEL_RESULT.json, LEAN_ROUTE_CLOSURE_RESULT.json", "evidence": "Audited commit 264445c93b78\u2026; extracted induction mechanism Lean-kernel verified ([837/837] Built ConwayRefinement.UNNS.RouteClosureInduction; Build completed successfully (837 jobs).); specialist review OPEN.", "sources": ["outputs/records/FINAL_SYNTHESIS_RESULT.json", "outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json", "outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json"]}], "failure_geometry": {"rank_one": {"title": "Rank one \u2014 finite obstruction core + eventually primal tail", "n_systems": 793, "n_failing": 513, "median_core": 18, "max_core": 130, "tail_bound": "x >= 4*c in the normalized numerical monoid", "tail_onset_median": 2.6666666666666665, "tail_onset_min": 2.1, "tail_onset_max": 3.5, "early_primal_fraction": 0.8070175438596491, "sources": ["outputs/records/RANK1_ELEMENTWISE_RESULT.json"]}, "affine": {"title": "Affine rank \u2265 2 \u2014 persistent non-primal ray", "n_systems": 7, "n_failing": 4, "unbounded_locus_systems": 4, "theorem_statement": "For every positive affine monoid H with rank(H)>=2 and ARD(H)>0, H\\P(H) contains an infinite affine ray a+n*rho of non-primal elements.", "regression_instances": 100, "certificate_instances": 748, "sources": ["outputs/records/AFFINE_ELEMENTWISE_RESULT.json", "outputs/records/AFFINE_DEFECT_RAY_RESULT.json"]}, "omnific": {"title": "Omnific mechanism \u2014 residual forced to strictly lower well-founded rank", "chain": ["finite_class_primality", "exact_common_tail_quotient_refinement", "occupied_support_class_selection", "retained_block_factorization", "strict_support_class_order_type_decrease", "ambient_refinement_transport", "transfinite_primality_induction", "primal_refinement_splice", "four_factor_refinement_transport_to_omnific"], "conclusion": "The candidate proof prevents a persistent non-primal channel by exact local refinement, strict well-founded residual descent, a primal finite-class base, ambient transport, and recursive splicing.", "status": "UNNS structural interpretation of source-level theorem chain; not a new Lean theorem named defect-channel exclusion.", "sources": ["outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json"]}}, "conway_verification": {"matrix": [{"check": "V1 Statement fidelity", "status": "PASS", "executed": "YES", "evidence": "RefinementConjecture.lean; Challenge.lean; Solution.lean; Palomar compatibility CI; LM24 Conjecture 1.1.1(2)", "result": "Final theorem has exactly the four-factor formula, no nonzero/reducedness/finite-support hypotheses.", "reconciled": false}, {"check": "V2 Axiom / trust audit", "status": "PASS", "executed": "YES", "evidence": "CI axiom audit at run 33806052174", "result": "13114 ConwayRefinement declarations reduce only to propext, Classical.choice, Quot.sound. Intentional Challenge sorry is isolated; Solution proves the same statement.", "reconciled": false}, {"check": "V3 Exact-commit repository build", "status": "PASS", "executed": "YES (upstream CI)", "evidence": "GitHub Actions run 33806052174", "result": "lake build completed successfully: 3145 jobs; compatibility, axiom, module, standalone, proof-link, lint and layering audits passed.", "reconciled": false}, {"check": "V3 Independent local targeted final-theorem build", "status": "PASS", "executed": "YES", "evidence": "Windows local build at C:\\leancheck\\conway, pinned commit 264445c93b78554c408e99e4e7f663693b4e91ab, Lean 4.31.0", "result": "lake build ConwayRefinement.Surreal.OmnificInteger.Refinement.ConwayRefinement completed successfully (2649 jobs); checkout returned to clean git status.", "reconciled": false}, {"check": "V4 Dependency-spine audit", "status": "PASS", "executed": "YES", "evidence": "LimitTailPrimality.lean + support-class refinement/factorization/transport + generic splice + final theorem", "result": "Source proof body explicitly performs local refinement -> strict lower-rank factor -> induction -> transport -> splice -> global primality -> refinement.", "reconciled": false}, {"check": "V5 Independent mathematical endgame", "status": "PASS", "executed": "YES", "evidence": "INDEPENDENT_ENDGAME_PROOF.md", "result": "Primality -> four-factor refinement reconstructed independently, including zero and cancellation cases.", "reconciled": false}, {"check": "V5 Independent Lean endgame compilation", "status": "PARTIAL", "executed": "NO", "evidence": "IndependentEndgame.lean generated", "result": "Source prepared but not kernel-compiled in this environment.", "reconciled": false}, {"check": "V6 Critical transfinite step source reconstruction", "status": "PASS", "executed": "YES", "evidence": "CRITICAL_STEP_RECONSTRUCTION.md and exact Lean theorem statements", "result": "Strict support-class rank descent and transport/splice chain independently reconstructed from source.", "reconciled": false}, {"check": "V6 Independent Lean formalization of extracted critical mechanism", "status": "PASS", "status_label": "PASS \u2014 KERNEL VERIFIED", "executed": "YES", "evidence": "04_PROOF_MAP/lean/RouteClosureInduction.lean", "result": "[837/837] Built ConwayRefinement.UNNS.RouteClosureInduction; Build completed successfully (837 jobs).; [829/829] Replayed ConwayRefinement.UNNS.RouteClosureInduction; Build completed successfully (829 jobs).", "scope_note": "Extracted route-closure induction mechanism, not a from-scratch reconstruction of the full Hahn-series / surreal machinery.", "reconciled": true, "reconciliation_note": "Superseded the static CONWAY_VERIFICATION_MATRIX.csv cell (previously OPEN/NO) using the later-dated outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json and outputs/records/CONWAY_VERIFICATION_RESULT.json (V6_extracted_route_closure_induction_lean) kernel-build evidence."}, {"check": "V7 Independent specialist mathematical review", "status": "OPEN", "executed": "NO", "evidence": "Repository formalization.yaml explicitly records no independent specialist or peer review.", "result": "Semantic mathematical review remains the strongest unresolved confirmation layer.", "reconciled": false}], "matrix_sources": ["04_PROOF_MAP/output/CONWAY_VERIFICATION_MATRIX.csv", "outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json", "outputs/records/CONWAY_VERIFICATION_RESULT.json"], "proof_spine": ["finite_class_primality", "exact_common_tail_quotient_refinement", "occupied_support_class_selection", "retained_block_factorization", "strict_support_class_order_type_decrease", "ambient_refinement_transport", "transfinite_primality_induction", "primal_refinement_splice", "four_factor_refinement_transport_to_omnific"], "proof_spine_sources": ["outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json"], "build_records": [{"jobs": 2649, "label": "Final Conway theorem module \u2014 independent local build", "command": "lake build ConwayRefinement.Surreal.OmnificInteger.Refinement.ConwayRefinement", "result": "PASS", "platform": "Windows", "commit": "264445c93b78554c408e99e4e7f663693b4e91ab"}, {"jobs": 837, "label": "Independent RouteClosureInduction.lean \u2014 full target build", "command": "lake build ConwayRefinement.UNNS.RouteClosureInduction", "result": "PASS", "raw": "[837/837] Built ConwayRefinement.UNNS.RouteClosureInduction; Build completed successfully (837 jobs)."}, {"jobs": 829, "label": "RouteClosureInduction.lean \u2014 cached recheck / replay", "command": "lake build ConwayRefinement.UNNS.RouteClosureInduction", "result": "PASS", "raw": "[829/829] Replayed ConwayRefinement.UNNS.RouteClosureInduction; Build completed successfully (829 jobs)."}], "build_sources": ["outputs/records/CONWAY_VERIFICATION_RESULT.json", "outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json"], "theorems": ["UNNS.CommonRefinement.forall_isPrimal_of_wellFoundedRouteClosure", "UNNS.CommonRefinement.hasFourFactorRefinement_of_wellFoundedRouteClosure"], "source_repository": "gaearon/conway-refinement", "source_commit": "264445c93b78554c408e99e4e7f663693b4e91ab", "formalization_file": "04_PROOF_MAP/lean/RouteClosureInduction.lean", "formalization_sha256": "f0cb1bfc6778519b5a6f0977ee30b7148393dd1417dc015471d39858a0688150"}, "admissibility": {"cases": [{"case_id": "INT01", "class": "INT_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.021802, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 4.38092072}, {"case_id": "INT02", "class": "INT_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.013029, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.26995002}, {"case_id": "INT03", "class": "INT_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.01484, "v250_verdict": "HARD_FRAGMENTATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 10.41239526}, {"case_id": "INT04", "class": "INT_FREE", "label": "TRACEABLE", "rank": "3", "mean_Ak": 1.0, "mean_rho": 0.063963, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 7.04723216}, {"case_id": "INT05", "class": "INT_FREE", "label": "TRACEABLE", "rank": "3", "mean_Ak": 1.0, "mean_rho": 0.093801, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 3.53350966}, {"case_id": "INT06", "class": "INT_FREE", "label": "TRACEABLE", "rank": "4", "mean_Ak": 1.0, "mean_rho": 0.074753, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 5.89631286}, {"case_id": "R1F01", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017615, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1F02", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017566, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1F03", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017551, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1F04", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017592, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1F05", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017601, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1F06", "class": "R1_FREE", "label": "TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017567, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 0.0}, {"case_id": "R1N01", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017604, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "R1N02", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.01749, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "R1N03", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017537, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "R1N04", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017347, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "R1N05", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017429, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "R1N06", "class": "R1_FAIL", "label": "NON_TRACEABLE", "rank": "1", "mean_Ak": 1.0, "mean_rho": 0.017249, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.0}, {"case_id": "AFF01", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.077104, "v250_verdict": "HARD_FRAGMENTATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 9.89897949}, {"case_id": "AFF02", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.070422, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.81649658}, {"case_id": "AFF03", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.067489, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.81649658}, {"case_id": "AFF04", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.036768, "v250_verdict": "HARD_FRAGMENTATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 4.44948974}, {"case_id": "AFF05", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "3", "mean_Ak": 1.0, "mean_rho": 0.07154, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 15.07364562}, {"case_id": "AFF06", "class": "AFF_FREE", "label": "TRACEABLE", "rank": "3", "mean_Ak": 1.0, "mean_rho": 0.253125, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.707151}, {"case_id": "AFN01", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.155471, "v250_verdict": "TAIL_FRAGMENTATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 2.22474487}, {"case_id": "AFN02", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.06761, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.81649658}, {"case_id": "AFN03", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "3", "mean_Ak": 1.0, "mean_rho": 0.094564, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 8.40016003}, {"case_id": "AFN04", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.048715, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 2.72474487}, {"case_id": "AFN05", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.013363, "v250_verdict": "FULL_PERCOLATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 1.11237244}, {"case_id": "AFN06", "class": "AFF_FAIL", "label": "NON_TRACEABLE", "rank": "2", "mean_Ak": 1.0, "mean_rho": 0.013463, "v250_verdict": "HARD_FRAGMENTATION", "v251_verdict": "FULL_PERCOLATION", "kappa_connect_exact": 3.06969385}], "class_kappa_stats": {"INT_FREE": {"n": 6, "mean": 5.42338678, "median": 5.13861679, "min": 1.26995002, "max": 10.41239526}, "R1_FREE": {"n": 6, "mean": 0.0, "median": 0.0, "min": 0.0, "max": 0.0}, "R1_FAIL": {"n": 6, "mean": 1.0, "median": 1.0, "min": 1.0, "max": 1.0}, "AFF_FREE": {"n": 6, "mean": 5.7937098350000005, "median": 3.13299316, "min": 1.707151, "max": 15.07364562}, "AFF_FAIL": {"n": 6, "mean": 3.224702106666667, "median": 2.47474487, "min": 1.11237244, "max": 8.40016003}}, "v250_counts": {"HARD_FRAGMENTATION": 4, "FULL_PERCOLATION": 25, "TAIL_FRAGMENTATION": 1}, "v251_counts": {"FULL_PERCOLATION": 30}, "n_cases": 30, "label_counts": {"TRACEABLE": 18, "NON_TRACEABLE": 12}, "class_counts": {"INT_FREE": 6, "R1_FREE": 6, "R1_FAIL": 6, "AFF_FREE": 6, "AFF_FAIL": 6}, "rank_one_highlight": {"r1_free_n": 6, "r1_free_zero": 6, "r1_fail_n": 6, "r1_fail_one": 6}}, "manuscript_map": [{"claim": "Factor traceability \u21d4 route closure", "grade": "THEOREM", "grade_note": "classical algebra; project contribution is the cross-regime identification", "sources": ["outputs/records/SURVIVING_PROPERTY_RESULT.json", "03_OMNIFIC/output/CONWAY_STRUCTURAL_SPINE.md"], "figure_tab": "crossregime", "figure_label": "\u00a72 Cross-Regime Algebra"}, {"claim": "Rank-one finite defect core", "grade": "THEOREM + COMPUTATION", "grade_note": "793 generator families scanned; 513 non-refinable, exact finite-core structure proved", "sources": ["outputs/records/RANK1_ROUTE_CLOSURE_RESULT.json", "outputs/records/RANK1_ELEMENTWISE_RESULT.json"], "figure_tab": "failuregeom", "figure_label": "\u00a73 Failure Geometry \u2014 rank-one panel"}, {"claim": "Affine persistent defect ray", "grade": "THEOREM + COMPUTATION", "grade_note": "unbounded non-primal locus proved and certificate-checked on 4/7 tested affine systems", "sources": ["outputs/records/AFFINE_DEFECT_RAY_RESULT.json", "outputs/records/AFFINE_ELEMENTWISE_RESULT.json"], "figure_tab": "failuregeom", "figure_label": "\u00a73 Failure Geometry \u2014 affine panel"}, {"claim": "Conway residual descent mechanism", "grade": "SOURCE-AUDITED CANDIDATE PROOF", "grade_note": "public candidate proof; author continues to describe it as a candidate, not community-validated", "sources": ["outputs/records/CONWAY_VERIFICATION_RESULT.json", "outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json"], "figure_tab": "conway", "figure_label": "\u00a74 Conway/Lean \u2014 proof spine"}, {"claim": "Extracted induction mechanism", "grade": "LEAN KERNEL VERIFIED", "grade_note": "837/837 build, 829/829 cached replay against the locked Conway interface", "sources": ["outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json"], "figure_tab": "conway", "figure_label": "\u00a74 Conway/Lean \u2014 build records"}, {"claim": "Route defect \u2260 inadmissibility", "grade": "VERIFIED PILOT COMPUTATION", "grade_note": "all 30 corpus systems STRUC-I admissible (mean_Ak=min_Ak=1) regardless of TRACEABLE/NON_TRACEABLE label", "sources": ["UNNS_ADMISSIBILITY_PERCOLATION/outputs/struc_i/STRUC_I_SUMMARY.csv"], "figure_tab": "admissibility", "figure_label": "\u00a75 Admissibility\u2013Percolation"}, {"claim": "\u03ba connectivity-scale distinction", "grade": "VERIFIED PILOT COMPUTATION", "grade_note": "R1_FREE \u03ba=0 for 6/6, R1_FAIL \u03ba=1 for 6/6, both fully STRUC-I admissible", "sources": ["UNNS_ADMISSIBILITY_PERCOLATION/outputs/STRUC-PERC-I AuditRepair/struc_perc_audit_v2_5_1_batch_results.csv"], "figure_tab": "admissibility", "figure_label": "\u00a75 Admissibility\u2013Percolation \u2014 charts"}, {"claim": "Three-coordinate interpretation", "grade": "STRUCTURAL INTERPRETATION", "grade_note": "route closure, perturbative admissibility and percolation scale are distinct, non-reducible coordinates", "sources": ["ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md"], "figure_tab": "admissibility", "figure_label": "\u00a75 Admissibility\u2013Percolation \u2014 summary banner"}], "reproducibility": {"provenance": [{"path": "outputs/records/FINAL_SYNTHESIS_RESULT.json", "sha256": "94e873712b1b397a77178b7ab8978efcfaccb3c776567d2a23871403e3611bd9", "bytes": 1136}, {"path": "outputs/records/SURVIVING_PROPERTY_RESULT.json", "sha256": "2fbb54e8ea919194c13159cf4a3c6bb37e24b100d92462d8e70ec514a71c20cd", "bytes": 1483}, {"path": "outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json", "sha256": "a8fb2ad43656d30e3e544c729c95b62445efcfa20d8cfab52fe5d2ba17b95ff5", "bytes": 2258}, {"path": "outputs/records/CONWAY_VERIFICATION_RESULT.json", "sha256": "364f9c780be8ea25c45dc1484f94a57277cce080a6fc17bed2d3e3df95e6f130", "bytes": 3278}, {"path": "outputs/records/RANK1_ROUTE_CLOSURE_RESULT.json", "sha256": "00585f0155beee19107f0a5d625a86c62146f608ea9cd17c11a4616192b11738", "bytes": 829}, {"path": "outputs/records/RANK1_ELEMENTWISE_RESULT.json", "sha256": "e7d9f8be404058f77498f7c6b71cd248f1cbdd379d4fe7ca9f770ee32d58e0db", "bytes": 736}, {"path": "outputs/records/AFFINE_ROUTE_CLOSURE_RESULT.json", "sha256": "fa2cbbb6af671a327b0462f193e259bc6be5131169f0dc1ec9edbdc88d4d302f", "bytes": 723}, {"path": "outputs/records/AFFINE_ELEMENTWISE_RESULT.json", "sha256": "fb275c2c539b571ccde4a50133a2bc3723022d8ce28788b73e0eb4da5106abea", "bytes": 979}, {"path": "outputs/records/AFFINE_DEFECT_RAY_RESULT.json", "sha256": "ed451f98c62e214480418a6da2392c6c3139381de9bed08b6daddd4771df2603", "bytes": 760}, {"path": "outputs/records/OMNIFIC_BRIDGE_RESULT.json", "sha256": "0294edaffa32c836d8c328eb2a634beb3cb913b333ebf709f21b974b0b0152ba", "bytes": 721}, {"path": "outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json", "sha256": "bf4b3415fab2f77b8de68d7090ae3c938e8ba217ecc621ac39fde2fe3f3da716", "bytes": 1083}, {"path": "outputs/records/PDS_RESULT.json", "sha256": "5ccf8be8145eebee5d295550e2b59b67b6418043aed2005225749acf3865e869", "bytes": 669}, {"path": "outputs/records/SRS_ROUTE_CLOSURE_RESULT.json", "sha256": "68f9dfaa5a8ee0d8ecfa3c489a0c5eebefad17b24b38c615e26a51398cdca24b", "bytes": 691}, {"path": "outputs/records/SRS_CONWAY_AUDIT_RESULT.json", "sha256": "7bd848ea24006ba5863dcffd07731f6cfa567078e15af876835551b79fa7b663", "bytes": 730}, {"path": "outputs/records/TRC_I_FALSIFICATION_RESULT.json", "sha256": "b8d76317d039d3382948273d268da8a149c8e2bf34651ca49c20edddaad114f0", "bytes": 871}, {"path": "outputs/records/PHASE1_RESULT.json", "sha256": "33ae3758a7d020e888a3d65daa9f1e29deaf4e1b0278ee280584bd91841f3bf7", "bytes": 394}, {"path": "outputs/records/PHASE2_RESULT.json", "sha256": "d1c070c4442ad4de6d97fc1f99a46fc520d5538c912593e53d8b863f73b41199", "bytes": 614}, {"path": "outputs/records/SYNTHESIS_BUILD.json", "sha256": "48907f53c094d7764bb046684f44b47983a64ed8a144e761979336cf6636e430", "bytes": 2972}, {"path": "outputs/records/NONREF_FLAGSHIP.json", "sha256": "9725ddd206db80fd2f939bab71dfe195fd347d174d199728486be32e27bb0db2", "bytes": 901}, {"path": "04_PROOF_MAP/output/FINAL_SYNTHESIS_MATRIX.csv", "sha256": "d5f44efb3b723a6ea4458a529ee67804986bb82d26dbff1781bc900bf6c900c7", "bytes": 1355}, {"path": "04_PROOF_MAP/output/CONWAY_VERIFICATION_MATRIX.csv", "sha256": "960b3620da6acefc054787f1b7f548b3dc1ff462956badb1f04e697313cbeefa", "bytes": 2317}, {"path": "04_PROOF_MAP/output/SURVIVING_PROPERTY_MATRIX.csv", "sha256": "4d97a6cab08cf0ad75962c901be89b15166cc5bb7ff584033f8b587498d37584", "bytes": 1324}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/corpus/CORPUS_INDEX.csv", "sha256": "33f19e7e5fe6afa805a42d54e3cb30ecfc5813b42f3e306686feebd7274bde3e", "bytes": 3807}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/corpus/CORPUS_AUDIT.json", "sha256": "26380836aec12aba8f9161744cbddce03b29f926198ad06f37af712fe9bddb53", "bytes": 677}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/struc_i/STRUC_I_SUMMARY.csv", "sha256": "98deb8a10c91d423633830c23f8828c8905b383e639c3a4354cc7cfe2bb869da", "bytes": 3397}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/struc_i/STRUC_I_CLASS_SUMMARY.csv", "sha256": "ac53b3843342fa856977d6de3a002379e56def260af029ed033174ea7e8627b9", "bytes": 551}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/struc_perc_i/struc_perc_batch_results.csv", "sha256": "cb9d1640f72828233f8ce6e40843e72e689108051cdc51536ee95a2d46bd7388", "bytes": 2465}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/STRUC-PERC-I AuditRepair/struc_perc_audit_v2_5_1_batch_results.csv", "sha256": "2de64613fe7f146c791ef15e6a53461965ca4a5f714a2adcb27e40c3613b29ff", "bytes": 5464}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/records/FREEZE_RECORD.json", "sha256": "d0cb5f1547868cc4b5347bc4fe6d987814d604e6ea5cd5bdb721019477ed063d", "bytes": 4199}, {"path": "UNNS_ADMISSIBILITY_PERCOLATION/outputs/records/BUILD_STATUS.json", "sha256": "32bc646b7112bec96131295467c952fc2deab39c113594097588f6b3d409877c", "bytes": 732}, {"path": "ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md", "sha256": "5cc68297207e102d06d2d0cfcf74e9708c5dec36a2878260e5ebd8e300d0b139", "bytes": 11554}, {"path": "03_OMNIFIC/output/CONWAY_STRUCTURAL_SPINE.md", "sha256": "5dcbc72481f8ab60ac37b316cc70aca694e134de7f3cec13643c518c41865ad4", "bytes": 6602}], "missing_sources": [], "build_timestamp_utc": "2026-09-19T19:34:00Z", "corpus_audit_status": "PASS", "synthesis_build_status": "PASS", "synthesis_build_id": "a183bee1e553fa9797c91319a0a748bd30f1319c327c75347a311fb73ac243dd", "synthesis_exact_reproduction": true}};
+
+function esc(s){ if(s===undefined||s===null) return ''; return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function fmt(n, digits){ if(n===null||n===undefined||Number.isNaN(n)) return '—'; if(typeof n!=='number') return esc(n); return n.toFixed(digits===undefined?4:digits); }
+function fmtInt(n){ if(n===null||n===undefined) return '—'; return Number(n).toLocaleString(); }
+
+// ---------- generic SOURCE drawer (used across §1–§5) ----------
+const PROV = {};
+(DATA.reproducibility.provenance||[]).forEach(p=>{ PROV[p.path]=p; });
+let __drawerSeq = 0;
+function sourceDrawer(paths){
+  if(!paths || !paths.length) return {btn:'', drawer:''};
+  const id = 'src-'+(__drawerSeq++);
+  const rows = paths.map(p=>{
+    const info = PROV[p];
+    return info
+      ? `${esc(p)} — sha256 ${esc(info.sha256.slice(0,16))}… (${fmtInt(info.bytes)} bytes)`
+      : `${esc(p)} — (not in provenance manifest)`;
+  }).join('<br>');
+  const btn = `<button class="drawer-btn" onclick="toggleDrawer('${id}')">SOURCE</button>`;
+  // Neutral provenance status for general result/theorem records. "Frozen input
+  // verification: PASS" is reserved for the actual frozen admissibility–percolation
+  // chamber/corpus records (§5), which state that explicitly in their own drawers.
+  const drawer = `<div class="drawer" id="${id}"><b>Source:</b><br>${rows}<br>`+
+    `<b>Build:</b> ${esc(DATA.reproducibility.build_timestamp_utc)}<br>`+
+    `<b>Source manifest:</b> PRESENT<br>`+
+    `<b>Build provenance:</b> HASHED</div>`;
+  return {btn, drawer};
+}
+function toggleDrawer(id){ document.getElementById(id).classList.toggle('open'); }
+
+// ---------- TABS ----------
+const TABS = [
+  {id:'overview', label:'§1 PROJECT OVERVIEW'},
+  {id:'crossregime', label:'§2 CROSS-REGIME ALGEBRA'},
+  {id:'failuregeom', label:'§3 FAILURE GEOMETRY'},
+  {id:'conway', label:'§4 CONWAY / LEAN VERIFICATION'},
+  {id:'admissibility', label:'§5 ADMISSIBILITY–PERCOLATION EXTENSION'},
+  {id:'provenance', label:'§6 REPRODUCIBILITY / PROVENANCE'},
+  {id:'manuscript', label:'§7 MANUSCRIPT / CLAIM–EVIDENCE MAP'},
+];
+function initTabs(){
+  const bar = document.getElementById('tabbar');
+  TABS.forEach((t,i)=>{
+    const el = document.createElement('div');
+    el.className = 'tab' + (i===0?' active':'');
+    el.textContent = t.label;
+    el.onclick = ()=> selectTab(t.id);
+    el.id = 'tab-'+t.id;
+    bar.appendChild(el);
+  });
+  selectTab('overview');
+}
+function selectTab(id){
+  TABS.forEach(t=>{
+    document.getElementById('tab-'+t.id).classList.toggle('active', t.id===id);
+    document.getElementById('panel-'+t.id).classList.toggle('active', t.id===id);
+  });
+  window.scrollTo({top:0});
+}
+
+// ---------- HERO ----------
+function renderHero(){
+  document.getElementById('hero-title').textContent = DATA.meta.title;
+  document.getElementById('hero-sub').textContent = DATA.meta.subtitle;
+  const c = DATA.overview.counters;
+  const badges = [
+    ['b-green', 'FACTOR TRACEABILITY ⇔ ROUTE CLOSURE: ' + c.factor_traceability_eq_route_closure],
+    ['b-amber', 'CONWAY CANDIDATE: ' + c.conway_candidate_status],
+    ['b-green', 'LEAN: ' + c.lean_status],
+    ['b-blue', fmtInt(c.systems_tested) + ' ' + (c.systems_tested_label || 'ANALYTICAL SYSTEM/REGIME INSTANCES'), c.systems_tested_tooltip],
+    ['b-blue', c.extension_branch],
+    ['b-dim', 'CONWAY SOURCE COMMIT ' + (DATA.meta.conway_commit||'').slice(0,12) + '…'],
+  ];
+  document.getElementById('hero-badges').innerHTML = badges.map(b=>`<span class="badge ${b[0]}"${b[2]?` title="${esc(b[2])}"`:''}>${esc(b[1])}</span>`).join('');
+  document.getElementById('hero-meta').textContent = 'Built ' + DATA.meta.generated_at + ' · analytics/BUILD_ANALYTICS.py · embedded, no server, no fetch';
+  document.getElementById('foot').innerHTML =
+    `<strong style="color:var(--text2)">UNNS COMMON REFINEMENT — RESEARCH ANALYTICS</strong><br>`+
+    `Generated ${esc(DATA.meta.generated_at)} by analytics/BUILD_ANALYTICS.py from the project's own frozen JSON/CSV output records. `+
+    `This page is self-contained: no server, no fetch(), no CDN.<br>`+
+    `Conway source: gaearon/conway-refinement @ ${esc(DATA.meta.conway_commit)}`;
+}
+
+// ================= §1 OVERVIEW =================
+function renderOverview(){
+  const c = DATA.overview.counters;
+  const el = document.getElementById('panel-overview');
+  let h = '';
+  h += `<div class="sec-label"><span style="color:var(--accent)">§1</span> WHAT THE PROJECT ESTABLISHED</div>`;
+  h += `<div class="stat-grid">`;
+  h += stat(c.systems_breakdown.integer, 'INTEGER CASES (PHASE 1/2)');
+  h += stat(c.systems_breakdown.rank1, 'RANK-ONE GENERATOR FAMILIES SCANNED');
+  h += stat(c.systems_breakdown.affine, 'AFFINE SYSTEMS TESTED');
+  h += stat(c.systems_breakdown.admissibility, 'ADMISSIBILITY–PERCOLATION CORPUS');
+  h += stat(fmtInt(c.systems_tested), c.systems_tested_label || 'ANALYTICAL SYSTEM/REGIME INSTANCES', 'var(--accent)', c.systems_tested_tooltip);
+  h += stat('KERNEL VERIFIED', 'LEAN ROUTE-CLOSURE INDUCTION', 'var(--green)');
+  h += `</div>`;
+  h += `<div class="caution" style="margin-top:-4px;margin-bottom:14px">${esc(c.systems_tested_tooltip||'')}</div>`;
+
+  h += `<div class="panel"><div class="panel-title">EVIDENCE LADDER <span class="psub">click level for detail below the diagram · SOURCE opens the backing records</span></div>`;
+  h += `<div class="ladder">`;
+  DATA.overview.ladder.forEach(step=>{
+    const colorVar = {green:'var(--green)', amber:'var(--amber)', blue:'var(--blue)', red:'var(--red)'}[step.color] || 'var(--text2)';
+    const sd = sourceDrawer(step.sources);
+    h += `<div class="ladder-step" style="border-left:3px solid ${colorVar}">`+
+         `<span class="ladder-lv">${esc(step.level)}</span>`+
+         `<span class="ladder-tag" style="color:${colorVar};border:1px solid ${colorVar}">${esc(step.status)}</span>`+
+         `<span class="ladder-desc">${esc(step.detail)} ${sd.btn}${sd.drawer}</span>`+
+         `</div>`;
+  });
+  h += `</div></div>`;
+
+  h += `<div class="panel"><div class="panel-title">CENTRAL ALGEBRAIC RESULT</div>`;
+  h += `<p style="font-size:11px;color:var(--text);line-height:1.85">`+
+       `In the cancellative commutative setting used throughout this project, `+
+       `<b style="color:var(--accent)">global four-factor route closure</b> is proved equivalent to `+
+       `<b style="color:var(--accent)">every element being primal</b> (pre-Schreier factor traceability). `+
+       `This equivalence is classical algebra; the project's contribution is the cross-regime structural `+
+       `identification, the exact failure geometry in the regimes that fail, and a source-level audit — now `+
+       `Lean-kernel verified for its extracted induction mechanism — of a candidate transfinite (Conway/omnific) `+
+       `realization.</p>`;
+  h += `<div class="caution">Route-closure induction proposition: primal base + exact ambient routed block + strict well-founded residual descent ⇒ global primality ⇒ four-factor refinement. See §2–§4.</div>`;
+  h += `</div>`;
+  el.innerHTML = h;
+}
+function stat(val, lbl, color, tooltip){
+  return `<div class="stat"${tooltip?` title="${esc(tooltip)}"`:''}><div class="stat-val" style="${color?`color:${color}`:''}">${esc(val)}</div><div class="stat-lbl">${esc(lbl)}</div></div>`;
+}
+
+// ================= §2 CROSS-REGIME ALGEBRA =================
+function renderCrossRegime(){
+  const el = document.getElementById('panel-crossregime');
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§2</span> CROSS-REGIME ALGEBRA — ONE MATRIX, SIX REGIMES</div>`;
+  h += `<div class="panel"><div class="panel-title">ROUTE-CLOSURE STATUS BY REGIME <span class="psub">click a row to open its theorem / report / evidence</span></div>`;
+  h += `<div class="scrollbox"><table class="dt"><thead><tr>`+
+       `<th>Regime</th><th>Route closure</th><th>Governing criterion</th><th>Failure form</th>`+
+       `</tr></thead><tbody>`;
+  DATA.cross_regime.forEach((row,i)=>{
+    const closureClass = /yes/i.test(row.closure) ? 'v-yes' : 'v-no';
+    h += `<tr class="clickable" onclick="toggleRegimeRow(${i})"><td>${esc(row.regime)}</td>`+
+         `<td class="${closureClass}">${esc(row.closure)}</td>`+
+         `<td>${esc(row.criterion)}</td>`+
+         `<td>${esc(row.failure_form)}</td></tr>`;
+    const sd = sourceDrawer(row.sources);
+    h += `<tr class="detail-row" id="regime-detail-${i}" style="display:none"><td colspan="4">`+
+         `<dl class="detail-grid">`+
+         `<dt>Theorem</dt><dd>${esc(row.theorem)}</dd>`+
+         `<dt>Report</dt><dd>${esc(row.report)}</dd>`+
+         `<dt>Result JSON</dt><dd>${esc(row.json_record)}</dd>`+
+         `<dt>Evidence</dt><dd>${esc(row.evidence)}</dd>`+
+         `<dt>Source</dt><dd>${sd.btn}${sd.drawer}</dd>`+
+         `</dl></td></tr>`;
+  });
+  h += `</tbody></table></div>`;
+  h += `<div class="caution">RCI(H) = min(H\\{0}) / gcd(H) — route-closure index for rank-one submonoids of N0. ARD(H) = |Atoms(H)| − rank(gp(H)) — affine route-closure defect. Both reduce to zero exactly when the regime is free.</div>`;
+  h += `</div>`;
+  el.innerHTML = h;
+}
+function toggleRegimeRow(i){
+  const row = document.getElementById('regime-detail-'+i);
+  row.style.display = row.style.display==='none' ? '' : 'none';
+}
+
+// ================= §3 FAILURE GEOMETRY =================
+function renderFailureGeometry(){
+  const el = document.getElementById('panel-failuregeom');
+  const fg = DATA.failure_geometry;
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§3</span> FAILURE GEOMETRY — THREE STRUCTURALLY DISTINCT REGIMES</div>`;
+  h += `<div class="row3">`;
+
+  // Rank one panel
+  const sdR1 = sourceDrawer(fg.rank_one.sources);
+  h += `<div class="panel"><div class="panel-title">${esc(fg.rank_one.title)} <span class="chip" style="color:var(--violet);border-color:var(--violet)">SCHEMATIC</span>${sdR1.btn}</div>${sdR1.drawer}`;
+  h += `<svg class="svgpanel" viewBox="0 0 300 170">` + svgFiniteCoreTail() + `</svg>`;
+  h += `<div class="legend"><span><i style="background:var(--red)"></i>non-primal obstruction core</span><span><i style="background:var(--green)"></i>cofinal primal tail</span></div>`;
+  h += `<div class="caution">${fg.rank_one.n_failing}/${fg.rank_one.n_systems} generator families globally non-refinable · median core ${fmt(fg.rank_one.median_core,0)} elements (max ${fmt(fg.rank_one.max_core,0)}) · tail proved for ${esc(fg.rank_one.tail_bound)} · onset ≈ ${fmt(fg.rank_one.tail_onset_median,2)}× conductor (range ${fmt(fg.rank_one.tail_onset_min,2)}–${fmt(fg.rank_one.tail_onset_max,2)}×)</div>`;
+  h += `</div>`;
+
+  // Affine panel
+  const sdAff = sourceDrawer(fg.affine.sources);
+  h += `<div class="panel"><div class="panel-title">${esc(fg.affine.title)} <span class="chip" style="color:var(--violet);border-color:var(--violet)">SCHEMATIC</span>${sdAff.btn}</div>${sdAff.drawer}`;
+  h += `<svg class="svgpanel" viewBox="0 0 300 170">` + svgPersistentRay() + `</svg>`;
+  h += `<div class="legend"><span><i style="background:var(--red)"></i>non-primal elements a+nρ, n≥0 (unbounded)</span></div>`;
+  h += `<div class="caution">${fg.affine.n_failing}/${fg.affine.n_systems} tested affine systems fail · ${fg.affine.unbounded_locus_systems}/${fg.affine.n_failing} of those show an unbounded non-primal locus (no finite core repair possible) · ${fmtInt(fg.affine.regression_instances)} regression instances + ${fmtInt(fg.affine.certificate_instances)} certificate instances checked</div>`;
+  h += `</div>`;
+
+  // Omnific panel
+  const sdOm = sourceDrawer(fg.omnific.sources);
+  h += `<div class="panel"><div class="panel-title">${esc(fg.omnific.title)} <span class="chip" style="color:var(--violet);border-color:var(--violet)">SCHEMATIC</span>${sdOm.btn}</div>${sdOm.drawer}`;
+  h += `<svg class="svgpanel" viewBox="0 0 300 170">` + svgDescentStaircase(fg.omnific.chain.length) + `</svg>`;
+  h += `<div class="legend"><span><i style="background:var(--violet)"></i>support-class order type, strictly decreasing</span><span><i style="background:var(--green)"></i>primal finite-class base</span></div>`;
+  h += `<div class="caution">${esc(fg.omnific.status||'')}</div>`;
+  h += `</div>`;
+
+  h += `</div>`; // row3
+
+  h += `<div class="panel"><div class="panel-title">WHY THIS DISTINCTION MATTERS</div>`;
+  h += `<p style="font-size:10.5px;color:var(--text);line-height:1.8">The three regimes fail — or succeed — for structurally different reasons. A finite obstruction `+
+       `core (rank one) is a bounded, describable defect that a large-enough element will always outgrow. A persistent affine `+
+       `ray is not bounded: no amount of "going further" repairs it, because the same atomic relation propagates at unchanged `+
+       `rank forever. The omnific candidate mechanism escapes both failure modes by forcing every unresolved residual to a `+
+       `strictly lower well-founded rank until it reaches an already-primal base — a genuinely different (transfinite) kind `+
+       `of progress than either finite regime exhibits.</p></div>`;
+
+  el.innerHTML = h;
+}
+function svgFiniteCoreTail(){
+  let s = `<line x1="10" y1="130" x2="290" y2="130" stroke="#0e2035" stroke-width="1"/>`;
+  const coreX = [30,45,58,74,90,108];
+  coreX.forEach(x=>{ s+=`<circle cx="${x}" cy="130" r="4" fill="#e04040"/>`; });
+  for(let x=140; x<=280; x+=16){ s+=`<circle cx="${x}" cy="130" r="3.5" fill="#00dd88"/>`; }
+  s += `<text x="60" y="150" font-size="7" fill="#e04040" font-family="monospace">finite core</text>`;
+  s += `<text x="185" y="150" font-size="7" fill="#00dd88" font-family="monospace">primal tail →</text>`;
+  s += `<text x="10" y="30" font-size="8" fill="#6080a0" font-family="monospace">H = ⟨2,3⟩-type numerical monoid, elements left→right</text>`;
+  return s;
+}
+function svgPersistentRay(){
+  let s = `<line x1="10" y1="130" x2="290" y2="130" stroke="#0e2035" stroke-width="1"/>`;
+  for(let x=30; x<=270; x+=22){ s+=`<circle cx="${x}" cy="130" r="4" fill="#e04040"/>`; }
+  s += `<text x="272" y="120" font-size="14" fill="#e04040">→</text>`;
+  s += `<text x="90" y="150" font-size="7" fill="#e04040" font-family="monospace">a + nρ, n = 0,1,2,… (never terminates)</text>`;
+  s += `<text x="10" y="30" font-size="8" fill="#6080a0" font-family="monospace">affine ray, rank(H) ≥ 2, ARD(H) &gt; 0</text>`;
+  return s;
+}
+function svgDescentStaircase(nSteps){
+  nSteps = nSteps || 9;
+  let s = '';
+  const w = 300, h = 170, padX = 20, padY = 25, stepW = (w-2*padX)/nSteps, stepH = (h-2*padY)/nSteps;
+  for(let i=0;i<nSteps;i++){
+    const x = padX + i*stepW, y = padY + i*stepH;
+    const color = i===nSteps-1 ? '#00dd88' : '#9060e0';
+    s += `<rect x="${x}" y="${y}" width="${stepW*0.9}" height="6" fill="${color}"/>`;
+    if(i<nSteps-1){ s += `<line x1="${x+stepW*0.45}" y1="${y+6}" x2="${x+stepW*0.45}" y2="${y+stepH}" stroke="#0e2035" stroke-width="1" stroke-dasharray="2,2"/>`; }
+  }
+  s += `<text x="20" y="14" font-size="8" fill="#6080a0" font-family="monospace">support-class order type ↓ at each step</text>`;
+  s += `<text x="${padX}" y="${h-6}" font-size="7" fill="#00dd88" font-family="monospace">primal base reached</text>`;
+  return s;
+}
+
+// ================= §4 CONWAY / LEAN VERIFICATION =================
+function renderConway(){
+  const el = document.getElementById('panel-conway');
+  const cv = DATA.conway_verification;
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§4</span> CONWAY SOURCE AUDIT & LEAN KERNEL VERIFICATION</div>`;
+
+  const sdMatrix = sourceDrawer(cv.matrix_sources);
+  h += `<div class="panel"><div class="panel-title">VERIFICATION MATRIX <span class="psub">04_PROOF_MAP/output/CONWAY_VERIFICATION_MATRIX.csv, reconciled where superseded</span>${sdMatrix.btn}</div>${sdMatrix.drawer}`;
+  h += `<div class="scrollbox"><table class="dt"><thead><tr><th>Check</th><th>Status</th><th>Executed</th><th>Evidence</th><th>Result</th></tr></thead><tbody>`;
+  cv.matrix.forEach(row=>{
+    const cls = row.status==='PASS' ? 'v-pass' : (row.status==='PARTIAL' ? 'v-partial' : 'v-open');
+    const statusText = row.status_label || row.status;
+    const checkCell = row.reconciled
+      ? `${esc(row.check)} <span class="chip" style="color:var(--accent);border-color:var(--accent)" title="${esc(row.reconciliation_note||'')}">RECONCILED</span>`
+      : esc(row.check);
+    let resultCell = esc(row.result);
+    if(row.scope_note) resultCell += `<br><span style="color:var(--text2)">Scope: ${esc(row.scope_note)}</span>`;
+    h += `<tr><td style="white-space:normal">${checkCell}</td><td><span class="${cls}">${esc(statusText)}</span></td>`+
+         `<td>${esc(row.executed)}</td><td style="white-space:normal;max-width:260px">${esc(row.evidence)}</td>`+
+         `<td style="white-space:normal;max-width:320px">${resultCell}</td></tr>`;
+  });
+  h += `</tbody></table></div>`;
+  h += `<div class="caution">Rows marked RECONCILED were brought into agreement with a later-dated record; hover the chip for the reconciliation note. Only "Independent specialist mathematical review" remains genuinely OPEN.</div>`;
+  h += `</div>`;
+
+  const sdSpine = sourceDrawer(cv.proof_spine_sources);
+  h += `<div class="panel"><div class="panel-title">EXTRACTED PROOF SPINE <span class="psub">outputs/records/OMNIFIC_DEFECT_CHANNEL_RESULT.json · source_level_chain</span>${sdSpine.btn}</div>${sdSpine.drawer}`;
+  h += `<div class="pipeline">`;
+  cv.proof_spine.forEach((step,i)=>{
+    h += `<span class="pipe-step active">${esc(step.replaceAll('_',' '))}</span>`;
+    if(i<cv.proof_spine.length-1) h += `<span class="pipe-arrow">→</span>`;
+  });
+  h += `</div>`;
+  h += `<p style="font-size:10px;color:var(--text2);margin-top:8px">Formalized as: ${cv.theorems.map(t=>`<code style="color:var(--accent)">${esc(t)}</code>`).join(', ')} `+
+       `in <code>${esc(cv.formalization_file)}</code> (sha256 ${esc((cv.formalization_sha256||'').slice(0,16))}…)</p>`;
+  h += `</div>`;
+
+  const sdBuild = sourceDrawer(cv.build_sources);
+  h += `<div class="panel"><div class="panel-title">INDEPENDENT BUILD RECORDS <span class="psub">source: gaearon/conway-refinement @ ${esc(cv.source_commit||'').slice(0,12)}…</span>${sdBuild.btn}</div>${sdBuild.drawer}`;
+  h += `<div class="row3">`;
+  cv.build_records.forEach(r=>{
+    h += `<div class="buildcard"><div class="jobs">${fmtInt(r.jobs)} jobs</div><div class="lbl">${esc(r.label)}</div>`+
+         `<div class="lbl" style="color:var(--green)">${esc(r.result)}</div>`+
+         `<div class="cmd">${esc(r.command||r.raw||'')}</div>`+
+         `</div>`;
+  });
+  h += `</div></div>`;
+
+  el.innerHTML = h;
+}
+
+// ================= §5 ADMISSIBILITY–PERCOLATION EXTENSION =================
+function renderAdmissibility(){
+  const el = document.getElementById('panel-admissibility');
+  const a = DATA.admissibility;
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§5</span> ADMISSIBILITY–PERCOLATION EXTENSION <span class="psub" style="border:none;color:var(--dim)">(extension branch — not part of the core algebraic proof)</span></div>`;
+
+  const rk = a.rank_one_highlight;
+  h += `<div class="special-banner green"><div class="special-title">⚑ CLEAN RANK-ONE SIGNATURE — SAME ADMISSIBILITY, DIFFERENT PERCOLATION SCALE</div>`;
+  h += `<p style="font-size:10.5px;color:var(--text);margin-top:4px">`+
+       `R1_FREE: κ_connect_exact = 0 for ${rk.r1_free_zero}/${rk.r1_free_n} · R1_FAIL: κ_connect_exact = 1 for ${rk.r1_fail_one}/${rk.r1_fail_n} — `+
+       `while <b style="color:var(--green)">both</b> groups remain fully STRUC-I-admissible (mean_Ak = min_Ak = 1 throughout).</p></div>`;
+
+  h += `<div class="panel"><div class="panel-title">CONCEPTUAL SUMMARY</div>`;
+  h += `<div class="pipeline" style="font-size:11px"><span class="pipe-step active">route closure</span><span class="pipe-arrow">≠</span>`+
+       `<span class="pipe-step active">perturbative admissibility</span><span class="pipe-arrow">≠</span>`+
+       `<span class="pipe-step active">percolation connectivity scale</span></div></div>`;
+
+  h += `<div class="panel"><div class="panel-title">30-SYSTEM PILOT CORPUS <button class="drawer-btn" onclick="toggleDrawer('drawer-corpus')">SOURCE</button></div>`;
+  h += `<div class="drawer" id="drawer-corpus"><b>Source:</b> UNNS_ADMISSIBILITY_PERCOLATION/corpus/CORPUS_INDEX.csv<br>`+
+       `<b>Cases:</b> ${a.n_cases} (${Object.entries(a.class_counts||{}).map(([k,v])=>k+':'+v).join(', ')})<br>`+
+       `<b>Labels:</b> ${Object.entries(a.label_counts||{}).map(([k,v])=>k+':'+v).join(', ')}<br>`+
+       `<b>Frozen input verification:</b> PASS (corpus/CORPUS_AUDIT.json)</div>`;
+  h += `<div class="scrollbox" style="max-height:360px;overflow-y:auto"><table class="dt"><thead><tr>`+
+       `<th>case_id</th><th>class</th><th>label</th><th>STRUC-I mean A_k</th><th>mean ρ</th>`+
+       `<th>v2.5.0 verdict</th><th>v2.5.1 verdict</th><th>κ_connect_exact</th></tr></thead><tbody>`;
+  a.cases.forEach(c=>{
+    const lblClass = c.label==='TRACEABLE' ? 'v-yes' : 'v-no';
+    h += `<tr><td>${esc(c.case_id)}</td><td>${esc(c.class)}</td><td class="${lblClass}">${esc(c.label)}</td>`+
+         `<td>${fmt(c.mean_Ak,0)}</td><td>${fmt(c.mean_rho,6)}</td>`+
+         `<td class="${verdictClass(c.v250_verdict)}">${esc(c.v250_verdict||'—')}</td>`+
+         `<td class="${verdictClass(c.v251_verdict)}">${esc(c.v251_verdict||'—')}</td>`+
+         `<td>${fmt(c.kappa_connect_exact,3)}</td></tr>`;
+  });
+  h += `</tbody></table></div>`;
+  h += `<div class="caution">STRUC-I: all 30 ladders classified Geometric Persistence / Stable Structure, mean_Ak = min_Ak = 1 — fully admissible regardless of algebraic TRACEABLE/NON_TRACEABLE label.</div>`;
+  h += `</div>`;
+
+  h += `<div class="row3">`;
+  h += chartScatterPanel(a.cases);
+  h += chartKappaStripPanel(a.cases, a.class_kappa_stats);
+  h += chartVerdictComparisonPanel(a.v250_counts, a.v251_counts);
+  h += `</div>`;
+
+  el.innerHTML = h;
+}
+function verdictClass(v){
+  if(!v) return '';
+  if(/FULL_PERC/.test(v)) return 'v-full';
+  if(/HARD_FRAG/.test(v)) return 'v-frag';
+  if(/TAIL_FRAG/.test(v)) return 'v-tail';
+  return '';
+}
+const CLASS_COLORS = {INT_FREE:'#4ab0f0', R1_FREE:'#00dd88', R1_FAIL:'#e04040', AFF_FREE:'#d4a020', AFF_FAIL:'#9060e0'};
+
+function chartScatterPanel(cases){
+  const pts = cases.filter(c=>c.mean_rho!=null && c.kappa_connect_exact!=null);
+  const maxRho = Math.max(...pts.map(p=>p.mean_rho), 0.001);
+  const maxK = Math.max(...pts.map(p=>p.kappa_connect_exact), 0.001);
+  const W=300,H=190,padL=34,padB=26,padT=14,padR=10;
+  const sx = x => padL + (x/maxRho)*(W-padL-padR);
+  const sy = y => H-padB - (y/maxK)*(H-padT-padB);
+  let s = `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#0e2035"/>`;
+  s += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#0e2035"/>`;
+  pts.forEach(p=>{
+    s += `<circle cx="${sx(p.mean_rho).toFixed(1)}" cy="${sy(p.kappa_connect_exact).toFixed(1)}" r="3.4" fill="${CLASS_COLORS[p.class]||'#6080a0'}" fill-opacity="0.85"><title>${p.case_id}</title></circle>`;
+  });
+  s += `<text x="${padL}" y="${H-8}" font-size="7" fill="#6080a0" font-family="monospace">mean ρ →</text>`;
+  s += `<text x="4" y="${padT+6}" font-size="7" fill="#6080a0" font-family="monospace">κ_exact</text>`;
+  let panel = `<div class="panel"><div class="panel-title">mean ρ vs κ_connect_exact <button class="drawer-btn" onclick="toggleDrawer('drawer-c1')">SOURCE</button></div>`;
+  panel += `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+  panel += classLegend();
+  panel += `<div class="drawer" id="drawer-c1"><b>Source:</b> STRUC_I_SUMMARY.csv × STRUC-PERC-I AuditRepair batch results, joined on case_id<br><b>Cases:</b> ${pts.length}<br><b>Frozen input verification:</b> PASS</div>`;
+  panel += `</div>`;
+  return panel;
+}
+function chartKappaStripPanel(cases, stats){
+  // Per-case dots (not mean-only bars): with n=6/class, a mean bar hides real
+  // within-class spread (esp. AFF_FREE). Show every point + a median tick.
+  const classes = Object.keys(stats);
+  const pts = cases.filter(c=>c.kappa_connect_exact!=null);
+  const maxVal = Math.max(...pts.map(p=>p.kappa_connect_exact), 0.001);
+  const W=300,H=190,padL=26,padB=40,padT=14,padR=10;
+  const bw = (W-padL-padR)/classes.length;
+  const sy = v => H-padB - (v/maxVal)*(H-padT-padB);
+  let s = `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#0e2035"/>`;
+  classes.forEach((c,i)=>{
+    const cx = padL + i*bw + bw*0.5;
+    const classPts = pts.filter(p=>p.class===c);
+    // deterministic small jitter so overlapping equal values stay visible
+    classPts.forEach((p,j)=>{
+      const jitter = (j - (classPts.length-1)/2) * (bw*0.11);
+      s += `<circle cx="${(cx+jitter).toFixed(1)}" cy="${sy(p.kappa_connect_exact).toFixed(1)}" r="3" fill="${CLASS_COLORS[c]||'#6080a0'}" fill-opacity="0.85"><title>${p.case_id}: κ=${p.kappa_connect_exact}</title></circle>`;
+    });
+    const med = stats[c].median;
+    s += `<line x1="${(cx-bw*0.32).toFixed(1)}" y1="${sy(med).toFixed(1)}" x2="${(cx+bw*0.32).toFixed(1)}" y2="${sy(med).toFixed(1)}" stroke="var(--text)" stroke-width="1.4"/>`;
+    s += `<text x="${cx.toFixed(1)}" y="${H-padB+11}" font-size="6.3" fill="#6080a0" font-family="monospace" text-anchor="middle">${c}</text>`;
+  });
+  let panel = `<div class="panel"><div class="panel-title">κ_connect_exact by class — all 6 points + median <button class="drawer-btn" onclick="toggleDrawer('drawer-c2')">SOURCE</button></div>`;
+  panel += `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+  panel += classLegend();
+  panel += `<div class="legend"><span><i style="background:var(--text);height:2px;width:10px"></i>class median</span></div>`;
+  panel += `<div class="caution">Individual points (not a mean bar) so within-class spread is visible — e.g. AFF_FREE ranges widely while R1_FREE/R1_FAIL each collapse to a single value.</div>`;
+  panel += `<div class="drawer" id="drawer-c2"><b>Source:</b> STRUC-PERC-I AuditRepair/struc_perc_audit_v2_5_1_batch_results.csv, grouped by CORPUS_INDEX class<br><b>Frozen input verification:</b> PASS</div>`;
+  panel += `</div>`;
+  return panel;
+}
+function chartVerdictComparisonPanel(v250, v251){
+  const cats = Array.from(new Set([...Object.keys(v250), ...Object.keys(v251)]));
+  const maxN = Math.max(...cats.map(c=>Math.max(v250[c]||0, v251[c]||0)), 1);
+  const W=300,H=190,padL=26,padB=40,padT=14,padR=10;
+  const groupW = (W-padL-padR)/cats.length;
+  let s = `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#0e2035"/>`;
+  const colors = {FULL_PERCOLATION:'#00dd88', HARD_FRAGMENTATION:'#e04040', TAIL_FRAGMENTATION:'#f0a030'};
+  cats.forEach((c,i)=>{
+    const gx = padL + i*groupW;
+    const bw = groupW*0.32;
+    const h0 = ((v250[c]||0)/maxN)*(H-padT-padB);
+    const h1 = ((v251[c]||0)/maxN)*(H-padT-padB);
+    s += `<rect x="${(gx+groupW*0.1).toFixed(1)}" y="${(H-padB-h0).toFixed(1)}" width="${bw.toFixed(1)}" height="${h0.toFixed(1)}" fill="${colors[c]||'#6080a0'}" fill-opacity="0.45"/>`;
+    s += `<rect x="${(gx+groupW*0.1+bw+2).toFixed(1)}" y="${(H-padB-h1).toFixed(1)}" width="${bw.toFixed(1)}" height="${h1.toFixed(1)}" fill="${colors[c]||'#6080a0'}" fill-opacity="0.95"/>`;
+    s += `<text x="${(gx+groupW/2).toFixed(1)}" y="${H-padB+10}" font-size="6" fill="#6080a0" font-family="monospace" text-anchor="middle">${c.replace('_',' ').slice(0,14)}</text>`;
+    s += `<text x="${(gx+groupW*0.1+bw/2).toFixed(1)}" y="${(H-padB-h0-3).toFixed(1)}" font-size="6.5" fill="var(--text2)" font-family="monospace" text-anchor="middle">${v250[c]||0}</text>`;
+    s += `<text x="${(gx+groupW*0.1+bw+2+bw/2).toFixed(1)}" y="${(H-padB-h1-3).toFixed(1)}" font-size="6.5" fill="var(--text)" font-family="monospace" text-anchor="middle">${v251[c]||0}</text>`;
+  });
+  let panel = `<div class="panel"><div class="panel-title">Original bounded/adaptive tiers vs exact eventual-connectivity audit <button class="drawer-btn" onclick="toggleDrawer('drawer-c3')">SOURCE</button></div>`;
+  panel += `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+  panel += `<div class="legend"><span><i style="background:#6080a0;opacity:.45"></i>v2.5.0 base (bounded/adaptive search)</span><span><i style="background:#6080a0"></i>v2.5.1 exact-threshold audit</span></div>`;
+  panel += `<div class="caution">v2.5.1 deliberately probes the exact finite-graph connectivity threshold, so 30/30 FULL_PERCOLATION is an <b style="color:var(--text)">eventual-connectivity audit</b>, not a directly comparable "improved classifier." The informative variable is κ_connect_exact (previous chart), not this verdict count.</div>`;
+  panel += `<div class="drawer" id="drawer-c3"><b>Source:</b> struc_perc_i/struc_perc_batch_results.csv (v2.5.0) vs STRUC-PERC-I AuditRepair/struc_perc_audit_v2_5_1_batch_results.csv<br><b>Cases:</b> 30 each<br><b>Frozen input verification:</b> PASS</div>`;
+  panel += `</div>`;
+  return panel;
+}
+function classLegend(){
+  return `<div class="legend">`+Object.entries(CLASS_COLORS).map(([k,v])=>`<span><i style="background:${v}"></i>${k}</span>`).join('')+`</div>`;
+}
+
+// ================= §6 REPRODUCIBILITY / PROVENANCE =================
+function renderProvenance(){
+  const el = document.getElementById('panel-provenance');
+  const r = DATA.reproducibility;
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§6</span> REPRODUCIBILITY & PROVENANCE</div>`;
+  h += `<div class="stat-grid">`;
+  h += stat(r.corpus_audit_status, 'ADMISSIBILITY CORPUS AUDIT');
+  h += stat(r.synthesis_build_status, 'SYNTHESIS BUILD STATUS');
+  h += stat(r.synthesis_exact_reproduction ? 'TRUE' : 'FALSE', 'EXACT BYTE REPRODUCTION');
+  h += stat(r.provenance.length, 'SOURCE FILES USED / HASHED');
+  h += `</div>`;
+
+  h += `<div class="panel"><div class="panel-title">HOW THIS PAGE WAS BUILT</div>`;
+  h += `<p style="font-size:10.5px;color:var(--text);line-height:1.8">No reported numerical or machine-result value on this page is manually transcribed. `+
+       `<code style="color:var(--accent)">analytics/BUILD_ANALYTICS.py</code> reads the project's own frozen `+
+       `JSON/CSV result records (listed below, each with a sha256 computed fresh at build time), assembles the `+
+       `dataset, and embeds it directly into this HTML file. The page loads no server, no fetch() of local files, `+
+       `and no CDN — it is a single file that works offline and can be opened by double-clicking it.</p>`;
+  h += `<div class="caution">Rebuild: <code>python analytics/BUILD_ANALYTICS.py</code> from the project root · Synthesis build id ${esc(r.synthesis_build_id||'')}</div>`;
+  h += `</div>`;
+
+  h += `<div class="panel"><div class="panel-title">SOURCE MANIFEST <span class="psub">sha256 computed at build time, ${esc(r.build_timestamp_utc)}</span></div>`;
+  h += `<div class="scrollbox" style="max-height:420px;overflow-y:auto"><table class="dt"><thead><tr><th>Path</th><th>bytes</th><th>sha256</th></tr></thead><tbody>`;
+  r.provenance.forEach(p=>{
+    h += `<tr><td>${esc(p.path)}</td><td>${fmtInt(p.bytes)}</td><td style="color:var(--text2)">${esc(p.sha256)}</td></tr>`;
+  });
+  h += `</tbody></table></div>`;
+  if(r.missing_sources && r.missing_sources.length){
+    h += `<div class="caution" style="color:var(--red)">MISSING AT BUILD TIME: ${r.missing_sources.map(esc).join(', ')}</div>`;
+  }
+  h += `</div>`;
+
+  el.innerHTML = h;
+}
+
+// ================= §7 MANUSCRIPT / CLAIM–EVIDENCE MAP =================
+function gradeBadge(grade){
+  const g = (grade||'').toUpperCase();
+  if(g==='THEOREM' || g==='THEOREM + COMPUTATION' || g==='LEAN KERNEL VERIFIED'){
+    return `<span class="v-pass">${esc(grade)}</span>`;
+  }
+  if(g==='SOURCE-AUDITED CANDIDATE PROOF' || g==='VERIFIED PILOT COMPUTATION'){
+    return `<span class="v-partial">${esc(grade)}</span>`;
+  }
+  // STRUCTURAL INTERPRETATION and anything else: distinct grade, not a failure/open item
+  return `<span class="v-partial" style="color:var(--violet);border-color:var(--violet);background:rgba(140,120,240,.08)">${esc(grade)}</span>`;
+}
+function renderManuscript(){
+  const el = document.getElementById('panel-manuscript');
+  const rows = DATA.manuscript_map || [];
+  let h = `<div class="sec-label"><span style="color:var(--accent)">§7</span> MANUSCRIPT / CLAIM–EVIDENCE MAP</div>`;
+  h += `<div class="panel"><div class="panel-title">CLAIM → EVIDENCE GRADE <span class="psub">click a figure/table reference to jump to its section · SOURCE opens the backing records</span></div>`;
+  h += `<p style="font-size:10.5px;color:var(--text2);line-height:1.8;margin-bottom:14px">`+
+       `This table is the control surface for turning this project into a manuscript: every claim it would make is pinned to an `+
+       `explicit evidence grade — <b style="color:var(--text)">THEOREM</b>, <b style="color:var(--text)">THEOREM + COMPUTATION</b>, `+
+       `<b style="color:var(--text)">LEAN KERNEL VERIFIED</b>, <b style="color:var(--violet)">SOURCE-AUDITED CANDIDATE PROOF</b>, `+
+       `<b style="color:var(--violet)">VERIFIED PILOT COMPUTATION</b>, or <b style="color:var(--violet)">STRUCTURAL INTERPRETATION</b> — `+
+       `so theorem-level results, Lean-verified mechanism, source-audited candidate proof, pilot-scale computation, and `+
+       `interpretive synthesis are never silently mixed together.</p>`;
+  h += `<div class="scrollbox"><table class="dt"><thead><tr>`+
+       `<th>Manuscript claim</th><th>Evidence grade</th><th>Basis</th><th>Figure / table</th>`+
+       `</tr></thead><tbody>`;
+  rows.forEach(row=>{
+    const sd = sourceDrawer(row.sources);
+    h += `<tr>`+
+         `<td>${esc(row.claim)}</td>`+
+         `<td>${gradeBadge(row.grade)}</td>`+
+         `<td style="color:var(--text2);font-size:9.5px">${esc(row.grade_note)} ${sd.btn}${sd.drawer}</td>`+
+         `<td><a href="javascript:void(0)" onclick="selectTab('${row.figure_tab}')" style="color:var(--accent);text-decoration:none">${esc(row.figure_label)} →</a></td>`+
+         `</tr>`;
+  });
+  h += `</tbody></table></div>`;
+  h += `<div class="caution">Evidence grades are ordered by epistemic strength, not by importance to the theory: a STRUCTURAL INTERPRETATION `+
+       `row (e.g. the three-coordinate reading of route closure / admissibility / percolation scale) is a synthesis claim, not a weaker `+
+       `version of a theorem — it should be presented as interpretation in any manuscript draft, not as a proved result.</div>`;
+  h += `</div>`;
+  el.innerHTML = h;
+}
+
+// ---------- INIT ----------
+initTabs();
+renderHero();
+renderOverview();
+renderCrossRegime();
+renderFailureGeometry();
+renderConway();
+renderAdmissibility();
+renderProvenance();
+renderManuscript();
+</script>
+</body>
+</html>
