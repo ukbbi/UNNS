@@ -15,9 +15,16 @@ The two primary endpoint documents are:
 - `04_PROOF_MAP/output/FINAL_ROUTE_CLOSURE_SYNTHESIS.md`
 - `outputs/reports/LEAN_ROUTE_CLOSURE_REPORT.md`
 
+A completed follow-up branch now extends the interpretation of the parent result:
+
+- `UNNS_ADMISSIBILITY_PERCOLATION/`
+- `ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md`
+
+That extension does **not** alter the algebraic theorem. It shows that exact route closure, perturbative admissibility, and percolative connectivity scale are distinct structural coordinates.
+
 The remaining **external** confirmation layer is independent specialist mathematical review of the Hahn-series / surreal mechanism. That review is not an unfinished computational step in this project.
 
-The next internal research branch is deliberately separate: the STRUC-I / STRUC-PERC-I structural-phenotype experiment. A further branch is the Canonical Refinement Problem.
+A further research branch remains open: the **Canonical Refinement Problem**.
 
 ---
 
@@ -426,21 +433,177 @@ The chamber roles remain deliberately separated.
 
 `REF-I` is the **exact algebraic witness/failure layer**.
 
-## STRUC-I and STRUC-PERC-I
+## STRUC-I v1.0.4
 
-These remain **secondary structural diagnostics only**. They must not be used to prove:
+`STRUC-I v1.0.4` is the frozen perturbative-admissibility instrument.
 
-- primality;
-- route closure;
-- the rank-one theorem;
-- the affine theorem;
-- Conway refinement.
+It measures whether perturbations of an ordered ladder remain inside the chamber's vulnerability budget and classifies the ladder as:
 
-The next planned internal research branch is:
+```text
+Geometric Persistence
+Structural Boundary
+Structural Instability
+```
 
-> **Does exact algebraic loss of primal factor traceability have a reproducible perturbative or percolative structural phenotype under frozen STRUC-I and STRUC-PERC-I diagnostics?**
+It does not prove primality or route closure.
 
-That chamber branch is new work. It does not reopen the completed existence/traceability investigation.
+## STRUC-PERC-I v2.5.0
+
+`STRUC-PERC-I v2.5.0` is the frozen original gap-space percolation/connectivity instrument.
+
+Its original batch run on the 30 frozen ladders is retained unchanged. That run produced:
+
+```text
+25 FULL_PERCOLATION
+4 HARD_FRAGMENTATION
+1 TAIL_FRAGMENTATION
+```
+
+The raw v2.5.0 result remains part of the evidentiary record.
+
+It does not prove primality or route closure.
+
+## STRUC-PERC-I Audit v2.5.1
+
+`STRUC-PERC-I Audit v2.5.1` is a **separately versioned audit/repair instrument derived from v2.5.0**. It does not replace or modify the frozen v2.5.0 chamber.
+
+It was created only to audit three implementation-sensitive issues exposed by the original batch:
+
+```text
+1. effective-zero IQR fallback tolerance
+2. premature adaptive-extension plateau stopping
+3. exact connectivity-threshold reporting
+```
+
+The audit chamber was then run on the **same frozen 30 inputs**.
+
+Its browser run completed for all 30 ladders and reported eventual:
+
+```text
+30 / 30 FULL_PERCOLATION
+```
+
+while retaining the exact normalized connectivity threshold:
+
+```text
+kappa_connect_exact
+```
+
+as the informative percolation quantity.
+
+The v2.5.1 result is therefore an audit of eventual finite-graph connectivity and connectivity scale, not a replacement traceability or admissibility classifier.
+
+The completed follow-up branch:
+
+```text
+UNNS_ADMISSIBILITY_PERCOLATION/
+```
+
+tested the same algebraically characterized systems under these independent structural lenses and preserved both the original v2.5.0 record and the separately versioned v2.5.1 audit.
+
+The result is:
+
+```text
+route closure
+    !=
+perturbative admissibility
+    !=
+percolation connectivity scale
+```
+
+The chambers therefore extend the parent interpretation rather than duplicate the parent theorem.
+
+---
+
+# Admissibility–percolation extension
+
+The completed extension is summarized in:
+
+```text
+ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md
+```
+
+with the full branch retained under:
+
+```text
+UNNS_ADMISSIBILITY_PERCOLATION/
+```
+
+## Extension result 1
+
+All 30 frozen ladders were fully admissible under STRUC-I:
+
+```text
+Geometric Persistence
+Stable Structure
+
+mean_Ak = 1.0
+min_Ak  = 1.0
+```
+
+This includes systems with exact algebraic route defects.
+
+Therefore:
+
+> **Failure of primal factor traceability does not imply perturbative inadmissibility.**
+
+## Extension result 2
+
+The original `STRUC-PERC-I v2.5.0` batch was preserved, and the separately versioned `STRUC-PERC-I Audit v2.5.1` then showed that all 30 finite gap graphs eventually connect when their exact normalized connectivity thresholds are explicitly probed.
+
+Therefore:
+
+> **Failure of primal factor traceability does not imply failure of eventual gap-space connectivity.**
+
+The informative percolation observable is not eventual yes/no connectivity, but the exact connectivity scale:
+
+```text
+kappa_connect_exact
+```
+
+which varies substantially across the corpus.
+
+## Rank-one secondary signature
+
+For the six free rank-one controls:
+
+```text
+kappa_connect_exact = 0
+```
+
+For the six nonfree rank-one controls:
+
+```text
+kappa_connect_exact = 1
+```
+
+while both classes remain fully STRUC-I-admissible.
+
+So algebraic route structure can leave a secondary geometric/connectivity-scale signature without determining admissibility.
+
+## Higher-rank limitation
+
+The rank-one ordering does not globalize.
+
+In the affine corpus, route-closed systems are not uniformly easier to connect than route-defective systems.
+
+Therefore there is no general law of the form:
+
+```text
+more route closure
+    ->
+lower percolation threshold
+```
+
+## Sharpened parent interpretation
+
+The parent project can now state more precisely:
+
+> **A route defect can exist inside a perturbatively admissible and eventually percolating structure.**
+
+This localizes the meaning of non-refinement.
+
+A route defect is an exact obstruction in the routing of decomposition. It is not automatically a collapse of the host structure as a whole.
 
 ---
 
@@ -469,7 +632,15 @@ outputs/records/FINAL_SYNTHESIS_RESULT.json
 outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json
 ```
 
-The original structural-comparison objective is closed at this source state.
+For the completed structural extension, use:
+
+```text
+ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md
+UNNS_ADMISSIBILITY_PERCOLATION/outputs/synthesis/ADMISSIBILITY_PERCOLATION_SYNTHESIS.md
+UNNS_ADMISSIBILITY_PERCOLATION/outputs/records/FINAL_PILOT_RESULT.json
+```
+
+The original structural-comparison objective is closed, and the first admissibility–percolation extension is also complete.
 
 ---
 
@@ -477,8 +648,8 @@ The original structural-comparison objective is closed at this source state.
 
 These are **new branches**, not unfinished steps of the original investigation.
 
-1. **Structural phenotype branch** — frozen STRUC-I / STRUC-PERC-I diagnostics on exact traceability success/failure corpora.
-2. **Canonical Refinement Problem** — if common refinement exists, determine whether any refinement is structurally privileged.
+1. **Canonical Refinement Problem** — if common refinement exists, determine whether any refinement is structurally privileged.
+2. **Bounded-scale admissibility/percolation follow-up** — preregister a finite-kappa, exact-threshold, or component-growth observable rather than eventual binary percolation.
 3. **Optional algebraic extension** — seek non-affine systems that separate the route-closure induction mechanism from other ways of obtaining pre-Schreier structure.
 4. **External confirmation** — independent specialist mathematical review of the Hahn-series / surreal realization.
 
@@ -495,10 +666,18 @@ UNNS_COMMON_REFINEMENT/
 ├── 05_UNNS/           retained structural definitions and models
 ├── 06_TESTS/          validation and falsification tests
 ├── chambers/          REF-I, STRUC-I, STRUC-PERC-I
+├── manuscript/        manuscript-oriented material
 ├── outputs/           reports and machine-readable records
 ├── refs/              source and terminology records
 ├── scripts/           reproducible builders and verification runners
-├── manuscript/        manuscript-oriented material
+├── UNNS_ADMISSIBILITY_PERCOLATION/
+│   ├── chambers/STRUC-I/                    frozen v1.0.4
+│   ├── chambers/STRUC-PERC-I/               frozen v2.5.0
+│   ├── chambers/STRUC-PERC-I_AUDIT_v2_5_1/ separately versioned audit/repair
+│   └── completed admissibility–percolation extension project
+├── UNNS_LEAN_CHECK/
+│   └── retained independent Lean verification workspace
+├── ADMISSIBILITY_PERCOLATION_EXTENSION_SYNTHESIS.md
 ├── CLEAN_STATE.md
 ├── MANIFEST.md
 └── README.md
@@ -517,8 +696,10 @@ This project distinguishes carefully between:
 - kernel-verified formalization;
 - candidate-proof dependence;
 - external specialist confirmation;
+- perturbative admissibility;
+- percolative connectivity scale;
 - UNNS structural interpretation.
 
 In particular, the equivalence between global primality / pre-Schreier structure and four-factor refinement is classical algebra.
 
-The project contribution is the exact UNNS identification of that property as **structural route traceability**, the finite-to-transfinite comparison of how route defects disappear or persist, and the reproducible formal/audit trail supporting that synthesis.
+The project contribution is the exact UNNS identification of that property as **structural route traceability**, the finite-to-transfinite comparison of how route defects disappear or persist, the reproducible formal/audit trail supporting that synthesis, and the later demonstration that route closure is structurally distinct from perturbative admissibility and percolative connectivity scale.
