@@ -13,15 +13,16 @@
 
 The project began with the contrast between
 
-\[
-ab=cd
-\]
+`ab = cd`
 
 and the stronger existence of a common refinement
 
-\[
-a=ef,\qquad b=gh,\qquad c=eg,\qquad d=fh.
-\]
+```text
+a = ef
+b = gh
+c = eg
+d = fh
+```
 
 The central research question was:
 
@@ -35,19 +36,15 @@ That question is now answered at both the algebraic and mechanism levels.
 
 The surviving algebraic property is
 
-\[
-\boxed{\text{every-element primality / pre-Schreier factor traceability}.}
-\]
+**Every-element primality / pre-Schreier factor traceability.**
 
 In the relevant cancellative commutative setting,
 
-\[
-\boxed{
-\text{every element primal}
-\iff
-\text{four-factor refinement}.
-}
-\]
+```text
+every element primal
+        <=>
+four-factor refinement
+```
 
 Thus factor traceability is not merely correlated with route closure. It is the exact algebraic state corresponding to global route closure.
 
@@ -59,19 +56,13 @@ This equivalence is classical algebra. The project contribution is the cross-reg
 
 The successful regimes do not obtain primal traceability by the same mechanism. What they share is a local-to-global construction pattern:
 
-\[
-\boxed{
-\text{exact routed local block}
-+
-\text{strictly simpler unresolved residue}
-+
-\text{route-closed terminal regime}
-+
-\text{ambient reconstruction}
-\Longrightarrow
-\text{global traceability}.
-}
-\]
+```text
+exact routed local block
++ strictly simpler unresolved residue
++ route-closed terminal regime
++ ambient reconstruction
+=> global traceability
+```
 
 This is isolated as the **Well-Founded Route-Closure Induction Proposition** in
 
@@ -115,18 +106,18 @@ Eventual safety does not imply global route closure.
 
 For
 
-\[
-\operatorname{rank}H\ge2,\qquad \operatorname{ARD}(H)>0,
-\]
+```text
+rank(H) >= 2
+ARD(H) > 0
+```
 
 the project proves the Persistent Defect-Ray Theorem:
 
-\[
-\boxed{
-\exists a,\rho\ne0\quad
-\forall n\ge0:\quad a+n\rho\notin P(H).
-}
-\]
+```text
+there exist a and nonzero rho such that
+for every n >= 0:
+    a + n*rho is non-primal
+```
 
 Structural form:
 
@@ -204,9 +195,7 @@ The sufficient pattern requires:
 
 The final algebraic state remains:
 
-\[
-\boxed{\text{global primal factor traceability}.}
-\]
+**Global primal factor traceability.**
 
 ---
 
@@ -300,23 +289,16 @@ The answer is two-layered.
 
 ## Property
 
-\[
-\boxed{\text{global factor traceability: every element is primal}.}
-\]
+**Global factor traceability: every element is primal.**
 
 ## Successful construction pattern
 
-\[
-\boxed{
-\text{exact local routing}
-+
-\text{well-founded reduction of the unresolved residue}
-+
-\text{primal terminal closure}
-+
-\text{ambient reconstruction}.
-}
-\]
+```text
+exact local routing
++ well-founded reduction of the unresolved residue
++ primal terminal closure
++ ambient reconstruction
+```
 
 The integers realize the pattern immediately; the candidate omnific proof realizes it transfinally.
 
@@ -327,11 +309,7 @@ The failure systems show why this distinction matters:
 
 The strongest justified UNNS conclusion is therefore:
 
-\[
-\boxed{
-\textbf{global route closure is the absence of any structural defect capable of surviving every admissible exact repair and well-founded reduction.}
-}
-\]
+> **Global route closure is the absence of any structural defect capable of surviving every admissible exact repair and well-founded reduction.**
 
 This is a UNNS interpretation of the proven comparison, not a replacement definition of algebraic primality.
 
