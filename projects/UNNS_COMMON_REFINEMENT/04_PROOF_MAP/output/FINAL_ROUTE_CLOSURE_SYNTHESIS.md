@@ -3,8 +3,9 @@
 ## Common Refinement and Structural Route Closure in the UNNS Substrate
 
 **Project:** `UNNS_COMMON_REFINEMENT`  
-**Status:** cross-regime synthesis after integer, rank-one, affine, and Conway source-level analysis  
-**Conway source lock:** `gaearon/conway-refinement` commit `264445c93b78554c408e99e4e7f663693b4e91ab`
+**Status:** original Conway/common-refinement structural investigation internally complete at the current audited source state  
+**Conway source lock:** `gaearon/conway-refinement` commit `264445c93b78554c408e99e4e7f663693b4e91ab`  
+**Formal closure:** extracted route-closure induction principle independently formalized and Lean-kernel verified
 
 ---
 
@@ -26,7 +27,7 @@ The central research question was:
 
 > **What structural property survives the transition from ordinary integers to omnific integers that keeps the refinement square admissible?**
 
-The project now has enough exact material to answer this at two different levels.
+That question is now answered at both the algebraic and mechanism levels.
 
 ---
 
@@ -48,19 +49,15 @@ In the relevant cancellative commutative setting,
 }
 \]
 
-Thus factor traceability is not merely correlated with route closure.  It is the exact algebraic
-state corresponding to global route closure.
+Thus factor traceability is not merely correlated with route closure. It is the exact algebraic state corresponding to global route closure.
 
-This part does **not** require a specifically UNNS reformulation.
+This equivalence is classical algebra. The project contribution is the cross-regime structural identification and the analysis of how different domains establish or fail that state.
 
 ---
 
 # 3. Final answer — mechanism level
 
-The project also found something not contained in the bare equivalence above.
-
-The successful regimes do not obtain primal traceability by the same mechanism.
-What they share is a local-to-global pattern:
+The successful regimes do not obtain primal traceability by the same mechanism. What they share is a local-to-global construction pattern:
 
 \[
 \boxed{
@@ -76,12 +73,15 @@ What they share is a local-to-global pattern:
 }
 \]
 
-This has been isolated as the proved proposition
+This is isolated as the **Well-Founded Route-Closure Induction Proposition** in
 
 `05_UNNS/definitions/ROUTE_CLOSURE_INDUCTION.md`.
 
-The proposition is deliberately narrow.  It is not a new generic confluence framework and does not
-replace the source-specific Conway hypotheses.
+Its extracted algebraic induction skeleton has also been independently formalized in
+
+`04_PROOF_MAP/lean/RouteClosureInduction.lean`
+
+and kernel-verified against the locked Conway algebraic interface.
 
 ---
 
@@ -89,183 +89,112 @@ replace the source-specific Conway hypotheses.
 
 ## A. Positive integers — immediate repair
 
-For positive integers,
-
-\[
-e=\gcd(a,c)
-\]
-
-produces coprime residuals and forces cross-routing.
-
-In divisibility form, if
-
-\[
-a\mid bc,
-\]
-
-one may take
-
-\[
-e=\gcd(a,b),\qquad f=a/e,
-\]
-
-and coprimality forces
-
-\[
-f\mid c.
-\]
-
-The whole factor `a` is therefore routed in one step.
-The unresolved residue can be taken to be `1`.
+The gcd/coprime mechanism routes the full factor in one step.
 
 Structural form:
 
-`local split -> residual unit -> done`.
+```text
+local split -> residual unit -> done
+```
 
 There is no defect core and no persistent defect channel.
 
----
+## B. Rank-one nonfree monoids — finite residual defect core
 
-## B. Rank-one nonfree affine/numerical monoids — finite residual defect core
+The rank-one theorem gives global refinement only for the free lattice ray. Elementwise analysis shows that nonfree numerical monoids may have a cofinal all-primal tail while retaining a finite non-primal core.
 
-The exact rank-one theorem gives global refinement only for the free lattice ray.
-For nonfree numerical monoids, elementwise analysis proved:
+Structural form:
 
-\[
-\boxed{H\setminus P(H)\text{ is finite}.}
-\]
+```text
+finite obstruction core + cofinal primal tail
+```
 
-After the conductor, all sufficiently large elements are primal.
-
-So the failure geometry is:
-
-`finite obstruction core + cofinal primal tail`.
-
-This regime is especially important because it falsifies a simplistic interpretation:
-
-> “If route traceability eventually becomes universal, global route closure follows.”
-
-It does not.
-Global refinement requires **every** element primal, including the finite residual core.
-
-Thus conductor saturation provides eventual safety but does not supply a mechanism that repairs the
-terminal obstruction core.
-
----
+Eventual safety does not imply global route closure.
 
 ## C. Higher-rank nonfree positive affine monoids — persistent defect channel
 
 For
 
 \[
-\operatorname{rank}H\ge2,
-\qquad
-\operatorname{ARD}(H)>0,
+\operatorname{rank}H\ge2,\qquad \operatorname{ARD}(H)>0,
 \]
 
-the project proved the stronger persistent defect-ray result:
+the project proves the Persistent Defect-Ray Theorem:
 
 \[
 \boxed{
 \exists a,\rho\ne0\quad
-\forall n\ge0:
-\quad a+n\rho\notin P(H).
+\forall n\ge0:\quad a+n\rho\notin P(H).
 }
 \]
 
-The failure is no longer confined to a finite core.
-It can be propagated indefinitely along a legitimate monoid direction.
-
 Structural form:
 
-`local relation defect -> rank-preserving propagation -> no terminal repair`.
+```text
+local relation defect -> rank-preserving propagation -> no terminal repair
+```
 
-This is the clearest finite model of a route defect that survives motion through the substrate.
-
----
+The obstruction can survive indefinitely along a legitimate monoid direction.
 
 ## D. Omnific candidate proof — exact repair plus forced descent
 
-The source-locked Conway audit identifies the opposite pattern:
+The audited source architecture is
 
-`finite-class primality`
+```text
+finite-class primality
+-> exact common-tail quotient refinement
+-> occupied support-class selection
+-> retained-block factorisation
+-> strict support-class order-type decrease
+-> ambient transport
+-> primal lower-rank residual
+-> splice
+-> every-element primality
+-> four-factor refinement
+```
 
-`-> exact common-tail quotient refinement`
-
-`-> occupied support-class selection`
-
-`-> retained-block factorisation`
-
-`-> strict support-class order-type decrease`
-
-`-> ambient transport`
-
-`-> primal lower-rank residual`
-
-`-> splice`
-
-`-> every-element primality`
-
-`-> four-factor refinement`.
-
-The important source-level fact is not “transfinite mathematics” by itself.
-It is that the unresolved residual is **forbidden from propagating at unchanged structural rank**.
-Each recursive step lowers a well-founded ordinal complexity, while the terminal finite-class regime
-is already primal.
+The unresolved residual is forbidden from propagating at unchanged structural rank.
 
 Structural form:
 
-`exact repair -> lower-rank residue -> primal base -> reconstruction`.
+```text
+exact repair -> lower-rank residue -> primal base -> reconstruction
+```
 
 ---
 
-# 5. The decisive contrast
+# 5. Decisive contrast
 
-The four regimes can now be arranged by what happens to a potential route defect.
+The project now distinguishes four behaviors of a potential route defect:
 
-### Positive integers
+```text
+positive integers:
+    defect eliminated immediately
 
-\[
-\text{defect is eliminated immediately}.
-\]
+rank-one failures:
+    defect survives only in a finite residual core
 
-### Rank-one failures
+higher-rank affine failures:
+    defect propagates indefinitely at persistent structural complexity
 
-\[
-\text{defect survives only in a finite residual core}.
-\]
+candidate omnific mechanism:
+    every unresolved residual is forced to strictly lower well-founded complexity
+    until it reaches a primal base
+```
 
-### Higher-rank affine failures
-
-\[
-\text{defect propagates indefinitely at persistent structural complexity}.
-\]
-
-### Omnific candidate proof
-
-\[
-\text{every local residual is forced to strictly lower well-founded complexity until it reaches a primal base}.
-\]
-
-This is the strongest cross-regime structural distinction established by the project.
+This is the strongest finite-to-transfinite structural distinction established by the project.
 
 ---
 
-# 6. Why “well-founded descent” alone is still insufficient
+# 6. Why well-founded descent is not the invariant
 
-The project originally considered whether the common surviving property might be something like
+The project originally considered whether well-founded structural descent might itself be the common law.
 
-\[
-\text{well-founded structural descent}.
-\]
+That is rejected.
 
-That is now rejected as the invariant.
+Descent is a **mechanism**, not the final property. A decreasing complexity measure is useless if local routing fails, if descent terminates in a non-primal base, or if a quotient repair cannot be reconstructed in the ambient system.
 
-Descent is a **mechanism**, not the final property.
-A system could possess some decreasing complexity measure without every divisibility being locally
-repairable, or it could descend into a non-primal terminal core.
-
-The exact sufficient pattern requires all of the following:
+The sufficient pattern requires:
 
 1. an exact routed local block;
 2. a complementary residual;
@@ -273,26 +202,19 @@ The exact sufficient pattern requires all of the following:
 4. a terminal/base regime that is already primal;
 5. ambient reconstruction of the local routing.
 
-Removing any of these jobs leaves a recognizable failure mode:
+The final algebraic state remains:
 
-- no exact routed block -> immediate non-primality;
-- no strict decrease -> persistent defect channel can survive;
-- non-primal base -> finite obstruction core survives;
-- no ambient reconstruction -> quotient-only repair need not solve the original equality.
+\[
+\boxed{\text{global primal factor traceability}.}
+\]
 
 ---
 
-# 7. What UNNS genuinely adds
+# 7. What UNNS adds
 
-UNNS should **not** rename
+UNNS should not rename “every element primal” as if it were a new algebraic theorem.
 
-\[
-\text{every element primal}
-\]
-
-as though that were a new algebraic theorem.
-
-The useful UNNS contribution is the separation of three levels:
+The useful UNNS contribution is the separation of:
 
 ### Endpoint level
 Two routes reach the same terminal result.
@@ -301,44 +223,80 @@ Two routes reach the same terminal result.
 Every factor can be routed through a decomposition; algebraically, every element is primal.
 
 ### Mechanism level
-Traceability is established by an admissible sequence of exact local repairs whose unresolved
-residue cannot remain structurally stationary and whose terminal regime is already closed.
+Traceability is established by admissible exact repairs whose unresolved residue cannot remain structurally stationary and whose terminal regime is already closed.
 
-The last level is where the comparison with other UNNS work becomes meaningful.  It describes not
-only whether a structure exists, but **how structural incompatibility is permitted or forbidden to
-persist under transformation**.
+This mechanism-level reading allows one to compare finite obstruction cores, persistent defect channels, and rank-lowering transfinite repair without confusing those mechanisms with the algebraic invariant itself.
 
 ---
 
-# 8. Final UNNS route-closure proposition
+# 8. Route-Closure Induction Proposition
 
-The project can now state, without overclaiming:
+The project can state:
 
-> **Route-Closure Induction Proposition.**  In a commutative cancellative monoid equipped with a
-> well-founded structural rank, suppose a designated base regime is primal.  Suppose further that
-> every divisibility involving a non-base element admits an exact ambient routed factor block whose
-> complementary factor has strictly lower structural rank.  Then every element is primal, and hence
-> every product equality admits four-factor refinement.
+> **Route-Closure Induction Proposition.** In a commutative cancellative monoid equipped with a well-founded structural rank, suppose a designated base regime is primal. Suppose further that every divisibility involving a non-base element admits an exact ambient routed factor block whose complementary factor has strictly lower structural rank. Then every element is primal, and hence every product equality admits four-factor refinement.
 
-This proposition is proved in
+The proposition is proved mathematically in
 
 `05_UNNS/definitions/ROUTE_CLOSURE_INDUCTION.md`.
 
-It adds real content beyond the standard equivalence because it supplies a sufficient **construction
-principle** for reaching the pre-Schreier state.
+The extracted proposition is formalized in Lean as:
 
-It does not claim necessity, and it does not claim that all refinement structures must organize their
-proofs through the same rank/descent architecture.
+```text
+UNNS.CommonRefinement.forall_isPrimal_of_wellFoundedRouteClosure
+UNNS.CommonRefinement.hasFourFactorRefinement_of_wellFoundedRouteClosure
+```
+
+in
+
+`04_PROOF_MAP/lean/RouteClosureInduction.lean`.
 
 ---
 
-# 9. Final answer to the original research question
+# 9. Lean kernel closure of the extracted mechanism
+
+The independent formal module was compiled in a local Windows checkout of the exact locked Conway repository, using Lean 4.31.0.
+
+Command:
+
+```text
+lake build ConwayRefinement.UNNS.RouteClosureInduction
+```
+
+Observed full target build:
+
+```text
+[837/837] Built ConwayRefinement.UNNS.RouteClosureInduction
+Build completed successfully (837 jobs).
+```
+
+Cached recheck:
+
+```text
+[829/829] Replayed ConwayRefinement.UNNS.RouteClosureInduction
+Build completed successfully (829 jobs).
+```
+
+This closes the previously open internal task of formalizing the **extracted route-closure induction principle**.
+
+Scope boundary: this does not claim a from-scratch reimplementation of the complete concrete Hahn-series / surreal infrastructure. It verifies the independently extracted induction mechanism against the public algebraic interfaces used by the audited Conway source.
+
+Primary evidence:
+
+- `outputs/reports/LEAN_ROUTE_CLOSURE_REPORT.md`
+- `outputs/records/LEAN_ROUTE_CLOSURE_RESULT.json`
+- `outputs/records/ROUTE_CLOSURE_KERNEL_VERIFICATION.md`
+- `outputs/records/ROUTE_CLOSURE_KERNEL_CHECK.txt`
+- `outputs/records/ROUTE_CLOSURE_KERNEL_EVIDENCE.png`
+
+---
+
+# 10. Final answer to the original research question
 
 The original question was:
 
 > What structural property survives the transition from ordinary integers to omnific integers that keeps the refinement square admissible?
 
-The answer is now two-layered.
+The answer is two-layered.
 
 ## Property
 
@@ -360,19 +318,14 @@ The answer is now two-layered.
 }
 \]
 
-The integers realize this pattern degenerately and immediately: the residual can be reduced to the
-unit in one gcd-controlled step.
+The integers realize the pattern immediately; the candidate omnific proof realizes it transfinally.
 
-The candidate omnific proof realizes it transfinally: a retained support-class block is repaired,
-the residual support-class rank strictly decreases, and the process terminates in the finite-class
-primal regime.
-
-The failure systems show exactly why each distinction matters:
+The failure systems show why this distinction matters:
 
 - rank one can leave a finite unresolved core;
 - higher rank can support an infinite persistent defect ray.
 
-Therefore the strongest justified UNNS conclusion is:
+The strongest justified UNNS conclusion is therefore:
 
 \[
 \boxed{
@@ -380,23 +333,48 @@ Therefore the strongest justified UNNS conclusion is:
 }
 \]
 
-This final sentence is an UNNS interpretation of the proven comparison, not a replacement definition
-of algebraic primality.
+This is a UNNS interpretation of the proven comparison, not a replacement definition of algebraic primality.
 
 ---
 
-# 10. Research status after this synthesis
+# 11. Project closure status
 
-The original Conway/UNNS structural-comparison objective is now substantially complete at the
-current source state.
+The original Conway/common-refinement structural-comparison objective is now **internally complete** at the locked source state.
 
-What remains would be a **new research branch**, not an unfinished step in this comparison:
+Completed internal layers include:
 
-- formalize the route-closure induction proposition in Lean;
-- seek non-affine algebraic systems that separate the sufficiency mechanism from other proofs of
-  pre-Schreier structure;
-- investigate whether analogous “persistent defect channel vs rank-lowering repair” diagnostics are
-  useful outside factor-refinement algebra.
+- exact integer controls;
+- exact non-refinement controls;
+- rank-one classification;
+- positive affine classification;
+- elementwise primal/non-primal analysis;
+- persistent affine defect-ray theorem;
+- source-locked Conway structural audit;
+- reproducible decisive synthesis;
+- independent local final-theorem build;
+- independent mathematical endgame reconstruction;
+- source-level critical-step reconstruction;
+- kernel-verified independent formalization of the extracted route-closure induction principle.
 
-Those should not be started automatically inside this project without a deliberate decision to
-extend its scope.
+The remaining confirmation layer is **external**:
+
+- independent specialist mathematical review of the Hahn-series / surreal realization.
+
+A still stronger from-scratch reimplementation of the concrete Hahn/surreal critical step could be pursued as an external-strengthening exercise, but it is not treated as unfinished internal work.
+
+---
+
+# 12. New research branches beyond closure
+
+The following are new branches, not missing steps of the original investigation:
+
+1. **Structural phenotype branch**  
+   Test whether exact algebraic loss of primal factor traceability has a reproducible perturbative/percolative signature under frozen STRUC-I and STRUC-PERC-I diagnostics.
+
+2. **Canonical Refinement Problem**  
+   If common refinement exists, determine whether there is a structurally privileged refinement.
+
+3. **Optional non-affine extension**  
+   Seek systems that separate the route-closure induction mechanism from other ways of obtaining pre-Schreier structure.
+
+These branches should be versioned as extensions of the completed existence/traceability investigation rather than used to reopen it.
