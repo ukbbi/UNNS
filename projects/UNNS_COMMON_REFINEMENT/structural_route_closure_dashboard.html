@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Structural Route Closure in the UNNS Substrate — UNNS</title>
+<style>
+:root{
+  --bg:#040810;--panel:#07101e;--border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --violet:#9060e0;--gold:#d4a020;--blue:#4ab0f0;--coral:#e06040;
+  --text:#b8cce0;--dim:#3a5070;--text2:#6080a0;
+  --mono:'Courier New',monospace;--sans:'Trebuchet MS',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:48px 20px}
+
+.shell{width:100%;max-width:880px}
+
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:36px 32px 28px;
+  margin-bottom:0;
+}
+.hero::before{
+  content:'';position:absolute;
+  top:-60px;left:50%;transform:translateX(-50%);
+  width:600px;height:260px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,200,240,.13),transparent 70%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--blue) 20%,var(--accent) 50%,var(--violet) 80%,transparent 100%);
+}
+
+.eye{
+  font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:var(--dim);
+  margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
+}
+.eye-right{letter-spacing:.14em;color:rgba(0,200,240,.4)}
+
+.hero-title-block{margin-bottom:22px;position:relative;z-index:1}
+.hero-label{
+  font-family:var(--mono);font-size:clamp(11px,1.6vw,14px);
+  letter-spacing:.28em;color:rgba(0,200,240,.5);
+  margin-bottom:6px;font-weight:400;
+}
+.hero-name{
+  font-family:var(--mono);
+  font-size:clamp(18px,3.1vw,32px);
+  letter-spacing:.03em;line-height:1.15;
+  color:var(--accent);
+}
+.hero-name-sub{
+  font-family:var(--mono);
+  font-size:clamp(11px,1.7vw,16px);
+  color:rgba(0,200,240,.55);letter-spacing:.02em;
+  margin-top:6px;
+}
+.hero-sub{
+  font-family:var(--mono);font-size:clamp(8px,1.1vw,11px);
+  letter-spacing:.1em;color:var(--text2);
+  margin-top:12px;line-height:1.6;
+}
+
+/* ═══ DIAGRAM ═══ */
+.hero-diagram{
+  margin:16px 0;width:100%;overflow:hidden;
+  border:1px solid var(--border2);background:rgba(4,8,16,.6);
+}
+.hero-diagram svg{display:block;width:100%}
+
+.hero-principle{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+  color:var(--text2);margin-top:4px;position:relative;z-index:1;
+}
+.hero-principle::before{content:'';flex:0 0 18px;height:1px;background:var(--gold)}
+.hero-principle em{color:var(--gold);font-style:normal}
+.hero-principle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* status pills */
+.status{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0 22px}
+.pill{font-family:var(--mono);font-size:7.5px;letter-spacing:.1em;padding:3px 10px;
+  border-radius:2px;border:1px solid}
+.p-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.p-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.p-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.p-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.p-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.p-dim{color:var(--dim);border-color:var(--dim)}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+@media(max-width:660px){.cards{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--border);padding:20px 18px;
+  display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;
+  text-decoration:none;color:inherit;transition:border-color .18s,transform .18s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.c1::before{background:linear-gradient(90deg,var(--accent),var(--blue))}
+.c2::before{background:linear-gradient(90deg,var(--green),var(--accent))}
+.c3::before{background:linear-gradient(90deg,var(--amber),var(--gold))}
+.card:hover{border-color:rgba(0,200,240,.32);transform:translateY(-2px)}
+.card:hover .card-arrow{opacity:1;transform:translateX(0)}
+
+.card-type{font-family:var(--mono);font-size:7px;letter-spacing:.18em;color:var(--dim)}
+.card-icon{font-size:24px;line-height:1;margin:1px 0}
+.card-title{font-family:var(--mono);font-size:11.5px;color:var(--accent);
+  letter-spacing:.04em;line-height:1.4}
+.card-desc{font-size:10px;color:var(--text2);line-height:1.75;flex:1}
+.card-meta{font-family:var(--mono);font-size:8px;color:var(--dim);
+  border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
+.card-arrow{font-size:10px;color:var(--accent);opacity:.4;
+  transform:translateX(-4px);transition:all .18s;align-self:flex-end}
+
+/* FOOTER */
+.foot{font-family:var(--mono);font-size:8px;color:var(--dim);
+  text-align:center;line-height:2}
+.foot a{color:var(--dim);text-decoration:none}
+.foot a:hover{color:var(--text2)}
+
+/* ═══════════════════════════════════════════════
+   CORRELATION / COLLAPSING SECTION
+═══════════════════════════════════════════════ */
+.corr{background:var(--panel);border:1px solid var(--border);margin-bottom:26px;overflow:hidden}
+.corr-top{height:2px;background:linear-gradient(90deg,var(--gold),var(--violet))}
+.corr-head{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;
+  background:none;border:none;width:100%;text-align:left;color:inherit;font-family:inherit}
+.corr-head:hover{background:rgba(212,160,32,.05)}
+.corr-chip{font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:var(--gold);
+  border:1px solid var(--gold);padding:2px 7px;border-radius:2px;flex:0 0 auto;white-space:nowrap}
+.corr-headtext{flex:1;min-width:0}
+.corr-title{display:block;font-family:var(--mono);font-size:11.5px;color:var(--text);letter-spacing:.03em}
+.corr-sub{display:block;font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.6}
+.corr-chev{font-family:var(--mono);font-size:11px;color:var(--dim);transition:transform .22s;flex:0 0 auto}
+.corr.open .corr-chev{transform:rotate(180deg);color:var(--gold)}
+.corr-body{max-height:0;overflow:hidden;transition:max-height .45s ease}
+.corr.open .corr-body{max-height:4200px}
+.corr-inner{padding:4px 22px 26px}
+
+.corr-ref{display:flex;gap:14px;align-items:flex-start;background:rgba(212,160,32,.05);
+  border:1px solid rgba(212,160,32,.3);padding:14px 16px;margin:14px 0 20px;
+  text-decoration:none;color:inherit;transition:border-color .18s}
+.corr-ref:hover{border-color:rgba(212,160,32,.55)}
+.corr-ref-icon{font-size:20px;line-height:1.3;flex:0 0 auto}
+.corr-ref-type{font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:var(--gold)}
+.corr-ref-title{font-family:var(--mono);font-size:11px;color:var(--gold);margin:4px 0 6px;line-height:1.4}
+.corr-ref-desc{font-size:9.5px;color:var(--text2);line-height:1.75}
+.corr-ref-meta{font-family:var(--mono);font-size:7.5px;color:var(--dim);margin-top:7px}
+.corr-ref-arrow{margin-left:auto;color:var(--gold);opacity:.6;font-size:10px;flex:0 0 auto;padding-top:2px}
+
+.corr-diagram{margin:18px 0;border:1px solid var(--border2);background:rgba(4,8,16,.6)}
+.corr-diagram svg{display:block;width:100%}
+
+.corr-h2{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--accent);
+  margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--border)}
+.corr-h2.first{border-top:none;padding-top:0;margin-top:4px}
+.corr-p{font-size:10.5px;color:var(--text2);line-height:1.85;margin-bottom:10px}
+.corr-p strong{color:var(--text)}
+.corr-p code{font-family:var(--mono);font-size:9.5px;color:var(--accent);background:rgba(0,200,240,.07);padding:0 3px}
+
+.chi-box{font-family:var(--mono);font-size:9px;color:var(--text2);background:rgba(4,8,16,.5);
+  border:1px solid var(--border2);border-left:2px solid var(--accent);padding:12px 14px;margin:12px 0;line-height:2}
+.chi-box b{color:var(--accent)}
+
+.termnote{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media(max-width:600px){.termnote{grid-template-columns:1fr}}
+.termcard{border:1px solid var(--border2);padding:11px 13px;background:rgba(4,8,16,.4)}
+.termcard .tc-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;margin-bottom:7px}
+.termcard.tc-a .tc-label{color:var(--green)}
+.termcard.tc-b .tc-label{color:var(--violet)}
+.termcard .tc-body{font-size:9.5px;color:var(--text2);line-height:1.7}
+.termcard .tc-body code{color:var(--text);font-family:var(--mono);font-size:8.7px}
+
+.corr-quote{font-family:var(--mono);font-size:9.5px;color:var(--gold);line-height:1.9;
+  border-left:2px solid var(--gold);padding:11px 16px;margin:16px 0;background:rgba(212,160,32,.04)}
+
+.corr-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════ -->
+<div class="hero">
+
+  <div class="eye">
+    <span>UNNS SUBSTRATE RESEARCH PROGRAM</span>
+    <span class="eye-right">unns.tech</span>
+  </div>
+
+  <div class="hero-title-block">
+    <div class="hero-label">STRUCTURAL ROUTE CLOSURE</div>
+    <div class="hero-name">
+      Structural Route Closure<br>in the UNNS Substrate
+    </div>
+    <div class="hero-name-sub">UNNS COMMON REFINEMENT</div>
+    <div class="hero-sub">
+      Primal Factor Traceability &#8660; Route Closure &nbsp;&middot;&nbsp; Rank-One, Affine &amp; Transfinite Regimes &nbsp;&middot;&nbsp; Persistent Defect-Ray Geometry &nbsp;&middot;&nbsp; Lean-Kernel-Verified Mechanism
+    </div>
+  </div>
+
+  <!-- ═══ MAIN DIAGRAM ═══ -->
+  <div class="hero-diagram">
+  <svg viewBox="0 0 860 196" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="barGreen" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#00dd88"/>
+        <stop offset="1" stop-color="#00dd88" stop-opacity=".55"/>
+      </linearGradient>
+    </defs>
+
+    <rect width="860" height="196" fill="#040c18"/>
+    <line x1="430" y1="0" x2="430" y2="196" stroke="#0a1828" stroke-width=".5"/>
+
+    <!-- ════════════ LEFT: STRUC-PERC-I INSTRUMENT AUDIT ════════════ -->
+    <text x="20" y="16" font-family="Courier New" font-size="7.5" fill="#3a5070" letter-spacing="1.2">ADMISSIBILITY&#8211;PERCOLATION AUDIT</text>
+    <text x="20" y="27" font-family="Courier New" font-size="6" fill="#2a3848">30-system corpus &#183; STRUC-PERC-I v2.5.0 &#8594; v2.5.1 (exact-probe correction)</text>
+
+    <!-- v2.5.0 bar: 25 green / 4 red / 1 amber, unit=10px, base x=64 -->
+    <text x="60" y="76" font-family="Courier New" font-size="7" fill="#6080a0" text-anchor="end">v2.5.0</text>
+    <rect x="64" y="64" width="250" height="18" fill="url(#barGreen)"/>
+    <rect x="314" y="64" width="40" height="18" fill="#e04040" fill-opacity=".8"/>
+    <rect x="354" y="64" width="10" height="18" fill="#f0a030" fill-opacity=".85"/>
+    <text x="188" y="76" font-family="Courier New" font-size="7" fill="#04150e" text-anchor="middle" font-weight="bold">25</text>
+    <text x="334" y="76" font-family="Courier New" font-size="6.5" fill="#1a0505" text-anchor="middle">4</text>
+
+    <!-- v2.5.1 bar: 30 green -->
+    <text x="60" y="116" font-family="Courier New" font-size="7" fill="#00dd88" text-anchor="end" font-weight="bold">v2.5.1</text>
+    <rect x="64" y="104" width="300" height="18" fill="url(#barGreen)"/>
+    <text x="213" y="116" font-family="Courier New" font-size="7" fill="#04150e" text-anchor="middle" font-weight="bold">30 / 30 FULL_PERCOLATION</text>
+
+    <!-- legend -->
+    <rect x="64" y="134" width="8" height="8" fill="#00dd88"/>
+    <text x="76" y="141.5" font-family="Courier New" font-size="6" fill="#6080a0">FULL_PERCOLATION</text>
+    <rect x="188" y="134" width="8" height="8" fill="#e04040" fill-opacity=".8"/>
+    <text x="200" y="141.5" font-family="Courier New" font-size="6" fill="#6080a0">HARD_FRAGMENTATION</text>
+    <rect x="312" y="134" width="8" height="8" fill="#f0a030" fill-opacity=".85"/>
+    <text x="324" y="141.5" font-family="Courier New" font-size="6" fill="#6080a0">TAIL_FRAG.</text>
+
+    <text x="210" y="160" font-family="Courier New" font-size="5.6" font-style="italic" fill="#3a5070" text-anchor="middle">5 verdicts corrected (INT03, AFF01, AFF04, AFN01, AFN06) &#8212; all to FULL_PERCOLATION</text>
+    <text x="210" y="172" font-family="Courier New" font-size="5.6" font-style="italic" fill="#3a5070" text-anchor="middle">v2.5.0 record preserved unmodified; v2.5.1 reported as the audited, corrected instrument</text>
+    <text x="210" y="188" font-family="Courier New" font-size="5.4" fill="#2a4050" text-anchor="middle" letter-spacing=".5">route closure remains a distinct coordinate: rank-one closure does not predict this verdict</text>
+
+    <!-- ════════════ RIGHT: PRINCIPAL THEOREM LADDER ════════════ -->
+    <text x="768" y="16" font-family="Courier New" font-size="6.5" fill="#3a5070" text-anchor="middle" letter-spacing="1.2">PRINCIPAL THEOREM LADDER</text>
+    <text x="768" y="26" font-family="Courier New" font-size="5.5" fill="#2a3848" text-anchor="middle">law &#8594; theorems &#8594; failure geometry &#8594; transfinite mechanism</text>
+
+    <!-- Theorem I box -->
+    <rect x="440" y="32" width="412" height="42" rx="2" fill="rgba(0,221,136,.05)" stroke="#00dd88" stroke-opacity=".35" stroke-width=".8"/>
+    <text x="450" y="45" font-family="Courier New" font-size="7" fill="#00dd88" letter-spacing=".3">Principal Theorem I &#8212; Rank-One Criterion</text>
+    <text x="450" y="57" font-family="Courier New" font-size="6.3" fill="#8090a0">RCI(H)=1 &#8660; global refinement &#183; finite obstruction core, cofinal primal tail</text>
+    <text x="450" y="68" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">exhaustive within stated range, generators 1&#8211;12</text>
+    <rect x="748" y="38" width="96" height="12" rx="1" fill="rgba(0,221,136,.15)" stroke="#00dd88" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="796" y="46.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#00dd88" text-anchor="middle" letter-spacing=".3">793/793 &#183; ZERO EXC.</text>
+
+    <!-- Theorem II box -->
+    <rect x="440" y="80" width="412" height="42" rx="2" fill="rgba(74,176,240,.05)" stroke="#4ab0f0" stroke-opacity=".35" stroke-width=".8"/>
+    <text x="450" y="93" font-family="Courier New" font-size="7" fill="#4ab0f0" letter-spacing=".3">Principal Theorem II &#8212; Affine Criterion</text>
+    <text x="450" y="105" font-family="Courier New" font-size="6.3" fill="#8090a0">ARD(H)=0 &#8660; global refinement &#183; lattice closure + atomic independence</text>
+    <text x="450" y="116" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">fixed 7-system control/certificate suite, not a search</text>
+    <rect x="748" y="86" width="96" height="12" rx="1" fill="rgba(74,176,240,.15)" stroke="#4ab0f0" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="796" y="94.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#4ab0f0" text-anchor="middle" letter-spacing=".3">12 CERTS &#183; 748 REGR.</text>
+
+    <!-- Theorem III box -->
+    <rect x="440" y="128" width="412" height="42" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".4" stroke-width=".8" stroke-dasharray="5,3"/>
+    <text x="450" y="141" font-family="Courier New" font-size="7" fill="#9060e0" letter-spacing=".3">Principal Theorem III &#8212; Persistent Defect-Ray</text>
+    <text x="450" y="153" font-family="Courier New" font-size="6.3" fill="#8090a0">rank(H)&#8805;2, ARD(H)&gt;0 &#8658; unbounded non-primal ray a+n&#961;, n&#8805;0</text>
+    <text x="450" y="164" font-family="Courier New" font-size="5.7" fill="#3a5070" font-style="italic">sharp contrast with the finite core guaranteed at rank one</text>
+    <rect x="716" y="134" width="128" height="12" rx="1" fill="rgba(144,96,224,.15)" stroke="#9060e0" stroke-opacity=".5" stroke-width=".5"/>
+    <text x="780" y="142.5" font-family="Courier New" font-size="6" font-weight="bold" fill="#9060e0" text-anchor="middle" letter-spacing=".3">GEOMETRY OF OBSTRUCTION</text>
+
+    <text x="768" y="188" font-family="Courier New" font-size="5.5" fill="#2a4050" text-anchor="middle" letter-spacing="1">transfinite mechanism: audited candidate realization, independently Lean-kernel-verified, pending external specialist review</text>
+  </svg>
+  </div><!-- /hero-diagram -->
+
+  <div class="hero-principle">
+    <em>Route closure is a coordinate, not a proxy.</em>
+    &nbsp; Losing it need not cost a system its perturbative admissibility or its eventual percolative connectivity &#8212; even where it can leave an exact, reproducible trace in that connectivity's scale.
+  </div>
+
+</div><!-- /hero -->
+
+<!-- ═══════════════════════════════════════════════
+     STATUS + CARDS
+═══════════════════════════════════════════════ -->
+<div class="status">
+  <span class="pill p-green">MANUSCRIPT FROZEN &#183; v2</span>
+  <span class="pill p-blue">LAW: FACTOR TRACEABILITY &#8660; ROUTE CLOSURE</span>
+  <span class="pill p-green">THEOREM I &#8212; RCI(H)=1 &#183; 793/793 FAMILIES</span>
+  <span class="pill p-blue">THEOREM II &#8212; ARD(H)=0 &#183; 7-SYSTEM SUITE</span>
+  <span class="pill p-violet">THEOREM III &#8212; PERSISTENT DEFECT-RAY</span>
+  <span class="pill p-amber">TRANSFINITE &#8212; AUDITED CANDIDATE &#183; LEAN-KERNEL-VERIFIED</span>
+  <span class="pill p-dim">commit 760a81d &#183; Sep 2026</span>
+</div>
+
+<div class="cards">
+
+  <a class="card c1" href="https://unns.tech/media/unns/unns_com_ref/Structural%20Route%20Closure%20in%20the%20UNNS%20Substrate.pdf" target="_blank" rel="noopener">
+    <div class="card-type">Manuscript &middot; PDF</div>
+    <div class="card-icon">📄</div>
+    <div class="card-title">Structural Route Closure<br>in the UNNS Substrate</div>
+    <div class="card-desc">Full frozen manuscript. Establishes the Structural Route-Closure Law &#8212; primal factor traceability &#8660; global four-factor refinement &#8212; across positive integers, rank-one, affine, and transfinite regimes. Principal Theorems I&#8211;III give the exact rank-one and affine criteria and the Persistent Defect-Ray geometry of failure; the audited transfinite mechanism forecloses the analogous channel within the audited candidate realization; a structural extension shows route closure is a coordinate, not a proxy, for admissibility or connectivity.</div>
+    <div class="card-meta">UNNS Substrate Research Program &middot; 32 pages &middot; Sep 2026</div>
+    <div class="card-arrow">&#8594;</div>
+  </a>
+
+  <a class="card c2" href="https://unns.tech/media/unns/unns_com_ref/UNNS_COMMON_REFINEMENT_ANALYTICS.html" target="_blank" rel="noopener">
+    <div class="card-type">Analytics &middot; HTML</div>
+    <div class="card-icon">📊</div>
+    <div class="card-title">UNNS Common Refinement<br>Research Analytics</div>
+    <div class="card-desc">Interactive reproducibility instrument generated directly from the frozen project records &#8212; no value in it is manually transcribed. Embeds a SHA-256 provenance manifest for every cited source file and cross-references each manuscript figure and table to its backing record, spanning the 793-family rank-one sweep, the seven-system affine suite, and the 30-system STRUC-PERC-I admissibility&#8211;percolation corpus.</div>
+    <div class="card-meta">Generated by analytics/BUILD_ANALYTICS.py &middot; full claim&#8211;evidence mapping</div>
+    <div class="card-arrow">&#8594;</div>
+  </a>
+
+  <a class="card c3" href="https://github.com/ukbbi/UNNS/tree/main/projects/UNNS_COMMON_REFINEMENT" target="_blank" rel="noopener">
+    <div class="card-type">Data &amp; Corpus &middot; GitHub</div>
+    <div class="card-icon">🗂️</div>
+    <div class="card-title">Data and Corpus<br>Construction</div>
+    <div class="card-desc">The UNNS_COMMON_REFINEMENT project repository: positive-integer control records (01_INTEGER/), the rank-one and affine validation records (outputs/records/, 04_PROOF_MAP/output/), the Lean&nbsp;4 kernel-verification build (04_PROOF_MAP/lean/), and the UNNS_ADMISSIBILITY_PERCOLATION extension's 30-system corpus with its STRUC-I / STRUC-PERC-I chamber outputs (corpus/, outputs/).</div>
+    <div class="card-meta">commit 760a81d6 &middot; repository state cited in the manuscript</div>
+    <div class="card-arrow">&#8594;</div>
+  </a>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CROSS-MANUSCRIPT CORRELATION (collapsible)
+═══════════════════════════════════════════════ -->
+<div class="corr" id="corrSection">
+  <div class="corr-top"></div>
+  <button class="corr-head" onclick="toggleCorr()" aria-expanded="false" aria-controls="corrBody">
+    <span class="corr-chip">CROSS-REF</span>
+    <span class="corr-headtext">
+      <span class="corr-title">Correlation with Nature as Structural Motion</span>
+      <span class="corr-sub">How this manuscript's route-closure geometry relates to the cross-domain structural-motion synthesis &#8212; a significant correlation, not an identity.</span>
+    </span>
+    <span class="corr-chev">&#9662;</span>
+  </button>
+
+  <div class="corr-body" id="corrBody">
+    <div class="corr-inner">
+
+      <a class="corr-ref" href="https://unns.tech/media/unns/nature_asm/Nature%20as%20Structural%20Motion%20%E2%80%94%20A%20Cross-Domain%20UNNS%20Synthesis.pdf" target="_blank" rel="noopener">
+        <div class="corr-ref-icon">📄</div>
+        <div style="flex:1;min-width:0">
+          <div class="corr-ref-type">Cross-Domain Synthesis &middot; PDF</div>
+          <div class="corr-ref-title">Nature as Structural Motion:<br>A Cross-Domain UNNS Synthesis</div>
+          <div class="corr-ref-desc">Synthesizes thirteen <code style="color:var(--gold);background:none">regime_synthesis</code> branches &#8212; cosmology, core-collapse supernovae, tokamak plasma, charge/color confinement, spectroscopy, galactic dynamics, forced isotropic turbulence, and discrete time-crystalline recurrence &#8212; into eight structural motion classes across two tiers: Tier-1 trajectory shapes (persistence, approach, turning, branching) and Tier-2 relational classes (closure preservation, recoverable motion, recurrence, commutation). Every claim is tagged Observed / Interpretation / Conjecture, and a corpus-dependency map (&sect;2) states exactly how independent the thirteen branches are before any cross-branch pattern is read.</div>
+          <div class="corr-ref-meta">UNNS Substrate Research Program &middot; 39 pages &middot; 2026</div>
+        </div>
+        <div class="corr-ref-arrow">&#8594;</div>
+      </a>
+
+      <div class="corr-h2 first">HOW THE TWO MANUSCRIPTS RELATE</div>
+      <p class="corr-p">The correlation is strong, but the two manuscripts are <strong>not duplicates and should not be merged conceptually</strong> &#8212; they address two different layers of the UNNS Substrate. <strong><a href="https://unns.tech/research/nature-has-routes" target="_blank" rel="nofollow">Nature as Structural Motion</a></strong> is a cross-domain synthesis of how admissible structures change: persistence, approach, turning, branching, closure preservation, recovery, recurrence, commutation. <strong>Structural Route Closure</strong> asks a more exact question &#8212; when two routes reach the same endpoint <code>ab=cd</code>, must they admit a single four-factor routing <code>a=ef, b=gh, c=eg, d=fh</code>? &#8212; and answers it exactly: <strong>primal factor traceability &#8660; global route closure</strong>, then classifies the geometry of failure and repair across rank-one, affine, and the audited transfinite setting.</p>
+
+      <div class="corr-diagram">
+      <svg viewBox="0 0 860 254" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <rect width="860" height="254" fill="#040c18"/>
+        <line x1="430" y1="0" x2="430" y2="178" stroke="#0a1828" stroke-width=".5"/>
+
+        <!-- LEFT: Nature as Structural Motion taxonomy -->
+        <text x="20" y="14" font-family="Courier New" font-size="7.5" fill="#3a5070" letter-spacing="1">NATURE AS STRUCTURAL MOTION</text>
+        <text x="20" y="24" font-family="Courier New" font-size="6" fill="#2a3848">13 regime_synthesis branches &#183; eight motion classes, two tiers</text>
+
+        <text x="20" y="34" font-family="Courier New" font-size="6" fill="#4ab0f0" letter-spacing=".5">TIER 1 &#8212; TRAJECTORY SHAPE</text>
+        <rect x="20" y="38" width="88" height="26" rx="2" fill="rgba(74,176,240,.06)" stroke="#4ab0f0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="116" y="38" width="88" height="26" rx="2" fill="rgba(74,176,240,.06)" stroke="#4ab0f0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="212" y="38" width="88" height="26" rx="2" fill="rgba(74,176,240,.06)" stroke="#4ab0f0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="308" y="38" width="88" height="26" rx="2" fill="rgba(74,176,240,.06)" stroke="#4ab0f0" stroke-opacity=".35" stroke-width=".8"/>
+        <text x="64" y="54" font-family="Courier New" font-size="6.2" fill="#8090a0" text-anchor="middle">Persistence</text>
+        <text x="160" y="54" font-family="Courier New" font-size="6.2" fill="#8090a0" text-anchor="middle">Approach</text>
+        <text x="256" y="54" font-family="Courier New" font-size="6.2" fill="#8090a0" text-anchor="middle">Turning</text>
+        <text x="352" y="54" font-family="Courier New" font-size="6.2" fill="#8090a0" text-anchor="middle">Branching</text>
+
+        <text x="20" y="76" font-family="Courier New" font-size="6" fill="#9060e0" letter-spacing=".5">TIER 2 &#8212; RELATIONAL CLASS</text>
+        <rect x="20" y="80" width="88" height="26" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="116" y="80" width="88" height="26" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="212" y="80" width="88" height="26" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".35" stroke-width=".8"/>
+        <rect x="308" y="80" width="88" height="26" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".35" stroke-width=".8"/>
+        <text x="64" y="96" font-family="Courier New" font-size="6" fill="#8090a0" text-anchor="middle">Closure Pres.</text>
+        <text x="160" y="96" font-family="Courier New" font-size="6" fill="#8090a0" text-anchor="middle">Recoverable</text>
+        <text x="256" y="96" font-family="Courier New" font-size="6" fill="#8090a0" text-anchor="middle">Recurrence</text>
+        <text x="352" y="96" font-family="Courier New" font-size="6" fill="#8090a0" text-anchor="middle">Commutation</text>
+
+        <text x="212" y="122" font-family="Courier New" font-size="5.3" font-style="italic" fill="#3a5070" text-anchor="middle">shape of a trajectory (Tier 1) vs its relation to a chart, grammar, or transformation order (Tier 2)</text>
+        <text x="212" y="134" font-family="Courier New" font-size="5.1" fill="#2a4050" text-anchor="middle">claim tiers: OBSERVED (corpus) &#8594; INTERPRETATION (synthesis) &#8594; CONJECTURE (14.1, explicitly open)</text>
+
+        <!-- RIGHT: Structural Route Closure obstruction geometry -->
+        <text x="645" y="14" font-family="Courier New" font-size="7.5" fill="#3a5070" text-anchor="middle" letter-spacing="1">STRUCTURAL ROUTE CLOSURE</text>
+        <text x="645" y="24" font-family="Courier New" font-size="6" fill="#2a3848" text-anchor="middle">obstruction geometry, by structural rank</text>
+
+        <rect x="440" y="34" width="410" height="28" rx="2" fill="rgba(0,221,136,.05)" stroke="#00dd88" stroke-opacity=".35" stroke-width=".8"/>
+        <text x="450" y="47" font-family="Courier New" font-size="6.6" fill="#00dd88" letter-spacing=".3">RANK ONE</text>
+        <text x="450" y="58" font-family="Courier New" font-size="6" fill="#8090a0">finite defect core &#8658; eventual repair (cofinal primal tail)</text>
+
+        <rect x="440" y="70" width="410" height="28" rx="2" fill="rgba(144,96,224,.06)" stroke="#9060e0" stroke-opacity=".4" stroke-width=".8" stroke-dasharray="5,3"/>
+        <text x="450" y="83" font-family="Courier New" font-size="6.6" fill="#9060e0" letter-spacing=".3">RANK &#8805; 2</text>
+        <text x="450" y="94" font-family="Courier New" font-size="6" fill="#8090a0">persistent defect ray &#8658; no finite repair horizon</text>
+
+        <rect x="440" y="106" width="410" height="42" rx="2" fill="rgba(240,160,48,.06)" stroke="#f0a030" stroke-opacity=".4" stroke-width=".8"/>
+        <text x="450" y="119" font-family="Courier New" font-size="6.6" fill="#f0a030" letter-spacing=".3">TRANSFINITE (AUDITED CANDIDATE)</text>
+        <text x="450" y="130" font-family="Courier New" font-size="5.7" fill="#8090a0">unresolved residual &#8594; exact local repair &#8594; strict rank descent</text>
+        <text x="450" y="140" font-family="Courier New" font-size="5.7" fill="#8090a0">&#8594; primal base &#8594; global splice</text>
+
+        <text x="645" y="162" font-family="Courier New" font-size="5.3" font-style="italic" fill="#3a5070" text-anchor="middle">an almost orthogonal decomposition to the motion taxonomy at left &#8212; failure/repair, not admissible change</text>
+
+        <!-- BRIDGE: chi coordinate -->
+        <line x1="60" y1="184" x2="800" y2="184" stroke="#d4a020" stroke-opacity=".45" stroke-width=".8"/>
+        <circle cx="212" cy="184" r="2" fill="#d4a020"/>
+        <circle cx="645" cy="184" r="2" fill="#d4a020"/>
+        <rect x="180" y="192" width="500" height="46" rx="2" fill="rgba(212,160,32,.06)" stroke="#d4a020" stroke-opacity=".45" stroke-width=".8"/>
+        <text x="430" y="206" font-family="Courier New" font-size="6.4" font-weight="bold" fill="#d4a020" text-anchor="middle">&#967;_RC = TRACEABLE / DEFECTIVE &#8660; primal factor traceability</text>
+        <text x="430" y="218" font-family="Courier New" font-size="5.7" fill="#8090a0" text-anchor="middle">exact invariant realizing Nature as Structural Motion's abstract route/closure coordinate &#967;</text>
+        <text x="430" y="230" font-family="Courier New" font-size="5.4" font-style="italic" fill="#3a5070" text-anchor="middle">structural analogy, not mathematical identity &#8212; Open Problem O4 remains open</text>
+
+        <text x="430" y="248" font-family="Courier New" font-size="5.1" fill="#2a4050" text-anchor="middle" letter-spacing=".4">S = (L, c, &#967;) &#8212; state, chart, route coordinate &#183; neither reduces to the other</text>
+      </svg>
+      </div>
+
+      <div class="corr-h2">THE &chi; COORDINATE &#8212; A THEOREM-LEVEL REALIZATION</div>
+      <p class="corr-p">Nature as Structural Motion represents a synthesis-level structural state <code>S = (L, c, &chi;)</code>, where <code>&chi;</code> is a deliberately branch-specific route/closure coordinate carrying structural information the scalar admissibility verdict cannot capture. Structural Route Closure now gives one algebraic setting an exact instance of <code>&chi;</code>, and it is not merely an empirical label &#8212; it is the manuscript's proved invariant, primal factor traceability.</p>
+      <div class="chi-box">
+        <b>&chi;_RC</b> = { TRACEABLE, every equal endpoint has a common refinement<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DEFECTIVE, some equal endpoint has none }
+      </div>
+      <p class="corr-p">This does <strong>not</strong> prove that charge-route closure, color closure, H-mode route preservation, and algebraic common refinement are the same object &#8212; the motion manuscript's own <strong>Open Problem O4</strong> asks precisely this (whether "route" admits one domain-independent formal definition), and it remains open. The new manuscript supplies a powerful candidate archetype, not a resolution.</p>
+
+      <div class="corr-h2">TERMINOLOGY: "CLOSURE" NEEDS SPECIAL CARE</div>
+      <div class="termnote">
+        <div class="termcard tc-a">
+          <div class="tc-label">ALGEBRAIC / COMMON-REFINEMENT ROUTE CLOSURE</div>
+          <div class="tc-body">Structural Route Closure's exact sense: <code>ab=cd &#8658; &exist; e,f,g,h : (a,b,c,d)=(ef,gh,eg,fh)</code>. A proved algebraic equivalence with primal factor traceability.</div>
+        </div>
+        <div class="termcard tc-b">
+          <div class="tc-label">PHYSICAL ROUTE / CLOSURE PRESERVATION</div>
+          <div class="tc-body">Nature as Structural Motion's Tier-2 relational class (Motion Class 5.5): a trajectory stays admissible because a transformation preserves or repairs &chi;. Evidenced by charge, color confinement, and H-mode plasma.</div>
+        </div>
+      </div>
+      <p class="corr-p">Until a formal bridge is constructed, the correct relation is <strong>structural analogy, not mathematical identity</strong> &#8212; keeping the two senses of &ldquo;closure&rdquo; distinct protects both manuscripts.</p>
+
+      <div class="corr-h2">A COORDINATE, NOT A PROXY &#8212; INDEPENDENTLY DEMONSTRATED TWICE</div>
+      <p class="corr-p">Nature as Structural Motion's architecture <code>S=(L,c,&chi;)</code> insists that neither the ladder, nor representation, nor an admissibility verdict alone is structurally exhaustive. Structural Route Closure's Section&nbsp;11 now demonstrates the same claim on a concrete 30-system corpus: two systems can both have <code>A&kappa;=1</code>, both eventually percolate, and yet only one possesses global route closure. <strong>Route closure carries information the admissibility and connectivity coordinates genuinely do not contain</strong> &#8212; not philosophical agreement between the manuscripts, but the same architecture independently demonstrated from two different directions.</p>
+
+      <div class="corr-quote">
+        &ldquo;Structural motion classifies how admissible configurations change; structural route closure classifies whether distinct decompositional histories remain jointly traceable. Together they separate motion from route coherence and show that neither is reducible to admissibility alone.&rdquo;
+      </div>
+
+      <p class="corr-p"><em>Nature as Structural Motion</em> is not being revised by this correlation &#8212; its central thesis stands. If a second edition or larger foundational synthesis is produced, <code>UNNS_COMMON_REFINEMENT</code> would be incorporated as a new <strong>mathematical/algebraic branch</strong>, not a fourteenth empirical motion branch: the counterpart that gives theorem-level substance to what the synthesis could previously describe only abstractly as route/closure structure.</p>
+
+      <div class="corr-pills">
+        <span class="pill p-amber">STATUS: STRUCTURAL ANALOGY, NOT IDENTITY</span>
+        <span class="pill p-dim">13 REGIME_SYNTHESIS BRANCHES &middot; 8 MOTION CLASSES, 2 TIERS</span>
+        <span class="pill p-dim">CLAIM TIERS: OBSERVED &#8594; INTERPRETATION &#8594; CONJECTURE</span>
+        <span class="pill p-dim">OPEN PROBLEM O4 &#183; DOMAIN-INDEPENDENT &quot;ROUTE&quot; &#183; UNRESOLVED</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <a href="https://unns.tech" target="_blank" rel="noopener">unns.tech</a>
+  &nbsp;&middot;&nbsp; UNNS Substrate Research Program &nbsp;&middot;&nbsp; 2026
+</div>
+
+</div><!-- /shell -->
+
+<script>
+function toggleCorr(){
+  var sec = document.getElementById('corrSection');
+  var btn = sec.querySelector('.corr-head');
+  var isOpen = sec.classList.toggle('open');
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+</script>
+</body>
+</html>
