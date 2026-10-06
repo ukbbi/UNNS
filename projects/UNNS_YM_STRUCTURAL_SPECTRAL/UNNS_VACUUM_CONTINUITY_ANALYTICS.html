@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNNS Vacuum Continuity — Research Analytics</title>
+<style>
+:root{
+  --bg:#040810;--bg2:#060c16;--panel:#07101e;--panel2:#0a1628;
+  --border:#0e2035;--border2:#0c1a2e;
+  --accent:#00c8f0;--green:#00dd88;--amber:#f0a030;--red:#e04040;
+  --blue:#4ab0f0;--violet:#9060e0;--gold:#d4a020;--coral:#e06040;
+  --text:#b8cce0;--text2:#6080a0;--dim:#3a5070;
+  --sans:'Trebuchet MS',sans-serif;--mono:'Courier New',monospace;--display:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+.shell{max-width:1440px;margin:0 auto;padding:32px 32px 120px}
+
+.hero{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:24px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 120% at 90% 50%,rgba(0,200,240,.06),transparent);pointer-events:none}
+.hero-eye{font-size:8px;color:var(--text2);letter-spacing:.18em;font-weight:700;margin-bottom:10px;font-family:var(--mono)}
+.hero h1{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--accent);letter-spacing:.06em;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:12px;color:var(--text2);letter-spacing:.04em;max-width:860px;margin-bottom:14px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.badge{font-size:8px;font-family:var(--mono);letter-spacing:.1em;padding:3px 10px;border:1px solid;border-radius:2px}
+.b-green{color:var(--green);border-color:var(--green);background:rgba(0,221,136,.07)}
+.b-blue{color:var(--blue);border-color:var(--blue);background:rgba(74,176,240,.07)}
+.b-amber{color:var(--amber);border-color:var(--amber);background:rgba(240,160,48,.07)}
+.b-violet{color:var(--violet);border-color:var(--violet);background:rgba(144,96,224,.07)}
+.b-red{color:var(--red);border-color:var(--red);background:rgba(224,64,64,.07)}
+.b-dim{color:var(--dim);border-color:var(--dim);background:transparent}
+
+.tabbar{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:4px}
+.tab{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--text2);padding:10px 14px;cursor:pointer;border:1px solid transparent;border-bottom:none;background:var(--panel);white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-color:var(--border2);background:var(--panel2);position:relative}
+.tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--panel2)}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+
+.sec-label{font-size:8px;color:var(--dim);letter-spacing:.2em;font-weight:700;padding:5px 0 10px;border-top:1px solid var(--border2);margin-top:32px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-family:var(--mono)}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.sec-label:first-child{margin-top:0;border-top:none}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--border2);padding:12px 14px}
+.stat-val{font-family:var(--display);font-size:20px;line-height:1.15;margin-bottom:3px}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.06em;font-family:var(--mono)}
+
+.panel{background:var(--panel);border:1px solid var(--border2);padding:16px 20px;margin-bottom:14px}
+.panel-title{font-size:8px;color:var(--accent);letter-spacing:.14em;font-weight:700;border-bottom:1px solid var(--border2);padding-bottom:8px;margin-bottom:12px;font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.psub{color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.row2>*,.row3>*{min-width:0}
+@media(max-width:1000px){.row2,.row3{grid-template-columns:1fr}}
+
+.scrollbox{overflow-x:auto;border:1px solid var(--border2)}
+.dt{width:100%;border-collapse:collapse;font-size:9.5px}
+.dt th{color:var(--accent);letter-spacing:.08em;font-weight:700;padding:6px 10px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap;background:var(--panel2);font-family:var(--mono);position:sticky;top:0}
+.dt td{padding:5px 10px;border-bottom:1px solid var(--border2);font-family:var(--mono);white-space:nowrap}
+.dt tr:hover td{background:rgba(0,200,240,.04)}
+.dt tr.clickable{cursor:pointer}
+.dt tr.hl td{background:rgba(224,64,64,.07)}
+
+.v-yes{color:var(--green);font-weight:700}
+.v-no{color:var(--red);font-weight:700}
+.v-pass{color:var(--green);border:1px solid var(--green);background:rgba(0,221,136,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-partial{color:var(--amber);border:1px solid var(--amber);background:rgba(240,160,48,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-open{color:var(--red);border:1px solid var(--red);background:rgba(224,64,64,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+.v-interp{color:var(--violet);border:1px solid var(--violet);background:rgba(144,96,224,.08);padding:2px 7px;border-radius:2px;font-size:8px;letter-spacing:.08em}
+
+.detail-row td{background:var(--panel2);font-family:var(--sans);font-size:10.5px;white-space:normal;padding:14px 16px}
+.detail-grid{display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:10px}
+.detail-grid dt{color:var(--dim);font-family:var(--mono);letter-spacing:.06em}
+.detail-grid dd{color:var(--text)}
+
+.ladder{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.ladder-step{display:grid;grid-template-columns:260px 300px 1fr;gap:12px;align-items:center;padding:9px 14px;border:1px solid var(--border2);background:var(--panel2)}
+.ladder-lv{font-family:var(--display);font-size:11px;color:var(--text)}
+.ladder-desc{font-size:9.5px;color:var(--text2)}
+.ladder-tag{font-size:8px;font-family:var(--mono);letter-spacing:.08em;padding:2px 8px;border-radius:2px;white-space:normal}
+@media(max-width:1000px){.ladder-step{grid-template-columns:1fr}}
+
+.pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:0;font-family:var(--mono);font-size:8.5px;margin:10px 0}
+.pipe-step{background:var(--panel2);border:1px solid var(--border2);padding:6px 10px;color:var(--text)}
+.pipe-step.active{border-color:var(--accent);color:var(--accent)}
+.pipe-step.red{border-color:var(--red);color:var(--red)}
+.pipe-step.green{border-color:var(--green);color:var(--green)}
+.pipe-arrow{color:var(--dim);padding:0 6px}
+
+.special-banner{border:1px solid var(--amber);border-left:3px solid var(--amber);background:rgba(240,160,48,.05);padding:12px 16px;margin-bottom:14px}
+.special-title{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:5px;font-family:var(--mono)}
+.special-banner.violet{border-color:var(--violet)}
+.special-banner.violet .special-title{color:var(--violet)}
+.special-banner.green{border-color:var(--green)}
+.special-banner.green .special-title{color:var(--green)}
+.special-banner.red{border-color:var(--red)}
+.special-banner.red .special-title{color:var(--red)}
+
+.caution{font-size:9px;color:var(--dim);border-top:1px solid var(--border2);margin-top:10px;padding-top:8px;font-family:var(--mono)}
+.svgpanel{width:100%;height:auto;background:var(--panel2);border:1px solid var(--border2)}
+.prose{font-size:10.5px;color:var(--text);line-height:1.85}
+.prose b{color:var(--accent);font-weight:700}
+code{color:var(--accent);font-family:var(--mono);font-size:.95em}
+
+.drawer-btn{font-family:var(--mono);font-size:8px;letter-spacing:.08em;color:var(--text2);border:1px solid var(--border2);background:transparent;padding:2px 8px;cursor:pointer;border-radius:2px}
+.drawer-btn:hover{color:var(--accent);border-color:var(--accent)}
+.drawer{display:none;background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:10px 14px;margin-top:8px;font-family:var(--mono);font-size:9.5px;color:var(--text2);line-height:1.9;font-weight:400;letter-spacing:0;text-transform:none;width:100%}
+.drawer.open{display:block}
+.drawer b{color:var(--accent);font-weight:400}
+
+.chip{font-size:8px;font-family:var(--mono);padding:1px 6px;border:1px solid var(--border2);border-radius:2px;color:var(--text2)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:8.5px;font-family:var(--mono);color:var(--text2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:8px;display:inline-block;border-radius:1px}
+.eq{font-family:var(--mono);color:var(--text);background:var(--panel2);border:1px solid var(--border2);padding:8px 14px;margin:8px 0;font-size:11px;text-align:center}
+footer.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border2);font-size:8px;color:var(--dim);font-family:var(--mono);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="hero">
+  <div class="hero-eye">UNNS SUBSTRATE RESEARCH PROGRAM · UNNS_YM_GAP → UNNS_VACUUM_CONTINUITY · SELF-CONTAINED BUILD</div>
+  <h1 id="hero-title">UNNS Vacuum Continuity — Research Analytics</h1>
+  <div class="hero-sub" id="hero-sub"></div>
+  <div class="badges" id="hero-badges"></div>
+  <div class="hero-sub" id="hero-meta" style="font-family:var(--mono);font-size:9px"></div>
+</div>
+
+<div class="tabbar" id="tabbar"></div>
+
+<div id="panel-overview" class="tabpanel"></div>
+<div id="panel-ymgap" class="tabpanel"></div>
+<div id="panel-access" class="tabpanel"></div>
+<div id="panel-spectral" class="tabpanel"></div>
+<div id="panel-synthesis" class="tabpanel"></div>
+<div id="panel-claims" class="tabpanel"></div>
+<div id="panel-provenance" class="tabpanel"></div>
+
+<footer class="foot" id="foot"></footer>
+
+</div>
+
+<script>
+const DATA = {"meta":{"title":"UNNS Vacuum Continuity \u2014 Research Analytics","subtitle":"Non-Crossability Program \u00b7 Structural Vacuum Accessibility \u00b7 Spectral Scale \u00b7 BRIDGE-III Coexistence","generated_at":"2026-10-05T23:39:52Z","projects":[{"id":"UNNS_YM_GAP","status":"CLOSED","date":"2026-09-30","terminal":"YM-3B \u00b7 DATA-INDETERMINATE"},{"id":"UNNS_VACUUM_CONTINUITY","status":"CLOSED \u2014 PRIMARY PROGRAM COMPLETE","date":"2026-10-06","terminal":"STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED"}]},"gap":{"closure":{"project":"UNNS_YM_GAP","title":"UNNS Yang\u2013Mills Gap / Vacuum Boundary Non-Crossability","status":"CLOSED","closed_date":"2026-09-30","closure_stage":"YM-3B","terminal_chamber":"CORR-I v0.1.2","terminal_chamber_sha256":"f972c9d460cebc19ef165e66c03f971411062eba093876406ed2efe614e2deb2","central_hypothesis_status":"NOT ESTABLISHED","ym3a_verdict":"MODEL-REFINEMENT PERSISTENT","ym3b_verdict":"DATA-INDETERMINATE","ym3b_central_S_B":{"6.20":0.0203500496382457,"6.40":0.0358668952699357,"6.71":-0.00339461088768095,"6.93":0.0518514277604239},"ym3b_beta_6_71_uncertainty":{"q025":-0.0274537105565551,"median":-0.00328523308613006,"q975":0.0193203674590549,"fraction_S_positive":0.3935,"fraction_S_negative":0.6065},"future_tests_cancelled":["Liang14 Class B replication","Chen06 extension","additional data-source search","CORR-I redesign to restore separation","YM-4 bridge theorem under the original non-crossability premise"],"stage0_inheritance_statement":"The proposed refinement-stable structural vacuum boundary was not established; the central Class B trajectory crossed the proposed boundary once, while uncertainty prevented definitive falsification."},"ym3":[{"code":"b56924","beta":5.6924,"R_massive":0.018555950307581795,"R_p05_match":0.46554192591693105,"R_p1_match":0.30310414618988735,"R_p2_match":0.17035854431712785,"R_p4_match":0.08605761820881867,"R_p8_match":0.04157514731672843,"S_fixed":0.7080183113166053,"S_match":0.8067120595541287,"matched_ordering_pass":true,"R_native":1.5665486345625176e-05,"S_fixed_native":7.7851041286514535,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b58000","beta":5.8,"R_massive":0.012377228765043425,"R_p05_match":0.4833969767292072,"R_p1_match":0.3153121817962548,"R_p2_match":0.17507251471841084,"R_p4_match":0.08598891745106514,"R_p8_match":0.04015563879406378,"S_fixed":1.1129504257681193,"S_match":1.1769044792571561,"matched_ordering_pass":true,"R_native":3.449218307998154e-05,"S_fixed_native":6.995831378241343,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b58941","beta":5.8941,"R_massive":0.010214249672033215,"R_p05_match":0.4908761571162872,"R_p1_match":0.32031020980174096,"R_p2_match":0.1767246625463892,"R_p4_match":0.08554857198869084,"R_p8_match":0.039233825463190174,"S_fixed":1.3050250482058554,"S_match":1.3457554971598593,"matched_ordering_pass":true,"R_native":0.00010110598405659895,"S_fixed_native":5.920394785457795,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b59900","beta":5.99,"R_massive":0.008840082483861936,"R_p05_match":0.49613595424417706,"R_p1_match":0.3237789842755198,"R_p2_match":0.17776058792106342,"R_p4_match":0.08508067537452171,"R_p8_match":0.03846307348757996,"S_fixed":1.4495126128725122,"S_match":1.4704024434816907,"matched_ordering_pass":true,"R_native":0.0002533791463147328,"S_fixed_native":5.001677130235676,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b60625","beta":6.0625,"R_massive":0.008297253151723106,"R_p05_match":0.4983506936868435,"R_p1_match":0.3252275388076468,"R_p2_match":0.17816423905487186,"R_p4_match":0.08484319906238962,"R_p8_match":0.038107767526075205,"S_fixed":1.5128843057796952,"S_match":1.524493618976582,"matched_ordering_pass":true,"R_native":0.0004885230896200986,"S_fixed_native":4.345177362481835,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b62350","beta":6.235,"R_massive":0.007949605634430286,"R_p05_match":0.499816193943113,"R_p1_match":0.32618200302086914,"R_p2_match":0.17842045884313806,"R_p4_match":0.0846726332092518,"R_p8_match":0.03786257680446608,"S_fixed":1.5556864985283496,"S_match":1.5608408831576661,"matched_ordering_pass":true,"R_native":0.0018585492424228647,"S_fixed_native":3.009012614039517,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b63380","beta":6.338,"R_massive":0.00798475089044971,"R_p05_match":0.49966626783788054,"R_p1_match":0.32608450770117176,"R_p2_match":0.17839464832782345,"R_p4_match":0.08469057711176217,"R_p8_match":0.037888030022050996,"S_fixed":1.5512752362403273,"S_match":1.5571016476588453,"matched_ordering_pass":true,"R_native":0.003589464072938234,"S_fixed_native":2.3508059121799327,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true},{"code":"b65000","beta":6.5,"R_massive":0.007687649374738193,"R_p05_match":0.5009467921186684,"R_p1_match":0.32691610852359804,"R_p2_match":0.17861212714684152,"R_p4_match":0.08453367126385365,"R_p8_match":0.037667920617950615,"S_fixed":1.5891937564280334,"S_match":1.5891937564280458,"matched_ordering_pass":true,"R_native":0.007687649374738193,"S_fixed_native":1.5891937564280334,"baseline":"POSITIVE-SPECTRAL CONSISTENT","plateau":true,"identity_null":true}],"ym3b":[{"code":"b620","beta":6.2,"R_B":0.0885758600649224,"R_p05":0.292902660956073,"R_p1":0.1711597314102,"R_p2":0.110767885680496,"R_p4":0.0991117785978651,"R_p8":0.0928251003994671,"S_B":0.0203500496382457,"matched_order_pass":true,"R_B_pchip":0.0887190705842363,"S_B_pchip":0.019648444109113,"linear_sign":"POS","pchip_sign":"POS","interpolation_sign_reversal":false,"baseline_classification":"SPECTRAL-POSITIVITY TENSION","positive_count":7.0,"monotonicity_violations":0.0,"log_convexity_violations":2.0,"plateau_found":true,"identity_null_pass":true},{"code":"b640","beta":6.4,"R_B":0.082775197275327,"R_p05":0.295964483545892,"R_p1":0.173108541777149,"R_p2":0.107780743686861,"R_p4":0.0961703755350442,"R_p8":0.0899015376272635,"S_B":0.0358668952699357,"matched_order_pass":true,"R_B_pchip":0.0827121476192719,"S_B_pchip":0.0361978223151782,"linear_sign":"POS","pchip_sign":"POS","interpolation_sign_reversal":false,"baseline_classification":"SPECTRAL-POSITIVITY TENSION","positive_count":7.0,"monotonicity_violations":0.0,"log_convexity_violations":2.0,"plateau_found":true,"identity_null_pass":true},{"code":"b671","beta":6.71,"R_B":0.0926995705855602,"R_p05":0.293782035035922,"R_p1":0.171719493169037,"R_p2":0.109902532337254,"R_p4":0.0982594449374469,"R_p8":0.0919778198901533,"S_B":-0.00339461088768095,"matched_order_pass":false,"R_B_pchip":0.092817769385267,"S_B_pchip":-0.00394801568999501,"linear_sign":"NEG","pchip_sign":"NEG","interpolation_sign_reversal":false,"baseline_classification":"SPECTRAL-POSITIVITY TENSION","positive_count":7.0,"monotonicity_violations":0.0,"log_convexity_violations":1.0,"plateau_found":true,"identity_null_pass":true},{"code":"b693","beta":6.93,"R_B":0.0823332743752914,"R_p05":0.292955397493231,"R_p1":0.171193301654966,"R_p2":0.110715819622836,"R_p4":0.0990604907054645,"R_p8":0.092774113959839,"S_B":0.0518514277604239,"matched_order_pass":true,"R_B_pchip":0.0822937248560384,"S_B_pchip":0.0520600950918353,"linear_sign":"POS","pchip_sign":"POS","interpolation_sign_reversal":false,"baseline_classification":"SPECTRAL-POSITIVITY TENSION","positive_count":7.0,"monotonicity_violations":0.0,"log_convexity_violations":2.0,"plateau_found":false,"identity_null_pass":true}],"ym3b_unc":[{"code":"b620","beta":6.2,"q025":0.00405279247146489,"q16":0.012275269313123,"median":0.0203248988992696,"q84":0.028678012415655,"q975":0.0356585257186639,"fraction_S_positive":0.9955,"fraction_S_negative":0.0045,"sign_stable_95":true},{"code":"b640","beta":6.4,"q025":0.0171667372397503,"q16":0.0265613333877094,"median":0.035605900685905,"q84":0.0448101878908639,"q975":0.0530937980017089,"fraction_S_positive":1.0,"fraction_S_negative":0.0,"sign_stable_95":true},{"code":"b671","beta":6.71,"q025":-0.0274537105565551,"q16":-0.0152871520610496,"median":-0.00328523308613006,"q84":0.00864617036735731,"q975":0.0193203674590549,"fraction_S_positive":0.3935,"fraction_S_negative":0.6065,"sign_stable_95":false},{"code":"b693","beta":6.93,"q025":0.0247257518423402,"q16":0.0382717148512983,"median":0.0526208064099431,"q84":0.0675737443178949,"q975":0.0811943045713221,"fraction_S_positive":1.0,"fraction_S_negative":0.0,"sign_stable_95":true}],"ym3b_r3":[{"code":"b620","beta":6.2,"n_points":5.0,"R_B":0.153416371928139,"R_p8":0.157057078685336,"S_B":0.0101858070627046,"sign":"POS"},{"code":"b620","beta":6.2,"n_points":6.0,"R_B":0.114616400474505,"R_p8":0.118553412181155,"S_B":0.0146672929456551,"sign":"POS"},{"code":"b620","beta":6.2,"n_points":7.0,"R_B":0.0885758600649224,"R_p8":0.0928251003994671,"S_B":0.0203500496382457,"sign":"POS"},{"code":"b640","beta":6.4,"n_points":5.0,"R_B":0.145996627927558,"R_p8":0.152613115451935,"S_B":0.0192490331158973,"sign":"POS"},{"code":"b640","beta":6.4,"n_points":6.0,"R_B":0.108031968575923,"R_p8":0.115010427109082,"S_B":0.0271849263252996,"sign":"POS"},{"code":"b640","beta":6.4,"n_points":7.0,"R_B":0.082775197275327,"R_p8":0.0899015376272635,"S_B":0.0358668952699357,"sign":"POS"},{"code":"b671","beta":6.71,"n_points":5.0,"R_B":0.158542623942813,"R_p8":0.155769798371959,"S_B":-0.00766278390810653,"sign":"NEG"},{"code":"b671","beta":6.71,"n_points":6.0,"R_B":0.11934471364654,"R_p8":0.117526887783932,"S_B":-0.00666595096772141,"sign":"NEG"},{"code":"b671","beta":6.71,"n_points":7.0,"R_B":0.0926995705855602,"R_p8":0.0919778198901533,"S_B":-0.00339461088768095,"sign":"NEG"},{"code":"b693","beta":6.93,"n_points":5.0,"R_B":0.143874421694241,"R_p8":0.156979628759651,"S_B":0.037859706700545,"sign":"POS"},{"code":"b693","beta":6.93,"n_points":6.0,"R_B":0.106432178143458,"R_p8":0.11849164558791,"S_B":0.0466147807967202,"sign":"POS"},{"code":"b693","beta":6.93,"n_points":7.0,"R_B":0.0823332743752914,"R_p8":0.092774113959839,"S_B":0.0518514277604239,"sign":"POS"}],"gap_ladder":[{"level":1.0,"ensemble_id":"b5p6924","beta":5.6924,"lattice":"10^3x16","a_sqrt_sigma":0.3999,"a_sqrt_sigma_err":0.0058,"gap_aM_table1":0.987,"gap_aM_err_table1":0.009,"gap_M_over_sqrt_sigma":2.468117029,"ratio_err_indep":0.0422836031,"A1pp_ground_aM_table7_13":0.987,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":2.0,"ensemble_id":"b5p80","beta":5.8,"lattice":"12^3x16","a_sqrt_sigma":0.31666,"a_sqrt_sigma_err":0.00066,"gap_aM_table1":0.908,"gap_aM_err_table1":0.012,"gap_M_over_sqrt_sigma":2.867428788,"ratio_err_indep":0.038363909,"A1pp_ground_aM_table7_13":0.908,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":3.0,"ensemble_id":"b5p8941","beta":5.8941,"lattice":"14^3x16","a_sqrt_sigma":0.26118,"a_sqrt_sigma_err":0.00037,"gap_aM_table1":0.7991,"gap_aM_err_table1":0.0092,"gap_M_over_sqrt_sigma":3.059575771,"ratio_err_indep":0.0354904137,"A1pp_ground_aM_table7_13":0.799,"table1_minus_spectrum_aM":0.0001,"note_ids":"N03"},{"level":4.0,"ensemble_id":"b5p99","beta":5.99,"lattice":"18^3x18","a_sqrt_sigma":0.21982,"a_sqrt_sigma_err":0.00077,"gap_aM_table1":0.7045,"gap_aM_err_table1":0.0065,"gap_M_over_sqrt_sigma":3.204894914,"ratio_err_indep":0.03162901007,"A1pp_ground_aM_table7_13":0.7045,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":5.0,"ensemble_id":"b6p0625","beta":6.0625,"lattice":"20^3x20","a_sqrt_sigma":0.19472,"a_sqrt_sigma_err":0.00054,"gap_aM_table1":0.6365,"gap_aM_err_table1":0.0043,"gap_M_over_sqrt_sigma":3.26879622,"ratio_err_indep":0.02387119478,"A1pp_ground_aM_table7_13":0.6365,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":6.0,"ensemble_id":"b6p235","beta":6.235,"lattice":"26^3x26","a_sqrt_sigma":0.15003,"a_sqrt_sigma_err":0.0003,"gap_aM_table1":0.4969,"gap_aM_err_table1":0.0029,"gap_M_over_sqrt_sigma":3.312004266,"ratio_err_indep":0.02043252933,"A1pp_ground_aM_table7_13":0.4969,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":7.0,"ensemble_id":"b6p3380","beta":6.338,"lattice":"30^3x30","a_sqrt_sigma":0.12928,"a_sqrt_sigma_err":0.00027,"gap_aM_table1":0.4276,"gap_aM_err_table1":0.0037,"gap_M_over_sqrt_sigma":3.307549505,"ratio_err_indep":0.02944188715,"A1pp_ground_aM_table7_13":0.4276,"table1_minus_spectrum_aM":0.0,"note_ids":""},{"level":8.0,"ensemble_id":"b6p50","beta":6.5,"lattice":"38^3x38","a_sqrt_sigma":0.10383,"a_sqrt_sigma_err":0.00024,"gap_aM_table1":0.3474,"gap_aM_err_table1":0.0022,"gap_M_over_sqrt_sigma":3.345853799,"ratio_err_indep":0.02255579883,"A1pp_ground_aM_table7_13":0.3474,"table1_minus_spectrum_aM":0.0,"note_ids":""}],"continuum":[{"coord_id":"c1","channel":"A1++","state_index":0.0,"label":"A1++ ground (0++ mass-gap state)","M_over_sqrt_sigma_continuum":3.405,"uncertainty":0.021,"poor_fit":0.0,"record_id":"cont_A1++_s01","source_table":14.0},{"coord_id":"c2","channel":"A1++","state_index":1.0,"label":"A1++ first excitation","M_over_sqrt_sigma_continuum":5.855,"uncertainty":0.041,"poor_fit":0.0,"record_id":"cont_A1++_s02","source_table":14.0},{"coord_id":"c3","channel":"E++","state_index":0.0,"label":"E++ ground","M_over_sqrt_sigma_continuum":4.904,"uncertainty":0.02,"poor_fit":0.0,"record_id":"cont_E++_s01","source_table":14.0},{"coord_id":"c4","channel":"T2++","state_index":0.0,"label":"T2++ ground","M_over_sqrt_sigma_continuum":4.884,"uncertainty":0.019,"poor_fit":0.0,"record_id":"cont_T2++_s01","source_table":14.0},{"coord_id":"c5","channel":"A1-+","state_index":0.0,"label":"A1-+ ground (0-+ candidate)","M_over_sqrt_sigma_continuum":5.276,"uncertainty":0.045,"poor_fit":0.0,"record_id":"cont_A1-+_s01","source_table":14.0}]},"vc":{"verdicts":[{"branch":"Baker 2022 \u00b7 VREF-I/A","verdict":"CALIBRATION-SENSITIVE","verified":true},{"branch":"CEA 2017 \u00b7 VREF-I/B","verdict":"REFINEMENT-INDETERMINATE","verified":true},{"branch":"CEA 2017 \u00b7 STRUC bridge","verdict":"ARCHITECTURE-PRESERVED","verified":true},{"branch":"Battelli 2019 \u00b7 unsmoothed control","verdict":"UNSMOOTHED-ARCHITECTURE-CONSISTENT","verified":true},{"branch":"Yanagihara 2019 \u00b7 EMT-I R=0.69","verdict":"EMT-UNCERTAINTY-LIMITED","verified":true},{"branch":"Yanagihara 2019 \u00b7 geometry","verdict":"GEOMETRY-ROBUST-NO-FLOOR","verified":true},{"branch":"Stage 2 synthesis","verdict":"NO-UNIVERSAL-STRUCTURAL-EXCLUSION-DETECTED","verified":true},{"branch":"Stage 2 interpretation","verdict":"STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED","verified":true},{"branch":"SPEC-I/A","verdict":"SPECTRAL-SCALE-POSITIVE","verified":true},{"branch":"SPEC-I/B","verdict":"SPECTRAL-SCALE-POSITIVE","verified":true},{"branch":"BRIDGE-III","verdict":"COEXISTENCE-SUPPORTED","verified":true},{"branch":"Stage 3 / project","verdict":"STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED","verified":true}],"vref_a":[{"interpolation":"linear","window":0.0,"start_u":0.0,"end_u":0.5,"R12":0.0549177425231,"R23":0.0246744385551,"R13":0.0747195113585,"C_R23_over_R12":0.449298121544,"C_class":"<1"},{"interpolation":"linear","window":1.0,"start_u":0.125,"end_u":0.625,"R12":0.0307216544213,"R23":0.0167849689661,"R13":0.0369301628311,"C_R23_over_R12":0.546356284592,"C_class":"<1"},{"interpolation":"linear","window":2.0,"start_u":0.25,"end_u":0.75,"R12":0.0378787213119,"R23":0.020140521725,"R13":0.051200547488,"C_R23_over_R12":0.531710707952,"C_class":"<1"},{"interpolation":"linear","window":3.0,"start_u":0.375,"end_u":0.875,"R12":0.0423828419494,"R23":0.0418205564284,"R13":0.0756992795555,"C_R23_over_R12":0.986733180335,"C_class":"<1"},{"interpolation":"linear","window":4.0,"start_u":0.5,"end_u":1.0,"R12":0.0429542585341,"R23":0.0637903168384,"R13":0.0969972149753,"C_R23_over_R12":1.48507549695,"C_class":">1"},{"interpolation":"pchip","window":0.0,"start_u":0.0,"end_u":0.5,"R12":0.0562411253036,"R23":0.0200547880597,"R13":0.074722825496,"C_R23_over_R12":0.356585824901,"C_class":"<1"},{"interpolation":"pchip","window":1.0,"start_u":0.125,"end_u":0.625,"R12":0.0321763501801,"R23":0.00886235908119,"R13":0.0369442479077,"C_R23_over_R12":0.275430837606,"C_class":"<1"},{"interpolation":"pchip","window":2.0,"start_u":0.25,"end_u":0.75,"R12":0.0363626885629,"R23":0.0197842354263,"R13":0.0512277297553,"C_R23_over_R12":0.544080655424,"C_class":"<1"},{"interpolation":"pchip","window":3.0,"start_u":0.375,"end_u":0.875,"R12":0.0407383290319,"R23":0.0422228423451,"R13":0.0757268380041,"C_R23_over_R12":1.03644021118,"C_class":">1"},{"interpolation":"pchip","window":4.0,"start_u":0.5,"end_u":1.0,"R12":0.0420078194101,"R23":0.0642154871221,"R13":0.0970279305336,"C_R23_over_R12":1.52865556994,"C_class":">1"}],"vref_b":[{"j":4.0,"x_fm":0.3806,"E_R1_GeV2":0.1242142857142857,"E_R2_linear_GeV2":0.13300515463917523,"Q":-8.438059688911782},{"j":5.0,"x_fm":0.4758285714285714,"E_R1_GeV2":0.0725714285714285,"E_R2_linear_GeV2":0.0809808541973491,"Q":-9.338025679300813},{"j":6.0,"x_fm":0.5709,"E_R1_GeV2":0.0409285714285714,"E_R2_linear_GeV2":0.046553313696612635,"Q":-6.727758281138058},{"j":7.0,"x_fm":0.6661285714285714,"E_R1_GeV2":0.0222142857142857,"E_R2_linear_GeV2":0.025792930780559584,"Q":-4.398638058292623},{"j":8.0,"x_fm":0.7612,"E_R1_GeV2":0.0117142857142857,"E_R2_linear_GeV2":0.013873524203069584,"Q":-2.694147936920581}],"cea_aicc":[{"tail":"PRIMARY","family":"exponential","dAICc":5.2380952,"cls":"UNDECIDED"},{"tail":"PRIMARY","family":"K0","dAICc":5.2380952,"cls":"UNDECIDED"},{"tail":"DROP-FIRST","family":"exponential","dAICc":7.2,"cls":"ZERO"},{"tail":"DROP-FIRST","family":"K0","dAICc":7.2,"cls":"ZERO"}],"cea":{"chi2_ref_per_N":46.053751,"n_tail":5,"rows":22,"support":"0 to 0.761985714 fm","tail_cut":"x >= 0.380 fm"},"battelli":[{"ladder":"B1","regime":"Geometric Persistence","state":"Stable Structure","mean_Ak":0.999962,"min_Ak":0.9986,"max_rho":0.3457,"n":4,"kappa_connect":2.0},{"ladder":"B2","regime":"Geometric Persistence","state":"Stable Structure","mean_Ak":0.999965,"min_Ak":0.9988,"max_rho":0.3728,"n":6,"kappa_connect":1.0},{"ladder":"B3","regime":"Geometric Persistence","state":"Stable Structure","mean_Ak":0.999992,"min_Ak":0.9997,"max_rho":0.28685,"n":5,"kappa_connect":2.0}],"emt_daicc":[{"geom":"R046","R_fm":0.46,"tail":"PRIMARY","family":"K0","dAICc":1.9623312763922414,"n":156.0,"cls":"UNDECIDED"},{"geom":"R046","R_fm":0.46,"tail":"PRIMARY","family":"exp","dAICc":0.8194459815322546,"n":156.0,"cls":"UNDECIDED"},{"geom":"R046","R_fm":0.46,"tail":"DROP-FIRST","family":"K0","dAICc":2.0323755155845458,"n":155.0,"cls":"UNDECIDED"},{"geom":"R046","R_fm":0.46,"tail":"DROP-FIRST","family":"exp","dAICc":1.161905427091229,"n":155.0,"cls":"UNDECIDED"},{"geom":"R069","R_fm":0.69,"tail":"PRIMARY","family":"K0","dAICc":2.020324515657684,"n":127.0,"cls":"UNDECIDED"},{"geom":"R069","R_fm":0.69,"tail":"PRIMARY","family":"exp","dAICc":1.9389121532841394,"n":127.0,"cls":"UNDECIDED"},{"geom":"R069","R_fm":0.69,"tail":"DROP-FIRST","family":"K0","dAICc":2.034382446042624,"n":126.0,"cls":"UNDECIDED"},{"geom":"R069","R_fm":0.69,"tail":"DROP-FIRST","family":"exp","dAICc":1.961319563862995,"n":126.0,"cls":"UNDECIDED"},{"geom":"R092","R_fm":0.92,"tail":"PRIMARY","family":"K0","dAICc":2.09146151801926,"n":88.0,"cls":"UNDECIDED"},{"geom":"R092","R_fm":0.92,"tail":"PRIMARY","family":"exp","dAICc":2.080538518426316,"n":88.0,"cls":"UNDECIDED"},{"geom":"R092","R_fm":0.92,"tail":"DROP-FIRST","family":"K0","dAICc":2.0322087843950385,"n":87.0,"cls":"UNDECIDED"},{"geom":"R092","R_fm":0.92,"tail":"DROP-FIRST","family":"exp","dAICc":2.0170401454828433,"n":87.0,"cls":"UNDECIDED"}],"emt_components":{"R069":{"epsilon":"UNCERTAINTY-LIMITED","sigma_zz":"NONMONOTONE","sigma_rr":"UNCERTAINTY-LIMITED","sigma_theta":"UNCERTAINTY-LIMITED"},"R046":{"epsilon":"UNCERTAINTY-LIMITED","sigma_zz":"UNCERTAINTY-LIMITED","sigma_rr":"UNCERTAINTY-LIMITED","sigma_theta":"UNCERTAINTY-LIMITED"},"R092":{"epsilon":"NONMONOTONE","sigma_zz":"UNCERTAINTY-LIMITED","sigma_rr":"UNCERTAINTY-LIMITED","sigma_theta":"UNCERTAINTY-LIMITED"}},"emt_norm":{"R069":{"outcome":"EMT-UNCERTAINTY-LIMITED","path":"VACUUM-DIRECTED","tail":127},"R046":{"outcome":"EMT-UNCERTAINTY-LIMITED","path":"VACUUM-DIRECTED","tail":156},"R092":{"outcome":"EMT-UNCERTAINTY-LIMITED","path":"VACUUM-DIRECTED","tail":88}},"spec_a":{"schema":"SPEC_I_A_EXTRACT_v1","status":"SPECTRAL-SCALE-POSITIVE","stage3_coexistence_verdict_issued":false,"source_hashes":{"published":"af40f084cf4f4624224af726d0bb4822e449b161b03ce38972077023cbd0ca7c","arxiv_v2":"f0eb6406bf49a00d376c0be25917173426c826050046a1bf0f32987895de23d0"},"primary":{"value":3.405,"sigma":0.021,"lower_1sigma":3.384},"alternate":{"value":3.391,"sigma":0.023,"lower_1sigma":3.368},"independent_replication_count":0},"spec_b":{"schema":"SPEC_I_B_EXTRACT_v1","status":"SPECTRAL-SCALE-POSITIVE","stage3_coexistence_verdict_issued":false,"source":{"path":"data/raw/chen06/chen06.pdf","sha256":"66973cf81063071cf5c58d93cff86d4778b7d8f11e83eb1f3b89a21be3047f22"},"theory":"pure SU(3) gauge theory","state":"0++ scalar glueball","coordinate":"r0*M_0++","primary":{"value":4.16,"sigma_stat":0.11,"sigma_anisotropy":0.04,"lower_conservative_linear":4.01,"sigma_quadrature_provenance_only":0.11704699910719625,"lower_quadrature_provenance_only":4.042953000892804},"historical_source_check":{"value":4.21,"sigma":0.11,"lower_1sigma":4.1,"counts_as_stage3_independent_branch":false}},"bridge":{"outcome":"COEXISTENCE-SUPPORTED","checks":{"structural_status_found":true,"spec_i_a_status_found":true,"spec_i_b_status_found":true,"spec_i_a_numeric_guard":true,"spec_i_b_numeric_guard":true,"theory_match":true},"run_utc":"2026-10-05T22:43:34.387486+00:00","earlier_verdicts_modified":false,"mass_gap_theorem_claimed":false,"closure_theorem_claimed":false},"bridge_inputs":[{"input":"stage2","path":"stage2/STAGE2_STATUS.md","recorded":"991476088907af31c6d0256a992f79780e51eeef9e163d006e50ea4246e16582","actual":"991476088907af31c6d0256a992f79780e51eeef9e163d006e50ea4246e16582","match":true},{"input":"spec_i_a","path":"output/spec_i_a/SPEC_I_A_RESULT.md","recorded":"3d0d60dd827fdc953c684d8eaca0b8b9bd7d9ac14763d321a8bc39465972ba54","actual":"3d0d60dd827fdc953c684d8eaca0b8b9bd7d9ac14763d321a8bc39465972ba54","match":true},{"input":"spec_i_b","path":"output/spec_i_b/SPEC_I_B_RESULT.md","recorded":"0318aa14e92058facab9aa2527d1a4f34bc846400453f0f67ade0b5fd8be6caf","actual":"0318aa14e92058facab9aa2527d1a4f34bc846400453f0f67ade0b5fd8be6caf","match":true}]},"reproducibility":{"provenance":[{"path":"UNNS_VACUUM_CONTINUITY/data/derived/at20/SPEC_I_A_EXTRACT.json","sha256":"59818256b8e21fc246e0b56ac2cda4bf1fae491f68003eec1ca82006e6885133","bytes":549},{"path":"UNNS_VACUUM_CONTINUITY/data/derived/chen06/SPEC_I_B_EXTRACT.json","sha256":"7271eb25752f78b86feb89edb2eff57c95178bd087aaa72c3d1dfc67d9a6bf7e","bytes":791},{"path":"UNNS_VACUUM_CONTINUITY/output/bridge_iii/BRIDGE_III_RESULT.md","sha256":"35ed7ded75c380ae26de939a8a70ac280c85a873d9fc0b77c465a79da704682a","bytes":1058},{"path":"UNNS_VACUUM_CONTINUITY/output/bridge_iii/BRIDGE_III_RUN.json","sha256":"c45c1db6b5e934ea65ca54ffe97bbcb2f1beb30cc71e74c408be868a1262f4a8","bytes":972},{"path":"UNNS_VACUUM_CONTINUITY/output/reports/VREF_A_REPORT.md","sha256":"14043804c1b928cd6134063246e4baea84996789b6c00e444dae52caa6c65114","bytes":2769},{"path":"UNNS_VACUUM_CONTINUITY/output/reports/VREF_B_REPORT.md","sha256":"a5d0071f918b6c079bff0b08861815528d351219760d194e6ec6dbd03524bb45","bytes":1199},{"path":"UNNS_VACUUM_CONTINUITY/output/spec_i_a/SPEC_I_A_RESULT.md","sha256":"3d0d60dd827fdc953c684d8eaca0b8b9bd7d9ac14763d321a8bc39465972ba54","bytes":224},{"path":"UNNS_VACUUM_CONTINUITY/output/spec_i_b/SPEC_I_B_RESULT.md","sha256":"0318aa14e92058facab9aa2527d1a4f34bc846400453f0f67ade0b5fd8be6caf","bytes":502},{"path":"UNNS_VACUUM_CONTINUITY/output/tables/VREF_A_REFINEMENT.csv","sha256":"4eb9107e998b2fd0a6aa9897d4eb51de57abbae9764e10eea809b27a96571147","bytes":913},{"path":"UNNS_VACUUM_CONTINUITY/output/tables/VREF_B_REFINEMENT.csv","sha256":"a1cc57e8a35d1f0c2a7b7c7d48805b597977bc3af771289ce560401bc0444b67","bytes":403},{"path":"UNNS_VACUUM_CONTINUITY/output/yanagihara_emt/geometry/reports/EMT_GEOM_REPORT.md","sha256":"2f42e89a589e3a453b77ccdd81a08b42aa9611ba31cf9fe88fe7d6dc9dc3363e","bytes":730},{"path":"UNNS_VACUUM_CONTINUITY/output/yanagihara_emt/geometry/tables/EMT_GEOM_FITS.csv","sha256":"95a823bc5e95af37c8670e0d698f168bfb8f3522671df400e6420dac99cce3f0","bytes":2772},{"path":"UNNS_VACUUM_CONTINUITY/output/yanagihara_emt/reports/EMT_I_REPORT.md","sha256":"345b0965b55c74aa6b665936a321163b490abe61a88b0350f11f80feff1e7668","bytes":1080},{"path":"UNNS_VACUUM_CONTINUITY/output/yanagihara_emt/tables/EMT_I_FITS.csv","sha256":"1a700543dae6aa5356daff68e961aa81cb0acf8279609a10bbd2eb6d8d0450b3","bytes":1414},{"path":"UNNS_VACUUM_CONTINUITY/stage1/STAGE1_FREEZE.md","sha256":"c5697e9cadd3bb61f361b6b8e2d512fd44155d055ce2b5468a67d1ce27f217e9","bytes":15307},{"path":"UNNS_VACUUM_CONTINUITY/stage2/BATTELLI_CTRL_RESULT.md","sha256":"c0a346fdfc21aa31d5c27a47dc9855321a523b350e02eccee7a2110127e1a37d","bytes":4214},{"path":"UNNS_VACUUM_CONTINUITY/stage2/EMT_GEOM_RESULT.md","sha256":"6a605d2b983d2771b0522b0691bf730636b30b13c7a37a5095e5305cab5ccaab","bytes":2826},{"path":"UNNS_VACUUM_CONTINUITY/stage2/EMT_PRIMARY_RESULT_LOCK.md","sha256":"a569b94a2c704deccfda04dc55e4b41737b004720fd1e463140846007ebf13f2","bytes":764},{"path":"UNNS_VACUUM_CONTINUITY/stage2/STAGE2_FREEZE.json","sha256":"5117f9ae88c6849c300de42e273dfd3b96fc4d20c6f9a39eca1381292160911f","bytes":977},{"path":"UNNS_VACUUM_CONTINUITY/stage2/STAGE2_STATUS.md","sha256":"991476088907af31c6d0256a992f79780e51eeef9e163d006e50ea4246e16582","bytes":868},{"path":"UNNS_VACUUM_CONTINUITY/stage2/STAGE2_SYNTHESIS.md","sha256":"f7c68f3ee8d155022d61d09210176565f9702842e188c63b6a6cbf3f9e6866cb","bytes":12432},{"path":"UNNS_VACUUM_CONTINUITY/stage2/STAGE3_HANDOFF.md","sha256":"9a58c36721c4979e2715f5a2454c671dc52d5435f74e96ef62d2bd40f4aa58ab","bytes":1510},{"path":"UNNS_VACUUM_CONTINUITY/stage3/BRIDGE_III_LOCK.md","sha256":"9973c8dc620165698b1cfcbb44d2432116a6cb440af6fb3b231a2bfac7eafae8","bytes":2335},{"path":"UNNS_VACUUM_CONTINUITY/stage3/PROJECT_CLOSURE.md","sha256":"a790400121efd899f05790dc1577c12c5c20bb14afc0b8975eceace00a11421e","bytes":2249},{"path":"UNNS_VACUUM_CONTINUITY/stage3/PROJECT_STATUS.md","sha256":"e5dc7fe9a8a89620b2d126f624ac10d1f87f877e1b31a2a3b8316454a6f1c0b6","bytes":444},{"path":"UNNS_VACUUM_CONTINUITY/stage3/README.md","sha256":"ff1ef4eb4ac1980412f3d85539a666987ce4496e2fc259399aa4e13df2b36e50","bytes":642},{"path":"UNNS_VACUUM_CONTINUITY/stage3/STAGE3_CLOSE_MANIFEST.json","sha256":"0841874b2d673779bfd9d839e153aa1a25b7236c64bebcea43475584c8b119e5","bytes":1107},{"path":"UNNS_VACUUM_CONTINUITY/stage3/STAGE3_SYNTHESIS.md","sha256":"1d672bafe06cce42c3025b444fff6d7e2f78f944b05ca82281943a1c42f72d92","bytes":7259},{"path":"UNNS_YM_GAP/FINAL_STATUS.md","sha256":"4933ea59ced236bfaa4efd579cddd312fd7e67fbb144480e6ca8a2f550ffeb45","bytes":2049},{"path":"UNNS_YM_GAP/README.md","sha256":"dd3f6f8f12cec6f8f95dab45c886c947b78a21fa62978a71f3405a91034e44e0","bytes":14627},{"path":"UNNS_YM_GAP/docs/CLOSURE_RECORD.json","sha256":"c8d237cadc7c233f80642319af859c9fbf4c8409613919498b00d98d14c24573","bytes":1311},{"path":"UNNS_YM_GAP/docs/YM3B_RESULT.md","sha256":"90514521c126f955af98d3a35cda5805b7e411f5c09bbc577310644f921ac1e5","bytes":2625},{"path":"UNNS_YM_GAP/docs/YM3_RESULT.md","sha256":"1528030c5db3ae856227b6822d38081b5495c4bc9d76b5e06ae66492cb4a35d5","bytes":3481},{"path":"UNNS_YM_GAP/ladders/ym1a_continuum.csv","sha256":"a0eac167635390974cf721218674d77d1970c3f1de1d447cb29436ccdc869584","bytes":422},{"path":"UNNS_YM_GAP/ladders/ym1a_gap.csv","sha256":"0f4f9b4bf20ffe600ee6fbdc2b8771638859bf352ca69089a344861b936d3ad5","bytes":907},{"path":"UNNS_YM_GAP/output/ym3/YM3_SUMMARY.csv","sha256":"51e06e9f999746d9b2b88b02b891981f47a3e616bba866c67a07dc95380cda2e","bytes":2221},{"path":"UNNS_YM_GAP/output/ym3b/YM3B_R3.csv","sha256":"a5f5856fb931f69d0583339a2a45c40a0578f6802f57c7e914114965a2743b5c","bytes":898},{"path":"UNNS_YM_GAP/output/ym3b/YM3B_SUMMARY.csv","sha256":"c4062ac0d7a6d8b7068e89475b1622cac93bcdde195014f3f8f9ac63a9e48ba2","bytes":1219},{"path":"UNNS_YM_GAP/output/ym3b/YM3B_UNCERTAINTY_SUMMARY.csv","sha256":"5121dc31197380c79cf56f0ee5866abd9549c24fac4450d0a49d42a94371ffe0","bytes":570},{"path":"analytics/BUILD_ANALYTICS.py","sha256":"9f6fbd9ee2c54311f108d07d4386f8d17fc3ed55abdf26cd1bc2b2c4ef306c42","bytes":14455},{"path":"analytics/analytics_template.html","sha256":"ab45fb7bf99017280d87e4dfc0ac014a0645ab3f5073a38bc3f7c55e63ec9c67","bytes":70342}],"missing_sources":[],"checks":[{"name":"YM-3A verdict string","ok":true,"needle":"MODEL-REFINEMENT PERSISTENT"},{"name":"YM-3B verdict string","ok":true,"needle":"DATA-INDETERMINATE"},{"name":"YM_GAP central hypothesis","ok":true,"needle":"NOT ESTABLISHED"},{"name":"YM-2 stage verdict","ok":true,"needle":"VACUUM-BOUNDARY DIAGNOSTIC ESTABLISHED; REFINEMENT TEST REQUIRED"},{"name":"CLOSURE_RECORD ym3a","ok":true,"needle":"MODEL-REFINEMENT PERSISTENT"},{"name":"CLOSURE_RECORD ym3b","ok":true,"needle":"DATA-INDETERMINATE"},{"name":"Baker 2022 \u00b7 VREF-I/A: CALIBRATION-SENSITIVE","ok":true,"needle":"CALIBRATION-SENSITIVE"},{"name":"CEA 2017 \u00b7 VREF-I/B: REFINEMENT-INDETERMINATE","ok":true,"needle":"REFINEMENT-INDETERMINATE"},{"name":"CEA 2017 \u00b7 STRUC bridge: ARCHITECTURE-PRESERVED","ok":true,"needle":"ARCHITECTURE-PRESERVED"},{"name":"Battelli 2019 \u00b7 unsmoothed control: UNSMOOTHED-ARCHITECTURE-CONSISTENT","ok":true,"needle":"UNSMOOTHED-ARCHITECTURE-CONSISTENT"},{"name":"Yanagihara 2019 \u00b7 EMT-I R=0.69: EMT-UNCERTAINTY-LIMITED","ok":true,"needle":"EMT-UNCERTAINTY-LIMITED"},{"name":"Yanagihara 2019 \u00b7 geometry: GEOMETRY-ROBUST-NO-FLOOR","ok":true,"needle":"GEOMETRY-ROBUST-NO-FLOOR"},{"name":"Stage 2 synthesis: NO-UNIVERSAL-STRUCTURAL-EXCLUSION-DETECTED","ok":true,"needle":"NO-UNIVERSAL-STRUCTURAL-EXCLUSION-DETECTED"},{"name":"Stage 2 interpretation: STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED","ok":true,"needle":"STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED"},{"name":"SPEC-I/A: SPECTRAL-SCALE-POSITIVE","ok":true,"needle":"SPECTRAL-SCALE-POSITIVE"},{"name":"SPEC-I/B: SPECTRAL-SCALE-POSITIVE","ok":true,"needle":"SPECTRAL-SCALE-POSITIVE"},{"name":"BRIDGE-III: COEXISTENCE-SUPPORTED","ok":true,"needle":"COEXISTENCE-SUPPORTED"},{"name":"Stage 3 / project: STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED","ok":true,"needle":"STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED"},{"name":"BRIDGE_III_RUN outcome","ok":true,"needle":"COEXISTENCE-SUPPORTED"},{"name":"Stage-1 sentence","ok":true,"needle":"The mass gap separates eigenvalues, not necessarily structural neighborhoods."},{"name":"Battelli: 3 ladders parsed","ok":true,"needle":"3"}],"hash_audit":[{"manifest":"STAGE2_FREEZE.json","path":"stage2/EMT_GEOM_RESULT.md","recorded":"6a605d2b983d2771b0522b0691bf730636b30b13c7a37a5095e5305cab5ccaab","actual":"6a605d2b983d2771b0522b0691bf730636b30b13c7a37a5095e5305cab5ccaab","match":true},{"manifest":"STAGE2_FREEZE.json","path":"stage2/STAGE2_STATUS.md","recorded":"991476088907af31c6d0256a992f79780e51eeef9e163d006e50ea4246e16582","actual":"991476088907af31c6d0256a992f79780e51eeef9e163d006e50ea4246e16582","match":true},{"manifest":"STAGE2_FREEZE.json","path":"stage2/STAGE2_SYNTHESIS.md","recorded":"f7c68f3ee8d155022d61d09210176565f9702842e188c63b6a6cbf3f9e6866cb","actual":"f7c68f3ee8d155022d61d09210176565f9702842e188c63b6a6cbf3f9e6866cb","match":true},{"manifest":"STAGE2_FREEZE.json","path":"stage2/STAGE3_HANDOFF.md","recorded":"9a58c36721c4979e2715f5a2454c671dc52d5435f74e96ef62d2bd40f4aa58ab","actual":"9a58c36721c4979e2715f5a2454c671dc52d5435f74e96ef62d2bd40f4aa58ab","match":true},{"manifest":"STAGE3_CLOSE_MANIFEST.json","path":"stage3/BRIDGE_III_LOCK.md","recorded":"9973c8dc620165698b1cfcbb44d2432116a6cb440af6fb3b231a2bfac7eafae8","actual":"9973c8dc620165698b1cfcbb44d2432116a6cb440af6fb3b231a2bfac7eafae8","match":true},{"manifest":"STAGE3_CLOSE_MANIFEST.json","path":"stage3/PROJECT_CLOSURE.md","recorded":"a790400121efd899f05790dc1577c12c5c20bb14afc0b8975eceace00a11421e","actual":"a790400121efd899f05790dc1577c12c5c20bb14afc0b8975eceace00a11421e","match":true},{"manifest":"STAGE3_CLOSE_MANIFEST.json","path":"stage3/PROJECT_STATUS.md","recorded":"e5dc7fe9a8a89620b2d126f624ac10d1f87f877e1b31a2a3b8316454a6f1c0b6","actual":"e5dc7fe9a8a89620b2d126f624ac10d1f87f877e1b31a2a3b8316454a6f1c0b6","match":true},{"manifest":"STAGE3_CLOSE_MANIFEST.json","path":"stage3/README.md","recorded":"ff1ef4eb4ac1980412f3d85539a666987ce4496e2fc259399aa4e13df2b36e50","actual":"ff1ef4eb4ac1980412f3d85539a666987ce4496e2fc259399aa4e13df2b36e50","match":true},{"manifest":"STAGE3_CLOSE_MANIFEST.json","path":"stage3/STAGE3_SYNTHESIS.md","recorded":"1d672bafe06cce42c3025b444fff6d7e2f78f944b05ca82281943a1c42f72d92","actual":"1d672bafe06cce42c3025b444fff6d7e2f78f944b05ca82281943a1c42f72d92","match":true}],"build_timestamp_utc":"2026-10-05T23:39:52Z"}};
+
+// ---------- helpers ----------
+function esc(s){ if(s===undefined||s===null) return ''; return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function fmt(n, d){ if(n===null||n===undefined||Number.isNaN(n)) return '—'; if(typeof n!=='number') return esc(n); return n.toFixed(d===undefined?4:d); }
+function fmtS(n, d){ if(typeof n!=='number') return esc(n); return (n>=0?'+':'')+n.toFixed(d===undefined?4:d); }
+function fmtInt(n){ if(n===null||n===undefined) return '—'; return Number(n).toLocaleString(); }
+function stat(val, lbl, color, tip){ return `<div class="stat"${tip?` title="${esc(tip)}"`:''}><div class="stat-val" style="${color?`color:${color}`:''}">${esc(val)}</div><div class="stat-lbl">${esc(lbl)}</div></div>`; }
+const PROV = {}; (DATA.reproducibility.provenance||[]).forEach(p=>{ PROV[p.path]=p; });
+let __seq = 0;
+function sourceDrawer(paths){
+  if(!paths||!paths.length) return {btn:'',drawer:''};
+  const id='src-'+(__seq++);
+  const rows = paths.map(p=>{ const i=PROV[p]; return i ? `${esc(p)} — sha256 ${esc(i.sha256.slice(0,16))}… (${fmtInt(i.bytes)} bytes)` : `${esc(p)} — (not in provenance manifest)`; }).join('<br>');
+  return {btn:`<button class="drawer-btn" onclick="toggleDrawer('${id}')">SOURCE</button>`,
+          drawer:`<div class="drawer" id="${id}"><b>Source:</b><br>${rows}<br><b>Build:</b> ${esc(DATA.reproducibility.build_timestamp_utc)}<br><b>Build provenance:</b> HASHED</div>`};
+}
+function toggleDrawer(id){ document.getElementById(id).classList.toggle('open'); }
+const G='UNNS_YM_GAP/', V='UNNS_VACUUM_CONTINUITY/';
+
+// ---------- tabs ----------
+const TABS = [
+  {id:'overview', label:'§1 PROJECT OVERVIEW'},
+  {id:'ymgap', label:'§2 YM_GAP · NON-CROSSABILITY'},
+  {id:'access', label:'§3 STAGE 2 · STRUCTURAL ACCESSIBILITY'},
+  {id:'spectral', label:'§4 STAGE 3 · SPECTRAL SCALE & BRIDGE-III'},
+  {id:'synthesis', label:'§5 STRUCTURAL ≠ SPECTRAL'},
+  {id:'claims', label:'§6 CLAIM–EVIDENCE MAP'},
+  {id:'provenance', label:'§7 REPRODUCIBILITY / PROVENANCE'},
+];
+function initTabs(){
+  const bar=document.getElementById('tabbar');
+  TABS.forEach((t,i)=>{ const el=document.createElement('div'); el.className='tab'+(i===0?' active':''); el.textContent=t.label; el.onclick=()=>selectTab(t.id); el.id='tab-'+t.id; bar.appendChild(el); });
+  selectTab('overview');
+}
+function selectTab(id){ TABS.forEach(t=>{ document.getElementById('tab-'+t.id).classList.toggle('active',t.id===id); document.getElementById('panel-'+t.id).classList.toggle('active',t.id===id); }); window.scrollTo({top:0}); }
+function toggleRow(id){ const r=document.getElementById(id); r.style.display = r.style.display==='none' ? '' : 'none'; }
+
+// ---------- generic SVG charts ----------
+const C = {accent:'#00c8f0',green:'#00dd88',amber:'#f0a030',red:'#e04040',blue:'#4ab0f0',violet:'#9060e0',text:'#b8cce0',t2:'#6080a0',dim:'#3a5070',grid:'#0e2035'};
+function niceTicks(lo,hi,n){ const span=hi-lo, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0))); const f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag; const t=[]; for(let v=Math.ceil(lo/step)*step; v<=hi+1e-12; v+=step) t.push(+v.toFixed(10)); return t; }
+function axes(W,H,p,xlo,xhi,ylo,yhi,xl,yl,xticks,yd){
+  const sx=x=>p.l+(x-xlo)/(xhi-xlo)*(W-p.l-p.r), sy=y=>H-p.b-(y-ylo)/(yhi-ylo)*(H-p.t-p.b);
+  let s=`<line x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}" stroke="${C.grid}"/><line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}" stroke="${C.grid}"/>`;
+  niceTicks(ylo,yhi,5).forEach(v=>{ s+=`<line x1="${p.l}" y1="${sy(v)}" x2="${W-p.r}" y2="${sy(v)}" stroke="${C.grid}" stroke-dasharray="1,3"/><text x="${p.l-4}" y="${sy(v)+3}" font-size="8" fill="${C.t2}" font-family="monospace" text-anchor="end">${(+v.toFixed(yd===undefined?3:yd))}</text>`; });
+  (xticks||niceTicks(xlo,xhi,6)).forEach(v=>{ s+=`<text x="${sx(v)}" y="${H-p.b+12}" font-size="8" fill="${C.t2}" font-family="monospace" text-anchor="middle">${(+(+v).toFixed(4))}</text>`; });
+  s+=`<text x="${(p.l+W-p.r)/2}" y="${H-4}" font-size="8" fill="${C.t2}" font-family="monospace" text-anchor="middle">${esc(xl)}</text>`;
+  s+=`<text x="10" y="${(p.t+H-p.b)/2}" font-size="8" fill="${C.t2}" font-family="monospace" text-anchor="middle" transform="rotate(-90 10 ${(p.t+H-p.b)/2})">${esc(yl)}</text>`;
+  return {s,sx,sy};
+}
+
+// ================= §1 OVERVIEW =================
+function renderOverview(){
+  const el=document.getElementById('panel-overview'), g=DATA.gap, v=DATA.vc;
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§1</span> WHAT THE TWO PROJECTS ESTABLISHED TOGETHER</div>`;
+  h+=`<div class="stat-grid">`;
+  h+=stat(g.ym3.length,'AT20 REFINEMENT LEVELS (YM-3A)');
+  h+=stat(g.ym3.length*5,'MATCHED GAMMA CONTROLS (8 β × p∈{0.5,1,2,4,8})');
+  h+=stat(g.ym3b.length,'CLASS-B β LEVELS (YM-3B)');
+  h+=stat(fmtS(g.ym3b.find(r=>r.beta===6.71).S_B,6),'S_B AT β = 6.71 (CENTRAL CROSSING)','var(--red)');
+  h+=stat(6,'STAGE-2 STRUCTURAL BRANCHES');
+  h+=stat('0 / 7','FALSIFICATION ROUTES F1–F7 TRIGGERED (NO FALSIFIER ESTABLISHED)','var(--green)','F1–F4, F6, F7 recorded as "not observed"; F5 as "not supported by the evidence" (STAGE2_SYNTHESIS.md §3)');
+  h+=stat(2,'INDEPENDENT SPECTRAL BRANCHES (POSITIVE)','var(--green)');
+  h+=stat(Object.values(v.bridge.checks).filter(Boolean).length+' / '+Object.keys(v.bridge.checks).length,'BRIDGE-III DETERMINISTIC CHECKS','var(--green)');
+  h+=`</div>`;
+
+  h+=`<div class="panel"><div class="panel-title">THEORY-CORRECTION CYCLE <span class="psub">hypothesis → empirical failure → successor hypothesis → coexistence</span></div>`;
+  h+=`<div class="pipeline" style="font-size:9.5px"><span class="pipe-step red">non-crossability hypothesis</span><span class="pipe-arrow">→</span><span class="pipe-step red">not established (YM-3B DATA-INDETERMINATE)</span><span class="pipe-arrow">→</span><span class="pipe-step active">vacuum-continuity hypothesis</span><span class="pipe-arrow">→</span><span class="pipe-step green">structural / spectral coexistence</span></div>`;
+  h+=`<div class="eq">mass gap  ⇔  structural vacuum non-crossability   —   NOT ESTABLISHED  (failure to establish, not disproof)</div>`;
+  h+=`<div class="eq" style="color:var(--green)">structural vacuum accessibility   can coexist with   E₁ − E₀ &gt; 0</div><div class="caution" style="border:none;margin-top:2px">The corresponding closure-limit form, D_struct(X<sub>n</sub>, V) → 0, remains consistent with — but is not proved by — the data.</div>`;
+  h+=`</div>`;
+
+  const ladder=[
+    {level:'YM-2 · CORR-I diagnostic',status:'DIAGNOSTIC ESTABLISHED; REFINEMENT TEST REQUIRED',color:'blue',detail:'Massive plateau control separates from every gapless Gamma-family control at fixed resolution (β = 6.50: R_massive vs R_p=8 → 4.9×).',src:[G+'README.md',G+'output/ym3/YM3_SUMMARY.csv']},
+    {level:'YM-3A · Class C refinement',status:'MODEL-REFINEMENT PERSISTENT',color:'green',detail:'S_fixed > 0 and S_match > 0 at all 8 AT20 levels, matched ordering retained. Exact mass-anchored model controls only — not measured correlators.',src:[G+'docs/YM3_RESULT.md',G+'output/ym3/YM3_SUMMARY.csv']},
+    {level:'YM-3B · Class B measured data',status:'DATA-INDETERMINATE',color:'amber',detail:'Central trajectory crosses the boundary once (β = 6.71, S_B = −0.003395); 95% interval [−0.027454, +0.019320] spans both signs.',src:[G+'docs/YM3B_RESULT.md',G+'output/ym3b/YM3B_SUMMARY.csv',G+'output/ym3b/YM3B_UNCERTAINTY_SUMMARY.csv']},
+    {level:'UNNS_YM_GAP · closure',status:'CENTRAL HYPOTHESIS NOT ESTABLISHED',color:'red',detail:'Universal structural non-crossability not supported. No structural→Hamiltonian bridge reached; YM-4 cancelled.',src:[G+'FINAL_STATUS.md',G+'docs/CLOSURE_RECORD.json']},
+    {level:'Stage 2 · structural accessibility',status:'NO-UNIVERSAL-STRUCTURAL-EXCLUSION-DETECTED → STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED',color:'green',detail:'Six branches, three representations, three source geometries: no positive structural floor detected. Underlying verdicts stay limited (calibration-, refinement-, uncertainty-limited).',src:[V+'stage2/STAGE2_STATUS.md',V+'stage2/STAGE2_SYNTHESIS.md']},
+    {level:'Stage 3 · spectral scale',status:'SPECTRAL-SCALE-POSITIVE (×2, independent)',color:'green',detail:'A: M(0++)/√σ = 3.405 ± 0.021. B: r₀M(0++) = 4.16(11)(4); conservative lower bound 4.01 > 0.',src:[V+'output/spec_i_a/SPEC_I_A_RESULT.md',V+'output/spec_i_b/SPEC_I_B_RESULT.md']},
+    {level:'BRIDGE-III → Stage 3',status:'COEXISTENCE-SUPPORTED → STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED',color:'green',detail:'All structural, spectral and theory-match gates PASS. No earlier verdict modified. No mass-gap or vacuum-closure theorem claimed.',src:[V+'output/bridge_iii/BRIDGE_III_RESULT.md',V+'stage3/BRIDGE_III_LOCK.md',V+'stage3/PROJECT_CLOSURE.md']},
+  ];
+  h+=`<div class="panel"><div class="panel-title">EVIDENCE LADDER <span class="psub">SOURCE opens the backing records (sha256 computed at build time)</span></div><div class="ladder">`;
+  ladder.forEach(s=>{
+    const cv={green:'var(--green)',amber:'var(--amber)',blue:'var(--blue)',red:'var(--red)'}[s.color];
+    const sd=sourceDrawer(s.src);
+    h+=`<div class="ladder-step" style="border-left:3px solid ${cv}"><span class="ladder-lv">${esc(s.level)}</span><span class="ladder-tag" style="color:${cv};border:1px solid ${cv}">${esc(s.status)}</span><span class="ladder-desc">${esc(s.detail)} ${sd.btn}${sd.drawer}</span></div>`;
+  });
+  h+=`</div></div>`;
+
+  const gain=[
+    ['Is the vacuum protected by a universal structural wall?','Not established. The decisive measured-data trajectory crossed the proposed CORR-I boundary once; uncertainty left the verdict DATA-INDETERMINATE.','No universal positive floor detected across refinement, smoothing, EMT representation and geometry.','Structural non-crossability is not required by the evidence.'],
+    ['Is the vacuum structurally approachable?','Failure of universal non-crossability motivated placing the vacuum inside the structural domain.','STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED.','Vacuum is better modelled as an internal limit / closure locus than as an exterior beyond structure.'],
+    ['Does structural accessibility destroy the mass gap?','Not tested successfully; no structural→Hamiltonian bridge reached.','Tested independently through continuum glueball spectroscopy.','No. Structural accessibility and a positive spectral scale coexist.'],
+    ['Is the positive spectral scale robust?','CORR-I discriminated massive from gapless controls — a structural diagnostic, not a mass-gap theorem.','Two independent continuum calculations returned SPECTRAL-SCALE-POSITIVE.','Spectral discreteness does not depend on the structural-boundary hypothesis.'],
+    ['Final conceptual result','Original identification was not established.','BRIDGE-III = COEXISTENCE-SUPPORTED.','spectral separation ⇏ structural separation'],
+  ];
+  h+=`<div class="panel"><div class="panel-title">COMBINED GAIN <span class="psub">author's two-project synthesis, question by question</span></div><div class="scrollbox"><table class="dt"><thead><tr><th>Question</th><th>UNNS_YM_GAP</th><th>UNNS_VACUUM_CONTINUITY</th><th>Combined gain</th></tr></thead><tbody>`;
+  gain.forEach(r=>{ h+=`<tr>`+r.map((c,i)=>`<td style="white-space:normal;min-width:${i===0?150:210}px;${i===3?'color:var(--green)':''}">${esc(c)}</td>`).join('')+`</tr>`; });
+  h+=`</tbody></table></div></div>`;
+
+  h+=`<div class="special-banner violet"><div class="special-title">⚑ CENTRAL PRINCIPLE</div><p class="prose">The Yang–Mills mass gap separates allowed spectral excitations from the vacuum; it need not separate the vacuum from nearby <i>structure</i>. A future UNNS account of the gap must therefore live at the level of spectral generation / admissible excitation / the structural→Hamiltonian map — not as a geometric exclusion radius around the vacuum.</p></div>`;
+  h+=`<div class="special-banner"><div class="special-title">⚑ SCOPE BOUNDARY</div><p class="prose">Not a Clay Yang–Mills proof. Not a theorem that V ∈ closure(A<sub>YM</sub>). Not a derivation of the glueball mass from UNNS. Every result here is an empirical statement inside the frozen pure-SU(3) evidence architecture. (BRIDGE_III_RUN.json: <code>mass_gap_theorem_claimed = ${v.bridge.mass_gap_theorem_claimed}</code>, <code>closure_theorem_claimed = ${v.bridge.closure_theorem_claimed}</code>, <code>earlier_verdicts_modified = ${v.bridge.earlier_verdicts_modified}</code>.)</p></div>`;
+  el.innerHTML=h;
+}
+
+// ================= §2 YM_GAP =================
+function renderYMGap(){
+  const el=document.getElementById('panel-ymgap'), g=DATA.gap;
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§2</span> UNNS_YM_GAP — VACUUM-BOUNDARY NON-CROSSABILITY (CLOSED 2026-09-30)</div>`;
+  const b650=g.ym3.find(r=>r.beta===6.5);
+  let sd=sourceDrawer([G+'output/ym3/YM3_SUMMARY.csv',G+'README.md']);
+  h+=`<div class="panel"><div class="panel-title">YM-2 · CORR-I R_contract AT β = 6.50 <span class="psub">smaller = stronger suppression of added near-zero spectral weight · a chamber coordinate, not the physical mass gap</span>${sd.btn}</div>${sd.drawer}`;
+  h+=`<div class="scrollbox"><table class="dt"><thead><tr><th>representation</th><th>R_contract</th><th>relative to massive</th></tr></thead><tbody>`;
+  [['gapless p = 0.5',b650.R_p05_match],['gapless p = 1',b650.R_p1_match],['gapless p = 2',b650.R_p2_match],['gapless p = 4',b650.R_p4_match],['gapless p = 8',b650.R_p8_match],['massive plateau control',b650.R_massive]].forEach(r=>{
+    h+=`<tr><td>${r[0]}</td><td>${fmt(r[1],6)}</td><td>${(r[1]/b650.R_massive).toFixed(2)}×</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">All 40 matched Gamma controls are POSITIVE-SPECTRAL CONSISTENT and pass the α = 0 identity null; the massive baseline is valid at all 8 levels.</div></div>`;
+
+  // YM-3A chart + table
+  sd=sourceDrawer([G+'output/ym3/YM3_SUMMARY.csv',G+'docs/YM3_RESULT.md']);
+  h+=`<div class="special-banner green"><div class="special-title">YM-3A · MODEL-REFINEMENT PERSISTENT (Class C, exact mass-anchored model controls)</div><p class="prose">S_fixed &gt; 0 and S_match &gt; 0 at all eight AT20 levels; matched ordering R₀.₅ &gt; R₁ &gt; R₂ &gt; R₄ &gt; R₈ &gt; R<sub>massive</sub> passes at every β. This concerns the model family only — it does not establish refinement stability of <i>measured</i> correlators.</p></div>`;
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">S_fixed AND S_match vs β ${sd.btn}</div>${sd.drawer}${chartYM3A(g.ym3)}<div class="legend"><span><i style="background:${C.accent}"></i>S_fixed</span><span><i style="background:${C.green}"></i>S_match</span></div><div class="caution">S = log₁₀(R_gapless / R_massive); S &gt; 0 means the massive response stays separated from the hardest gapless reference. Fixed reference = exact frozen p=8 ratio 0.0376679…</div></div>`;
+  h+=`<div class="panel"><div class="panel-title">YM-3A PRIMARY COMMON-GRID RESULTS</div><div class="scrollbox"><table class="dt"><thead><tr><th>β</th><th>R_massive</th><th>R_p8 matched</th><th>S_fixed</th><th>S_match</th><th>S_fixed native</th><th>ordering</th></tr></thead><tbody>`;
+  g.ym3.forEach(r=>{ h+=`<tr><td>${fmt(r.beta,4)}</td><td>${fmt(r.R_massive,6)}</td><td>${fmt(r.R_p8_match,6)}</td><td>${fmt(r.S_fixed,4)}</td><td>${fmt(r.S_match,4)}</td><td>${fmt(r.S_fixed_native,3)}</td><td class="${r.matched_ordering_pass?'v-yes':'v-no'}">${r.matched_ordering_pass?'PASS':'FAIL'}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">The native-grid column is a window-sensitivity diagnostic only; no unpreregistered native matched-Gamma family was introduced.</div></div></div>`;
+
+  // YM-3B
+  sd=sourceDrawer([G+'output/ym3b/YM3B_SUMMARY.csv',G+'output/ym3b/YM3B_UNCERTAINTY_SUMMARY.csv',G+'output/ym3b/YM3B_R3.csv',G+'docs/YM3B_RESULT.md']);
+  const c671=g.ym3b.find(r=>r.beta===6.71), u671=g.ym3b_unc.find(r=>r.beta===6.71);
+  h+=`<div class="special-banner"><div class="special-title">YM-3B · DATA-INDETERMINATE (Class B — Sakai &amp; Sasaki 2023 published effective-mass reconstructions)</div><p class="prose">Central S_B is positive at β = 6.20, 6.40, 6.93 and <b style="color:var(--red)">negative at β = 6.71 (${fmtS(c671.S_B,6)})</b>. That sign survives PCHIP (${fmtS(c671.S_B_pchip,6)}) and the nested ladders L5/L6/L7. The preregistered 2,000-draw pointwise-no-covariance ensemble gives a 95% interval [${fmtS(u671.q025,6)}, ${fmtS(u671.q975,6)}] with ${(100*u671.fraction_S_negative).toFixed(1)}% of draws negative — the sign is not statistically stable, so the frozen rule returns DATA-INDETERMINATE. The central crossing is <i>not erased</i>; the data are too imprecise to classify it.</p></div>`;
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">S_B WITH 95% SENSITIVITY INTERVAL ${sd.btn}</div>${sd.drawer}${chartYM3B(g.ym3b,g.ym3b_unc)}<div class="legend"><span><i style="background:${C.accent}"></i>central S_B</span><span><i style="background:${C.violet}"></i>draw median</span><span><i style="background:${C.t2}"></i>2.5–97.5% interval</span><span><i style="background:${C.red}"></i>S_B = 0 boundary</span></div><div class="caution">Pointwise-no-covariance ensemble; published-figure precision, not raw author correlator matrices.</div></div>`;
+  h+=`<div class="panel"><div class="panel-title">YM-3B TABLE · NESTED LADDERS · INTERVAL</div><div class="scrollbox"><table class="dt"><thead><tr><th>β</th><th>S_B</th><th>PCHIP</th><th>L5</th><th>L6</th><th>L7</th><th>q2.5</th><th>median</th><th>q97.5</th><th>P(S&gt;0)</th><th>matched order</th></tr></thead><tbody>`;
+  g.ym3b.forEach(r=>{
+    const u=g.ym3b_unc.find(x=>x.beta===r.beta), L=n=>g.ym3b_r3.find(x=>x.beta===r.beta&&x.n_points===n).S_B;
+    h+=`<tr class="${r.S_B<0?'hl':''}"><td>${fmt(r.beta,2)}</td><td>${fmtS(r.S_B,6)}</td><td>${fmtS(r.S_B_pchip,6)}</td><td>${fmtS(L(5),5)}</td><td>${fmtS(L(6),5)}</td><td>${fmtS(L(7),5)}</td><td>${fmtS(u.q025,5)}</td><td>${fmtS(u.median,5)}</td><td>${fmtS(u.q975,5)}</td><td>${fmt(u.fraction_S_positive,4)}</td><td class="${r.matched_order_pass?'v-yes':'v-no'}">${r.matched_order_pass?'PASS':'FAIL'}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">Full matched-Gamma ordering fails at β = 6.71 only (ordering PASS at 6.20, 6.40, 6.93). All four levels carry baseline classification SPECTRAL-POSITIVITY TENSION in YM3B_SUMMARY.csv.</div></div></div>`;
+
+  // closure
+  const cl=g.closure;
+  h+=`<div class="panel"><div class="panel-title">PROJECT CLOSURE RECORD</div><dl class="detail-grid">`+
+    `<dt>Status</dt><dd>${esc(cl.status)} · ${esc(cl.closed_date)} · closure stage ${esc(cl.closure_stage)}</dd>`+
+    `<dt>Terminal chamber</dt><dd>${esc(cl.terminal_chamber)} · sha256 ${esc(cl.terminal_chamber_sha256.slice(0,24))}…</dd>`+
+    `<dt>Central hypothesis</dt><dd class="v-no">${esc(cl.central_hypothesis_status)}</dd>`+
+    `<dt>Cancelled</dt><dd>${cl.future_tests_cancelled.map(esc).join(' · ')}</dd>`+
+    `<dt>Inheritance</dt><dd>${esc(cl.stage0_inheritance_statement)}</dd></dl>`;
+  h+=`<div class="caution">The project does not claim that no structural boundary exists, and neither proves nor disproves the physical Yang–Mills mass gap.</div></div>`;
+  el.innerHTML=h;
+}
+function chartYM3A(rows){
+  const W=420,H=240,p={l:40,r:12,t:12,b:34};
+  const xs=rows.map(r=>r.beta), ylo=0.4, yhi=1.8;
+  const a=axes(W,H,p,5.6,6.6,ylo,yhi,'β','S',[5.7,5.9,6.1,6.3,6.5],2);
+  let s=a.s;
+  [['S_fixed',C.accent],['S_match',C.green]].forEach(([k,col])=>{
+    s+=`<polyline fill="none" stroke="${col}" stroke-width="1.4" points="${rows.map(r=>a.sx(r.beta).toFixed(1)+','+a.sy(r[k]).toFixed(1)).join(' ')}"/>`;
+    rows.forEach(r=>{ s+=`<circle cx="${a.sx(r.beta).toFixed(1)}" cy="${a.sy(r[k]).toFixed(1)}" r="2.6" fill="${col}"><title>β=${r.beta} ${k}=${r[k].toFixed(4)}</title></circle>`; });
+  });
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+function chartYM3B(rows,unc){
+  const W=420,H=260,p={l:46,r:12,t:14,b:34};
+  const ylo=-0.04,yhi=0.09, bs=rows.map(r=>r.beta);
+  const a=axes(W,H,p,6.1,7.02,ylo,yhi,'β (Class B)','S_B',bs,2);
+  let s=a.s;
+  s+=`<line x1="${p.l}" y1="${a.sy(0)}" x2="${W-p.r}" y2="${a.sy(0)}" stroke="${C.red}" stroke-width="1.2" stroke-dasharray="4,3"/><text x="${W-p.r-2}" y="${a.sy(0)-4}" font-size="8" fill="${C.red}" font-family="monospace" text-anchor="end">S_B = 0</text>`;
+  rows.forEach(r=>{
+    const u=unc.find(x=>x.beta===r.beta), x=a.sx(r.beta), neg=r.S_B<0, col=neg?C.red:C.t2;
+    s+=`<line x1="${x}" y1="${a.sy(u.q025)}" x2="${x}" y2="${a.sy(u.q975)}" stroke="${col}" stroke-width="2"/><line x1="${x-5}" y1="${a.sy(u.q025)}" x2="${x+5}" y2="${a.sy(u.q025)}" stroke="${col}"/><line x1="${x-5}" y1="${a.sy(u.q975)}" x2="${x+5}" y2="${a.sy(u.q975)}" stroke="${col}"/>`;
+    s+=`<circle cx="${x+7}" cy="${a.sy(u.median)}" r="2.6" fill="${C.violet}"><title>median ${u.median.toFixed(5)}</title></circle>`;
+    s+=`<circle cx="${x}" cy="${a.sy(r.S_B)}" r="3.6" fill="${neg?C.red:C.accent}"><title>β=${r.beta} S_B=${r.S_B.toFixed(6)}</title></circle>`;
+  });
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+// ================= §3 STAGE 2 =================
+function renderAccess(){
+  const el=document.getElementById('panel-access'), v=DATA.vc;
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§3</span> STAGE 2 — REFINEMENT-STABLE STRUCTURAL VACUUM ACCESSIBILITY</div>`;
+  h+=`<div class="special-banner green"><div class="special-title">STAGE 2 SYNTHESIS · NO-UNIVERSAL-STRUCTURAL-EXCLUSION-DETECTED</div><p class="prose">Interpretation: <b>STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED</b> — multi-representation, multi-geometry support. Not a proof of D<sub>struct</sub> → 0 and not a mass-gap verdict. The underlying branch verdicts below remain immutable; the synthesis is a status, not a replacement.</p></div>`;
+
+  const br=[
+    {n:'Baker 2022 · VREF-I/A',v:'CALIBRATION-SENSITIVE',c:'partial',what:'Three β-levels (6.240 / 6.544 / 6.769), common support to x_t ≈ 0.511 fm.',key:'Linear vs PCHIP interpolation changes the contraction classification and refinement-distance ordering in window 3 (start u = 0.375).',scope:'Methodological: a structural-vacuum conclusion cannot rest on an interpolation-sensitive common-refinement construction. Prohibited from reading as CONTINUITY-SUPPORTED or ISOLATION-SUPPORTED.',src:[V+'output/reports/VREF_A_REPORT.md',V+'output/tables/VREF_A_REFINEMENT.csv']},
+    {n:'CEA 2017 · VREF-I/B',v:'REFINEMENT-INDETERMINATE',c:'partial',what:`Deep vacuum-directed tail with explicit zero-field reference. ${v.cea.rows} rows, common support ${v.cea.support}, primary tail cut ${v.cea.tail_cut}.`,key:`Both interpolation paths VACUUM-DIRECTED; χ²_ref/N_tail = ${fmt(v.cea.chi2_ref_per_N,3)} (N = ${v.cea.n_tail}) → structured mismatch. ΔAICc(floor − zero): PRIMARY ${v.cea_aicc.filter(a=>a.tail==='PRIMARY').map(a=>fmt(a.dAICc,3)+' '+a.cls).join(', ')}; DROP-FIRST ${v.cea_aicc.filter(a=>a.tail==='DROP-FIRST').map(a=>fmt(a.dAICc,1)+' '+a.cls).join(', ')}.`,scope:'Zero floor favoured qualitatively, but absolute cross-refinement amplitude agreement failed the frozen rule. Not evidence for isolation — evidence that the primary observable lacks a refinement-stable absolute vacuum-distance calibration.',src:[V+'output/reports/VREF_B_REPORT.md',V+'output/tables/VREF_B_REFINEMENT.csv']},
+    {n:'CEA 2017 · STRUC bridge',v:'ARCHITECTURE-PRESERVED',c:'pass',what:'Five ladders: R1 native, R2 native, R1 common, R2 common-linear, R2 common-PCHIP.',key:'STRUC-I: Geometric Persistence / Stable Structure for all five; STRUC-PERC-I: FULL_PERCOLATION for all five.',scope:'Refinement changes absolute amplitude more strongly than structural organisation.',src:[V+'stage2/STAGE2_SYNTHESIS.md',V+'stage2/STAGE2_STATUS.md']},
+    {n:'Battelli 2019 · unsmoothed control',v:'UNSMOOTHED-ARCHITECTURE-CONSISTENT',c:'pass',what:'Three unsmoothed positive-transverse-distance connected-correlator ladders (n = '+v.battelli.map(b=>b.n).join(', ')+'); d_t = 0 excluded before ingestion.',key:'All three: Geometric Persistence / Stable Structure; all three FULL_PERCOLATION (κ_connect = '+v.battelli.map(b=>fmt(b.kappa_connect,1)).join(', ')+').',scope:'Corroborative only — very-short-ladder topology diagnostics (4–6 values), not promoted to a continuity theorem. Removes the CEA-smoothing alternative explanation.',src:[V+'stage2/BATTELLI_CTRL_RESULT.md']},
+    {n:'Yanagihara 2019 · EMT-I (R = 0.69 fm)',v:'EMT-UNCERTAINTY-LIMITED',c:'partial',what:`Independent vacuum-subtracted continuum EMT. ${v.emt_norm.R069.tail} tail coordinates on exact native grids, no interpolation.`,key:'Four-component norm path VACUUM-DIRECTED; both model families favour zero floor numerically (ΔAICc ≈ +1.9 / +2.0) but below the decisive |ΔAICc| ≥ 6. No component NONZERO-FLOOR.',scope:'Frozen as uncertainty-limited; not promoted to EMT-CONTINUITY-CONSISTENT.',src:[V+'output/yanagihara_emt/reports/EMT_I_REPORT.md',V+'output/yanagihara_emt/tables/EMT_I_FITS.csv',V+'stage2/EMT_PRIMARY_RESULT_LOCK.md']},
+    {n:'Yanagihara 2019 · geometry (R = 0.46, 0.92 fm)',v:'GEOMETRY-ROBUST-NO-FLOOR',c:'pass',what:`Secondary sensitivity. R = 0.46 fm: ${v.emt_norm.R046.tail} tail points; R = 0.92 fm: ${v.emt_norm.R092.tail} tail points.`,key:'Both four-component norms VACUUM-DIRECTED; neither returns EMT-POSITIVE-FLOOR; no component NONZERO-FLOOR.',scope:'All three source separations remain uncertainty-limited for a decisive asymptotic zero-floor proof. Secondary evidence only — does not reopen or average with the locked primary.',src:[V+'output/yanagihara_emt/geometry/reports/EMT_GEOM_REPORT.md',V+'output/yanagihara_emt/geometry/tables/EMT_GEOM_FITS.csv',V+'stage2/EMT_GEOM_RESULT.md']},
+  ];
+  h+=`<div class="panel"><div class="panel-title">STAGE-2 EVIDENCE CHAIN <span class="psub">click a row for the branch detail</span></div><div class="scrollbox"><table class="dt"><thead><tr><th>Branch</th><th>Frozen verdict</th></tr></thead><tbody>`;
+  br.forEach((b,i)=>{
+    const sd=sourceDrawer(b.src);
+    h+=`<tr class="clickable" onclick="toggleRow('br-${i}')"><td>${esc(b.n)}</td><td><span class="v-${b.c}">${esc(b.v)}</span></td></tr>`+
+       `<tr class="detail-row" id="br-${i}" style="display:none"><td colspan="2"><dl class="detail-grid"><dt>Data</dt><dd>${esc(b.what)}</dd><dt>Key result</dt><dd>${esc(b.key)}</dd><dt>Scope</dt><dd>${esc(b.scope)}</dd><dt>Source</dt><dd>${sd.btn}${sd.drawer}</dd></dl></td></tr>`;
+  });
+  h+=`</tbody></table></div><div class="caution">Verdict strings are checked against their source records at build time (§7). Colour: green = structure-consistent control, amber = calibration-, refinement- or uncertainty-limited.</div></div>`;
+
+  // charts row
+  let sdA=sourceDrawer([V+'output/tables/VREF_A_REFINEMENT.csv']);
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">BAKER · C = R23 / R12 BY WINDOW ${sdA.btn}</div>${sdA.drawer}${chartBaker(v.vref_a)}<div class="legend"><span><i style="background:${C.accent}"></i>linear</span><span><i style="background:${C.violet}"></i>PCHIP</span><span><i style="background:${C.red}"></i>C = 1</span></div><div class="caution">Window 3 (start u = 0.375): linear C = ${fmt(v.vref_a.find(r=>r.interpolation==='linear'&&r.window===3).C_R23_over_R12,4)} (&lt;1) vs PCHIP C = ${fmt(v.vref_a.find(r=>r.interpolation==='pchip'&&r.window===3).C_R23_over_R12,4)} (&gt;1): the contraction class flips with interpolation.</div></div>`;
+  let sdE=sourceDrawer([V+'output/yanagihara_emt/tables/EMT_I_FITS.csv',V+'output/yanagihara_emt/geometry/tables/EMT_GEOM_FITS.csv',V+'output/reports/VREF_B_REPORT.md']);
+  h+=`<div class="panel"><div class="panel-title">ΔAICc (FLOOR − ZERO) vs DECISIVE THRESHOLD ${sdE.btn}</div>${sdE.drawer}${chartAICc(v.emt_daicc,v.cea_aicc)}<div class="legend"><span><i style="background:${C.accent}"></i>EMT exponential</span><span><i style="background:${C.green}"></i>EMT K₀</span><span><i style="background:${C.amber}"></i>CEA (context)</span><span><i style="background:${C.red}"></i>|ΔAICc| = 6</span></div><div class="caution">Positive ΔAICc favours zero floor. No EMT geometry reaches the decisive threshold; CEA drop-first does (7.2) but that branch fails refinement consistency.</div></div></div>`;
+
+  // EMT component table
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">EMT · FOUR-COMPONENT NORM &amp; COMPONENT CHECKS</div><div class="scrollbox"><table class="dt"><thead><tr><th>R (fm)</th><th>tail pts</th><th>norm path</th><th>ε</th><th>σ_zz</th><th>σ_rr</th><th>σ_θ</th></tr></thead><tbody>`;
+  [['R046','0.46'],['R069','0.69'],['R092','0.92']].forEach(([k,r])=>{ const n=v.emt_norm[k], c=v.emt_components[k];
+    h+=`<tr><td>${r}${k==='R069'?' <span class="chip">PRIMARY</span>':''}</td><td>${n.tail}</td><td class="v-yes">${esc(n.path)}</td><td>${esc(c.epsilon)}</td><td>${esc(c.sigma_zz)}</td><td>${esc(c.sigma_rr)}</td><td>${esc(c.sigma_theta)}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">No component of any geometry is classified NONZERO-FLOOR. NONMONOTONE entries are recorded as-is.</div></div>`;
+  h+=`<div class="panel"><div class="panel-title">BATTELLI · UNSMOOTHED STRUC-I / STRUC-PERC-I</div><div class="scrollbox"><table class="dt"><thead><tr><th>ladder</th><th>n</th><th>regime</th><th>mean A_k</th><th>min A_k</th><th>max ρ</th><th>κ_connect</th></tr></thead><tbody>`;
+  v.battelli.forEach(b=>{ h+=`<tr><td>${b.ladder}</td><td>${b.n}</td><td>${esc(b.regime)} / ${esc(b.state)}</td><td>${fmt(b.mean_Ak,6)}</td><td>${fmt(b.min_Ak,4)}</td><td>${fmt(b.max_rho,5)}</td><td>${fmt(b.kappa_connect,1)}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">STRUC-I v1.0.4 (10,000 MC runs, 40 κ-steps) · STRUC-PERC-I v2.5.0 returned FULL_PERCOLATION for all three. Very-short-ladder diagnostics.</div></div></div>`;
+
+  // CEA amplitude table
+  h+=`<div class="panel"><div class="panel-title">CEA · R1 vs R2 AMPLITUDE MISMATCH IN THE PRIMARY TAIL <span class="psub">E in GeV² on the common grid; ratio derived here</span></div><div class="scrollbox"><table class="dt"><thead><tr><th>j</th><th>x (fm)</th><th>E_R1</th><th>E_R2 (linear)</th><th>E_R2 / E_R1 (derived)</th></tr></thead><tbody>`;
+  v.vref_b.forEach(r=>{ h+=`<tr><td>${r.j}</td><td>${fmt(r.x_fm,4)}</td><td>${fmt(r.E_R1_GeV2,5)}</td><td>${fmt(r.E_R2_linear_GeV2,5)}</td><td>${fmt(r.E_R2_linear_GeV2/r.E_R1_GeV2,3)}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">Both refinements decay toward zero, but R2 sits systematically above R1 and the gap widens with distance — the structured mismatch that keeps VREF-I/B at REFINEMENT-INDETERMINATE.</div></div>`;
+
+  // falsification
+  const f=[['F1','Every admissible refinement path terminates before vacuum approach','Not observed','CEA and Yanagihara contain vacuum-directed paths over their measured domains.'],
+           ['F2','Common refinement produces a positive lower bound D_struct ≥ δ > 0','Not observed','No primary branch yields a stable positive-floor verdict.'],
+           ['F3','Approach disappears under independent representations','Not observed','Connected-field branches and vacuum-subtracted EMT are qualitatively compatible.'],
+           ['F4','Approach requires loss of admissibility','Not observed (structural chambers used)','CEA and Battelli ladders stay in STRUC-I Geometric Persistence / Stable Structure.'],
+           ['F5','Effect produced only by digitisation / interpolation / window choice','Not supported by the evidence','Baker interpolation sensitivity was downgraded, not used; Yanagihara needs no interpolation.'],
+           ['F6','Continuity-like behaviour only in synthetic controls','Not observed','Evidence is measured lattice Yang–Mills and published continuum EMT profiles.'],
+           ['F7','An independent structural chamber reproduces universal non-crossability','Not observed','No refinement-dependent isolation transition in CEA or Battelli bridges.']];
+  h+=`<div class="panel"><div class="panel-title">STAGE-1 FALSIFICATION AUDIT</div><div class="scrollbox"><table class="dt"><thead><tr><th>ID</th><th>Way continuity could fail</th><th>Stage-2 finding</th><th>Basis</th></tr></thead><tbody>`;
+  f.forEach(r=>{ h+=`<tr><td>${r[0]}</td><td style="white-space:normal">${esc(r[1])}</td><td class="v-yes" style="white-space:normal">${esc(r[2])}</td><td style="white-space:normal;color:var(--text2)">${esc(r[3])}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">Source: stage2/STAGE2_SYNTHESIS.md §3. “Not observed” ≠ proved impossible. Stage 2 does not prove V ∈ closure(A_YM) nor D_struct(L_n,V) → 0 for a single refinement-stable measured-data sequence under a representation-independent metric.</div></div>`;
+  el.innerHTML=h;
+}
+function chartBaker(rows){
+  const W=420,H=240,p={l:40,r:12,t:14,b:34};
+  const a=axes(W,H,p,-0.2,4.2,0,1.7,'window index','C = R23/R12',[0,1,2,3,4],2);
+  let s=a.s+`<line x1="${p.l}" y1="${a.sy(1)}" x2="${W-p.r}" y2="${a.sy(1)}" stroke="${C.red}" stroke-dasharray="4,3"/>`;
+  [['linear',C.accent],['pchip',C.violet]].forEach(([k,col])=>{
+    const rs=rows.filter(r=>r.interpolation===k).sort((x,y)=>x.window-y.window);
+    s+=`<polyline fill="none" stroke="${col}" stroke-width="1.4" points="${rs.map(r=>a.sx(r.window).toFixed(1)+','+a.sy(r.C_R23_over_R12).toFixed(1)).join(' ')}"/>`;
+    rs.forEach(r=>{ s+=`<circle cx="${a.sx(r.window).toFixed(1)}" cy="${a.sy(r.C_R23_over_R12).toFixed(1)}" r="3" fill="${col}"><title>${k} w${r.window}: C=${r.C_R23_over_R12.toFixed(4)} (${r.C_class})</title></circle>`; });
+  });
+  s+=`<circle cx="${a.sx(3)}" cy="${a.sy(1)}" r="11" fill="none" stroke="${C.amber}" stroke-dasharray="2,2"/>`;
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+function chartAICc(emt,cea){
+  const W=420,H=260,p={l:40,r:12,t:14,b:60};
+  const items=[]; emt.forEach(d=>items.push({lab:`${d.R_fm} ${d.tail==='PRIMARY'?'P':'D'}${d.family==='K0'?'·K0':'·ex'}`,v:d.dAICc,col:d.family==='K0'?C.green:C.accent}));
+  cea.forEach(d=>items.push({lab:`CEA ${d.tail==='PRIMARY'?'P':'D'}${d.family==='K0'||d.family==='bessel_K0'?'·K0':'·ex'}`,v:d.dAICc,col:C.amber}));
+  const n=items.length, yhi=8, a=axes(W,H,p,0,n,0,yhi,'','ΔAICc',[],1);
+  let s=a.s+`<line x1="${p.l}" y1="${a.sy(6)}" x2="${W-p.r}" y2="${a.sy(6)}" stroke="${C.red}" stroke-dasharray="4,3"/><text x="${p.l+4}" y="${a.sy(6)-4}" font-size="8" fill="${C.red}" font-family="monospace">decisive: 6</text>`;
+  const bw=(W-p.l-p.r)/n;
+  items.forEach((it,i)=>{ const x=p.l+i*bw+bw*0.15, h=a.sy(0)-a.sy(it.v);
+    s+=`<rect x="${x.toFixed(1)}" y="${a.sy(it.v).toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${h.toFixed(1)}" fill="${it.col}" fill-opacity="0.8"><title>${it.lab}: ${it.v.toFixed(3)}</title></rect>`;
+    s+=`<text x="${(x+bw*0.35).toFixed(1)}" y="${H-p.b+10}" font-size="6.2" fill="${C.t2}" font-family="monospace" text-anchor="end" transform="rotate(-55 ${(x+bw*0.35).toFixed(1)} ${H-p.b+10})">${it.lab}</text>`; });
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+// ================= §4 STAGE 3 =================
+function renderSpectral(){
+  const el=document.getElementById('panel-spectral'), v=DATA.vc, g=DATA.gap;
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§4</span> STAGE 3 — SPECTRAL SCALE &amp; BRIDGE-III (CLOSED 2026-10-06)</div>`;
+  const A=v.spec_a, B=v.spec_b;
+  h+=`<div class="stat-grid">`+stat(fmt(A.primary.value,3)+' ± '+fmt(A.primary.sigma,3),'SPEC-I/A · M(0++)/√σ (AT20)','var(--green)')+stat(fmt(A.primary.lower_1sigma,3),'SPEC-I/A LOWER 1σ  (> 0)')+stat(fmt(A.alternate.value,3)+' ± '+fmt(A.alternate.sigma,3),'SPEC-I/A ALTERNATE EXTRAPOLATION')+stat('4.16(11)(4)','SPEC-I/B · r₀M(0++) (Chen et al.)','var(--green)')+stat(fmt(B.primary.lower_conservative_linear,2),'SPEC-I/B CONSERVATIVE LOWER BOUND (> 0)')+`</div>`;
+
+  let sd=sourceDrawer([V+'data/derived/at20/SPEC_I_A_EXTRACT.json',V+'data/derived/chen06/SPEC_I_B_EXTRACT.json',V+'output/spec_i_a/SPEC_I_A_RESULT.md',V+'output/spec_i_b/SPEC_I_B_RESULT.md']);
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">POSITIVITY MARGINS — EACH IN ITS OWN NATIVE UNITS ${sd.btn}</div>${sd.drawer}${chartSpec(A,B)}<div class="caution">SPEC-I/B is deliberately kept in native r₀M normalisation: no unit conversion, averaging or cross-fitting with SPEC-I/A. Bound = value − σ_stat − σ_anisotropy (linear, frozen conservative rule). Quadrature variant (provenance only): ${fmt(B.primary.lower_quadrature_provenance_only,3)}. Historical comparison 4.21(11) is not counted as an additional branch.</div></div>`;
+
+  sd=sourceDrawer([G+'ladders/ym1a_gap.csv',G+'ladders/ym1a_continuum.csv']);
+  h+=`<div class="panel"><div class="panel-title">AT20 GAP LADDER → CONTINUUM  <span class="psub">finite-a values vs continuum extrapolation</span>${sd.btn}</div>${sd.drawer}${chartLadder(g.gap_ladder,g.continuum[0])}<div class="legend"><span><i style="background:${C.accent}"></i>M/√σ at finite a (8 β levels)</span><span><i style="background:${C.green}"></i>continuum 3.405 ± 0.021</span></div><div class="caution">Finite-lattice-spacing values are shown for context only; the SPEC-I/A branch uses the published continuum coordinate.</div></div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">AT20 CONTINUUM COORDINATES (M/√σ) · pure SU(3)</div><div class="scrollbox"><table class="dt"><thead><tr><th>id</th><th>channel</th><th>state</th><th>label</th><th>M/√σ</th><th>± σ</th></tr></thead><tbody>`;
+  g.continuum.forEach(r=>{ h+=`<tr><td>${r.coord_id}</td><td>${esc(r.channel)}</td><td>${r.state_index}</td><td>${esc(r.label)}</td><td>${fmt(r.M_over_sqrt_sigma_continuum,3)}</td><td>${fmt(r.uncertainty,3)}</td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">Source table 14 of Athenodorou &amp; Teper (JHEP 11 (2020) 172). Only c1 (the A1++ ground / 0++ state) enters Stage 3.</div></div>`;
+
+  // bridge
+  const ck=v.bridge.checks, names={structural_status_found:'Stage-2 structural status found',spec_i_a_status_found:'SPEC-I/A status found',spec_i_b_status_found:'SPEC-I/B status found',spec_i_a_numeric_guard:'SPEC-I/A numeric guard (lower bound > 0)',spec_i_b_numeric_guard:'SPEC-I/B numeric guard (lower bound > 0)',theory_match:'Theory match (both pure SU(3))'};
+  sd=sourceDrawer([V+'output/bridge_iii/BRIDGE_III_RUN.json',V+'output/bridge_iii/BRIDGE_III_RESULT.md',V+'stage3/BRIDGE_III_LOCK.md']);
+  h+=`<div class="special-banner green"><div class="special-title">BRIDGE-III · COEXISTENCE-SUPPORTED</div><p class="prose">Evaluated only the frozen statuses — no chamber rerun, no refit, no spectral number altered, Stage 2 unmodified. Supported statement: <b>structural accessibility ∧ spectral discreteness</b>, i.e. structural continuity can coexist with spectral discreteness within the frozen pure-SU(3) evidence architecture. It does <i>not</i> numerically correlate the structural and spectral observables.</p></div>`;
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">DETERMINISTIC GATES ${sd.btn}</div>${sd.drawer}<div class="scrollbox"><table class="dt"><thead><tr><th>check</th><th>result</th></tr></thead><tbody>`;
+  Object.keys(ck).forEach(k=>{ h+=`<tr><td>${esc(names[k]||k)}</td><td><span class="${ck[k]?'v-pass':'v-open'}">${ck[k]?'PASS':'FAIL'}</span></td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">Run ${esc(v.bridge.run_utc)} · outcome ${esc(v.bridge.outcome)}</div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">BRIDGE INPUT HASH CHECK <span class="psub">sha256 recorded in BRIDGE_III_RUN.json vs file on disk</span></div><div class="scrollbox"><table class="dt"><thead><tr><th>input</th><th>path</th><th>recorded</th><th>match</th></tr></thead><tbody>`;
+  v.bridge_inputs.forEach(b=>{ h+=`<tr><td>${esc(b.input)}</td><td>${esc(b.path)}</td><td style="color:var(--text2)">${esc(b.recorded.slice(0,16))}…</td><td class="${b.match?'v-yes':'v-no'}">${b.match===null?'n/a':(b.match?'MATCH':'MISMATCH')}</td></tr>`; });
+  h+=`</tbody></table></div></div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">WHAT BRIDGE-III IS NOT (frozen scope restriction)</div><ul class="prose" style="padding-left:18px"><li>a proof of the Clay Yang–Mills mass-gap theorem;</li><li>a proof that V ∈ closure(A<sub>YM</sub>);</li><li>a derivation of the glueball mass from UNNS structure;</li><li>a derivation of structural accessibility from spectroscopy;</li><li>a theorem that every Yang–Mills representation must exhibit the same structural behaviour.</li></ul><div class="caution">An empirical compatibility result inside the frozen project architecture. Immutable unless a genuine source, implementation or provenance error is found.</div></div>`;
+  el.innerHTML=h;
+}
+function chartSpec(A,B){
+  const W=420,H=190,p={l:16,r:16,t:20,b:20};
+  let s='';
+  const rows=[
+    {lab:'SPEC-I/A  M(0++)/√σ',lo:0,hi:4.0,val:A.primary.value,sig:A.primary.sigma,low:A.primary.lower_1sigma,y:56,col:C.green},
+    {lab:'SPEC-I/B  r₀·M(0++)',lo:0,hi:5.0,val:B.primary.value,sig:B.primary.sigma_stat+B.primary.sigma_anisotropy,low:B.primary.lower_conservative_linear,y:140,col:C.accent}];
+  rows.forEach(r=>{
+    const x0=p.l+30,x1=W-p.r, sx=v=>x0+(v-r.lo)/(r.hi-r.lo)*(x1-x0);
+    s+=`<text x="${x0}" y="${r.y-24}" font-size="8" fill="${C.t2}" font-family="monospace">${r.lab}</text>`;
+    s+=`<line x1="${x0}" y1="${r.y}" x2="${x1}" y2="${r.y}" stroke="${C.grid}"/>`;
+    s+=`<line x1="${sx(0)}" y1="${r.y-12}" x2="${sx(0)}" y2="${r.y+12}" stroke="${C.red}" stroke-width="1.4"/><text x="${sx(0)}" y="${r.y+24}" font-size="8" fill="${C.red}" font-family="monospace" text-anchor="middle">0</text>`;
+    s+=`<line x1="${sx(r.val-r.sig)}" y1="${r.y}" x2="${sx(r.val+r.sig)}" y2="${r.y}" stroke="${r.col}" stroke-width="3"/><circle cx="${sx(r.val)}" cy="${r.y}" r="4" fill="${r.col}"/>`;
+    s+=`<text x="${sx(r.val)}" y="${r.y-8}" font-size="8" fill="${r.col}" font-family="monospace" text-anchor="middle">${r.val}</text>`;
+    s+=`<line x1="${sx(r.low)}" y1="${r.y-8}" x2="${sx(r.low)}" y2="${r.y+8}" stroke="${C.amber}" stroke-width="1.2"/><text x="${sx(r.low)}" y="${r.y+24}" font-size="8" fill="${C.amber}" font-family="monospace" text-anchor="middle">lower ${r.low.toFixed(3)}</text>`;
+  });
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+function chartLadder(rows,c1){
+  const W=420,H=240,p={l:40,r:12,t:14,b:34};
+  const a=axes(W,H,p,5.6,6.6,2.3,3.6,'β','M/√σ',[5.7,5.9,6.1,6.3,6.5],2);
+  let s=a.s;
+  s+=`<rect x="${p.l}" y="${a.sy(c1.M_over_sqrt_sigma_continuum+c1.uncertainty)}" width="${W-p.l-p.r}" height="${a.sy(c1.M_over_sqrt_sigma_continuum-c1.uncertainty)-a.sy(c1.M_over_sqrt_sigma_continuum+c1.uncertainty)}" fill="${C.green}" fill-opacity="0.25"/><line x1="${p.l}" y1="${a.sy(c1.M_over_sqrt_sigma_continuum)}" x2="${W-p.r}" y2="${a.sy(c1.M_over_sqrt_sigma_continuum)}" stroke="${C.green}"/>`;
+  s+=`<polyline fill="none" stroke="${C.accent}" stroke-width="1.3" points="${rows.map(r=>a.sx(r.beta).toFixed(1)+','+a.sy(r.gap_M_over_sqrt_sigma).toFixed(1)).join(' ')}"/>`;
+  rows.forEach(r=>{ const x=a.sx(r.beta), y=a.sy(r.gap_M_over_sqrt_sigma), e=r.ratio_err_indep/(3.6-2.3)*(H-p.t-p.b);
+    s+=`<line x1="${x}" y1="${y-e}" x2="${x}" y2="${y+e}" stroke="${C.accent}" stroke-opacity="0.6"/><circle cx="${x}" cy="${y}" r="2.8" fill="${C.accent}"><title>β=${r.beta}: ${r.gap_M_over_sqrt_sigma.toFixed(3)} ± ${r.ratio_err_indep.toFixed(3)}</title></circle>`; });
+  return `<svg class="svgpanel" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+// ================= §5 SYNTHESIS =================
+function renderSynthesis(){
+  const el=document.getElementById('panel-synthesis');
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§5</span> STRUCTURAL NEARNESS vs SPECTRAL NEARNESS</div>`;
+  h+=`<div class="row2"><div class="panel"><div class="panel-title">STRUCTURAL NEARNESS <span class="chip" style="color:var(--violet);border-color:var(--violet)">SCHEMATIC</span></div>${svgStructural()}<div class="caution">Asks whether a Yang–Mills configuration can become arbitrarily vacuum-like in the observables and structural representations tested: D<sub>struct</sub>(X, V) → 0. Stage 2: no positive floor detected (empirical support, not a theorem).</div></div>`;
+  h+=`<div class="panel"><div class="panel-title">SPECTRAL NEARNESS <span class="chip" style="color:var(--violet);border-color:var(--violet)">SCHEMATIC</span></div>${svgSpectral()}<div class="caution">Asks whether physical eigenstates exist with E<sub>n</sub> − E₀ → 0. Stage 3: lowest scalar excitation retains a strictly positive scale in two independent continuum calculations.</div></div></div>`;
+  h+=`<div class="panel"><div class="panel-title">ARCHITECTURE: BEFORE vs AFTER</div><div class="row2"><div><div class="stat-lbl" style="margin-bottom:6px">ORIGINAL PICTURE — NOT ESTABLISHED (non-crossability)</div><div class="pipeline"><span class="pipe-step">recursive structure</span><span class="pipe-arrow">→</span><span class="pipe-step red">forbidden wall</span><span class="pipe-arrow">→</span><span class="pipe-step">vacuum outside substrate</span></div></div><div><div class="stat-lbl" style="margin-bottom:6px">SUPPORTED PICTURE (vacuum continuity)</div><div class="pipeline"><span class="pipe-step">recursive structure</span><span class="pipe-arrow">→</span><span class="pipe-step">admissible Yang–Mills regimes</span><span class="pipe-arrow">→</span><span class="pipe-step green">vacuum as limiting / internal regime</span></div></div></div><div class="caution">Interpretation supported by the empirical programme, not a theorem of Yang–Mills quantum field theory.</div></div>`;
+  h+=`<div class="special-banner violet"><div class="special-title">⚑ CONSTRAINT ON ANY FUTURE UNNS ACCOUNT OF THE GAP</div><div class="eq">vacuum structurally accessible   +   lowest physical excitation spectrally separated</div><p class="prose">The mechanism must sit in the rules governing spectral generation, admissible excitation, or the map from structural configurations to Hamiltonian eigenstates. Reopening conditions recorded at closure: a source/provenance or implementation error; a materially stronger continuum dataset; a mathematically explicit bridge theorem between UNNS structural closure and the Yang–Mills Hamiltonian spectrum; or a new independent representation able to upgrade the Stage-2 structural side beyond empirical support. Not to be reopened merely to accumulate further examples.</p></div>`;
+  h+=`<div class="panel"><div class="panel-title">THE EMPIRICALLY SUPPORTED DISTINCTION</div><div class="eq" style="font-size:14px;color:var(--green)">spectral separation  ⇏  structural separation</div><p class="prose" style="text-align:center">The Yang–Mills vacuum can be structurally approachable without requiring the first gauge-invariant excitation to become spectrally degenerate with it — the mass gap separates eigenvalues, not necessarily structural neighbourhoods.</p></div>`;
+  el.innerHTML=h;
+}
+function svgStructural(){
+  let s=`<svg class="svgpanel" viewBox="0 0 400 170"><line x1="20" y1="120" x2="380" y2="120" stroke="${C.grid}"/>`;
+  s+=`<circle cx="370" cy="120" r="7" fill="none" stroke="${C.green}" stroke-width="2"/><text x="370" y="144" font-size="8" fill="${C.green}" font-family="monospace" text-anchor="middle">V (vacuum locus)</text>`;
+  for(let i=0;i<7;i++){ const x=40+i*48; s+=`<circle cx="${x}" cy="${120-(6-i)*10}" r="${5-i*0.4}" fill="${C.violet}" fill-opacity="${0.4+i*0.09}"/>`; }
+  s+=`<path d="M40 60 Q 200 70 360 118" fill="none" stroke="${C.accent}" stroke-dasharray="3,3" stroke-width="1.3"/>`;
+  s+=`<text x="22" y="22" font-size="8" fill="${C.t2}" font-family="monospace">X₁, X₂, … admissible structures, D_struct decreasing</text><text x="22" y="34" font-size="8" fill="${C.t2}" font-family="monospace">no positive exclusion floor detected</text></svg>`;
+  return s;
+}
+function svgSpectral(){
+  let s=`<svg class="svgpanel" viewBox="0 0 400 170"><line x1="60" y1="20" x2="60" y2="150" stroke="${C.grid}"/><text x="14" y="86" font-size="8" fill="${C.t2}" font-family="monospace" transform="rotate(-90 14 86)">energy</text>`;
+  s+=`<line x1="80" y1="140" x2="200" y2="140" stroke="${C.green}" stroke-width="3"/><text x="210" y="143" font-size="8" fill="${C.green}" font-family="monospace">E₀  vacuum</text>`;
+  s+=`<line x1="80" y1="90" x2="200" y2="90" stroke="${C.accent}" stroke-width="3"/><text x="210" y="93" font-size="8" fill="${C.accent}" font-family="monospace">E₁  0++ glueball</text>`;
+  s+=`<line x1="80" y1="60" x2="200" y2="60" stroke="${C.t2}" stroke-width="2"/><line x1="80" y1="45" x2="200" y2="45" stroke="${C.t2}" stroke-width="2"/>`;
+  s+=`<line x1="232" y1="140" x2="232" y2="92" stroke="${C.amber}"/><text x="240" y="118" font-size="8" fill="${C.amber}" font-family="monospace">Δ &gt; 0</text></svg>`;
+  return s;
+}
+
+// ================= §6 CLAIMS =================
+function gradeBadge(g){
+  if(g==='FROZEN EMPIRICAL VERDICT') return `<span class="v-pass">${esc(g)}</span>`;
+  if(g==='LIMITED EMPIRICAL VERDICT') return `<span class="v-partial">${esc(g)}</span>`;
+  if(g==='STRUCTURAL INTERPRETATION') return `<span class="v-interp">${esc(g)}</span>`;
+  return `<span class="v-open">${esc(g)}</span>`;
+}
+function renderClaims(){
+  const el=document.getElementById('panel-claims');
+  const rows=[
+    ['CORR-I separates massive from gapless controls (fixed resolution, 8 β)','FROZEN EMPIRICAL VERDICT','YM-3A MODEL-REFINEMENT PERSISTENT — Class C model controls only','ymgap','§2 YM-3A',[G+'docs/YM3_RESULT.md',G+'output/ym3/YM3_SUMMARY.csv']],
+    ['CORR-I boundary is refinement-stable on measured data','LIMITED EMPIRICAL VERDICT','YM-3B DATA-INDETERMINATE; central crossing at β = 6.71 with sign-spanning interval','ymgap','§2 YM-3B',[G+'docs/YM3B_RESULT.md',G+'output/ym3b/YM3B_UNCERTAINTY_SUMMARY.csv']],
+    ['Mass gap = refinement-stable non-crossable structural vacuum boundary','NOT ESTABLISHED','Closed 2026-09-30; YM-4 bridge cancelled under the original premise','ymgap','§2 closure record',[G+'FINAL_STATUS.md',G+'docs/CLOSURE_RECORD.json']],
+    ['No universal positive structural floor around the vacuum was detected','FROZEN EMPIRICAL VERDICT','Stage-2 synthesis over six branches / three geometries; branch verdicts individually limited','access','§3 evidence chain',[V+'stage2/STAGE2_SYNTHESIS.md',V+'stage2/STAGE2_STATUS.md']],
+    ['Ordered structural architecture survives refinement and smoothing change','FROZEN EMPIRICAL VERDICT','CEA ARCHITECTURE-PRESERVED + Battelli UNSMOOTHED-ARCHITECTURE-CONSISTENT; very short ladders','access','§3 Battelli table',[V+'stage2/BATTELLI_CTRL_RESULT.md']],
+    ['Absolute vacuum-distance calibration is refinement-stable','LIMITED EMPIRICAL VERDICT','Baker CALIBRATION-SENSITIVE; CEA REFINEMENT-INDETERMINATE','access','§3 Baker / CEA charts',[V+'output/reports/VREF_A_REPORT.md',V+'output/reports/VREF_B_REPORT.md']],
+    ['EMT zero floor decisively preferred','LIMITED EMPIRICAL VERDICT','EMT-UNCERTAINTY-LIMITED at all three R; |ΔAICc| < 6','access','§3 ΔAICc chart',[V+'stage2/EMT_PRIMARY_RESULT_LOCK.md',V+'stage2/EMT_GEOM_RESULT.md']],
+    ['Scalar 0++ glueball retains a strictly positive scale (two independent continuum calculations)','FROZEN EMPIRICAL VERDICT','SPEC-I/A and SPEC-I/B both SPECTRAL-SCALE-POSITIVE; native units, no conversion','spectral','§4 positivity margins',[V+'output/spec_i_a/SPEC_I_A_RESULT.md',V+'output/spec_i_b/SPEC_I_B_RESULT.md']],
+    ['Structural accessibility and spectral discreteness coexist','FROZEN EMPIRICAL VERDICT','BRIDGE-III COEXISTENCE-SUPPORTED; compatibility, not a numerical correlation','spectral','§4 BRIDGE-III',[V+'output/bridge_iii/BRIDGE_III_RESULT.md',V+'stage3/BRIDGE_III_LOCK.md']],
+    ['Vacuum is an internal closure / limiting locus of the YM structural domain','STRUCTURAL INTERPRETATION','Supported reading of Stage 2–3; V ∈ closure(A_YM) not proved','synthesis','§5 before / after',[V+'stage2/STAGE2_SYNTHESIS.md',V+'stage3/STAGE3_SYNTHESIS.md']],
+    ['Spectral separation does not imply structural separation','STRUCTURAL INTERPRETATION','Project-level reading of the coexistence result','synthesis','§5 distinction',[V+'stage3/PROJECT_CLOSURE.md']],
+    ['Clay Yang–Mills existence and mass-gap theorem','NOT CLAIMED','mass_gap_theorem_claimed = false (BRIDGE_III_RUN.json)','overview','§1 scope boundary',[V+'output/bridge_iii/BRIDGE_III_RUN.json']],
+    ['Vacuum-closure theorem V ∈ closure(A_YM)','NOT CLAIMED','closure_theorem_claimed = false (BRIDGE_III_RUN.json)','overview','§1 scope boundary',[V+'output/bridge_iii/BRIDGE_III_RUN.json']],
+  ];
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§6</span> CLAIM–EVIDENCE MAP</div>`;
+  h+=`<div class="panel"><div class="panel-title">CLAIM → EVIDENCE GRADE <span class="psub">grades follow the project's own frozen vocabulary</span></div>`;
+  h+=`<p style="font-size:10.5px;color:var(--text2);line-height:1.8;margin-bottom:14px"><b style="color:var(--text)">FROZEN EMPIRICAL VERDICT</b> — preregistered chamber outcome, immutable. <b style="color:var(--text)">LIMITED EMPIRICAL VERDICT</b> — frozen but calibration-, refinement- or uncertainty-limited. <b style="color:var(--violet)">STRUCTURAL INTERPRETATION</b> — synthesis, not a weaker theorem. <b style="color:var(--red)">NOT ESTABLISHED / NOT CLAIMED</b> — explicitly outside the evidence.</p>`;
+  h+=`<div class="scrollbox"><table class="dt"><thead><tr><th>Claim</th><th>Evidence grade</th><th>Basis</th><th>Where</th></tr></thead><tbody>`;
+  rows.forEach(r=>{ const sd=sourceDrawer(r[5]); h+=`<tr><td style="white-space:normal;min-width:240px">${esc(r[0])}</td><td>${gradeBadge(r[1])}</td><td style="white-space:normal;color:var(--text2);font-size:9.5px">${esc(r[2])} ${sd.btn}${sd.drawer}</td><td><a href="javascript:void(0)" onclick="selectTab('${r[3]}')" style="color:var(--accent);text-decoration:none">${esc(r[4])} →</a></td></tr>`; });
+  h+=`</tbody></table></div><div class="caution">All empirical claims are scoped to the tested pure-SU(3) corpus and representations. “Corpus-scoped empirical observation” is not “universal theorem”.</div></div>`;
+  el.innerHTML=h;
+}
+
+// ================= §7 PROVENANCE =================
+function renderProvenance(){
+  const el=document.getElementById('panel-provenance'), r=DATA.reproducibility;
+  const okChecks=r.checks.filter(c=>c.ok).length;
+  const matched=r.hash_audit.filter(x=>x.match).length, mism=r.hash_audit.filter(x=>x.match===false).length, absent=r.hash_audit.filter(x=>x.match===null).length;
+  let h=`<div class="sec-label"><span style="color:var(--accent)">§7</span> REPRODUCIBILITY &amp; PROVENANCE</div><div class="stat-grid">`;
+  h+=stat(okChecks+' / '+r.checks.length,'VERDICT-STRING CHECKS vs SOURCE RECORDS',okChecks===r.checks.length?'var(--green)':'var(--red)');
+  h+=stat(matched+' match · '+mism+' mismatch',mism?'MANIFEST SHA-256 AUDIT (MISMATCH PRESENT)':'FREEZE-MANIFEST SHA-256 AUDIT',mism?'var(--red)':'var(--green)');
+  h+=stat(r.provenance.length,'SOURCE FILES USED / HASHED');
+  h+=stat(r.missing_sources.length,'MISSING AT BUILD TIME',r.missing_sources.length?'var(--red)':'var(--green)');
+  h+=`</div>`;
+  h+=`<div class="panel"><div class="panel-title">HOW THIS PAGE WAS BUILT</div><p class="prose">All primary machine-result tables, charts, frozen verdicts and bridge statuses on this page are parsed from, or checked against, the project records. <code>analytics/BUILD_ANALYTICS.py</code> reads both projects' own frozen CSV / JSON / Markdown records, parses the values (including the AICc, Battelli STRUC-I and EMT component tables out of the Markdown reports), computes a fresh sha256 for every file, asserts that each verdict string quoted here actually occurs in the record it is attributed to, and embeds the dataset into this single file. No server, no <code>fetch()</code>, no CDN — it works offline. Derived quantities (relative-to-massive ratios, E<sub>R2</sub>/E<sub>R1</sub>) are computed in the page and labelled as derived. Explanatory prose may contain summary values reproduced from those records. The builder script and this template are themselves hashed in the manifest below.</p><div class="caution">Rebuild: <code>python analytics/BUILD_ANALYTICS.py</code> (expects <code>UNNS_YM_GAP</code> beside <code>UNNS_VACUUM_CONTINUITY</code>; or pass <code>--gap</code> / <code>--vc</code>).</div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">VERDICT-STRING CHECKS</div><div class="scrollbox" style="max-height:300px;overflow-y:auto"><table class="dt"><thead><tr><th>check</th><th>result</th></tr></thead><tbody>`;
+  r.checks.forEach(c=>{ h+=`<tr><td>${esc(c.name)}</td><td><span class="${c.ok?'v-pass':'v-open'}">${c.ok?'FOUND':'NOT FOUND'}</span></td></tr>`; });
+  h+=`</tbody></table></div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">FREEZE-MANIFEST HASH AUDIT <span class="psub">sha256 recorded in STAGE2_FREEZE.json / STAGE3_CLOSE_MANIFEST.json vs the file actually present</span></div><div class="scrollbox"><table class="dt"><thead><tr><th>manifest</th><th>file</th><th>recorded</th><th>result</th></tr></thead><tbody>`;
+  r.hash_audit.forEach(x=>{ h+=`<tr><td>${esc(x.manifest)}</td><td>${esc(x.path)}</td><td style="color:var(--text2)">${esc(x.recorded.slice(0,16))}…</td><td class="${x.match?'v-yes':(x.match===false?'v-no':'')}">${x.match===null?'file not in this build':(x.match?'MATCH':'MISMATCH')}</td></tr>`; });
+  h+=`</tbody></table></div></div>`;
+
+  h+=`<div class="panel"><div class="panel-title">SOURCE MANIFEST <span class="psub">sha256 computed at build time, ${esc(r.build_timestamp_utc)}</span></div><div class="scrollbox" style="max-height:420px;overflow-y:auto"><table class="dt"><thead><tr><th>Path</th><th>bytes</th><th>sha256</th></tr></thead><tbody>`;
+  r.provenance.forEach(p=>{ h+=`<tr><td>${esc(p.path)}</td><td>${fmtInt(p.bytes)}</td><td style="color:var(--text2)">${esc(p.sha256)}</td></tr>`; });
+  h+=`</tbody></table></div>`;
+  if(r.missing_sources.length) h+=`<div class="caution" style="color:var(--red)">MISSING AT BUILD TIME: ${r.missing_sources.map(esc).join(', ')}</div>`;
+  h+=`</div>`;
+  el.innerHTML=h;
+}
+
+// ---------- HERO / INIT ----------
+function renderHero(){
+  const m=DATA.meta, v=DATA.vc;
+  document.getElementById('hero-title').textContent=m.title;
+  document.getElementById('hero-sub').textContent=m.subtitle;
+  const badges=[['b-green','STAGE 3: STRUCTURAL-SPECTRAL-COEXISTENCE-SUPPORTED'],['b-green','BRIDGE-III: '+v.bridge.outcome],['b-green','STAGE 2: STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED'],['b-green','SPECTRAL-SCALE-POSITIVE ×2'],['b-amber','YM_GAP YM-3B: DATA-INDETERMINATE'],['b-red','NON-CROSSABILITY: NOT ESTABLISHED'],['b-dim','CLAY MASS-GAP THEOREM: NOT CLAIMED'],['b-dim','VACUUM-CLOSURE THEOREM: NOT CLAIMED']];
+  document.getElementById('hero-badges').innerHTML=badges.map(b=>`<span class="badge ${b[0]}">${esc(b[1])}</span>`).join('');
+  document.getElementById('hero-meta').textContent=`Built ${m.generated_at} · analytics/BUILD_ANALYTICS.py · embedded, no server, no fetch · UNNS_YM_GAP closed ${m.projects[0].date} · UNNS_VACUUM_CONTINUITY closed ${m.projects[1].date}`;
+  document.getElementById('foot').innerHTML=`<strong style="color:var(--text2)">UNNS VACUUM CONTINUITY — RESEARCH ANALYTICS</strong><br>Generated ${esc(m.generated_at)} by analytics/BUILD_ANALYTICS.py from the frozen result records of UNNS_YM_GAP and UNNS_VACUUM_CONTINUITY. Self-contained: no server, no fetch(), no CDN.<br>Empirical results are scoped to the tested pure-SU(3) representations; no Clay mass-gap theorem and no vacuum-closure theorem is claimed.`;
+}
+initTabs(); renderHero(); renderOverview(); renderYMGap(); renderAccess(); renderSpectral(); renderSynthesis(); renderClaims(); renderProvenance();
+</script>
+</body>
+</html>

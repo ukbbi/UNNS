@@ -1,0 +1,1863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAMBER STRUC-I v1.0.4 — Universal Ladder Admissibility</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@200;300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040810;--bg2:#06090f;--panel:#080e18;--panel2:#0a1220;
+  --border:#111e30;--border2:#0c1828;
+  --accent:#00c8f0;--accent2:#f0a030;--accent3:#e04040;
+  --green:#00dd88;--blue:#4ab0f0;--purple:#9880ff;--gold:#e8c840;
+  --text:#a8bfd0;--text2:#5a7a96;--dim:#2d4560;
+  --pass:#00dd88;--fail:#e04040;--warn:#f0a030;
+  --gp-color:#4ab0f0;--sb-color:#f0a030;--si-color:#e04040;
+  --ss-color:#00dd88;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --display:'Space Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh}
+.shell{max-width:1440px;margin:0 auto;padding:20px 20px 80px}
+.header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hid{font-family:var(--display);font-size:11px;color:var(--accent);letter-spacing:0.3em;font-weight:700}
+.htitle{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text);letter-spacing:0.04em}
+.htag{font-size:9px;border:1px solid;padding:2px 8px;letter-spacing:0.14em;font-weight:600}
+.htag.idle{color:var(--text2);border-color:var(--dim)}
+.htag.running{color:var(--warn);border-color:var(--warn);animation:blink 1s infinite}
+.htag.done{color:var(--pass);border-color:var(--pass)}
+.htag.fail{color:var(--fail);border-color:var(--fail)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.hver{margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:0.1em}
+.layer-label{font-size:8px;color:var(--dim);letter-spacing:0.3em;font-weight:600;padding:4px 0 9px;border-top:1px solid var(--border2);margin-top:4px;margin-bottom:11px;display:flex;align-items:center;gap:12px}
+.layer-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.panel{background:var(--panel);border:1px solid var(--border2);padding:15px 18px;margin-bottom:14px}
+.ptitle{font-size:8.5px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.ptitle .psub{color:var(--dim);font-weight:400;margin-left:auto;font-size:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.upload-zone{border:1px dashed var(--dim);padding:12px 14px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;min-height:64px;display:flex;flex-direction:column;gap:4px}
+.upload-zone:hover{border-color:var(--accent);background:rgba(0,200,240,0.03)}
+.upload-zone.loaded{border-color:var(--pass);border-style:solid;background:rgba(0,221,136,0.03)}
+.upload-zone.err{border-color:var(--fail);border-style:solid}
+.uz-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.uz-name{font-size:9.5px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uz-status{font-size:9px}
+.uz-status.ok{color:var(--pass)}.uz-status.err{color:var(--fail)}.uz-status.idle{color:var(--dim)}
+input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600}
+.ctrl-inp{background:var(--panel2);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;width:90px}
+.ctrl-inp:focus{border-color:var(--accent)}
+.ctrl-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:5px 18px;cursor:pointer;letter-spacing:0.12em;font-weight:600;transition:background .15s}
+.ctrl-btn:hover{background:rgba(0,200,240,0.08)}
+.ctrl-btn.run{border-color:var(--green);color:var(--green);font-size:10px;padding:7px 24px}
+.ctrl-btn.run:hover{background:rgba(0,221,136,0.08)}
+.ctrl-btn.export-btn{border-color:var(--gold);color:var(--gold)}
+.ctrl-btn.export-btn:hover{background:rgba(232,200,64,0.08)}
+.ctrl-btn:disabled{opacity:.35;cursor:not-allowed}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--panel2);border:1px solid var(--border2);padding:11px 13px}
+.sc-label{font-size:8px;color:var(--text2);letter-spacing:0.18em;font-weight:600;margin-bottom:4px}
+.sc-val{font-family:var(--display);font-size:18px;color:var(--dim);line-height:1}
+.sc-val.live{color:var(--accent)}.sc-val.pass{color:var(--pass)}.sc-val.warn{color:var(--warn)}.sc-val.fail{color:var(--fail)}.sc-val.blue{color:var(--blue)}
+.sc-unit{font-size:8px;color:var(--text2);margin-top:3px}
+canvas{display:block;background:var(--panel2);border:1px solid var(--border2)}
+.data-table{width:100%;border-collapse:collapse;font-size:9px}
+.data-table th{color:var(--accent);letter-spacing:0.12em;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
+.data-table td{padding:3px 8px;border-bottom:1px solid var(--border2);color:var(--text);font-family:var(--mono);white-space:nowrap}
+.data-table tr:hover td{background:rgba(0,200,240,0.03)}
+.data-table td.pass{color:var(--pass)}.data-table td.warn{color:var(--warn)}.data-table td.fail{color:var(--fail)}.data-table td.dim{color:var(--dim)}.data-table td.blue{color:var(--blue)}.data-table td.gold{color:var(--gold)}
+.scrollbox{max-height:300px;overflow-y:auto;border:1px solid var(--border2)}
+.scrollbox::-webkit-scrollbar{width:4px}
+.scrollbox::-webkit-scrollbar-track{background:var(--bg2)}
+.scrollbox::-webkit-scrollbar-thumb{background:var(--dim)}
+.log-box{background:var(--bg2);border:1px solid var(--border2);padding:8px 10px;max-height:180px;overflow-y:auto}
+.log-line{font-size:9px;padding:1px 0;color:var(--text2)}
+.log-line.ok{color:var(--pass)}.log-line.warn{color:var(--warn)}.log-line.err{color:var(--fail)}.log-line.info{color:var(--accent)}
+.export-pre{background:var(--bg2);border:1px solid var(--border2);padding:10px;font-size:9px;color:var(--text2);max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.prog-bar-wrap{height:6px;background:var(--panel2);border:1px solid var(--border2);margin:8px 0}
+.prog-bar{height:100%;background:var(--green);width:0%;transition:width .15s}
+.verdict-card{border:1px solid var(--border2);padding:14px 18px;margin-bottom:10px;display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.vc-regime{min-width:200px}
+.vc-regime-name{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:0.14em}
+.vc-state{font-size:9px;letter-spacing:0.12em;margin-top:3px}
+.vc-name{font-family:var(--sans);font-size:13px;font-weight:300;color:var(--text2);min-width:160px}
+.vc-stats{font-size:9px;color:var(--text2);display:flex;flex-direction:column;gap:2px}
+.vc-bar-wrap{flex:1;min-width:200px}
+.vc-bar-label{font-size:8px;color:var(--text2);letter-spacing:0.12em;margin-bottom:4px}
+.vc-bar-track{height:20px;background:var(--panel2);border:1px solid var(--border2);position:relative;overflow:hidden}
+.vc-bar-fill{height:100%;position:absolute;top:0;left:0;opacity:.7}
+.vc-bar-text{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600}
+.vc-gp{border-color:var(--gp-color);background:rgba(74,176,240,0.04)}
+.vc-sb{border-color:var(--sb-color);background:rgba(240,160,48,0.04)}
+.vc-si{border-color:var(--si-color);background:rgba(224,64,64,0.04)}
+.ladder-sel{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.lad-btn{background:transparent;border:1px solid var(--dim);color:var(--dim);font-family:var(--mono);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:0.1em;transition:all .15s}
+.lad-btn.active{border-color:var(--accent);color:var(--accent)}
+.warn-box{background:rgba(240,160,48,0.04);border:1px solid var(--warn);padding:10px 14px;margin-bottom:10px}
+.warn-line{font-size:9px;color:var(--warn);padding:1px 0}
+.warn-line::before{content:'⚠ '}
+.warn-line.ok{color:var(--pass)}.warn-line.ok::before{content:'✓ '}
+.warn-line.info{color:var(--accent)}.warn-line.info::before{content:'ℹ '}
+.range-wrap{display:flex;align-items:center;gap:8px;margin-top:6px}
+.range-val{font-family:var(--display);font-size:10px;color:var(--accent);min-width:60px}
+input[type=range]{accent-color:var(--accent);width:180px}
+.sep{height:1px;background:var(--border2);margin:12px 0}
+.sp-block{background:var(--panel2);border:1px solid var(--border2);padding:9px 12px;display:flex;flex-direction:column;gap:4px;min-width:130px}
+.sp-label{font-size:7.5px;color:var(--text2);letter-spacing:0.2em;font-weight:600;margin-bottom:2px}
+.sp-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sp-key{font-size:8.5px;color:var(--text2)}
+.sp-val{font-family:var(--display);font-size:12px}
+.sp-prox{font-size:8px;letter-spacing:0.12em;font-weight:600;padding:2px 7px;border:1px solid;margin-top:3px;text-align:center}
+.sp-relaxed{color:#00dd88;border-color:#00dd8844}
+.sp-tension{color:#f0a030;border-color:#f0a03044}
+.sp-boundary{color:#e07030;border-color:#e0703044}
+.sp-critical{color:#e04040;border-color:#e0404044}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <span class="hid">CHAMBER STRUC-I</span>
+  <span class="htitle">Universal Ladder Admissibility — inv(p) ≤ ν(V(p))</span>
+  <span class="htag idle" id="run-tag">IDLE</span>
+  <span class="htag" style="color:var(--blue);border-color:var(--blue)">MONTE CARLO</span>
+  <span class="htag" style="color:var(--purple);border-color:var(--purple)">DOMAIN-AGNOSTIC</span>
+  <span class="htag" style="color:var(--gold);border-color:var(--gold)">MULTI-LADDER</span>
+  <span class="hver">v1.0.4 · UNNS Substrate Program</span>
+</div>
+<div class="panel guide-panel">
+
+  <div class="panel-header">WHAT STRUC-I DOES</div>
+
+  <div class="panel-body">
+
+    <p>
+      STRUC-I is a structural interrogation engine. It evaluates how ordered
+      numerical structures respond to perturbations and tests whether their
+      internal ordering remains admissible.
+    </p>
+
+    <p>
+      It operates on <span class="accent">ordered ladders</span> — sequences such as:
+    </p>
+
+    <ul class="compact">
+      <li>Atomic energy levels</li>
+      <li>Molecular spectra</li>
+      <li>Nuclear transition schemes</li>
+      <li>Gravitational harmonic fields</li>
+      <li>Cosmological spectra</li>
+      <li>Or any structured numeric dataset</li>
+    </ul>
+
+    <p>
+      The chamber is <span class="accent">domain-agnostic</span>.
+      It operates on the geometry of ordering — not on the physical domain.
+    </p>
+
+    <div class="panel-note">
+      Prebuilt corpus packs are reference datasets — not limitations.
+    </div>
+
+  </div>
+
+</div>
+<!-- ═══ GUIDE ═══ -->
+<details id="guide-section" style="margin-bottom:18px">
+<summary style="
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;
+  font-size:8px;color:var(--dim);letter-spacing:0.3em;font-weight:600;
+  padding:4px 0 9px;border-top:1px solid var(--border2);
+  margin-top:4px;user-select:none;
+" id="guide-summary">
+  <span id="guide-arrow" style="color:var(--accent);font-size:10px;transition:transform .2s;display:inline-block">▶</span>
+  GUIDE &amp; CORPUS DOWNLOADS
+  <span style="flex:1;height:1px;background:var(--border2);display:block"></span>
+  <span style="color:var(--dim);font-size:8px;letter-spacing:0.15em;font-weight:400">CLICK TO EXPAND</span>
+</summary>
+
+<div style="background:var(--panel);border:1px solid var(--border2);padding:18px 20px;margin-top:2px">
+
+  <!-- Top row: Quick-start + Theory -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+    <!-- Quick-start -->
+    <div style="background:var(--panel2);border:1px solid var(--border2);padding:14px 16px">
+      <div style="font-size:8px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:10px">QUICK-START</div>
+      <ol style="padding-left:1.1em;color:var(--text);font-size:10.5px;line-height:1.9">
+        <li>Download one or more corpus ZIP files below and unzip.</li>
+        <li>In <strong style="color:var(--accent)">LAYER 0</strong>, drop up to 6 CSV files into the upload slots (auto-schema detection handles single-column and molecular formats).</li>
+        <li>Set <strong style="color:var(--accent)">MC RUNS</strong> (default 2000), <strong style="color:var(--accent)">κ STEPS</strong> (default 40), and optionally tag the <strong style="color:var(--accent)">DATASET FAMILY / CLASS</strong>.</li>
+        <li>Click <strong style="color:var(--green)">▶ RUN ANALYSIS</strong>. Progress is shown in the header tag.</li>
+        <li>Inspect <strong style="color:var(--accent)">LAYERS 1–5</strong>: gap diagnostics → vulnerability graph → Monte Carlo → admissibility profiles → regime classification.</li>
+        <li>Export full JSON results via <strong style="color:var(--gold)">EXPORT JSON</strong> for downstream manuscript or chamber-array use.</li>
+      </ol>
+    </div>
+
+    <!-- Theory + manuscript -->
+    <div style="background:var(--panel2);border:1px solid var(--border2);padding:14px 16px">
+      <div style="font-size:8px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:10px">THEORY &amp; MANUSCRIPT</div>
+      <p style="color:var(--text);font-size:10.5px;line-height:1.8;margin-bottom:10px">
+        STRUC-I evaluates the <strong style="color:var(--accent)">Universal Structural Law</strong>:<br>
+        <span style="font-family:var(--display);font-size:11px;color:var(--green);display:block;text-align:center;margin:7px 0">inv(P<sub>ε</sub> ; L) &nbsp;≤&nbsp; ν(V<sub>ε</sub>(L))</span>
+        across preregistered ordered ladders. <em style="color:var(--text2)">inv</em> counts perturbation-induced rank inversions; <em style="color:var(--text2)">ν</em> is the maximum independent set of the vulnerability graph. No perturbation scale and no physical domain is excluded a priori — the chamber is a <strong style="color:var(--warn)">falsification engine</strong>.
+      </p>
+      <p style="color:var(--text2);font-size:10px;line-height:1.7;margin-bottom:10px">
+        Three regimes: <span style="color:var(--gp-color)">■ Geometric Persistence</span> (ρ &lt; 0.60, A<sub>κ</sub>=1) ·
+        <span style="color:var(--sb-color)">■ Structural Boundary</span> (ρ 0.60–1.0) ·
+        <span style="color:var(--si-color)">■ Structural Instability</span> (ρ &gt; 1 or A<sub>κ</sub> &lt; 1).
+      </p>
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/The_Universal_Structural_Law_v6.pdf"
+         target="_blank"
+         style="display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--purple);color:var(--purple);font-family:var(--mono);font-size:9px;padding:6px 14px;letter-spacing:0.12em;font-weight:600;text-decoration:none;transition:background .15s"
+         onmouseover="this.style.background='rgba(152,128,255,0.09)'" onmouseout="this.style.background='transparent'">
+        ↓ THE UNIVERSAL STRUCTURAL LAW — MANUSCRIPT (PDF)
+      </a>
+    </div>
+  </div>
+
+  <!-- Corpus downloads -->
+  <div style="background:var(--panel2);border:1px solid var(--border2);padding:14px 16px">
+    <div style="font-size:8px;color:var(--accent);letter-spacing:0.22em;font-weight:600;border-bottom:1px solid var(--border2);padding-bottom:7px;margin-bottom:12px">
+      STRUCTURAL LADDER CORPUS
+      <span style="color:var(--dim);font-weight:400;margin-left:10px">14 DOMAIN PACKS · CSV FORMAT · UNZIP AND UPLOAD DIRECTLY</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:7px">
+
+      <!-- Each download link -->
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/atoms.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--blue)">QM</span>
+        <span class="g-dl-name">atoms.zip</span>
+        <span class="g-dl-desc">Atomic spectra incl. Zeeman-split ladders</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/molecules.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--blue)">QM</span>
+        <span class="g-dl-name">molecules.zip</span>
+        <span class="g-dl-desc">Molecular rovibrational spectra (6 molecules)</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/nuclei_level_data.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--purple)">NUC</span>
+        <span class="g-dl-name">nuclei_level_data.zip</span>
+        <span class="g-dl-desc">Nuclear γ-level schemes (15 isotopes)</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/condensed-matter_band_structures.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--green)">CM</span>
+        <span class="g-dl-name">condensed-matter_band_structures.zip</span>
+        <span class="g-dl-desc">Band gap, formation energy, density ladders</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/earth_moon_mars.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--gold)">GRAV</span>
+        <span class="g-dl-name">earth_moon_mars.zip</span>
+        <span class="g-dl-desc">Planetary gravity harmonic fields</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/atmospheric_circulation.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--gold)">ATM</span>
+        <span class="g-dl-name">atmospheric_circulation.zip</span>
+        <span class="g-dl-desc">Atmospheric wind profile ladders</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/sun.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--warn)">SOL</span>
+        <span class="g-dl-name">sun.zip</span>
+        <span class="g-dl-desc">Solar plasma activity records</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/cosmic_microwave_background.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--accent)">CMB</span>
+        <span class="g-dl-name">cosmic_microwave_background.zip</span>
+        <span class="g-dl-desc">Planck 2018 CMB angular power spectra</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/cosmic_web.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--accent)">CW</span>
+        <span class="g-dl-name">cosmic_web.zip</span>
+        <span class="g-dl-desc">Galaxy distributions (DESI / SDSS / 2MRS)</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/geodesy_struc_i_ladders.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--green)">GEO</span>
+        <span class="g-dl-name">geodesy_struc_i_ladders.zip</span>
+        <span class="g-dl-desc">GNSS crustal displacement (NGL tenv3)</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/random_matrix_eigenvalue_corpus.zip"
+         target="_blank" class="g-dl">
+        <span class="g-dl-tag" style="color:var(--dim)">GOE</span>
+        <span class="g-dl-name">random_matrix_eigenvalue_corpus.zip</span>
+        <span class="g-dl-desc">GOE null baseline (n = 100 / 200 / 500)</span>
+        <span class="g-dl-arrow">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/adversarial_ladder_pack_2000pts.zip"
+         target="_blank" class="g-dl" style="border-color:var(--fail)">
+        <span class="g-dl-tag" style="color:var(--fail)">ADV</span>
+        <span class="g-dl-name">adversarial_ladder_pack_2000pts.zip</span>
+        <span class="g-dl-desc">Gap-preserving H₂O surrogates · falsification pack</span>
+        <span class="g-dl-arrow" style="color:var(--fail)">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/adversarial%20cluster%20ladder%20pack.zip"
+         target="_blank" class="g-dl" style="border-color:var(--fail)">
+        <span class="g-dl-tag" style="color:var(--fail)">ADV</span>
+        <span class="g-dl-name">adversarial cluster ladder pack.zip</span>
+        <span class="g-dl-desc">Block-degenerate cluster attack · genuine violations</span>
+        <span class="g-dl-arrow" style="color:var(--fail)">↓</span>
+      </a>
+
+      <a href="https://unns.tech/media/unns/struct-i_universal_ordered-structure_admissibility-chamber/structural_ladder_corpus/WEAK%20LADDER%20STRUCTURAL%20DIAGNOSTICS.zip"
+         target="_blank" class="g-dl" style="border-color:var(--warn)">
+        <span class="g-dl-tag" style="color:var(--warn)">DIAG</span>
+        <span class="g-dl-name">WEAK LADDER STRUCTURAL DIAGNOSTICS.zip</span>
+        <span class="g-dl-desc">Near-boundary diagnostic ladders</span>
+        <span class="g-dl-arrow" style="color:var(--warn)">↓</span>
+      </a>
+
+    </div><!-- /grid -->
+  </div><!-- /corpus panel -->
+
+  <!-- Regime reference footer -->
+  <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+
+    <div style="background:rgba(74,176,240,0.06);border:1px solid rgba(74,176,240,0.25);padding:10px 13px">
+      <div style="font-size:8px;color:var(--gp-color);letter-spacing:0.22em;font-weight:600;margin-bottom:5px">GEOMETRIC PERSISTENCE</div>
+      <div style="color:var(--text2);font-size:10px;line-height:1.7">
+        ρ &lt; 0.60 · A<sub>κ</sub> = 1.000<br>
+        Inversion pressure well inside budget. Hierarchically connected gap architecture.<br>
+        <em>99.7 % of all corpus evaluations.</em>
+      </div>
+    </div>
+
+    <div style="background:rgba(240,160,48,0.06);border:1px solid rgba(240,160,48,0.25);padding:10px 13px">
+      <div style="font-size:8px;color:var(--sb-color);letter-spacing:0.22em;font-weight:600;margin-bottom:5px">STRUCTURAL BOUNDARY</div>
+      <div style="color:var(--text2);font-size:10px;line-height:1.7">
+        0.60 ≤ ρ &lt; 1.0 or A<sub>κ</sub> slightly below 1<br>
+        Near-threshold occupancy. Statistical boundary phase.<br>
+        <em>QM Zeeman (ρ̄ = 0.9585), Moon absS.</em>
+      </div>
+    </div>
+
+    <div style="background:rgba(224,64,64,0.06);border:1px solid rgba(224,64,64,0.25);padding:10px 13px">
+      <div style="font-size:8px;color:var(--si-color);letter-spacing:0.22em;font-weight:600;margin-bottom:5px">STRUCTURAL INSTABILITY</div>
+      <div style="color:var(--text2);font-size:10px;line-height:1.7">
+        ρ &gt; 1 or A<sub>κ</sub> &lt; 0.70<br>
+        Inversion pressure exceeds vulnerability budget. Pre-percolation violation window.<br>
+        <em>Adversarial cluster ladders only.</em>
+      </div>
+    </div>
+
+  </div><!-- /regime row -->
+
+</div><!-- /guide body -->
+</details>
+
+<style>
+.g-dl{
+  display:grid;
+  grid-template-columns:40px 1fr auto 18px;
+  align-items:center;gap:6px;
+  background:transparent;border:1px solid var(--border2);
+  padding:7px 10px;text-decoration:none;
+  transition:border-color .15s,background .15s;
+}
+.g-dl:hover{border-color:var(--accent);background:rgba(0,200,240,0.04)}
+.g-dl-tag{font-size:8px;letter-spacing:0.16em;font-weight:700;font-family:var(--mono)}
+.g-dl-name{font-size:9.5px;color:var(--accent);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-dl-desc{font-size:8.5px;color:var(--text2);line-height:1.4}
+.g-dl-arrow{font-size:12px;color:var(--green);text-align:right}
+details#guide-section summary::-webkit-details-marker{display:none}
+details#guide-section[open] #guide-arrow{transform:rotate(90deg)}
+details#guide-section[open] summary span:last-child{display:none}
+</style>
+
+<!-- ═══ LAYER 0 · DATA INPUT ═══ -->
+<div class="layer-label">LAYER 0 · DATA INPUT</div>
+
+<div class="panel">
+  <div class="ptitle">LADDER INGESTION <span class="psub">CSV UPLOAD · AUTO-SCHEMA DETECTION · UP TO 6 FILES</span></div>
+  <div class="upload-grid" id="upload-grid">
+    <!-- slots injected by JS -->
+  </div>
+  <div class="ctrl-row" style="margin-top:10px">
+    <div class="ctrl-group">
+      <div class="ctrl-label">MAX LADDER SIZE</div>
+      <input class="ctrl-inp" id="max-ladder" type="number" value="2000" min="100" max="50000" title="Cap per-ladder n. Large ladders are stratified-subsampled.">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">MC RUNS (M)</div>
+      <input class="ctrl-inp" id="mc-runs" type="number" value="2000" min="200" max="10000">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ STEPS</div>
+      <input class="ctrl-inp" id="kappa-steps" type="number" value="40" min="10" max="100">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ MIN</div>
+      <input class="ctrl-inp" id="kappa-min" type="number" value="0.01" step="0.01" min="0.001" max="0.5">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ MAX</div>
+      <input class="ctrl-inp" id="kappa-max" type="number" value="1.0" step="0.05" min="0.1" max="5.0">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">DATASET FAMILY</div>
+      <input class="ctrl-inp" id="dataset-family" type="text" value="" placeholder="e.g. Ge, Cu, SiO2" style="width:130px" title="Material family or dataset name. Included verbatim in JSON export.">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">DATASET CLASS</div>
+      <input class="ctrl-inp" id="dataset-class" type="text" value="" placeholder="e.g. semiconductor" style="width:130px" title="Physical class label. Included verbatim in JSON export.">
+    </div>
+    <button class="ctrl-btn run" id="btn-run" onclick="runChamber()" disabled>▶ RUN CHAMBER</button>
+    <button class="ctrl-btn" onclick="clearAll()">✕ CLEAR ALL</button>
+  </div>
+</div>
+
+<!-- Loaded ladders registry -->
+<div class="panel" id="registry-panel" style="display:none">
+  <div class="ptitle">LADDER REGISTRY <span class="psub" id="registry-count"></span></div>
+  <div class="scrollbox">
+    <table class="data-table" id="registry-table">
+      <thead><tr>
+        <th>#</th><th>NAME</th><th>SOURCE</th><th>DOMAIN</th>
+        <th>N (raw)</th><th>N (used)</th><th>SUBSAMPLED</th>
+        <th>MIN λ</th><th>MAX λ</th><th>INCLUDE</th>
+      </tr></thead>
+      <tbody id="registry-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ LAYER 1 · GAP DIAGNOSTICS ═══ -->
+<div class="layer-label">LAYER 1 · GAP DIAGNOSTICS</div>
+
+<div class="panel" id="gap-panel" style="display:none">
+  <div class="ptitle">GAP STRUCTURE <span class="psub">SELECT LADDER TO INSPECT</span></div>
+  <div class="ladder-sel" id="gap-ladder-sel"></div>
+  <div class="stat-grid" id="gap-stats"></div>
+  <div class="row2">
+    <div>
+      <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">GAP SPECTRUM — LOG SCALE</div>
+      <canvas id="gap-hist-canvas" height="180" style="width:100%"></canvas>
+    </div>
+    <div>
+      <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">GAP PERCENTILE PROFILE</div>
+      <canvas id="gap-pct-canvas" height="180" style="width:100%"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LAYER 2 · VULNERABILITY STRUCTURE ═══ -->
+<div class="layer-label">LAYER 2 · VULNERABILITY STRUCTURE</div>
+
+<div class="panel" id="vuln-panel" style="display:none">
+  <div class="ptitle">ε-VULNERABILITY GRAPH · B_ε = {i : g_i ≤ 2ε} <span class="psub">ΚAPPA SWEEP PREVIEW</span></div>
+  <div class="ladder-sel" id="vuln-ladder-sel"></div>
+  <div class="ctrl-row">
+    <div class="ctrl-group">
+      <div class="ctrl-label">κ PROBE</div>
+      <div class="range-wrap">
+        <input type="range" id="kappa-probe" min="0" max="100" value="50" oninput="updateVulnProbe()">
+        <span class="range-val" id="kappa-probe-val">κ = 0.10</span>
+      </div>
+    </div>
+  </div>
+  <div class="stat-grid" id="vuln-stats"></div>
+  <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">ν(V_ε) vs κ — VULNERABILITY BUDGET CURVE</div>
+  <canvas id="nu-canvas" height="200" style="width:100%;margin-bottom:14px"></canvas>
+  <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">VULNERABLE BOUNDARY MAP AT PROBE κ</div>
+  <canvas id="vuln-map-canvas" height="80" style="width:100%"></canvas>
+</div>
+
+<!-- ═══ LAYER 3 · MONTE CARLO EXECUTION ═══ -->
+<div class="layer-label">LAYER 3 · MONTE CARLO EXECUTION</div>
+
+<div class="panel">
+  <div class="ptitle">MC PERTURBATION ENGINE · δᵢ ~ Uniform[-ε, ε] <span class="psub">PREREGISTERED PROTOCOL · FROZEN BEFORE EXECUTION</span></div>
+  <div id="mc-warn" class="warn-box" style="display:none"></div>
+  <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+  <div style="font-size:9px;color:var(--text2);margin-bottom:8px" id="prog-label">Ready. Load ladders and press RUN CHAMBER.</div>
+  <div class="log-box" id="log-box"></div>
+</div>
+
+<!-- ═══ LAYER 4 · ADMISSIBILITY PROFILES ═══ -->
+<div class="layer-label">LAYER 4 · ADMISSIBILITY PROFILES</div>
+
+<div class="panel" id="adm-panel" style="display:none">
+  <div class="ptitle">κ vs A_κ(L) — ADMISSIBILITY CURVES <span class="psub">ALL LADDERS · A_κ = fraction of perturbations satisfying inv ≤ ν(V)</span></div>
+  <canvas id="adm-canvas" height="320" style="width:100%;margin-bottom:14px"></canvas>
+  <div class="row2">
+    <div>
+      <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">INVERSION BUDGET AT κ = 1.0</div>
+      <canvas id="inv-canvas" height="200" style="width:100%"></canvas>
+    </div>
+    <div>
+      <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">ν(V) ENVELOPES — ALL LADDERS</div>
+      <canvas id="nu-all-canvas" height="200" style="width:100%"></canvas>
+    </div>
+  </div>
+  <div class="sep" style="margin-top:18px"></div>
+  <div class="ptitle" style="margin-top:2px">ADVANCED DIAGNOSTICS <span class="psub">STRUCTURAL PRESSURE ρ = inv / ν · SECONDARY ANALYTIC — DOES NOT ALTER CORE CLASSIFICATION</span></div>
+  <div style="font-size:8px;color:var(--text2);letter-spacing:0.18em;margin-bottom:6px">κ vs ρ(κ) — STRUCTURAL PRESSURE CURVES · ρ→0 RELAXED · ρ→1 BOUNDARY</div>
+  <canvas id="rho-canvas" height="220" style="width:100%;margin-bottom:12px"></canvas>
+  <div id="pressure-grid" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+</div>
+
+<!-- ═══ LAYER 5 · REGIME CLASSIFICATION ═══ -->
+<div class="layer-label">LAYER 5 · REGIME CLASSIFICATION</div>
+
+<div class="panel" id="regime-panel" style="display:none">
+  <div class="ptitle">UNIVERSAL REGIME TAXONOMY <span class="psub">GEOMETRIC PERSISTENCE · STRUCTURAL BOUNDARY · STRUCTURAL INSTABILITY</span></div>
+  <div id="regime-legend" style="display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:var(--gp-color)"></div><span style="font-size:9px;color:var(--text2)">Geometric Persistence</span></div>
+    <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:var(--sb-color)"></div><span style="font-size:9px;color:var(--text2)">Structural Boundary</span></div>
+    <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:var(--si-color)"></div><span style="font-size:9px;color:var(--text2)">Structural Instability</span></div>
+  </div>
+  <div id="verdict-cards"></div>
+  <div class="sep"></div>
+  <div class="ptitle" style="margin-top:12px">SUMMARY TABLE</div>
+  <div class="scrollbox">
+    <table class="data-table" id="summary-table">
+      <thead><tr>
+        <th>LADDER</th><th>N</th><th>DOMAIN</th>
+        <th>MEAN Aκ</th><th>MIN Aκ</th><th>Aκ(κ=1.0)</th>
+        <th>MEAN ν(V)</th><th>MEAN ρ</th><th>PROXIMITY</th><th>REGIME</th><th>STATE</th>
+      </tr></thead>
+      <tbody id="summary-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ LAYER 6 · EXPORT ═══ -->
+<div class="layer-label">LAYER 6 · EXPORT</div>
+
+<div class="panel" id="export-panel">
+  <div class="ptitle">JSON RESULT BUNDLE <span class="psub">PREVIEWABLE · FULL EXPORT ON DOWNLOAD</span></div>
+  <div class="export-pre" id="export-pre">// Run the chamber to populate export.</div>
+  <div class="ctrl-row" style="margin-top:10px">
+    <button class="ctrl-btn export-btn" id="btn-export" onclick="exportJSON()" disabled>↓ EXPORT JSON</button>
+    <button class="ctrl-btn export-btn" id="btn-export-csv" onclick="exportCSV()" disabled>↓ EXPORT CSV</button>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════ */
+const NUM_SLOTS = 6;
+const state = {
+  ladders: [],      // parsed ladder objects
+  profiles: [],     // computed admissibility profiles (parallel to ladders)
+  running: false,
+  selectedGapId: null,
+  selectedVulnId: null,
+  kappaGrid: [],
+  lastExportData: null
+};
+
+/* ════════════════════════════════════════════════════════════
+   MATH UTILITIES
+   ════════════════════════════════════════════════════════════ */
+function median(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function mean(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+function std(arr) {
+  if (arr.length < 2) return 0;
+  const mu = mean(arr);
+  return Math.sqrt(arr.reduce((a, b) => a + (b - mu) ** 2, 0) / arr.length);
+}
+function quantile(arr, q) {
+  const s = [...arr].sort((a, b) => a - b);
+  const pos = q * (s.length - 1);
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return s[lo] + (s[hi] - s[lo]) * (pos - lo);
+}
+function logspace(lo, hi, n) {
+  const lLo = Math.log10(lo), lHi = Math.log10(hi);
+  return Array.from({ length: n }, (_, i) => Math.pow(10, lLo + (lHi - lLo) * i / (n - 1)));
+}
+function stratifiedSample(arr, maxN) {
+  if (arr.length <= maxN) return arr;
+  const result = [];
+  const step = (arr.length - 1) / (maxN - 1);
+  for (let i = 0; i < maxN; i++) result.push(arr[Math.round(i * step)]);
+  return result;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LADDER COLORS — unique palette per ladder index
+   ════════════════════════════════════════════════════════════ */
+const LADDER_PALETTE = [
+  '#00c8f0','#00dd88','#f0a030','#9880ff','#e04040','#e8c840',
+  '#4ab0f0','#60e0a0','#f0c060','#b090f0','#f07070','#c8b040'
+];
+function ladderColor(idx) { return LADDER_PALETTE[idx % LADDER_PALETTE.length]; }
+
+/* ════════════════════════════════════════════════════════════
+   CSV PARSER
+   ════════════════════════════════════════════════════════════ */
+function parseCSV(text, filename) {
+  const lines = text.replace(/\r/g, '').trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(',');
+    const row = {};
+    headers.forEach((h, j) => { row[h] = (cells[j] || '').trim(); });
+    rows.push(row);
+  }
+
+  // Columns that are group labels, not numeric ladders.
+  // Any column whose name exactly matches or starts with one of these words must
+  // never be selected as the scalar ladder in the generic fallback.
+  const GROUP_COLS = [
+    'matrix_id','matrix','matrix id',
+    'nucleus','isotope',
+    'molecule','mol',
+    'material','system','sample','compound','structure',
+    'index','idx','id','#','rank','n','row','label','name','group','class','type',
+    'species','element','atom'
+  ];
+  function isGroupCol(h) {
+    return GROUP_COLS.some(w => h === w || h.startsWith(w + '_') || h.endsWith('_' + w));
+  }
+
+  // Helper: build one-ladder-per-group from a groupKey column + a value column.
+  function groupedLadders(groupCol, valCol, domainStr) {
+    const groups = new Map();
+    for (const row of rows) {
+      const key = (row[groupCol] || 'unknown').trim();
+      const v = parseFloat(row[valCol]);
+      if (!isNaN(v)) {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(v);
+      }
+    }
+    const results = [];
+    for (const [key, vals] of groups) {
+      const sorted = [...vals].sort((a, b) => a - b);
+      results.push({ name: key, source: filename, domain: domainStr, rawN: sorted.length, values: sorted });
+    }
+    return results;
+  }
+
+  // Schema A: molecule + energy_cm1 (or energy) → molecular ladders
+  const hasMol = headers.includes('molecule');
+  const energyCol = headers.find(h => h.includes('energy'));
+  if (hasMol && energyCol) {
+    return groupedLadders('molecule', energyCol, 'molecular');
+  }
+
+  // Schema B: matrix_id / matrix + eigenvalue → GOE / RMT ladders
+  const matrixIdCol = headers.find(h => h === 'matrix_id' || h === 'matrix');
+  const eigenCol    = headers.find(h => h.includes('eigenvalue') || h.includes('eigen') || h === 'ev' || h === 'level');
+  if (matrixIdCol && eigenCol) {
+    return groupedLadders(matrixIdCol, eigenCol, 'random-matrix');
+  }
+
+  // Schema C: nucleus / isotope + energy → nuclear ladders
+  const nucCol = headers.find(h => h === 'nucleus' || h === 'isotope' || h === 'nuclide');
+  if (nucCol && energyCol) {
+    return groupedLadders(nucCol, energyCol, 'nuclear');
+  }
+
+  // Schema D: generic group column + first non-group numeric column → multi-ladder
+  // Only fires if exactly one group column is present alongside a clear value column.
+  const genericGroupCol = headers.find(h => isGroupCol(h) && !['index','idx','#','rank','n','row'].includes(h));
+  if (genericGroupCol) {
+    const valCol = headers.find(h => !isGroupCol(h) && (() => {
+      const vals = rows.slice(0, 20).map(r => parseFloat(r[h]));
+      return vals.filter(v => !isNaN(v)).length > 10;
+    })());
+    if (valCol) {
+      const domain = detectDomain(filename);
+      return groupedLadders(genericGroupCol, valCol, domain);
+    }
+  }
+
+  // Schema E: single-column numeric file — pick the first non-group numeric column.
+  let numCol = null;
+  for (const h of headers) {
+    if (isGroupCol(h)) continue;
+    const vals = rows.slice(0, 20).map(r => parseFloat(r[h]));
+    if (vals.filter(v => !isNaN(v)).length > 10) { numCol = h; break; }
+  }
+  if (!numCol) {
+    // last-resort: first numeric column at all (even if it looks like a group col)
+    for (const h of headers) {
+      const vals = rows.slice(0, 20).map(r => parseFloat(r[h]));
+      if (vals.filter(v => !isNaN(v)).length > 5) { numCol = h; break; }
+    }
+  }
+  if (!numCol) return [];
+
+  const rawVals = rows.map(r => parseFloat(r[numCol])).filter(v => !isNaN(v));
+  const sorted = [...rawVals].sort((a, b) => a - b);
+  const domain = detectDomain(filename);
+  return [{ name: filename.replace(/\.csv$/i, ''), source: filename, domain, rawN: sorted.length, values: sorted }];
+}
+
+function detectDomain(filename) {
+  const f = filename.toLowerCase();
+  if (f.includes('band') || f.includes('gap')) return 'condensed-matter';
+  if (f.includes('density')) return 'condensed-matter';
+  if (f.includes('formation') || f.includes('energy')) return 'condensed-matter';
+  if (f.includes('mol') || f.includes('h2o') || f.includes('co') || f.includes('nh3')) return 'molecular';
+  if (f.includes('nuclear') || f.includes('nuc')) return 'nuclear';
+  if (f.includes('goe') || f.includes('random') || f.includes('rmt')) return 'random-matrix';
+  if (f.includes('atom') || f.includes('qm')) return 'atomic';
+  return 'unknown';
+}
+
+/* ════════════════════════════════════════════════════════════
+   GAP ENGINE
+   ════════════════════════════════════════════════════════════ */
+function computeGaps(values) {
+  const gaps = [];
+  for (let i = 0; i < values.length - 1; i++) gaps.push(values[i + 1] - values[i]);
+  return gaps;
+}
+function gapStats(gaps) {
+  const nonzero = gaps.filter(g => g > 0);
+  return {
+    n: gaps.length,
+    mean: mean(gaps),
+    median: median(gaps),
+    std: std(gaps),
+    min: Math.min(...gaps),
+    max: Math.max(...gaps),
+    q10: quantile(gaps, 0.1),
+    q25: quantile(gaps, 0.25),
+    q75: quantile(gaps, 0.75),
+    q90: quantile(gaps, 0.9),
+    zeroCount: gaps.filter(g => g === 0).length,
+    nonzeroMedian: nonzero.length ? median(nonzero) : 0
+  };
+}
+
+/* ════════════════════════════════════════════════════════════
+   VULNERABILITY ENGINE
+   ════════════════════════════════════════════════════════════ */
+
+// Primitive 1: runs depend only on ε and gaps — compute once per κ, not per MC run.
+function computeVulnerabilityRuns(gaps, eps) {
+  const runs = [];
+  let run = 0;
+  for (let i = 0; i < gaps.length; i++) {
+    if (gaps[i] <= 2 * eps) {
+      run++;
+    } else {
+      if (run > 0) runs.push(run);
+      run = 0;
+    }
+  }
+  if (run > 0) runs.push(run);
+  return runs;
+}
+
+// Primitive 2: independence number from pre-computed run lengths.
+function computeNuFromRuns(runs) {
+  let nu = 0;
+  for (let r of runs) nu += Math.ceil(r / 2);
+  return nu;
+}
+
+// Wrapper used by the probe UI (updateVulnProbe) — not called inside the MC loop.
+function computeVulnerability(gaps, kappa, medGap) {
+  const epsilon = kappa * medGap;
+  const runs = computeVulnerabilityRuns(gaps, epsilon);
+  const nu = computeNuFromRuns(runs);
+  const threshold = 2 * epsilon;
+  const vulnerable = gaps.map(g => g <= threshold);
+  const vulnCount = vulnerable.filter(Boolean).length;
+  const runCount = runs.length;
+  return { epsilon, nu, vulnCount, runCount, vulnerable };
+}
+
+/* ════════════════════════════════════════════════════════════
+   MONTE CARLO ENGINE
+   ════════════════════════════════════════════════════════════ */
+function countInversions(vals) {
+  let inv = 0;
+  for (let i = 0; i < vals.length - 1; i++) if (vals[i] > vals[i + 1]) inv++;
+  return inv;
+}
+
+function runMCStep(values, nu, epsilon, M) {
+  const n = values.length;
+  let admissible = 0;
+  let totalInv = 0;
+  const invCounts = [];
+  for (let m = 0; m < M; m++) {
+    const perturbed = values.map(v => v + (Math.random() * 2 - 1) * epsilon);
+    const inv = countInversions(perturbed);
+    if (inv <= nu) admissible++;
+    totalInv += inv;
+    if (m < 200) invCounts.push(inv); // sample first 200 for histogram
+  }
+  return { Ak: admissible / M, meanInv: totalInv / M, invCounts };
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRESSURE HELPER
+   ════════════════════════════════════════════════════════════ */
+function pressureLabel(rho) {
+  if (rho < 0.25) return { label: 'RELAXED HIERARCHY',    cls: 'sp-relaxed',  color: '#00dd88' };
+  if (rho < 0.60) return { label: 'STRUCTURAL TENSION',   cls: 'sp-tension',  color: '#f0a030' };
+  if (rho < 0.90) return { label: 'NEAR BOUNDARY',        cls: 'sp-boundary', color: '#e07030' };
+  return              { label: 'CRITICAL',                 cls: 'sp-critical', color: '#e04040' };
+}
+
+/* ════════════════════════════════════════════════════════════
+   REGIME CLASSIFIER
+   ════════════════════════════════════════════════════════════ */
+function classifyRegime(profile) {
+  if (!profile || profile.length === 0) return { regime: 'Unknown', state: 'Unclassified', color: '#2d4560', vcClass: '' };
+  const aks = profile.map(p => p.Ak);
+  const mu = mean(aks);
+  const mn = Math.min(...aks);
+  const akHigh = profile.find(p => p.kappa >= 0.7)?.Ak ?? aks[aks.length - 1];
+  const akMid  = profile.find(p => p.kappa >= 0.4)?.Ak ?? aks[Math.floor(aks.length / 2)];
+  const meanRho = mean(profile.map(p => p.rho ?? 0));
+  const maxRho  = Math.max(...profile.map(p => p.rho ?? 0));
+  const pl = pressureLabel(meanRho);
+
+  if (mu >= 0.93) {
+    const regime = 'Geometric Persistence';
+    // Refine state using ρ: high Aκ can hide two very different structural situations
+    let state;
+    if (mu >= 0.975 && mn >= 0.93 && meanRho < 0.30) {
+      state = 'Stable Structure';
+    } else if (mu >= 0.975 && mn >= 0.93 && meanRho >= 0.60) {
+      state = 'Boundary-Stabilized';
+    } else {
+      state = 'Weak Persistence';
+    }
+    const color = state === 'Stable Structure' ? '#00dd88' : state === 'Boundary-Stabilized' ? '#e07030' : '#4ab0f0';
+    return { regime, state, color, regimeColor: '#4ab0f0', vcClass: 'vc-gp', meanA: mu, minA: mn, meanRho, maxRho, pressureLabel: pl };
+  } else if (mu >= 0.60) {
+    const regime = 'Structural Boundary';
+    const state = akHigh >= 0.70 ? 'Transitional Structure' : 'Near-Critical Structure';
+    const color = '#f0a030';
+    return { regime, state, color, regimeColor: '#f0a030', vcClass: 'vc-sb', meanA: mu, minA: mn, meanRho, maxRho, pressureLabel: pl };
+  } else {
+    const regime = 'Structural Instability';
+    const akLow = profile.find(p => p.kappa >= 0.25)?.Ak ?? aks[Math.floor(aks.length * 0.3)];
+    const state = akLow < 0.50 ? 'Weak Structure' : 'Random Structure';
+    const color = '#e04040';
+    return { regime, state, color, regimeColor: '#e04040', vcClass: 'vc-si', meanA: mu, minA: mn, meanRho, maxRho, pressureLabel: pl };
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   UPLOAD SLOTS — INIT
+   ════════════════════════════════════════════════════════════ */
+function initUploadSlots() {
+  const grid = document.getElementById('upload-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < NUM_SLOTS; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'upload-zone';
+    slot.id = `slot-${i}`;
+    slot.innerHTML = `
+      <input type="file" accept=".csv" id="file-${i}">
+      <div class="uz-label">SLOT ${i + 1}</div>
+      <div class="uz-name" id="slot-name-${i}">Drop CSV here</div>
+      <div class="uz-status idle" id="slot-status-${i}">—</div>
+    `;
+    slot.querySelector('input').addEventListener('change', e => handleFile(e, i));
+    grid.appendChild(slot);
+  }
+}
+
+function handleFile(e, slotIdx) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const slot = document.getElementById(`slot-${slotIdx}`);
+  const nameEl = document.getElementById(`slot-name-${slotIdx}`);
+  const statusEl = document.getElementById(`slot-status-${slotIdx}`);
+  nameEl.textContent = file.name;
+  statusEl.className = 'uz-status idle';
+  statusEl.textContent = 'Parsing…';
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const maxN = parseInt(document.getElementById('max-ladder').value) || 2000;
+      let parsed = parseCSV(ev.target.result, file.name);
+      if (!parsed.length) throw new Error('No valid numeric ladder found in CSV.');
+
+      // Apply max size via stratified sampling
+      parsed = parsed.map(lad => {
+        const subsampled = lad.values.length > maxN;
+        const used = subsampled ? stratifiedSample(lad.values, maxN) : lad.values;
+        return { ...lad, values: used, usedN: used.length, subsampled };
+      });
+
+      // Tag each with a slot so we can replace on re-upload
+      parsed.forEach(lad => { lad.slotIdx = slotIdx; lad.id = `${slotIdx}_${lad.name}`; });
+
+      // Remove any existing ladders from this slot
+      state.ladders = state.ladders.filter(l => l.slotIdx !== slotIdx);
+      state.ladders.push(...parsed);
+
+      slot.className = 'upload-zone loaded';
+      statusEl.className = 'uz-status ok';
+      statusEl.textContent = `${parsed.length} ladder${parsed.length > 1 ? 's' : ''} · ${parsed.map(l => l.usedN).join(', ')} pts`;
+
+      refreshRegistry();
+      refreshGapUI();
+      refreshVulnUI();
+      document.getElementById('btn-run').disabled = false;
+      log(`Loaded ${file.name} → ${parsed.length} ladder(s)`, 'ok');
+    } catch(err) {
+      slot.className = 'upload-zone err';
+      statusEl.className = 'uz-status err';
+      statusEl.textContent = err.message;
+      log(`Error parsing ${file.name}: ${err.message}`, 'err');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  state.ladders = [];
+  state.profiles = [];
+  state.selectedGapId = null;
+  state.selectedVulnId = null;
+  initUploadSlots();
+  ['registry-panel','gap-panel','vuln-panel','adm-panel','regime-panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-export').disabled = true;
+  document.getElementById('btn-export-csv').disabled = true;
+  document.getElementById('export-pre').textContent = '// Run the chamber to populate export.';
+  document.getElementById('prog-bar').style.width = '0%';
+  document.getElementById('prog-label').textContent = 'Ready. Load ladders and press RUN CHAMBER.';
+  document.getElementById('log-box').innerHTML = '';
+  setTag('idle', 'IDLE');
+}
+
+/* ════════════════════════════════════════════════════════════
+   REGISTRY
+   ════════════════════════════════════════════════════════════ */
+function refreshRegistry() {
+  if (!state.ladders.length) { document.getElementById('registry-panel').style.display = 'none'; return; }
+  document.getElementById('registry-panel').style.display = '';
+  document.getElementById('registry-count').textContent = `${state.ladders.length} LADDER${state.ladders.length > 1 ? 'S' : ''} LOADED`;
+  const tbody = document.getElementById('registry-body');
+  tbody.innerHTML = '';
+  state.ladders.forEach((lad, i) => {
+    const tr = document.createElement('tr');
+    const sub = lad.subsampled ? `<span style="color:var(--warn)">YES (${lad.rawN}→${lad.usedN})</span>` : `<span class="dim">NO</span>`;
+    const minV = lad.values[0].toPrecision(4);
+    const maxV = lad.values[lad.values.length - 1].toPrecision(4);
+    tr.innerHTML = `
+      <td style="color:${ladderColor(i)}">${i + 1}</td>
+      <td style="color:${ladderColor(i)};font-weight:600">${lad.name}</td>
+      <td class="dim">${lad.source}</td>
+      <td class="blue">${lad.domain}</td>
+      <td class="dim">${(lad.rawN || lad.usedN).toLocaleString()}</td>
+      <td class="live">${lad.usedN.toLocaleString()}</td>
+      <td>${sub}</td>
+      <td>${minV}</td>
+      <td>${maxV}</td>
+      <td><input type="checkbox" checked id="inc-${lad.id}" style="accent-color:var(--accent)"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   GAP DIAGNOSTICS UI
+   ════════════════════════════════════════════════════════════ */
+function refreshGapUI() {
+  if (!state.ladders.length) return;
+  document.getElementById('gap-panel').style.display = '';
+  if (!state.selectedGapId || !state.ladders.find(l => l.id === state.selectedGapId)) {
+    state.selectedGapId = state.ladders[0].id;
+  }
+  buildLadderSel('gap-ladder-sel', state.selectedGapId, id => { state.selectedGapId = id; renderGapPlots(); });
+  renderGapPlots();
+}
+
+function renderGapPlots() {
+  const lad = state.ladders.find(l => l.id === state.selectedGapId);
+  if (!lad) return;
+  const gaps = computeGaps(lad.values);
+  const stats = gapStats(gaps);
+  const idx = state.ladders.indexOf(lad);
+
+  // Stat cards
+  const sc = document.getElementById('gap-stats');
+  sc.innerHTML = `
+    ${statCard('N LEVELS', lad.usedN.toLocaleString(), '', 'live')}
+    ${statCard('N GAPS', gaps.length.toLocaleString(), '', 'live')}
+    ${statCard('MEDIAN GAP', fmt(stats.median), '', 'live')}
+    ${statCard('MEAN GAP', fmt(stats.mean), '', 'blue')}
+    ${statCard('MIN GAP', fmt(stats.min), '', stats.min === 0 ? 'warn' : 'live')}
+    ${statCard('MAX GAP', fmt(stats.max), '', 'live')}
+    ${statCard('GAP STD', fmt(stats.std), '', 'dim')}
+    ${statCard('ZERO GAPS', stats.zeroCount, '(degenerate)', stats.zeroCount > 0 ? 'warn' : 'dim')}
+  `;
+
+  drawGapHistogram('gap-hist-canvas', gaps, ladderColor(idx), stats);
+  drawGapPercentile('gap-pct-canvas', gaps, ladderColor(idx));
+}
+
+function statCard(label, val, unit, cls) {
+  return `<div class="stat-card"><div class="sc-label">${label}</div><div class="sc-val ${cls}">${val}</div><div class="sc-unit">${unit}</div></div>`;
+}
+function fmt(v) {
+  if (Math.abs(v) < 0.001 && v !== 0) return v.toExponential(3);
+  if (Math.abs(v) > 9999) return v.toExponential(3);
+  return parseFloat(v.toPrecision(4)).toString();
+}
+
+/* ════════════════════════════════════════════════════════════
+   VULNERABILITY UI
+   ════════════════════════════════════════════════════════════ */
+function refreshVulnUI() {
+  if (!state.ladders.length) return;
+  document.getElementById('vuln-panel').style.display = '';
+  if (!state.selectedVulnId || !state.ladders.find(l => l.id === state.selectedVulnId)) {
+    state.selectedVulnId = state.ladders[0].id;
+  }
+  buildLadderSel('vuln-ladder-sel', state.selectedVulnId, id => { state.selectedVulnId = id; updateVulnProbe(); });
+  updateVulnProbe();
+}
+
+function updateVulnProbe() {
+  const lad = state.ladders.find(l => l.id === state.selectedVulnId);
+  if (!lad) return;
+
+  const sliderVal = parseFloat(document.getElementById('kappa-probe').value) / 100;
+  const kappaMin = parseFloat(document.getElementById('kappa-min').value) || 0.01;
+  const kappaMax = parseFloat(document.getElementById('kappa-max').value) || 1.0;
+  const kappa = kappaMin * Math.pow(kappaMax / kappaMin, sliderVal);
+  document.getElementById('kappa-probe-val').textContent = `κ = ${kappa.toFixed(4)}`;
+
+  const gaps = computeGaps(lad.values);
+  const medGap = median(gaps.filter(g => g > 0)) || median(gaps) || 1;
+  const v = computeVulnerability(gaps, kappa, medGap);
+  const idx = state.ladders.indexOf(lad);
+  const col = ladderColor(idx);
+
+  const vs = document.getElementById('vuln-stats');
+  vs.innerHTML = `
+    ${statCard('κ', kappa.toFixed(4), '', 'live')}
+    ${statCard('ε = κ·med(G)', fmt(v.epsilon), '', 'blue')}
+    ${statCard('2ε THRESHOLD', fmt(2 * v.epsilon), '', 'dim')}
+    ${statCard('|B_ε|', v.vulnCount, 'vulnerable gaps', v.vulnCount > 0 ? 'warn' : 'pass')}
+    ${statCard('RUN COUNT', v.runCount, 'connected components', 'live')}
+    ${statCard('ν(V_ε)', v.nu, 'independence number', 'pass')}
+    ${statCard('VULN %', gaps.length ? (100 * v.vulnCount / gaps.length).toFixed(1) + '%' : '—', 'of all gaps', v.vulnCount / gaps.length > 0.7 ? 'fail' : 'live')}
+  `;
+
+  // Draw ν(V) vs κ curve
+  drawNuCurve('nu-canvas', lad, col);
+  // Draw boundary map
+  drawVulnMap('vuln-map-canvas', v.vulnerable, col);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MAIN RUNNER
+   ════════════════════════════════════════════════════════════ */
+async function runChamber() {
+  if (state.running) return;
+  const activeLadders = state.ladders.filter(l => {
+    const cb = document.getElementById(`inc-${l.id}`);
+    return cb ? cb.checked : true;
+  });
+  if (!activeLadders.length) { log('No ladders selected.', 'err'); return; }
+
+  state.running = true;
+  state.profiles = [];
+  document.getElementById('btn-run').disabled = true;
+  setTag('running', 'RUNNING');
+
+  const M = Math.max(200, parseInt(document.getElementById('mc-runs').value) || 2000);
+  const kSteps = Math.max(10, parseInt(document.getElementById('kappa-steps').value) || 40);
+  const kMin = parseFloat(document.getElementById('kappa-min').value) || 0.01;
+  const kMax = parseFloat(document.getElementById('kappa-max').value) || 1.0;
+  state.kappaGrid = logspace(kMin, kMax, kSteps);
+
+  log(`Chamber start — ${activeLadders.length} ladder(s) · M=${M} · κ steps=${kSteps} · κ=[${kMin},${kMax}]`, 'info');
+
+  const totalSteps = activeLadders.length * kSteps;
+  let completedSteps = 0;
+
+  for (let li = 0; li < activeLadders.length; li++) {
+    const lad = activeLadders[li];
+    const gaps = computeGaps(lad.values);
+    const medGap = median(gaps.filter(g => g > 0)) || median(gaps) || 1;
+    const profile = [];
+
+    log(`[${li + 1}/${activeLadders.length}] ${lad.name} · n=${lad.usedN} · med(g)=${fmt(medGap)}`, 'info');
+
+    for (let ki = 0; ki < state.kappaGrid.length; ki++) {
+      const kappa = state.kappaGrid[ki];
+      // Runs depend only on ε and gaps — precompute once per κ, outside the MC loop.
+      const epsilon = kappa * medGap;
+      const runs = computeVulnerabilityRuns(gaps, epsilon);
+      const nu = computeNuFromRuns(runs);
+      const vulnCount = runs.reduce((s, r) => s + r, 0);
+      const { Ak, meanInv, invCounts } = runMCStep(lad.values, nu, epsilon, M);
+      const rho = (nu === 0) ? 0 : meanInv / nu;
+      profile.push({ kappa, epsilon, nu, vulnCount, inv: parseFloat(meanInv.toFixed(4)), rho: parseFloat(rho.toFixed(6)), Ak, invCounts });
+      completedSteps++;
+      setProgress(completedSteps / totalSteps * 100,
+        `[${li + 1}/${activeLadders.length}] ${lad.name} · κ=${kappa.toFixed(3)} · A=${Ak.toFixed(3)} · ν=${nu}`);
+
+      if (ki % 8 === 7) await new Promise(r => setTimeout(r, 0)); // yield
+    }
+
+    const cls = classifyRegime(profile);
+    log(`  → ${cls.regime} / ${cls.state} · mean A=${cls.meanA.toFixed(3)} · min A=${cls.minA.toFixed(3)}`, 'ok');
+    state.profiles.push({ ladder: lad, profile, classification: cls });
+  }
+
+  log(`Chamber complete. ${state.profiles.length} profile(s) computed.`, 'ok');
+  setTag('done', 'COMPLETE');
+  setProgress(100, 'Complete.');
+  state.running = false;
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-export').disabled = false;
+  document.getElementById('btn-export-csv').disabled = false;
+
+  renderResults();
+}
+
+function renderResults() {
+  // Show panels
+  document.getElementById('adm-panel').style.display = '';
+  document.getElementById('regime-panel').style.display = '';
+
+  // Draw admissibility profile overlay
+  drawAdmissibilityProfiles('adm-canvas');
+  drawInvBudget('inv-canvas');
+  drawNuAll('nu-all-canvas');
+  drawRhoCurves('rho-canvas');
+
+  // Regime cards
+  const cardsEl = document.getElementById('verdict-cards');
+  cardsEl.innerHTML = '';
+  const tbody = document.getElementById('summary-body');
+  tbody.innerHTML = '';
+
+  const pressureGridEl = document.getElementById('pressure-grid');
+  pressureGridEl.innerHTML = '';
+
+  state.profiles.forEach((p, i) => {
+    const { ladder, profile, classification: cls } = p;
+    const meanAk = mean(profile.map(x => x.Ak));
+    const minAk = Math.min(...profile.map(x => x.Ak));
+    const akEnd = profile[profile.length - 1]?.Ak ?? 0;
+    const meanNu = mean(profile.map(x => x.nu));
+    const meanRho = cls.meanRho ?? 0;
+    const maxRho  = cls.maxRho  ?? 0;
+    const pl = cls.pressureLabel ?? pressureLabel(meanRho);
+    const col = ladderColor(state.ladders.indexOf(ladder));
+
+    // Verdict card
+    const card = document.createElement('div');
+    card.className = `verdict-card ${cls.vcClass}`;
+    card.innerHTML = `
+      <div class="vc-name" style="border-left:3px solid ${col};padding-left:10px">
+        <div style="font-size:9px;color:var(--text2);letter-spacing:0.12em;margin-bottom:2px">LADDER ${i+1}</div>
+        <div style="font-size:12px;color:${col};font-weight:600">${ladder.name}</div>
+        <div style="font-size:8px;color:var(--dim);margin-top:2px">${ladder.domain} · n=${ladder.usedN}</div>
+      </div>
+      <div class="vc-regime">
+        <div class="vc-regime-name" style="color:${cls.regimeColor}">${cls.regime}</div>
+        <div class="vc-state" style="color:${cls.color}">↳ ${cls.state}</div>
+      </div>
+      <div class="vc-stats">
+        <div>mean A<sub>κ</sub> = <span style="color:${cls.regimeColor}">${meanAk.toFixed(4)}</span></div>
+        <div>min A<sub>κ</sub>  = <span style="color:${cls.regimeColor}">${minAk.toFixed(4)}</span></div>
+        <div>A<sub>κ</sub>(max) = <span style="color:var(--text2)">${akEnd.toFixed(4)}</span></div>
+        <div>mean ν(V) = <span style="color:var(--blue)">${meanNu.toFixed(1)}</span></div>
+      </div>
+      <div class="vc-bar-wrap">
+        <div class="vc-bar-label">MEAN ADMISSIBILITY RATE</div>
+        <div class="vc-bar-track">
+          <div class="vc-bar-fill" style="width:${(meanAk*100).toFixed(1)}%;background:${cls.regimeColor}"></div>
+          <div class="vc-bar-text" style="color:${cls.regimeColor}">${(meanAk*100).toFixed(1)}%</div>
+        </div>
+        <div class="vc-bar-label" style="margin-top:8px">STRUCTURAL PRESSURE ρ = inv / ν</div>
+        <div class="vc-bar-track">
+          <div class="vc-bar-fill" style="width:${Math.min(maxRho*100,100).toFixed(1)}%;background:${pl.color}88"></div>
+          <div class="vc-bar-text" style="color:${pl.color}">max ${maxRho.toFixed(3)}</div>
+        </div>
+      </div>
+    `;
+    cardsEl.appendChild(card);
+
+    // Pressure summary block (below rho-canvas)
+    const spBlock = document.createElement('div');
+    spBlock.className = 'sp-block';
+    spBlock.innerHTML = `
+      <div class="sp-label" style="color:${col}">${ladder.name}</div>
+      <div class="sp-row"><span class="sp-key">mean ρ</span><span class="sp-val" style="color:${pl.color}">${meanRho.toFixed(4)}</span></div>
+      <div class="sp-row"><span class="sp-key">max ρ</span><span class="sp-val" style="color:${pl.color}">${maxRho.toFixed(4)}</span></div>
+      <div class="sp-prox ${pl.cls}">${pl.label}</div>
+    `;
+    pressureGridEl.appendChild(spBlock);
+
+    // Summary table row
+    const tr = document.createElement('tr');
+    const regimeCls = cls.vcClass === 'vc-gp' ? 'pass' : cls.vcClass === 'vc-sb' ? 'warn' : 'fail';
+    tr.innerHTML = `
+      <td style="color:${col}">${ladder.name}</td>
+      <td class="dim">${ladder.usedN}</td>
+      <td class="blue">${ladder.domain}</td>
+      <td class="${regimeCls}">${meanAk.toFixed(4)}</td>
+      <td class="${regimeCls}">${minAk.toFixed(4)}</td>
+      <td class="dim">${akEnd.toFixed(4)}</td>
+      <td class="blue">${meanNu.toFixed(1)}</td>
+      <td style="color:${pl.color}">${meanRho.toFixed(4)}</td>
+      <td style="color:${pl.color};font-size:8px;letter-spacing:0.08em">${pl.label}</td>
+      <td class="${regimeCls}" style="font-weight:600">${cls.regime}</td>
+      <td style="color:${cls.color}">${cls.state}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  buildExportPreview();
+}
+
+/* ════════════════════════════════════════════════════════════
+   PLOT ENGINE
+   ════════════════════════════════════════════════════════════ */
+function getCanvas(id) {
+  const el = document.getElementById(id);
+  el.width = el.offsetWidth || 800;
+  return { el, ctx: el.getContext('2d'), W: el.width, H: parseInt(el.getAttribute('height') || el.offsetHeight || 200) };
+}
+
+function drawAxes(ctx, W, H, pad, xLabel, yLabel) {
+  ctx.strokeStyle = '#111e30'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + (H - pad.t - pad.b)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + (H - pad.t - pad.b)); ctx.lineTo(W - pad.r, pad.t + (H - pad.t - pad.b)); ctx.stroke();
+  ctx.fillStyle = '#5a7a96'; ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(xLabel, pad.l + (W - pad.l - pad.r) / 2, H - 4);
+  ctx.save(); ctx.translate(10, pad.t + (H - pad.t - pad.b) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText(yLabel, 0, 0); ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+function drawGapHistogram(canvasId, gaps, color, stats) {
+  const { el, ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  if (!gaps.length) return;
+  const pad = { l: 50, r: 14, t: 14, b: 30 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  const nonzeroGaps = gaps.filter(g => g > 0);
+  if (!nonzeroGaps.length) { ctx.fillStyle = '#5a7a96'; ctx.font = '9px IBM Plex Mono'; ctx.fillText('All gaps are zero', pad.l + 10, pad.t + 20); return; }
+  const logVals = nonzeroGaps.map(g => Math.log10(g));
+  const logMin = Math.min(...logVals), logMax = Math.max(...logVals);
+  const BINS = Math.min(50, Math.max(15, Math.floor(pw / 12)));
+  const binW = (logMax - logMin) / BINS || 1;
+  const counts = new Array(BINS).fill(0);
+  logVals.forEach(v => { const b = Math.min(BINS - 1, Math.floor((v - logMin) / binW)); counts[b]++; });
+  const maxCount = Math.max(...counts);
+
+  const xToLog = x => logMin + (x / pw) * (logMax - logMin);
+  const logToX = l => pad.l + ((l - logMin) / (logMax - logMin)) * pw;
+  const countToY = c => pad.t + ph - (c / maxCount) * ph;
+
+  // Shade vulnerable zone (2*median gap threshold at κ=0.3)
+  const kappaProbeForHist = 0.3;
+  const vulnThresh = 2 * kappaProbeForHist * stats.median;
+  if (vulnThresh > 0 && vulnThresh > Math.pow(10, logMin)) {
+    const xVuln = Math.min(W - pad.r, logToX(Math.log10(vulnThresh)));
+    ctx.fillStyle = 'rgba(224,64,64,0.06)';
+    ctx.fillRect(pad.l, pad.t, xVuln - pad.l, ph);
+    ctx.strokeStyle = 'rgba(224,64,64,0.3)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(xVuln, pad.t); ctx.lineTo(xVuln, pad.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(224,64,64,0.6)'; ctx.font = '7px IBM Plex Mono';
+    ctx.fillText('2ε(κ=0.3)', xVuln + 2, pad.t + 10);
+  }
+
+  // Bars
+  const bw = pw / BINS;
+  counts.forEach((c, bi) => {
+    if (!c) return;
+    const x = pad.l + bi * bw;
+    const y = countToY(c);
+    ctx.fillStyle = color + '88';
+    ctx.fillRect(x + 1, y, bw - 2, pad.t + ph - y);
+    ctx.strokeStyle = color + 'cc'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(x + 1, y, bw - 2, pad.t + ph - y);
+  });
+
+  // Q50 line
+  const medLog = Math.log10(stats.median);
+  if (medLog >= logMin && medLog <= logMax) {
+    const xMed = logToX(medLog);
+    ctx.strokeStyle = '#00dd8888'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath(); ctx.moveTo(xMed, pad.t); ctx.lineTo(xMed, pad.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#00dd88'; ctx.font = '7px IBM Plex Mono';
+    ctx.fillText('med', xMed + 2, pad.t + 20);
+  }
+
+  // Axes
+  drawAxes(ctx, W, H, pad, 'log₁₀(gap)', 'count');
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const lv = logMin + i * (logMax - logMin) / 4;
+    const x = logToX(lv);
+    ctx.fillText(lv.toFixed(1), x, pad.t + ph + 18);
+  }
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const c = Math.round(i * maxCount / 4);
+    const y = countToY(c);
+    ctx.fillText(c, pad.l - 4, y + 3);
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawGapPercentile(canvasId, gaps, color) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 50, r: 14, t: 14, b: 30 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const sorted = [...gaps].sort((a, b) => a - b);
+  const N = sorted.length;
+  if (!N) return;
+
+  // Log-scale Y
+  const nonzero = sorted.filter(g => g > 0);
+  const minLog = nonzero.length ? Math.log10(nonzero[0]) : -3;
+  const maxLog = Math.log10(sorted[N - 1]) || 1;
+
+  const xOf = i => pad.l + (i / (N - 1)) * pw;
+  const yOf = v => {
+    if (v <= 0) return pad.t + ph;
+    const l = Math.log10(v);
+    return pad.t + ph - ((l - minLog) / (maxLog - minLog)) * ph;
+  };
+
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  sorted.forEach((v, i) => { i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v)); });
+  ctx.stroke();
+
+  // Quartile markers
+  [[0.25,'#f0a030'],[0.5,'#00dd88'],[0.75,'#f0a030'],[0.9,'#e04040']].forEach(([q, qcol]) => {
+    const val = quantile(sorted, q);
+    const idx = Math.round(q * (N - 1));
+    ctx.strokeStyle = qcol + '88'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(xOf(idx), pad.t); ctx.lineTo(xOf(idx), pad.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = qcol; ctx.font = '7px IBM Plex Mono';
+    ctx.fillText(`Q${Math.round(q * 100)}`, xOf(idx) + 2, pad.t + ph - 4);
+  });
+
+  drawAxes(ctx, W, H, pad, 'percentile rank', 'gap (log scale)');
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const lv = minLog + i * (maxLog - minLog) / 4;
+    ctx.fillText(Math.pow(10, lv).toExponential(1), pad.l - 3, pad.t + ph - i * ph / 4 + 3);
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawNuCurve(canvasId, lad, color) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 55, r: 14, t: 14, b: 30 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  const kappaMin = parseFloat(document.getElementById('kappa-min').value) || 0.01;
+  const kappaMax = parseFloat(document.getElementById('kappa-max').value) || 1.0;
+  const kGrid = logspace(kappaMin, kappaMax, 60);
+  const gaps = computeGaps(lad.values);
+  const medGap = median(gaps.filter(g => g > 0)) || median(gaps) || 1;
+
+  const nuVals = kGrid.map(k => computeVulnerability(gaps, k, medGap).nu);
+  const maxNu = Math.max(...nuVals, 1);
+
+  const kToX = k => pad.l + (Math.log10(k) - Math.log10(kappaMin)) / (Math.log10(kappaMax) - Math.log10(kappaMin)) * pw;
+  const nuToY = n => pad.t + ph - (n / maxNu) * ph;
+
+  // Fill
+  ctx.fillStyle = color + '22';
+  ctx.beginPath();
+  ctx.moveTo(kToX(kGrid[0]), pad.t + ph);
+  kGrid.forEach((k, i) => ctx.lineTo(kToX(k), nuToY(nuVals[i])));
+  ctx.lineTo(kToX(kGrid[kGrid.length - 1]), pad.t + ph);
+  ctx.closePath(); ctx.fill();
+
+  // Line
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  kGrid.forEach((k, i) => i === 0 ? ctx.moveTo(kToX(k), nuToY(nuVals[i])) : ctx.lineTo(kToX(k), nuToY(nuVals[i])));
+  ctx.stroke();
+
+  // Probe line
+  const sliderVal = parseFloat(document.getElementById('kappa-probe').value) / 100;
+  const kProbe = kappaMin * Math.pow(kappaMax / kappaMin, sliderVal);
+  const xProbe = kToX(kProbe);
+  ctx.strokeStyle = '#e0404088'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(xProbe, pad.t); ctx.lineTo(xProbe, pad.t + ph); ctx.stroke();
+  ctx.setLineDash([]);
+
+  drawAxes(ctx, W, H, pad, 'κ (log scale)', 'ν(V_ε)');
+  // Tick labels
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+  [0.01, 0.03, 0.1, 0.3, 1.0].filter(k => k >= kappaMin && k <= kappaMax).forEach(k => {
+    ctx.fillText(k, kToX(k), pad.t + ph + 18);
+  });
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const n = Math.round(i * maxNu / 4);
+    ctx.fillText(n, pad.l - 4, nuToY(n) + 3);
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawVulnMap(canvasId, vulnerable, color) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  if (!vulnerable.length) return;
+  const pad = { l: 50, r: 14, t: 10, b: 20 };
+  const pw = W - pad.l - pad.r;
+  const cellW = Math.max(1, pw / vulnerable.length);
+
+  vulnerable.forEach((v, i) => {
+    const x = pad.l + i * cellW;
+    ctx.fillStyle = v ? '#e04040aa' : color + '44';
+    ctx.fillRect(x, pad.t, Math.max(cellW - 0.5, 1), H - pad.t - pad.b);
+  });
+
+  ctx.fillStyle = '#5a7a96'; ctx.font = '8px IBM Plex Mono';
+  ctx.fillText('BOUNDARY INDEX →', pad.l, H - 4);
+  ctx.fillStyle = '#e04040'; ctx.fillRect(W - 100, H - 16, 10, 10);
+  ctx.fillStyle = '#5a7a96'; ctx.fillText('vulnerable', W - 88, H - 4);
+}
+
+function drawAdmissibilityProfiles(canvasId) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 55, r: 130, t: 20, b: 36 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  if (!state.profiles.length) return;
+
+  const kappaMin = state.kappaGrid[0], kappaMax = state.kappaGrid[state.kappaGrid.length - 1];
+  const kToX = k => pad.l + (Math.log10(k) - Math.log10(kappaMin)) / (Math.log10(kappaMax) - Math.log10(kappaMin)) * pw;
+  const aToY = a => pad.t + ph - a * ph;
+
+  // Regime zone backgrounds
+  ctx.fillStyle = 'rgba(74,176,240,0.04)'; ctx.fillRect(pad.l, aToY(1.0), pw, aToY(0.93) - aToY(1.0));
+  ctx.fillStyle = 'rgba(240,160,48,0.04)'; ctx.fillRect(pad.l, aToY(0.93), pw, aToY(0.60) - aToY(0.93));
+  ctx.fillStyle = 'rgba(224,64,64,0.04)'; ctx.fillRect(pad.l, aToY(0.60), pw, aToY(0.0) - aToY(0.60));
+
+  // Threshold lines
+  [[0.93, '#4ab0f0', 'GP/SB'], [0.60, '#f0a030', 'SB/SI']].forEach(([y, c, lbl]) => {
+    ctx.strokeStyle = c + '44'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.l, aToY(y)); ctx.lineTo(pad.l + pw, aToY(y)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = c + '88'; ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(lbl, pad.l + pw + 4, aToY(y) + 3);
+  });
+
+  // Reference line A = 1
+  ctx.strokeStyle = '#ffffff11'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, aToY(1.0)); ctx.lineTo(pad.l + pw, aToY(1.0)); ctx.stroke();
+
+  // Profile curves
+  state.profiles.forEach((p, pi) => {
+    const lad = p.ladder;
+    const col = ladderColor(state.ladders.indexOf(lad));
+    const prof = p.profile;
+
+    ctx.strokeStyle = col; ctx.lineWidth = 2;
+    ctx.beginPath();
+    prof.forEach((pt, i) => {
+      const x = kToX(pt.kappa), y = aToY(pt.Ak);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots
+    ctx.fillStyle = col;
+    prof.forEach(pt => {
+      ctx.beginPath();
+      ctx.arc(kToX(pt.kappa), aToY(pt.Ak), 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Legend
+    const legendY = pad.t + 14 + pi * 18;
+    ctx.fillStyle = col;
+    ctx.fillRect(pad.l + pw + 10, legendY - 6, 16, 3);
+    ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(lad.name.substring(0, 14), pad.l + pw + 30, legendY);
+  });
+
+  drawAxes(ctx, W, H, pad, 'κ (log scale)', 'A_κ(L)');
+
+  // X ticks
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+  [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0].filter(k => k >= kappaMin && k <= kappaMax).forEach(k => {
+    ctx.fillText(k, kToX(k), pad.t + ph + 22);
+  });
+  // Y ticks
+  ctx.textAlign = 'right';
+  [0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach(a => {
+    ctx.fillText(a.toFixed(1), pad.l - 6, aToY(a) + 3);
+  });
+  ctx.textAlign = 'left';
+}
+
+function drawInvBudget(canvasId) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 55, r: 14, t: 20, b: 30 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  if (!state.profiles.length) return;
+
+  // At max kappa: compare inv distribution vs nu
+  // Show bar chart: for each ladder, mean inv and nu at last kappa
+  const entries = state.profiles.map((p, pi) => {
+    const last = p.profile[p.profile.length - 1];
+    return { name: p.ladder.name, nu: last.nu, meanInv: mean(last.invCounts || [0]), col: ladderColor(state.ladders.indexOf(p.ladder)) };
+  });
+  const maxVal = Math.max(...entries.flatMap(e => [e.nu, e.meanInv]), 1);
+  const nEntries = entries.length;
+  const slotW = pw / nEntries;
+
+  entries.forEach((e, i) => {
+    const x = pad.l + i * slotW + slotW * 0.1;
+    const bw = slotW * 0.35;
+
+    // ν bar
+    const nuH = (e.nu / maxVal) * ph;
+    ctx.fillStyle = '#4ab0f088';
+    ctx.fillRect(x, pad.t + ph - nuH, bw, nuH);
+    ctx.strokeStyle = '#4ab0f0'; ctx.lineWidth = 1;
+    ctx.strokeRect(x, pad.t + ph - nuH, bw, nuH);
+
+    // inv bar
+    const invH = (e.meanInv / maxVal) * ph;
+    ctx.fillStyle = e.meanInv <= e.nu ? '#00dd8866' : '#e0404088';
+    ctx.fillRect(x + bw + 2, pad.t + ph - invH, bw, invH);
+    ctx.strokeStyle = e.meanInv <= e.nu ? '#00dd88' : '#e04040'; ctx.lineWidth = 1;
+    ctx.strokeRect(x + bw + 2, pad.t + ph - invH, bw, invH);
+
+    // Label
+    ctx.fillStyle = e.col; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+    ctx.fillText(e.name.substring(0, 8), x + slotW * 0.4, pad.t + ph + 14);
+  });
+
+  // Legend
+  ctx.fillStyle = '#4ab0f088'; ctx.fillRect(pad.l, pad.t - 12, 10, 8);
+  ctx.fillStyle = '#5a7a96'; ctx.font = '7px IBM Plex Mono';
+  ctx.fillText('ν(V)', pad.l + 13, pad.t - 4);
+  ctx.fillStyle = '#00dd8866'; ctx.fillRect(pad.l + 45, pad.t - 12, 10, 8);
+  ctx.fillText('mean inv', pad.l + 58, pad.t - 4);
+
+  drawAxes(ctx, W, H, pad, 'ladder', 'count at κ_max');
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const v = Math.round(i * maxVal / 4);
+    ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(v, pad.l - 4, pad.t + ph - i * ph / 4 + 3);
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawNuAll(canvasId) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 55, r: 14, t: 14, b: 30 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  if (!state.profiles.length) return;
+
+  const kappaMin = state.kappaGrid[0], kappaMax = state.kappaGrid[state.kappaGrid.length - 1];
+  const allNu = state.profiles.flatMap(p => p.profile.map(x => x.nu));
+  const maxNu = Math.max(...allNu, 1);
+
+  const kToX = k => pad.l + (Math.log10(k) - Math.log10(kappaMin)) / (Math.log10(kappaMax) - Math.log10(kappaMin)) * pw;
+  const nToY = n => pad.t + ph - (n / maxNu) * ph;
+
+  state.profiles.forEach((p, pi) => {
+    const col = ladderColor(state.ladders.indexOf(p.ladder));
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    p.profile.forEach((pt, i) => {
+      const x = kToX(pt.kappa), y = nToY(pt.nu);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+
+  drawAxes(ctx, W, H, pad, 'κ (log scale)', 'ν(V_ε)');
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+  [0.01, 0.05, 0.1, 0.5, 1.0].filter(k => k >= kappaMin && k <= kappaMax).forEach(k => {
+    ctx.fillText(k, kToX(k), pad.t + ph + 18);
+  });
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const n = Math.round(i * maxNu / 4);
+    ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(n, pad.l - 4, nToY(n) + 3);
+  }
+  ctx.textAlign = 'left';
+}
+
+/* ════════════════════════════════════════════════════════════
+   RHO CURVES — STRUCTURAL PRESSURE ρ = inv / ν
+   ════════════════════════════════════════════════════════════ */
+function drawRhoCurves(canvasId) {
+  const { ctx, W, H } = getCanvas(canvasId);
+  ctx.clearRect(0, 0, W, H);
+  const pad = { l: 55, r: 80, t: 20, b: 32 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  if (!state.profiles.length) return;
+
+  const kappaMin = state.kappaGrid[0], kappaMax = state.kappaGrid[state.kappaGrid.length - 1];
+  const kToX = k => pad.l + (Math.log10(k) - Math.log10(kappaMin)) / (Math.log10(kappaMax) - Math.log10(kappaMin)) * pw;
+  const rToY = r => pad.t + ph - Math.min(r, 1) * ph;
+
+  // Pressure zone bands
+  [[0.90, 1.00, '#e04040', 'CRITICAL'],
+   [0.60, 0.90, '#e07030', 'NEAR BOUNDARY'],
+   [0.25, 0.60, '#f0a030', 'TENSION'],
+   [0.00, 0.25, '#00dd88', 'RELAXED']].forEach(([lo, hi, c]) => {
+    ctx.fillStyle = c + '0a';
+    ctx.fillRect(pad.l, rToY(hi), pw, rToY(lo) - rToY(hi));
+  });
+
+  // Zone threshold lines
+  [[0.90, '#e04040'], [0.60, '#e07030'], [0.25, '#f0a03044']].forEach(([r, c]) => {
+    ctx.strokeStyle = c + '55'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.l, rToY(r)); ctx.lineTo(pad.l + pw, rToY(r)); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Reference line ρ = 1
+  ctx.strokeStyle = '#ffffff0d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, rToY(1.0)); ctx.lineTo(pad.l + pw, rToY(1.0)); ctx.stroke();
+
+  // ρ(κ) curves per ladder
+  state.profiles.forEach((p, pi) => {
+    const baseCol = ladderColor(state.ladders.indexOf(p.ladder));
+    // Derive an orange-shifted colour to distinguish from Aκ green curves
+    ctx.strokeStyle = baseCol; ctx.lineWidth = 2;
+    ctx.beginPath();
+    p.profile.forEach((pt, i) => {
+      const x = kToX(pt.kappa), y = rToY(pt.rho ?? 0);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots
+    ctx.fillStyle = baseCol;
+    p.profile.forEach(pt => {
+      ctx.beginPath();
+      ctx.arc(kToX(pt.kappa), rToY(pt.rho ?? 0), 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Legend
+    const legendY = pad.t + 12 + pi * 16;
+    ctx.fillStyle = baseCol;
+    ctx.fillRect(pad.l + pw + 10, legendY - 5, 14, 2.5);
+    ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'left';
+    ctx.fillText(p.ladder.name.substring(0, 14), pad.l + pw + 27, legendY);
+  });
+
+  // Zone labels on right side
+  ctx.textAlign = 'left'; ctx.font = '7px IBM Plex Mono';
+  [['CRITICAL',     0.95, '#e04040'],
+   ['NEAR BDRY',    0.75, '#e07030'],
+   ['TENSION',      0.42, '#f0a030'],
+   ['RELAXED',      0.12, '#00dd88']].forEach(([lbl, r, c]) => {
+    ctx.fillStyle = c + '88';
+    ctx.fillText(lbl, pad.l + pw + 10, rToY(r) + 3);
+  });
+
+  drawAxes(ctx, W, H, pad, 'κ (log scale)', 'ρ(κ)');
+  ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+  [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0].filter(k => k >= kappaMin && k <= kappaMax).forEach(k => {
+    ctx.fillText(k, kToX(k), pad.t + ph + 22);
+  });
+  ctx.textAlign = 'right';
+  [0, 0.25, 0.5, 0.75, 1.0].forEach(r => {
+    ctx.fillStyle = '#2d4560'; ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(r.toFixed(2), pad.l - 5, rToY(r) + 3);
+  });
+  ctx.textAlign = 'left';
+}
+
+/* ════════════════════════════════════════════════════════════
+   SELECTOR WIDGET
+   ════════════════════════════════════════════════════════════ */
+function buildLadderSel(containerId, selectedId, onChange) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  state.ladders.forEach((lad, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lad-btn' + (lad.id === selectedId ? ' active' : '');
+    btn.style.borderColor = lad.id === selectedId ? ladderColor(i) : '';
+    btn.style.color = lad.id === selectedId ? ladderColor(i) : '';
+    btn.textContent = lad.name;
+    btn.onclick = () => {
+      onChange(lad.id);
+      buildLadderSel(containerId, lad.id, onChange);
+    };
+    el.appendChild(btn);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   EXPORT
+   ════════════════════════════════════════════════════════════ */
+function buildExportPreview() {
+  const datasetFamily = (document.getElementById('dataset-family').value || '').trim();
+  const datasetClass  = (document.getElementById('dataset-class').value  || '').trim();
+  const loadedFiles   = [...new Set(state.ladders.map(l => l.source).filter(Boolean))];
+
+  const summary = {
+    chamber: 'STRUC-I', version: '1.0.4', program: 'UNNS Substrate Program',
+    timestamp: new Date().toISOString(),
+    dataset: {
+      family:  datasetFamily || null,
+      class:   datasetClass  || null,
+      files:   loadedFiles
+    },
+    inequality: 'inv(P_ε; L) ≤ ν(V_ε(L))',
+    perturbation: 'δᵢ ~ Uniform[-ε, ε]',
+    scale: 'ε = κ · median(gaps)',
+    kappa_range: [state.kappaGrid[0], state.kappaGrid[state.kappaGrid.length - 1]],
+    kappa_steps: state.kappaGrid.length,
+    mc_runs: parseInt(document.getElementById('mc-runs').value) || 2000,
+    ladders: state.profiles.map(p => ({
+      name: p.ladder.name, domain: p.ladder.domain,
+      n: p.ladder.usedN, subsampled: p.ladder.subsampled || false,
+      regime: p.classification.regime, state: p.classification.state,
+      mean_Ak: parseFloat(mean(p.profile.map(x => x.Ak)).toFixed(6)),
+      min_Ak: parseFloat(Math.min(...p.profile.map(x => x.Ak)).toFixed(6)),
+      Ak_at_kappa_max: p.profile[p.profile.length - 1]?.Ak,
+      mean_rho: parseFloat(mean(p.profile.map(x => x.rho)).toFixed(6)),
+      max_rho: parseFloat(Math.max(...p.profile.map(x => x.rho)).toFixed(6)),
+      rho_at_kappa_max: p.profile[p.profile.length - 1]?.rho
+    }))
+  };
+  state.lastExportData = {
+    ...summary,
+    profiles: state.profiles.map(p => ({
+      name: p.ladder.name,
+      curve: p.profile.map(pt => ({ kappa: pt.kappa, nu: pt.nu, vulnCount: pt.vulnCount, inv: pt.inv, rho: pt.rho, Ak: pt.Ak }))
+    }))
+  };
+  document.getElementById('export-pre').textContent =
+    JSON.stringify(summary, null, 2) + '\n// ... full profile data in download';
+}
+
+function exportJSON() {
+  if (!state.lastExportData) return;
+  const blob = new Blob([JSON.stringify(state.lastExportData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'chamber_struc_i_v1_0_4_results.json'; a.click();
+}
+
+function exportCSV() {
+  if (!state.profiles.length) return;
+  let csv = 'ladder,domain,kappa,epsilon,nu_V,vuln_count,inv,rho,Ak\n';
+  for (const p of state.profiles) {
+    for (const pt of p.profile) {
+      csv += `${p.ladder.name},${p.ladder.domain},${pt.kappa.toFixed(6)},${pt.epsilon.toFixed(8)},${pt.nu},${pt.vulnCount},${pt.inv.toFixed(4)},${pt.rho.toFixed(6)},${pt.Ak.toFixed(6)}\n`;
+    }
+  }
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'chamber_struc_i_v1_0_4_profiles.csv'; a.click();
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI UTILITIES
+   ════════════════════════════════════════════════════════════ */
+function log(msg, cls = '') {
+  const box = document.getElementById('log-box');
+  const div = document.createElement('div');
+  div.className = 'log-line ' + cls;
+  const ts = new Date().toISOString().substring(11, 23);
+  div.textContent = `[${ts}] ${msg}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function setProgress(pct, label) {
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = label;
+}
+function setTag(cls, text) {
+  const tag = document.getElementById('run-tag');
+  tag.className = 'htag ' + cls;
+  tag.textContent = text;
+}
+
+/* ════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════ */
+initUploadSlots();
+log('STRUC-I v1.0.4 initialized. Upload CSV ladders to begin.', 'info');
+log('Accepted schemas: (1) molecule+energy_cm1 multi-molecule CSV; (2) generic single-column numeric CSV.', 'info');
+log('Perturbation operator: δᵢ ~ Uniform[-ε,ε], ε = κ·median(G). Vulnerability budget ν(V) = Σ⌈mₖ/2⌉.', 'info');
+</script>
+</body>
+</html>

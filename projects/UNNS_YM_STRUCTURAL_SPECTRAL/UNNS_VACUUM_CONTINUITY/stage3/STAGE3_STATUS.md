@@ -1,0 +1,25 @@
+# STAGE3_STATUS.md
+
+**Project:** `UNNS_VACUUM_CONTINUITY`
+
+```text
+Stage 2 structural side:
+STRUCTURAL-VACUUM-ACCESSIBILITY-SUPPORTED
+
+SPEC-I/A:
+SPECTRAL-SCALE-POSITIVE
+
+SPEC-I/B:
+SPECTRAL-SCALE-POSITIVE
+
+BRIDGE-III:
+PENDING EXECUTION
+```
+
+Run:
+
+```text
+RUN_BRIDGE_III.bat
+```
+
+Do not issue the final Stage-3 synthesis until BRIDGE-III has executed.
