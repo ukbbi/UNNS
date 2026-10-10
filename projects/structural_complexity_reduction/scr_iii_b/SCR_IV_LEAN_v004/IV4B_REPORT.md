@@ -1,0 +1,4 @@
+# IV-4B report (short)
+See CERT_STATUS.md for the results and limits. Files added in v004:
+`SCR_IV_V4.lean` (corrected witness + `frozen_nonG_not_min` + `nonGT_min_of_frontier` + assembly lemmas) · `Bat/` (1148 batch modules, untrusted data + one kernel theorem each) · `Fin_g.lean`, `Fin_n.lean` (assembly; result theorems) · `SCR_IV_Check5.lean`, `SCR_IV_Check5b.lean` (axiom audits) · `certs/` (frontier certificates + statistics) · `bat_g.json`, `bat_n.json` (batch boundaries) · `scripts/gen4b.py`, `diag_nong.py`, `mk_batches.py`, `mk_neg4b.py`, `verify_batches.py`, `run_full.sh`, `mk_lean.py`, `run_one.py` · `tests/neg4b_*`, `tests/pos4b_*` · `logs/` (per-batch records: rc, wall, CPU, peak RSS, source hash) · `output/` (logs and audits).
+Decision for Igor: how to treat the non-grammar value downstream (keep the frozen record as is and cite SCR-IV as an exact-arithmetic correction of 928/2^70, or issue a new SCR-III result freeze). Nothing frozen was edited.

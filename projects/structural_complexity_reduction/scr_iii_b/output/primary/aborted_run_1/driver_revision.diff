@@ -1,0 +1,222 @@
+--- scr_iii_b/output/primary/aborted_run_1/primary_run_v001.original_973e4e83.py	2026-10-10 07:02:58.185554500 +0000
++++ scr_iii_b/primary_exec/primary_run_v001.py	2026-10-10 06:30:24.147539800 +0000
+@@ -83,8 +83,9 @@
+ def main():
+     X = V.setup(); env = X["env"]; I = X["inst"][3]; tau = I["tau"]; Q = I["Q"]; E0 = X["E0f"]; kT = X["kT_norm"]
+     env.audit = OUT / "INVOCATION_LOG_primary_v001.jsonl"
+-    if env.audit.exists(): raise SystemExit("primary outputs already exist; refusing to overwrite (additive amendment required)")
+-    env.audit.write_text("")
++    CK = OUT / "ckpt"; CK.mkdir(exist_ok=True)
++    if (OUT / "PRIMARY_RESULT_v001.json").exists(): raise SystemExit("final result exists; refusing to overwrite")
++    if not env.audit.exists(): env.audit.write_text("")
+     env.protected = X["tmp"] / "protected_fingerprints.txt"
+     chk, fails = stage0(X)
+     (OUT / "PRECHECK_primary_v001.json").write_text(json.dumps(dict(status="PASS" if not fails else "FAIL", failures=fails, checks=chk), indent=1, default=str))
+@@ -93,102 +94,121 @@
+     Ws = {"primary": kT, "sens_0.5kT": 0.5 * kT, "sens_2kT": 2.0 * kT}
+     mult = {"primary": 1.0, "sens_0.5kT": 0.5, "sens_2kT": 2.0}
+     path = I["path"]; n = I["n"]
+-    # ---------- independent whole-space audit
+-    log("numpy audit start"); au = numpy_audit(n, I["pairs"], I["masks"], E0, tau, Q, Ws); log("numpy audit done")
+-    sg_np = set(au["sg"].tolist())
+-    # ---------- grammar-only enumeration
+-    d = X["tmp"] / "sg.txt"
+-    gc = ca.parse_kv(env.run(path, "gcount", 0, 0, dump=d, tag="PRIMARY_gcount").stdout); gs = ca.parse_kv(env.run(path, "gscan", 0, 0, tag="PRIMARY_gscan").stdout)
+-    sg_cpp = {int(x) for x in d.read_text().split()}
+-    gram = dict(count_constructive=int(gc["survivors"]), count_scan=int(gs["survivors"]), digest_equal=gc["digest"] == gs["digest"], numpy_count=len(sg_np), sets_equal=sg_cpp == sg_np)
+-    # ---------- per-window correctness + all solvers
+-    res = {}; allruns = []
+-    for wn, W in Ws.items():
+-        r = dict(W_norm=W, W_J=W * X["A_J"], W_over_kT=mult[wn], threshold=E0 + W + tau); solv = {}
+-        for s in ("b0", "g1", "g2", "b1", "e2"):
+-            extra = UNB + (["--frac", "0.75"] if s == "e2" else [])
+-            ids, kv = env.solve(path, s, W, tau, E0, extra=extra, tag="PRIMARY_%s_%s" % (wn, s))
+-            solv[s] = dict(ids=ids, num=ca.numeric(kv), kv={k: kv[k] for k in kv if k in ("reference_status", "ref_status", "e2_frac", "e2_retained_pairs", "e2_B_O", "g2_island_order")})
+-        T_np = set(au["T"][wn].tolist()); T = solv["b0"]["ids"]
+-        eq = {s: (solv[s]["ids"] == (T & sg_np if s in ("g1", "g2") else T)) for s in solv}
+-        FN = sorted(T - sg_np); unres = {s: solv[s]["num"].get("unresolved_boundary", 0) for s in solv}
+-        # sanity: grammar-restricted sets
+-        r.update(target_count=len(T), target_in_grammar=len(T & sg_np), FN_count=len(FN), FN_ids=FN[:50],
+-                 numpy_audit_target_equals_B0=(T_np == T), numpy_near_boundary=au["near"][wn], solver_outputs_match=eq, unresolved_boundary=unres,
+-                 nodes_g2=solv["g2"]["num"].get("nodes"), materialized_g2=solv["g2"]["num"].get("materialized"), leaves_g2=solv["g2"]["num"].get("leaves"),
+-                 FN_energies_over_E0=None)
+-        r["solvers"] = {s: dict(num=solv[s]["num"], kv=solv[s]["kv"]) for s in solv}
+-        np.savetxt(OUT / ("TARGET_IDS_%s_v001.txt" % wn), np.array(sorted(T), dtype=np.int64), fmt="%d")
+-        r["target_ids_sha256"] = sha(OUT / ("TARGET_IDS_%s_v001.txt" % wn))
+-        res[wn] = r; log("window", wn, "target", len(T), "FN", len(FN), "match", eq)
+-    # ---------- exclusion gap (post-authorization primary output)
+-    ng = ca.parse_kv(env.run(path, "nullgap", 0.0, tau, E0, extra=UNB, tag="PRIMARY_delta_nonG").stdout)
+-    dG = float(ng["delta_nonG"])
+-    gap = dict(delta_nonG_cpp=dG, delta_nonG_numpy=au["delta_nonG"], argmin_numpy=au["delta_arg"], n_excluded=int(ng["n_excluded"]), delta_over_kT=dG / kT, delta_J=dG * X["A_J"],
+-               agree=abs(dG - au["delta_nonG"]) <= 1e-9 * Q, emin_numpy_minus_E0=au["Emin"] - E0)
+-    for wn, W in Ws.items():
+-        res[wn]["W_over_delta_nonG"] = W / dG if dG > 0 else None
+-        res[wn]["theorem_preserved_if_W_plus_tau_lt_delta"] = bool(W + tau < dG)
+-        res[wn]["theorem_consistent_with_FN"] = (res[wn]["FN_count"] == 0) == bool(W + tau < dG)
+-    # ---------- hypotheses G, P
+-    r1 = res["primary"]
+-    contr = 1.0 - (r1["materialized_g2"] or 0) / float(1 << n)
+-    g2inv = len({(res[w]["nodes_g2"], res[w]["leaves_g2"]) for w in res}) == 1
+-    G_ok = gram["sets_equal"] and gram["digest_equal"] and gram["count_constructive"] == gram["count_scan"] and r1["solver_outputs_match"]["g2"] and r1["solver_outputs_match"]["g1"] and contr >= 0.99 and g2inv
+-    G = "PASS" if G_ok else "FAIL"
+-    exact_ok = all(r1["solver_outputs_match"].values()) and r1["numpy_audit_target_equals_B0"] and all(v == 0 for v in r1["unresolved_boundary"].values())
+-    P = ("PASS" if (r1["FN_count"] == 0 and exact_ok) else ("FAIL" if r1["FN_count"] > 0 else "INCONCLUSIVE"))
+-    hg = dict(verdict=G, grammar=gram, nominal_contraction=contr, materialized=r1["materialized_g2"], nodes=r1["nodes_g2"], g2_traversal_independent_of_W=g2inv, sets_match_primary=r1["solver_outputs_match"])
+-    # ---------- H-C timing (only if P PASS)
+-    C = "NOT_ELIGIBLE"; hc = dict(reason="H-P not PASS")
+-    if P == "PASS":
+-        log("timing start")
+-        solvers = ["b0", "g2", "b1", "e2"]; W = Ws["primary"]; T = None
+-        Tref = {s: res["primary"]["target_count"] for s in solvers}
+-        refid = set(np.loadtxt(OUT / "TARGET_IDS_primary_v001.txt", dtype=np.int64, ndmin=1).tolist()); refg2 = refid & sg_np
+-        tdump = X["tmp"] / "timing_dump.txt"; bad_out = []; arm_wall = {s: 0.0 for s in solvers}
+-        def run_fn(s):
+-            if tdump.exists(): tdump.unlink()
+-            t = time.perf_counter()
+-            p = env.run(path, s, W, tau, E0, extra=UNB + (["--frac", "0.75"] if s == "e2" else []), tag="PRIMARY_timing_" + s, dump=tdump)
+-            ext = time.perf_counter() - t
+-            if p.returncode: raise RuntimeError("%s rc=%d %s" % (s, p.returncode, p.stderr[-200:]))
+-            ids = {int(x) for x in tdump.read_text().split()}
+-            if ids != (refg2 if s == "g2" else refid): bad_out.append(s)
+-            arm_wall[s] += ext
+-            return ca.parse_kv(p.stdout), ext
+-        recs, order = ca.run_protocol(run_fn, solvers, warmups=3, repeats=15)
+-        ch = {s: [ca.charged(s, x)["total_charged"] for x in recs[s]] for s in solvers}
+-        r_b0g2 = [ch["b0"][i] / ch["g2"][i] for i in range(15)]
+-        # deployment scenario: G2 additionally charged an E0 certification (cert_b1, W=0 anchor), reported separately
+-        certs = []
+-        for _ in range(5):
+-            p = env.run(path, "cert_b1", 0, tau, tag="PRIMARY_cert_b1"); kv = ca.parse_kv(p.stdout); certs.append(ca.charged("cert_b1", ca.numeric(kv))["total_charged"])
+-        cert_med = statistics.median(certs)
+-        r_dep = [ch["b0"][i] / (ch["g2"][i] + cert_med) for i in range(15)]
+-        hc = dict(rule="median>=1.20 AND min>=1.20 over 15 paired rounds (ratified; no inferential CI)", ratios_b0_over_g2=r_b0g2, median=statistics.median(r_b0g2), minimum=min(r_b0g2),
+-                  verdict=hc_rule(r_b0g2), outputs_identical_all_rounds=(not bad_out), output_mismatch_solvers=bad_out, order_log=order, arm_wall_s_total=arm_wall,
+-                  within_30min_arm=all(v <= 1800 for v in arm_wall.values()),
+-                  charged_s={s: ca.disp(ch[s]) for s in solvers}, cost_ledger_rounds=recs,
+-                  sensitivity=dict(b1_over_g2_ratio=[ch["b1"][i] / ch["g2"][i] for i in range(15)], e2_over_g2_ratio=[ch["e2"][i] / ch["g2"][i] for i in range(15)],
+-                                   b0_over_b1=[ch["b0"][i] / ch["b1"][i] for i in range(15)], b0_over_e2=[ch["b0"][i] / ch["e2"][i] for i in range(15)],
+-                                   note="B1/E2 are sensitivity arms only; no verdict derived from them"),
+-                  deployment_scenario_with_E0_certification=dict(cert_b1_charged_s_median=cert_med, ratios=r_dep, median=statistics.median(r_dep), minimum=min(r_dep), would_pass_rule=hc_rule(r_dep), status="REPORTED SEPARATELY; not the primary rule"),
+-                  environment=dict(python=sys.version.split()[0], numpy=np.__version__, platform=platform.platform(), cpus=os.cpu_count(), compiler=X["compiler"]))
+-        if bad_out or not hc["within_30min_arm"]: hc["verdict"] = "INCONCLUSIVE" if bad_out else "EXECUTION_LIMIT"
+-        C = hc["verdict"]; log("timing done", C, "median", hc["median"], "min", hc["minimum"])
++    ckA = CK / "phaseA.json"
++    if ckA.exists():
++        _d = json.loads(ckA.read_text()); res, gap, hg, hc, G, P, C, gram, dG = (_d[k] for k in ("res", "gap", "hg", "hc", "G", "P", "C", "gram", "dG")); log("phase A loaded from checkpoint")
++    else:
++        # ---------- independent whole-space audit
++        log("numpy audit start"); au = numpy_audit(n, I["pairs"], I["masks"], E0, tau, Q, Ws); log("numpy audit done")
++        sg_np = set(au["sg"].tolist())
++        # ---------- grammar-only enumeration
++        d = X["tmp"] / "sg.txt"
++        gc = ca.parse_kv(env.run(path, "gcount", 0, 0, dump=d, tag="PRIMARY_gcount").stdout); gs = ca.parse_kv(env.run(path, "gscan", 0, 0, tag="PRIMARY_gscan").stdout)
++        sg_cpp = {int(x) for x in d.read_text().split()}
++        gram = dict(count_constructive=int(gc["survivors"]), count_scan=int(gs["survivors"]), digest_equal=gc["digest"] == gs["digest"], numpy_count=len(sg_np), sets_equal=sg_cpp == sg_np)
++        # ---------- per-window correctness + all solvers
++        res = {}; allruns = []
++        for wn, W in Ws.items():
++            r = dict(W_norm=W, W_J=W * X["A_J"], W_over_kT=mult[wn], threshold=E0 + W + tau); solv = {}
++            for s in ("b0", "g1", "g2", "b1", "e2"):
++                extra = UNB + (["--frac", "0.75"] if s == "e2" else [])
++                ids, kv = env.solve(path, s, W, tau, E0, extra=extra, tag="PRIMARY_%s_%s" % (wn, s))
++                solv[s] = dict(ids=ids, num=ca.numeric(kv), kv={k: kv[k] for k in kv if k in ("reference_status", "ref_status", "e2_frac", "e2_retained_pairs", "e2_B_O", "g2_island_order")})
++            T_np = set(au["T"][wn].tolist()); T = solv["b0"]["ids"]
++            eq = {s: (solv[s]["ids"] == (T & sg_np if s in ("g1", "g2") else T)) for s in solv}
++            FN = sorted(T - sg_np); unres = {s: solv[s]["num"].get("unresolved_boundary", 0) for s in solv}
++            # sanity: grammar-restricted sets
++            r.update(target_count=len(T), target_in_grammar=len(T & sg_np), FN_count=len(FN), FN_ids=FN[:50],
++                     numpy_audit_target_equals_B0=(T_np == T), numpy_near_boundary=au["near"][wn], solver_outputs_match=eq, unresolved_boundary=unres,
++                     nodes_g2=solv["g2"]["num"].get("nodes"), materialized_g2=solv["g2"]["num"].get("materialized"), leaves_g2=solv["g2"]["num"].get("leaves"),
++                     FN_energies_over_E0=None)
++            r["solvers"] = {s: dict(num=solv[s]["num"], kv=solv[s]["kv"]) for s in solv}
++            np.savetxt(OUT / ("TARGET_IDS_%s_v001.txt" % wn), np.array(sorted(T), dtype=np.int64), fmt="%d")
++            r["target_ids_sha256"] = sha(OUT / ("TARGET_IDS_%s_v001.txt" % wn))
++            res[wn] = r; log("window", wn, "target", len(T), "FN", len(FN), "match", eq)
++        # ---------- exclusion gap (post-authorization primary output)
++        ng = ca.parse_kv(env.run(path, "nullgap", 0.0, tau, E0, extra=UNB, tag="PRIMARY_delta_nonG").stdout)
++        dG = float(ng["delta_nonG"])
++        gap = dict(delta_nonG_cpp=dG, delta_nonG_numpy=au["delta_nonG"], argmin_numpy=au["delta_arg"], n_excluded=int(ng["n_excluded"]), delta_over_kT=dG / kT, delta_J=dG * X["A_J"],
++                   agree=abs(dG - au["delta_nonG"]) <= 1e-9 * Q, emin_numpy_minus_E0=au["Emin"] - E0)
++        for wn, W in Ws.items():
++            res[wn]["W_over_delta_nonG"] = W / dG if dG > 0 else None
++            res[wn]["theorem_preserved_if_W_plus_tau_lt_delta"] = bool(W + tau < dG)
++            res[wn]["theorem_consistent_with_FN"] = (res[wn]["FN_count"] == 0) == bool(W + tau < dG)
++        # ---------- hypotheses G, P
++        r1 = res["primary"]
++        contr = 1.0 - (r1["materialized_g2"] or 0) / float(1 << n)
++        g2inv = len({(res[w]["nodes_g2"], res[w]["leaves_g2"]) for w in res}) == 1
++        G_ok = gram["sets_equal"] and gram["digest_equal"] and gram["count_constructive"] == gram["count_scan"] and r1["solver_outputs_match"]["g2"] and r1["solver_outputs_match"]["g1"] and contr >= 0.99 and g2inv
++        G = "PASS" if G_ok else "FAIL"
++        exact_ok = all(r1["solver_outputs_match"].values()) and r1["numpy_audit_target_equals_B0"] and all(v == 0 for v in r1["unresolved_boundary"].values())
++        P = ("PASS" if (r1["FN_count"] == 0 and exact_ok) else ("FAIL" if r1["FN_count"] > 0 else "INCONCLUSIVE"))
++        hg = dict(verdict=G, grammar=gram, nominal_contraction=contr, materialized=r1["materialized_g2"], nodes=r1["nodes_g2"], g2_traversal_independent_of_W=g2inv, sets_match_primary=r1["solver_outputs_match"])
++        # ---------- H-C timing (only if P PASS)
++        C = "NOT_ELIGIBLE"; hc = dict(reason="H-P not PASS")
++        if P == "PASS":
++            log("timing start")
++            solvers = ["b0", "g2", "b1", "e2"]; W = Ws["primary"]; T = None
++            Tref = {s: res["primary"]["target_count"] for s in solvers}
++            refid = set(np.loadtxt(OUT / "TARGET_IDS_primary_v001.txt", dtype=np.int64, ndmin=1).tolist()); refg2 = refid & sg_np
++            tdump = X["tmp"] / "timing_dump.txt"; bad_out = []; arm_wall = {s: 0.0 for s in solvers}
++            def run_fn(s):
++                if tdump.exists(): tdump.unlink()
++                t = time.perf_counter()
++                p = env.run(path, s, W, tau, E0, extra=UNB + (["--frac", "0.75"] if s == "e2" else []), tag="PRIMARY_timing_" + s, dump=tdump)
++                ext = time.perf_counter() - t
++                if p.returncode: raise RuntimeError("%s rc=%d %s" % (s, p.returncode, p.stderr[-200:]))
++                ids = {int(x) for x in tdump.read_text().split()}
++                if ids != (refg2 if s == "g2" else refid): bad_out.append(s)
++                arm_wall[s] += ext
++                return ca.parse_kv(p.stdout), ext
++            recs, order = ca.run_protocol(run_fn, solvers, warmups=3, repeats=15)
++            ch = {s: [ca.charged(s, x)["total_charged"] for x in recs[s]] for s in solvers}
++            r_b0g2 = [ch["b0"][i] / ch["g2"][i] for i in range(15)]
++            # deployment scenario: G2 additionally charged an E0 certification (cert_b1, W=0 anchor), reported separately
++            certs = []
++            for _ in range(5):
++                p = env.run(path, "cert_b1", 0, tau, tag="PRIMARY_cert_b1"); kv = ca.parse_kv(p.stdout); certs.append(ca.charged("cert_b1", ca.numeric(kv))["total_charged"])
++            cert_med = statistics.median(certs)
++            r_dep = [ch["b0"][i] / (ch["g2"][i] + cert_med) for i in range(15)]
++            hc = dict(rule="median>=1.20 AND min>=1.20 over 15 paired rounds (ratified; no inferential CI)", ratios_b0_over_g2=r_b0g2, median=statistics.median(r_b0g2), minimum=min(r_b0g2),
++                      verdict=hc_rule(r_b0g2), outputs_identical_all_rounds=(not bad_out), output_mismatch_solvers=bad_out, order_log=order, arm_wall_s_total=arm_wall,
++                      within_30min_arm=all(v <= 1800 for v in arm_wall.values()),
++                      charged_s={s: ca.disp(ch[s]) for s in solvers}, cost_ledger_rounds=recs,
++                      sensitivity=dict(b1_over_g2_ratio=[ch["b1"][i] / ch["g2"][i] for i in range(15)], e2_over_g2_ratio=[ch["e2"][i] / ch["g2"][i] for i in range(15)],
++                                       b0_over_b1=[ch["b0"][i] / ch["b1"][i] for i in range(15)], b0_over_e2=[ch["b0"][i] / ch["e2"][i] for i in range(15)],
++                                       note="B1/E2 are sensitivity arms only; no verdict derived from them"),
++                      deployment_scenario_with_E0_certification=dict(cert_b1_charged_s_median=cert_med, ratios=r_dep, median=statistics.median(r_dep), minimum=min(r_dep), would_pass_rule=hc_rule(r_dep), status="REPORTED SEPARATELY; not the primary rule"),
++                      environment=dict(python=sys.version.split()[0], numpy=np.__version__, platform=platform.platform(), cpus=os.cpu_count(), compiler=X["compiler"]))
++            if bad_out or not hc["within_30min_arm"]: hc["verdict"] = "INCONCLUSIVE" if bad_out else "EXECUTION_LIMIT"
++            C = hc["verdict"]; log("timing done", C, "median", hc["median"], "min", hc["minimum"])
++        ckA.write_text(json.dumps(dict(res=res, gap=gap, hg=hg, hc=hc, G=G, P=P, C=C, gram=gram, dG=dG), default=lambda o: o.item() if isinstance(o, np.generic) else sorted(o)))
+     # ---------- nulls (descriptive only)
+     log("nulls start")
+     v6 = sd.load_v006_nulls(V.FEAS); nullrows = []; accts = {}
+     for key, fam in sd.FAMILIES.items():
+         fn = V.make_survivors_fn(X, 24, "pn_" + key)
+-        nulls, acc = sd.generate(fam, I["inc"], 24, 1000, fn, v6, max_tries=5000); accts[key] = acc
++        ckg = CK / ("gen_%s.json" % key)
++        if ckg.exists():
++            _g = json.loads(ckg.read_text()); acc = _g["acc"]; nulls = [dict(e, inc=[[tuple(x) for x in ent] for ent in e["inc"]]) for e in _g["nulls"]]
++        else:
++            nulls, acc = sd.generate(fam, I["inc"], 24, 1000, fn, v6, max_tries=5000); ckg.write_text(json.dumps(dict(acc=acc, nulls=nulls)))
++        accts[key] = acc; log("generated", key, len(nulls), acc)
+         def one(e, k=key):
+             pth = X["tmp"] / ("pn_%s_%d.txt" % (k, e["idx"])); V.write_instance(pth, 24, I["pairs"], V.ew.compile_masks(e["inc"]))
+             kv = ca.parse_kv(env.run(pth, "nullgap", 0.0, tau, E0, extra=UNB, tag="PRIMARY_null_" + k).stdout); pth.unlink()
+             return dict(family=k, idx=e["idx"], label=e["label"], seed_sha256=e["seed_sha256"], inc_sha256=e["inc_sha256"], survivors=e["survivors"], delta_null=float(kv["delta_nonG"]),
+                         n_excluded=int(kv["n_excluded"]), empty_excluded=int(kv["empty_excluded_set"]))
+-        with ThreadPoolExecutor(2) as ex: rows = list(ex.map(one, nulls))
++        ckr = CK / ("rows_%s.jsonl" % key); done = {}
++        if ckr.exists():
++            for l in ckr.read_text().splitlines():
++                if l.strip(): r_ = json.loads(l); done[r_["idx"]] = r_
++        todo = [e for e in nulls if e["idx"] not in done]
++        def one2(e):
++            r_ = one(e); return r_
++        with ThreadPoolExecutor(2) as ex, open(ckr, "a") as fo:
++            for r_ in ex.map(one2, todo): done[r_["idx"]] = r_; fo.write(json.dumps(r_) + "\n"); fo.flush()
++        rows = [done[e["idx"]] for e in nulls]
+         nullrows += rows; log("nulls", key, len(rows), acc)
+     nstat = {}
+     for key in sd.FAMILIES:

@@ -1,0 +1,50 @@
+# Original-source pair preflight v004
+
+Verdict: `ORIGINAL_SOURCE_PAIR_FUNCTION_PASS_PHYSICAL_REFERENCE_PARTIAL`
+
+This is original-source **function** agreement, not a full Dryad engine / physical energy reference lock. The finite-patch total energy and sign remain modeled separately; MMC vs SPMMC geometry and finite-boundary validation, source field/ΔE sign, physical scaling and temperature, published v1.01 parameters, and physical target preservation remain pending.
+
+```json
+{
+  "version": "v004",
+  "source_kind": "verbatim functions extracted from original Dryad SPMMC v1.00",
+  "full_original_simulator_executed": false,
+  "physical_reference_status": "PARTIAL",
+  "verdict": "ORIGINAL_SOURCE_PAIR_FUNCTION_PASS_PHYSICAL_REFERENCE_PARTIAL",
+  "cases": [
+    {
+      "L": 1,
+      "spins": 4,
+      "pairs": 6,
+      "max_python_vs_verbatim_cpp_coupling_error": 5.204170427930421e-18,
+      "states": 16,
+      "ice_states": 6,
+      "ground_count": 2,
+      "ground_all_ice": false,
+      "ground_energy_normalized": -0.01707265052885712,
+      "min_ice_energy_normalized": 0.0035025843721495867,
+      "min_nonice_energy_normalized": -0.01707265052885712
+    },
+    {
+      "L": 2,
+      "spins": 12,
+      "pairs": 66,
+      "max_python_vs_verbatim_cpp_coupling_error": 5.204170427930421e-18,
+      "states": 4096,
+      "ice_states": 82,
+      "ground_count": 2,
+      "ground_all_ice": false,
+      "ground_energy_normalized": -0.06090027851229476,
+      "min_ice_energy_normalized": 0.01213829268512339,
+      "min_nonice_energy_normalized": -0.06090027851229476
+    },
+    {
+      "L": 3,
+      "spins": 24,
+      "pairs": 276,
+      "max_python_vs_verbatim_cpp_coupling_error": 5.204170427930421e-18
+    }
+  ],
+  "tolerance": 1e-12
+}
+```

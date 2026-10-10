@@ -1,0 +1,35 @@
+# SCR_II_V002_PREP_v001
+
+Merge directly into the existing `scr_ii/` directory.
+- `RUN_SCR_II_V002_AUDIT.bat`
+- `RUN_SCR_II_V002_CALIBRATION.bat`
+- `RUN_SCR_II_V002_SETUP.bat`
+- `RUN_SCR_II_V002_VALIDATE.bat`
+- `SCR_II_PREREG_v002/BENCHMARK.md`
+- `SCR_II_PREREG_v002/CALIBRATION_FREEZE.json`
+- `SCR_II_PREREG_v002/CALIBRATION_FREEZE.md`
+- `SCR_II_PREREG_v002/DECISION_RULES.md`
+- `SCR_II_PREREG_v002/GRAMMAR_FREEZE.md`
+- `SCR_II_PREREG_v002/MANIFEST.md`
+- `SCR_II_PREREG_v002/METRICS.md`
+- `SCR_II_PREREG_v002/PREREG.md`
+- `SCR_II_PREREG_v002/SEEDS.json`
+- `SCR_II_PREREG_v002/SHA256SUMS.txt`
+- `SCR_II_PREREG_v002/SOURCE_LOCK.md`
+- `SCR_II_PREREG_v002/config/prereg_v002.json`
+- `SCR_II_PREREG_v002/output/README.md`
+- `SCR_II_PREREG_v002/schema/result.schema.json`
+- `SCR_II_PREREG_v002/scripts/validate_prereg.py`
+- `V002_PREP_STATUS.md`
+- `archive/v001/SCR_II_V001_CLOSURE.md`
+- `archive/v001/SCR_II_V001_STATUS.json`
+- `generator/route_csp_i_v002.py`
+- `output/v002_calibration/README.md`
+- `output/v002_design_audit/README.md`
+- `scripts/run_v002_audit.py`
+- `scripts/run_v002_calibration.py`
+- `scripts/validate_v002_prep.py`
+- `tests/test_v002_firewall.py`
+- `tests/test_v002_generator.py`
+- `tests/test_v002_seeds.py`
+- `SCR_II_V002_PREP_REPORT.md`

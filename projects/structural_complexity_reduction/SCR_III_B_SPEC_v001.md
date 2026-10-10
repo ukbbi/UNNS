@@ -1,0 +1,138 @@
+# SCR_III_B_SPEC_v001 — Generative Admissibility Primary Experiment
+
+**Project:** UNNS Structural Complexity Reduction (SCR)  
+**Branch:** SCR-III-B — Physical Transfer  
+**Status:** REVISED DRAFT — **UNFROZEN**  
+**Date:** 2026-10-10  
+**Primary execution:** NOT AUTHORIZED  
+**Frozen dependencies:** SCR-III-A `COUPLING_MAP_ONLY`; v005 `PHYSICAL_HAMILTONIAN_LOCK_PASS`; v006 `FEASIBILITY_PASS`; v007 `EXACT3_VERIFIER_FEASIBLE`.
+
+## 1. Scientific mission and epistemic discipline
+
+**Primary research question:** Can an independently specified *generative grammar* construct a sharply smaller candidate space, and can that space retain the full set of independently defined physically relevant configurations?
+
+The key object is **not** an optimized solver. The project asks whether a conventional nominal state representation overstates the space required to describe and investigate physically relevant structure.
+
+Four independent evidence axes (with distinct endpoints):
+
+- **G — Generative contraction:** a frozen target-blind grammar directly generates fewer configurations than the nominal state space, reproducibly and without first enumerating the nominal space.
+- **P — Physical-target preservation / admissibility:** a separately defined physical Hamiltonian and target rule establish whether all relevant configurations lie inside the grammar-generated set.
+- **T — Transfer to an independently defined physical target family:** requires a separate operational protocol and cannot be established by the fixed inclusive energy-window construction.
+- **C — Computational consequence:** the resulting candidate restriction reduces actual resource consumption for a fixed downstream physical task, with all costs charged.
+
+A G PASS does not imply P or T; a G+P PASS does not imply T or C. C failure does not erase G or P. An energy-window target below the first non-ice excitation may deliver *guaranteed alignment* but does **not** by itself establish independent non-tautological physical transfer.
+
+Do **not** equate violation of the 2-in/2-out rule with physical impossibility: spin configurations outside the grammar exist in the physical baseline and may be physically relevant at higher energies. `S_G` is a grammatical set; it is not automatically the full physical state space.
+
+## 2. Frozen sources and negative controls
+
+- Use **unchanged** Dryad SPMMC v1.00 finite free-boundary Hamiltonian and physical parameters locked by v005.
+- v006 established 1×1 (6 of 16) and 2×2 (82 of 4096) structural counts and a limited, gap-aligned 2×2 energy-window preservation case. These are reference and implementation controls, not fresh primary discoveries.
+- v007 established feasible exhaustive exact verification for 3×3 (24 spins, 2^24 nominal states) and 2,604 constructively generated grammar states, with W=0 as a guaranteed-alignment anchor. It **withheld every W>0 target outcome and the excited spectrum**.
+- Freeze documents v005–v007 and their files remain historical and untouched. Do not reselect parameters in response to primary results. GitHub remains untouched.
+
+## 3. Objects and set relations
+
+`S_0 = {-1,+1}^N`, with all spin states physically retained in the nominal baseline.
+
+`G(s)=1` iff all specified constrained vertices obey the independently specified 2-in/2-out rule; `S_G={s in S_0:G(s)=1}`.
+
+`H(s)` is the v005 physically locked Hamiltonian; `E_0=min_(s in S_0) H(s)`.
+
+For a **prospectively frozen** window `W>=0`, `S_T(W)={s in S_0:H(s)<=E_0+W}`.
+
+`S_T^G(W)=S_T(W) ∩ S_G`. Preservation requires **set equality** `S_T^G(W)=S_T(W)` (false exclusions = 0). Exact preservation must be independently certified using direct physical energies, not inferred from sampled agreement or a grammar-limited search.
+
+Define `R_G=1-|S_G|/|S_0|`, `R_explored=1-N_explored^G/N_explored^B`, and `G_net=C_baseline/(C_generation+C_filter+C_downstream)` for a specified equal task. Do not use these interchangeable terms.
+
+If proposing `S_generative ⊇ S_admissible ⊇ S_persistent`, operationally define and independently test every extra inclusion; v007 only verifies the frozen *ice-rule* grammar and does not validate a universal UNNS hierarchy.
+
+### Gap-preservation theorem (methodological constraint)
+
+For any finite nominal state space, fixed grammar `S_G`, and inclusive target `S_T(W)={s:H(s)<=E0+W}`, set `Δ_nonG=min_{s∉S_G}(H(s)-E0)` (with `+∞` if the complement is empty). For `W>=0`, provided there is an excluded configuration, **exactly**:
+
+`S_T(W) ⊆ S_G  ⇔  W < Δ_nonG`.
+
+The strict inequality is essential: at `W=Δ_nonG`, the minimum-energy excluded configuration enters the target. If `Δ_nonG=0`, no nonnegative window preserves every target. If `S_G=S_0`, preservation is automatic and not independently informative. This follows from the definitions, not an empirical generalization. Accordingly, a fixed ice-rule grammar **cannot** both preserve an inclusive full energy-window target and exhibit preservation unaccounted for by this gap. The former H-T requirement to do both is **RETIRED AS LOGICALLY UNSATISFIABLE**.
+
+H-P remains a real prospective test of whether the preselected `W` lies below this independently measured boundary, not a test of a gap-free physical transfer mechanism. Target sets are not to be selected after comparing `W` to `Δ_nonG`.
+
+## 4. Primary scale and exact certification
+
+**Candidate primary physical scale:** 3×3 free-boundary square ice, N=24, nominal count 16,777,216; frozen grammar-generated count 2,604.
+
+First, freeze an outcome-blind physical target-window rule, numerical energy grouping and threshold tie treatment, source hashes, and all test code. Then unblind the full physical spectrum and compute *exact* target membership for every nominal state.
+
+Required exact certificates: energy threshold, all target IDs (or a complete cryptographically verifiable set representation), number of targets, number and IDs of false exclusions, level/tie policy, and exact grammar membership of each target.
+
+1×1 and 2×2 are regression controls only. A 4×4 experiment is optional future work: v007 provided a timing extrapolation, **not** an exact 4×4 feasibility or preservation proof.
+
+## 5. Architecture: grammar first, solver second
+
+**G0 — Grammar construction:** deterministic constructive 2-in/2-out generator without energy queries. Charge preprocessing, enumeration nodes, materialization, deduplication, and grammar evaluation. Validate IDs against independent brute-force membership wherever feasible.
+
+**B0 — Conventional exact baseline:** enumerate all nominal states, evaluate the same Hamiltonian, return the **complete target set**. A single-thread optimized Gray-code baseline is compulsory because v007 measured it much faster than naive direct evaluation. The direct evaluator remains an independent correctness reference, not the sole performance baseline.
+
+**G1 — Grammar-scan filter:** test nominal states for grammar membership before applying the *same target energy test*. Charge all checks and enumeration; G1 cannot claim a 2^N enumeration reduction.
+
+**G2 — Constructive grammar:** generate `S_G` directly and apply the same downstream target-energy test. Implement fair incremental pair-energy updates along constructive search branches (or document a certified equivalently optimized alternative); do not handicap G2 with only slow direct re-evaluation while B0 uses incremental Gray-code energies. Charge partial-assignment updates, generator visits, setup and final evaluations. G2 reports `S_T∩S_G`; it cannot itself certify this equals `S_T`. Completeness is an *offline independent full-space audit* and is a prerequisite for any complete-task G2 gain claim. Distinguish deployment-time recurring certification costs from once-only research audit costs.
+
+**B1 — Strong Hamiltonian-aware baseline:** implement exact branch-and-bound with a mathematically admissible lower bound and the **same complete-target-set stopping rule** as B0. Prove bound admissibility independently. Treat as a required **sensitivity comparator**, not a co-primary minimum speedup threshold; the highly optimized B0 remains the mandatory primary competitive baseline.
+
+**E2 — Charged energy-informed comparator:** implement a prospectively chosen localized/truncated-interaction method, ideally with certified remainder bound; otherwise label it non-exact and disallow comparisons requiring full-set completeness. Charge preprocessing, bound computation, rejections, energy queries and all missed targets.
+
+**C1 — Target-aware oracle:** report as an ideal bound only; do not treat it as target-blind evidence.
+
+**N1/N2 — Structural nulls:** degree-preserving and unconstrained incidence rewiring where valid, holding `S_0`, `H`, selected `W`, target set and downstream task fixed. Freeze seed list, feasibility and rejection policies *before* outcomes. Include unchanged-incidence and intentionally perturbed controls. Nulls can change survivor counts; report capacity and contraction alongside preservation and ensure fair matched-size analysis where possible.
+
+## 6. Primary regimes and transfer-scope repair
+
+**Energy-window experiment (G/P/C):** classify each prospectively selected 3×3 window as `PRESERVED_BELOW_GAP` or `PRESERVATION_FAIL_AT_OR_ABOVE_GAP` (or `INCONCLUSIVE` for incomplete evidence). This classification is exhaustive under the theorem in §3; a non-ground window does not escape it. The expected-failure defect-inclusive control remains separate. Nulls assess whether actual vertex incidence is a distinctive grammatical restriction; they do not nullify the logical gap identity.
+
+**H-T is a distinct, deferred experiment, not an additional criterion on this energy-window task.** A possible future protocol would freeze a *dynamical persistence target* (e.g., recurrence/occupation under a fully specified independent state-transition law and time scale), derive its target set independently of the grammar and energy-window cutoff, and ask if `S_G` predicts its membership, preservation, and null separation on held-out initial conditions. Full exact preservation may fail and must be honestly reported. Any external Hamiltonian or observable substituted into the same inclusive full energy-window definition obeys its own analogous gap theorem; merely switching Hamiltonians is NOT a non-gap transfer test. Other external target families are admissible only with an equally explicit, independently falsifiable protocol.
+
+Before any T test, separately preregister target construction, dynamics, observation time, patch/population, complete versus sampled coverage, and whether success demands FN=0 or permits a specified statistical recall criterion. The current v008 gate is **not** authorized to create or unblind a T target. For the present 3×3 study, record `T=NOT_TESTED / PROTOCOL_UNFROZEN` and never `TRANSFER_CONFIRMED`.
+
+## 7. Measurements and reporting
+
+For each patch, window, architecture and null:
+
+- `|S_0|`, `|S_G|`, `|S_T|`, `|S_T∩S_G|`, false exclusions, target capacity `|S_G|/|S_T|`;
+- constructive search nodes, materialized candidates, unique candidates, grammar checks, Hamiltonian evaluations, pair operations;
+- solver output equivalence and full target-ID set equality;
+- time (warm and cold where applicable), environment/compiler/flags/threads, number of repetitions and uncertainty, peak RSS;
+- full charged preprocessing, grammar/generator and downstream costs; relative performance against optimized B0 and exact B1;
+- null target preservation and contraction distributions with their sample sizes.
+
+Record the physical classification **separately** from search performance and from whether a comparator can enumerate all targets.
+
+## 8. Pre-primary gate and reproducibility
+
+The preregistration must freeze, **before reading any 3×3 W>0 result**:
+
+1. Primary window functional form and numerical constants, including an independently chosen physically motivated window and a separately labeled guaranteed-alignment anchor.
+2. Exact-task solver, state order, complete-set stopping rule, lower-bound proof for B1, and E2 implementation.
+3. Primary hypothesis-specific thresholds for G/P/C, and a distinct, separately designed future T protocol (no T success criterion within current W-window study).
+4. Seed registry, null counts and null acceptance criteria, repetitions, compiler settings and timing treatment.
+5. Runtime/memory limits, correction/amendment procedures and SHA-256 input/source hashes.
+6. Record v007 blindness leakage: `V4.relative_to_scale` and drift permit inference of an approximate upper-spectrum scale (~0.126 in A units), although low-energy levels and W>0 outcomes were not disclosed. Describe the study as **low-energy-outcome blinded**, not fully spectrum-blinded. The so-called independent verifier is separately implemented and cross-validated but **shares authorship** with the grammar code; no external independent replication has occurred.
+7. Numerical drift tolerance and grouping policy **prospectively**; v007 V4 had a disclosed post-hoc revision from 1e−12 to 1e−10 and must not be silently reused as though preregistered.
+
+Run a limited **acceptance-only** operational dry run with no disclosure of target membership beyond the already published W=0 anchor, if necessary. Freeze preregistration independently before launching the primary experiment.
+
+Outputs: reproducible source, `SPEC`, preregistration and their freeze record, run manifest, machine-readable target certificates and results, human-readable synthesis, no overwritten prior artifacts.
+
+## 9. Independent verdict axes
+
+- **G:** `GENERATIVE_CONTRACTION_PASS/FAIL/INCONCLUSIVE`
+- **P:** `TARGET_PRESERVATION_PASS/FAIL/INCONCLUSIVE`
+- **T:** `NOT_TESTED / PROTOCOL_UNFROZEN` for this experiment; separate future transfer study required
+- **C:** `CHARGED_GAIN_PASS/FAIL/INCONCLUSIVE`
+
+Computational result C is conditional on independently certified P for the same physical task; if P fails, a fast incomplete G2 output is not a valid complete-task speedup. B1 remains a sensitivity arm.
+
+Legacy phrases such as `VALID_STRUCTURAL_REDUCTION` and `TRANSFER_CONFIRMED` may be emitted **only if separately frozen cross-axis definitions are satisfied**; do not allow a favorable speed ratio to override physical target exclusion.
+
+## 10. Document status
+
+**LOGIC-REPAIRED REVISION — UNFROZEN.** It authorizes no primary run, no outcome unblinding and no changes to frozen code. The accompanying preregistration is also **UNFROZEN**, with open choices expressly marked. Its freeze must precede primary execution.
