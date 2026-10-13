@@ -31,20 +31,20 @@ ESC-I is a focused mathematical experiment, not a replacement for the existing U
 
 Complex multiplication can be represented through real two-dimensional operators:
 
-\[
+$$
 a+bi \longleftrightarrow
 \begin{pmatrix}
 a & -b\\
 b & a
 \end{pmatrix}.
-\]
+$$
 
 The imaginary unit corresponds to the quarter-turn operator
 
-\[
+$$
 J=\begin{pmatrix}0&-1\\1&0\end{pmatrix},
 \qquad J^2=-I.
-\]
+$$
 
 This establishes an exact real representation of complex multiplication.
 
@@ -52,17 +52,17 @@ ESC-I distinguishes finite cyclotomic phases, bounded nonperiodic rotations, and
 
 The main recursive model is
 
-\[
+$$
 x_{n+1}=\Pi(Tx_n),
-\]
+$$
 
 where:
 
-- \(T\) is a real recursive operator;
-- \(x_n\) is the current state;
-- \(\Pi\) is a specified projection, quantization, threshold, clipping, or gating operation.
+- $T$ is a real recursive operator;
+- $x_n$ is the current state;
+- $\Pi$ is a specified projection, quantization, threshold, clipping, or gating operation.
 
-The resulting structural regime depends on the complete system \((T,\Pi,x_0)\), not necessarily on the spectrum of \(T\) alone.
+The resulting structural regime depends on the complete system $(T,\Pi,x_0)$, not necessarily on the spectrum of $T$ alone.
 
 ## Research Components
 
@@ -100,9 +100,9 @@ Establishes conditional growth results using explicit perturbation bounds, invar
 
 For a dominant expanding eigen-coordinate, a sufficient escape condition is
 
-\[
+$$
 |u_0|>\frac{h}{|\lambda|-1}.
-\]
+$$
 
 This is a sufficient guarantee, not a necessary condition for every projected trajectory.
 
