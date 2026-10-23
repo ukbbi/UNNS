@@ -1,0 +1,7 @@
+# FIELD-I — continuation context (after v008)
+Rule: occurrence r=(M,N), d=N+1, v=M d^2/N, successor (M+1,N). Fibre D(x)={d>=2: d^2|a, d=1 mod b}, x=a/b. Collective map C(x)=x+L^2/g, L=lcm D, g=G(x)=gcd{d-1}. Proposed operator, not derived (nonselection theorem v002).
+Versions (all frozen): v002 interaction selection; v003 collective growth; v004 three-route classification; v005 orbit universality (non-universality T33; regime I; t-cycle 1,2,3); v006 modular collapse G=2,3,6 + erratum; v007 transition criterion, persistent G=5 (T38 via Dirichlet) -> universal collapse false; v008 this release.
+Key facts: G=1 <=> x integer, 4|x; orbit then scales x_{n+3}=4x_n. gamma=gx/L^2 (integer): gamma'=(gamma+1)/r^2. G_inf cannot divide 24 (T45). Persistent: gcd(g,6)=1 (T38/T42) and odd 3|g under H1–H4 (T46: 15,39,51,57,87).
+Open: (1) even g>24 and odd 3|g not yet covered (21,27,33,45,...); (2) M4a/M4b: does every orbit end as x_{n+3}=4x_n / x=s^2 t/g? (3) which natural seeds lie in persistent families; (4) is gamma-cycle 1,2,3 forced?
+Next natural step (v009): classify odd g with 3|g (decide 21, 27, 33, 45), attack even g by the gamma-framework (the prime-class step of T45 needs gamma = 0 mod g, available only for g | 24), and search for an unabsorbed-square persistent orbit.
+Hazards: never use pkill/pgrep -f patterns that match the shell; field scripts are pure Python (no sympy). Run RUN_TESTS.bat (Windows) or python field8.py.

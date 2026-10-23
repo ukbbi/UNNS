@@ -1,0 +1,1354 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fix-cm}
+\usepackage{cmap}
+\usepackage[OT1]{fontenc}
+\usepackage[margin=1.05in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{tabularx,booktabs,array}
+\usepackage{enumitem}
+\usepackage[expansion=false]{microtype}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,fit,backgrounds,decorations.pathreplacing}
+\usepackage{listings}
+\usepackage[hidelinks,pdftitle={Observable Equivalence and Relational Invariants in Recursive Generative Systems},pdfauthor={Igor, UNNS Substrate Research Program}]{hyperref}
+\usepackage{xcolor}
+
+\linespread{1.07}
+\setlength{\parskip}{3pt plus 1pt}
+\setlist{itemsep=2pt,topsep=3pt,parsep=0pt}
+\setlist[itemize]{label=$\bullet$}
+
+% ---------- colours for figures ----------
+\definecolor{cObs}{RGB}{31,94,153}
+\definecolor{cHid}{RGB}{176,74,32}
+\definecolor{cRel}{RGB}{38,120,78}
+\definecolor{cGrey}{RGB}{110,110,110}
+
+% ---------- macros ----------
+\renewcommand{\S}{\ensuremath{\mathsection}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\Rad}{\operatorname{Rad}}
+\newcommand{\im}{\operatorname{im}}
+\newcommand{\rk}{\operatorname{rank}}
+\newcommand{\spn}{\operatorname{span}}
+\newcommand{\id}{\mathrm{id}}
+\newcommand{\defic}{\delta}
+\newcommand{\Kobs}{K}
+\newcommand{\obseq}{\sim_{\Pi}}
+\newcommand{\inteq}{\sim_{B}}
+\newcommand{\geneq}{\sim_{\mathrm{gen}}}
+\newcommand{\status}[1]{\par\smallskip\noindent{\footnotesize\textbf{Status:} #1}}
+
+% ---------- theorem environments ----------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{problem}[theorem]{Open problem}
+
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible,frame=single,
+  numbers=left,numberstyle=\tiny\color{cGrey},xleftmargin=1.6em,showstringspaces=false,
+  keywordstyle={},morekeywords={def,return,import,from,for,in,if,else,lambda,as,and,or,not}}
+
+\title{\textbf{Observable Equivalence and Relational Invariants\\ in Recursive Generative Systems}\\[6pt]
+\large A Quotient Obstruction and Refinement-Compatibility Theorem\\ in the UNNS Substrate}
+\author{Igor\\[2pt]\small UNNS Substrate Research Program \,--\, unns.tech}
+\date{Manuscript v1 \,--\, October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Two generated structures can have the same observable representation and still interact differently with a third.
+We study this phenomenon in a deliberately minimal algebraic setting: a linear \emph{route space} $V$, a linear observation map $\Pi$, and a bilinear interaction pairing $B$.
+We prove, with all hypotheses explicit, that
+$\Pi(X)=\Pi(X')\not\Rightarrow B(X,Y)=B(X',Y)$ in general, and we characterise exactly when the implication holds:
+\emph{$B$ factors through $\Pi$ if and only if $\ker\Pi\subseteq\Rad_L(B)\cap\Rad_R(B)$} (Observable Quotient Criterion).
+We introduce the \emph{relational deficit} $\defic(\Pi,B)=\dim\ker\Pi/(\ker\Pi\cap\Rad B)$ and show that it is the least number of additional observables that restores interaction equivalence.
+We then separate \emph{joint} refinement invariance, $B(TX,TY)=B(X,Y)$, from \emph{independent} refinement invariance, $B(TX,Y)=B(X,Y)=B(X,TY)$: the former is compatible with arbitrarily large deficit (an explicit hidden-sector model, and the Legendre family $-P_\ell(\mathbf a\cdot\mathbf b)$ with $\defic=2\ell+1$ for $\ell\ge2$), while under the hypothesis that refinement differences generate the observable-null directions the latter is equivalent to factorisation (Refinement-Compatibility Theorem).
+The tools are standard (universal property of quotients, radicals of bilinear forms, coinvariants); the contribution is their unified treatment in a generative-route setting, the joint/independent distinction, the deficit, and worked, machine-checked counterexamples.
+Everything is a statement about a \emph{proposed mathematical realisation}; none is a theorem of canonical UNNS grammar, and no physical claim is made.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%=====================================================================
+\section{Introduction}\label{sec:intro}
+%=====================================================================
+
+\subsection{The question}
+A recursive generative system produces structures by rules: routes are composed, constrained by admissibility, and reduced to canonical forms.
+What an observer \emph{sees} of a generated structure is a projection of it.
+The projection may be coarse; two structurally distinct routes can have the same observable representation.
+This is unremarkable as a fact about a single structure.
+The question studied here concerns \emph{relations}: if two routes $X,X'$ share an observable representation, must they stand in the same relations to every other route?
+
+We formalise ``relation'' as a bilinear interaction pairing $B(X,Y)$ between routes, and ``observable representation'' as a linear map $\Pi$.
+Writing $\Pi(X)=\Pi(X')$ for observable equivalence and $B(X,Y)=B(X',Y)$ for all $Y$ (together with the corresponding statement in the second slot) for interaction equivalence, the central point of this paper is
+\begin{equation}\label{eq:central}
+\boxed{\;\Pi(X)=\Pi(X')\;\;\not\Rightarrow\;\; B(X,Y)=B(X',Y)\ \ \forall Y\;}
+\end{equation}
+as a general principle, together with a sharp characterisation of the situations in which the implication does hold.
+Equation~\eqref{eq:central} says that an observable representation need not be a complete description of a generative system's relational structure.
+
+\subsection{The smallest instance}\label{sec:smallest}
+Let $V=\RR^2$ with coordinates $X=(x,y)$, observation $\Pi(x,y)=x$ and pairing $B(X,Y)=xx'+yy'$.
+Take $X=(1,1)$, $X'=(1,-1)$ and $Y=(0,1)$.
+Then $\Pi X=\Pi X'=1$, yet $B(X,Y)=1$ while $B(X',Y)=-1$.
+The refinement $T(x,y)=(x,-y)$ preserves $\Pi$ and satisfies $B(TX,TY)=B(X,Y)$ for all $X,Y$, but $B(TX,Y)\neq B(X,Y)$ in general.
+The remainder of the paper is, in essence, an exact account of what is happening in this example, why it persists in large and structured settings (hidden-sector models, rotationally covariant families, permutation modules), and which hypotheses rule it out.
+
+\subsection{Results}
+Three results form the core.
+\begin{description}[leftmargin=0pt,style=unboxed,itemsep=3pt]
+\item[Result I (Observable Quotient Criterion, Thm.~\ref{thm:quot}).] A bilinear $B$ factors through $\Pi$ iff $\ker\Pi\subseteq\Rad_L(B)\cap\Rad_R(B)$.
+A quantitative companion (Prop.~\ref{prop:deficit}) gives the relational deficit $\defic$.
+\item[Result II (Joint refinement invariance does not suffice, \S\ref{sec:joint}).]
+In the route space $\RR^3\oplus\RR^3$ the refinement $T(s,h)=(s,-h)$ preserves the observable component $s$ and reverses the internal component $h$;
+the pairing $B(X,Y)=-\tfrac12(s_X\!\cdot s_Y+h_X\!\cdot h_Y)$ is unchanged under \emph{simultaneous} refinement of both arguments, yet $\defic=3$.
+\item[Result III (Refinement-Compatibility Theorem, Thm.~\ref{thm:compat}).]
+If $\Pi T_i=\Pi$ and $\ker\Pi=\spn\{X-T_iX\}$, then \emph{independent} invariance $B(T_iX,Y)=B(X,Y)=B(X,T_iY)$ holds iff $B$ factors through $\Pi$.
+\end{description}
+In addition, \S\ref{sec:legendre} proves that the rotationally covariant, sign-reversing pairings $B_\ell(r(\mathbf a),r(\mathbf b))=-P_\ell(\mathbf a\cdot\mathbf b)$ all have a finite, explicitly computed deficit $2\ell+1$ for $\ell\ge 2$ while $B_1$ factors through the observable vector $\mathbf a$.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.30\textwidth}@{}}
+\toprule
+Result & Content & Status\\
+\midrule
+Thm.~\ref{thm:quot} & $B$ descends to $\Pi$ iff $\ker\Pi\subseteq\Rad_L\cap\Rad_R$ & standard (universal property of quotients); stated for arbitrary vector spaces\\
+Prop.~\ref{prop:deficit} & deficit $\defic$; bounds; minimal auxiliary observables & elementary; formulated here\\
+Prop.~\ref{prop:H} & hidden-sector model: joint invariance, $\defic=3$ & explicit construction\\
+Thm.~\ref{thm:legendre} & Legendre family: $\defic(B_\ell)=2\ell+1$, $\ell\ge2$ & short proof via the addition theorem\\
+Prop.~\ref{prop:invol} & involutive refinement $\Rightarrow$ block structure & elementary\\
+Prop.~\ref{prop:coinv} & joint vs.\ independent invariance as diagonal vs.\ factorwise coinvariants & standard algebra, applied here\\
+Thm.~\ref{thm:compat} & refinement-compatibility (independent invariance $\Leftrightarrow$ factorisation) & elementary corollary of Thm.~\ref{thm:quot}; \textbf{the technical point of the paper is the hypothesis structure}\\
+\bottomrule
+\end{tabularx}
+\caption{Results and their status. None is claimed to be unprecedented as mathematics; the contribution is the unified generative-route treatment and the explicit joint/independent distinction.}\label{tab:results}
+\end{table}
+
+\subsection{Provenance and scope}
+The manuscript separates three kinds of statement, and marks them.
+\emph{Adopted} items are vocabulary and constraints taken from existing UNNS project documents (\S\ref{sec:adopt}); \emph{introduced} items are the formal structures of this paper (linear route spaces, observation maps, pairings, refinement operators); \emph{standard} items are classical linear algebra.
+All formal results are theorems about the introduced structures.
+We do \emph{not} claim that canonical UNNS grammar entails any of the hypotheses used, and we do not claim a physical interpretation.
+Where the question of whether UNNS recursion satisfies a hypothesis arises, it is recorded as an open problem (\S\ref{sec:discussion}).
+
+\subsection{Origin of the question}
+The problem arose from an attempt to derive a correlation law from UNNS-style joint generative structure (GCT programme).
+The preregistered v001 audit returned a no-go under Bell-local factorisation~\cite{G1,G6}; v002 proved a binary joint-event representation and then showed, with an explicit family of kernels sharing all imposed symmetries, that those symmetries and operational no-signalling \emph{underdetermine} the correlation kernel~\cite{G2,G4}.
+A route-composition analysis then isolated the mathematical question treated here: whether route bilinearity together with refinement symmetry forces the interaction to depend only on observable projections.
+It does not, and that negative answer, together with the exact conditions under which it becomes positive, is the subject of this paper.
+We make no use of quantum probabilities, and nothing below is a statement about quantum mechanics, Bell's inequality~\cite{Bel64,CHSH69} or the Tsirelson bound~\cite{Tsi80}; these are mentioned once more only in the limitations (\S\ref{sec:limits}).
+
+\subsection{Organisation}
+Section~\ref{sec:routes} defines route systems and separates adopted from introduced structure.
+Section~\ref{sec:quot} constructs observable quotients and the three equivalences.
+Section~\ref{sec:interaction} proves the quotient criterion and the deficit.
+Section~\ref{sec:obstruction} gives the obstruction examples.
+Sections~\ref{sec:refinement} and~\ref{sec:compat} treat joint versus independent refinement invariance and prove the compatibility theorem.
+Section~\ref{sec:repro} documents the deterministic verification, \S\ref{sec:unns} discusses implications for UNNS, and \S\ref{sec:discussion} states limitations and open problems.
+
+%=====================================================================
+\section{Generative Route Systems}\label{sec:routes}
+%=====================================================================
+
+\subsection{What is adopted and what is introduced}\label{sec:adopt}
+The GCT v002 construction describes a candidate generative grammar as an alphabet $\Sigma$, a generation rule $R$, constraints $C$ and an ordering $O$, and uses \emph{admissibility} in the weak sense that each nonzero joint event is allowed~\cite{G3}.
+That document is explicit that the grammar is a candidate and not canonical UNNS.
+We adopt its vocabulary (generation, constraints, admissibility, ordering) and its caution.
+Operator~XVI (Closure) is described in Chamber XVI as an implementation of a Helmholtz decomposition that seals flux divergence~\cite{G7}; we use it only as an illustration of a projection operator in \S\ref{sec:closure}.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}Xp{0.17\textwidth}@{}}
+\toprule
+Ingredient & Role here & Origin\\
+\midrule
+Routes, generation, ordering & informal vocabulary for what $V$ models & adopted~\cite{G3}\\
+Admissibility (constraints $C$) & declared constraints on the pairing (\S\ref{sec:admiss}) & adopted vocabulary, \emph{re-used in a stronger sense}\\
+Closure as projection & example of an idempotent observation-like map (\S\ref{sec:closure}) & adopted~\cite{G7,G5}\\
+Linear route space $V$ & formal signed combinations of elementary routes & introduced\\
+Observation map $\Pi$ & linear map $V\to O$ onto an observable space & introduced\\
+Interaction pairing $B$ & bilinear map $V\times V\to\RR$ & introduced\\
+Refinement operators $T$ & linear maps with $\Pi T=\Pi$ & introduced\\
+Radicals, deficit, compatibility & analytic tools of this paper & introduced / standard\\
+\bottomrule
+\end{tabularx}
+\caption{Separation of adopted and introduced structure.}\label{tab:adopt}
+\end{table}
+
+\subsection{Linear route systems}
+\begin{definition}[Linear route system]\label{def:system}
+A \emph{linear route system} is a quadruple $\mathfrak S=(V,\Pi,B,\mathcal T)$ where
+\begin{enumerate}[label=(R\arabic*)]
+\item $V$ is a real vector space (the \emph{route space}), whose elements are finite signed combinations $X=\sum_i\alpha_i r_i$ of elementary routes $r_i$ modulo the declared canonicalisation relations; \emph{generative identity} is equality in $V$;
+\item $\Pi\colon V\to O$ is a surjective linear map onto a real vector space $O$ (the \emph{observation map});
+\item $B\colon V\times V\to\RR$ is bilinear (the \emph{interaction pairing});
+\item $\mathcal T$ is a (possibly empty) set of linear maps $T\colon V\to V$ (the \emph{refinements}).
+\end{enumerate}
+We write $K=\ker\Pi$ for the space of \emph{observable-null} routes. No finiteness, symmetry or topology is assumed unless stated.
+\end{definition}
+
+\begin{remark}[Modelling choices]
+Linearity of $V$ expresses that finite signed route collections compose; bilinearity of $B$ expresses that interactions between disjoint route contributions add.
+Both are \emph{hypotheses of the proposed model}.
+Route addition determines how interactions combine; it does not determine the elementary pairings $B(r_i,r_j)$.
+This under-determination is exactly what the examples of \S\ref{sec:obstruction} exploit.
+\end{remark}
+
+\begin{example}[Free route spaces]\label{ex:free}
+For a set $E$ of elementary routes let $F(E)$ be the free real vector space on $E$.
+Any assignment $\Pi(r)\in O$ on generators extends uniquely to a linear $\Pi$, and any assignment of values $B(r,r')$ extends uniquely to a bilinear $B$.
+The principal example is $E=S^2$: $r(\mathbf a)$ is an elementary route associated with an oriented observable direction $\mathbf a$, $O=\RR^3$ and $\Pi(r(\mathbf a))=\mathbf a$.
+\end{example}
+
+\begin{example}[Route space with an internal sector]\label{ex:internal}
+Let $V=O\oplus H$, $\Pi(o,h)=o$. Then $K=0\oplus H$ is the internal sector.
+The model of \S\ref{sec:modelH} is a change of coordinates of $V=\RR^3\oplus\RR^3$ into this form.
+\end{example}
+
+\subsection{Admissibility of a pairing}\label{sec:admiss}
+GCT v002 uses ``admissibility'' to mean that each nonzero joint event is allowed~\cite{G3}.
+In this paper we need the stronger, constraint-based notion.
+\begin{definition}[Admissibility profile]
+An \emph{admissibility profile} $\mathcal C$ is a list of declared constraints on a pairing.
+A pairing is \emph{$\mathcal C$-admissible} if it satisfies them.
+\end{definition}
+The profile used in \S\ref{sec:legendre} mirrors the symmetry conditions frozen in the GCT v002 lock (rotational covariance, swap symmetry, aligned anticorrelation, axis inversion)~\cite{G2,G8}.
+The structural lesson is that a pairing may satisfy every constraint of a profile and still fail to descend to the observable quotient.
+
+\subsection{Refinements}
+\begin{definition}[Observable-preserving refinement]\label{def:refine}
+A linear $T\colon V\to V$ is an \emph{observable-preserving refinement} if $\Pi\circ T=\Pi$.
+\end{definition}
+Informally, $T$ changes how a structure is internally realised without changing what is observed of it.
+Equivalently, $(\id-T)V\subseteq K$.
+Four invariance notions are distinguished:
+\begin{align}
+\text{joint:}&\quad B(TX,TY)=B(X,Y),\label{eq:joint}\\
+\text{left:}&\quad B(TX,Y)=B(X,Y),\label{eq:left}\\
+\text{right:}&\quad B(X,TY)=B(X,Y),\label{eq:right}\\
+\text{independent (separate):}&\quad\text{\eqref{eq:left} and \eqref{eq:right}.}\label{eq:sep}
+\end{align}
+Independent invariance implies joint invariance, since $B(TX,TY)=B(X,TY)=B(X,Y)$. The converse is false (\S\ref{sec:joint}).
+
+%=====================================================================
+\section{Observable Quotients}\label{sec:quot}
+%=====================================================================
+
+\subsection{Fibres of the observation map}
+\begin{proposition}[Observable quotient]\label{prop:quotient}
+Let $\Pi\colon V\to O$ be linear and onto, $K=\ker\Pi$. The fibres of $\Pi$ are the cosets $X+K$, and $\Pi$ induces a linear isomorphism $\bar\Pi\colon V/K\to O$. Two routes are observably equivalent, $X\obseq X'$ (i.e.\ $\Pi X=\Pi X'$), iff $X-X'\in K$.
+\end{proposition}
+\begin{proof}
+$\Pi X=\Pi X'\iff\Pi(X-X')=0$. The isomorphism is the first isomorphism theorem~\cite{Lan02}.
+\end{proof}
+
+\begin{lemma}[Universal property]\label{lem:universal}
+A linear map $F\colon V\to W$ factors as $F=\bar F\circ\Pi$ for a (necessarily unique) linear $\bar F\colon O\to W$ iff $K\subseteq\ker F$.
+\end{lemma}
+\begin{proof}
+If $F=\bar F\Pi$ then $F(K)=\bar F(0)=0$. Conversely if $K\subseteq\ker F$ then $F(X)$ depends only on $X+K$, so $\bar F(\Pi X):=F(X)$ is well defined, and linear because $\Pi$ is onto and linear.
+\end{proof}
+
+\subsection{Radicals}
+\begin{definition}[Radicals]
+For bilinear $B$ on $V$ define
+$\Rad_L(B)=\{X:\ B(X,Y)=0\ \forall Y\}$, $\Rad_R(B)=\{Y:\ B(X,Y)=0\ \forall X\}$, and the \emph{two-sided radical} $\Rad(B)=\Rad_L(B)\cap\Rad_R(B)$.
+\end{definition}
+These are subspaces. If $B$ is symmetric (or antisymmetric) then $\Rad_L=\Rad_R=\Rad$.
+$B$ induces a canonical nondegenerate pairing on $V/\Rad_L\times V/\Rad_R$.
+
+\subsection{Three equivalences}
+\begin{definition}[Generative, observable and interaction equivalence]\label{def:three}
+For $X,X'\in V$:
+\begin{itemize}
+\item \emph{generative equivalence} $X\geneq X'$ iff $X=X'$ in $V$ (same structural identity under the declared canonicalisation);
+\item \emph{observable equivalence} $X\obseq X'$ iff $\Pi X=\Pi X'$;
+\item \emph{interaction equivalence} $X\inteq X'$ iff $B(X,Y)=B(X',Y)$ and $B(Y,X)=B(Y,X')$ for all $Y\in V$.
+\end{itemize}
+\end{definition}
+Each is a congruence of the form $X-X'\in S$ for a subspace $S$:
+$S_{\mathrm{gen}}=\{0\}$, $S_{\mathrm{obs}}=K$, $S_{\mathrm{int}}=\Rad(B)$.
+
+\begin{proposition}[Substitution principle]\label{prop:subst}
+For two of the equivalences $x,y\in\{\mathrm{gen},\mathrm{obs},\mathrm{int}\}$,
+\[ (\,\sim_x\ \Rightarrow\ \sim_y\,)\iff S_x\subseteq S_y. \]
+Consequently: generative equivalence implies both others always; $\obseq\Rightarrow\geneq$ iff $K=0$; $\inteq\Rightarrow\geneq$ iff $\Rad(B)=0$;
+\begin{equation}\label{eq:obsint}
+\obseq\ \Rightarrow\ \inteq\quad\iff\quad K\subseteq\Rad(B),\qquad\qquad \inteq\ \Rightarrow\ \obseq\quad\iff\quad\Rad(B)\subseteq K.
+\end{equation}
+\end{proposition}
+\begin{proof}
+$\sim_x\Rightarrow\sim_y$ for all pairs means: $X-X'\in S_x\Rightarrow X-X'\in S_y$ for all $X,X'$, i.e.\ $S_x\subseteq S_y$.
+\end{proof}
+Thus every implication between the three notions of identity is an inclusion between three subspaces of $V$, and the statement that none can be substituted for another without a compatibility theorem is the statement that three subspaces are in general position (Figure~\ref{fig:equiv}).
+The first criterion in~\eqref{eq:obsint} is Result~I in disguise (Theorem~\ref{thm:quot}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth,font=\small]
+ % ambient space
+ \draw[rounded corners=8pt,thick,fill=gray!6] (0,0) rectangle (12,5.2);
+ \node[anchor=north west,cGrey] at (0.15,5.1) {route space $V$};
+ % K
+ \draw[cObs,thick,fill=cObs!12,rotate around={18:(4.0,2.4)}] (4.0,2.4) ellipse (3.0 and 1.45);
+ \node[cObs] at (2.35,3.55) {$K=\ker\Pi$};
+ \node[cObs,align=center] at (3.0,2.6) {observable-null\\directions};
+ % Rad
+ \draw[cRel,thick,fill=cRel!12,rotate around={-14:(8.2,2.5)}] (8.2,2.5) ellipse (2.85 and 1.35);
+ \node[cRel] at (9.85,3.7) {$\Rad(B)$};
+ \node[cRel,align=center] at (9.1,2.5) {interaction-null\\directions};
+ % overlap region label
+ \node[font=\scriptsize,align=center,fill=white,inner sep=1pt] at (6.1,2.45) {$K\cap\Rad(B)$};
+ % zero
+ \fill (6.1,1.55) circle (1.6pt); \node[font=\scriptsize,below] at (6.1,1.5) {$S_{\mathrm{gen}}=\{0\}$};
+ % deficit brace
+ \draw[decorate,decoration={brace,amplitude=5pt,mirror},cHid,thick] (1.45,1.05) -- (5.1,1.05)
+   node[midway,below=5pt,align=center,font=\scriptsize] {$K/(K\cap\Rad B)$,\ dimension $\defic$};
+\end{tikzpicture}
+\caption{The three equivalences as three subspaces. Observable equivalence implies interaction equivalence exactly when the left ellipse lies inside the right one. The part of $K$ that sticks out of $\Rad(B)$ is the relational content invisible to $\Pi$; its dimension is the relational deficit $\defic$ (Prop.~\ref{prop:deficit}).}\label{fig:equiv}
+\end{figure}
+
+%=====================================================================
+\section{Interaction Preservation}\label{sec:interaction}
+%=====================================================================
+This section answers: for which observation maps $\Pi$ does a bilinear pairing $B$ \emph{descend}, that is, satisfy $B(X,Y)=\bar B(\Pi X,\Pi Y)$ for a bilinear $\bar B$ on $O$?
+
+\subsection{The Observable Quotient Criterion}
+\begin{theorem}[Observable Quotient Criterion --- Result I]\label{thm:quot}
+Let $\Pi\colon V\to O$ be linear and onto with kernel $K$, and let $B\colon V\times V\to\RR$ be bilinear. The following are equivalent.
+\begin{enumerate}[label=(\alph*)]
+\item There is a bilinear $\bar B\colon O\times O\to\RR$ with $B(X,Y)=\bar B(\Pi X,\Pi Y)$ for all $X,Y$.
+\item $\Pi X=\Pi X'$ and $\Pi Y=\Pi Y'$ imply $B(X,Y)=B(X',Y')$.
+\item $K\subseteq\Rad_L(B)\cap\Rad_R(B)$.
+\end{enumerate}
+When they hold, $\bar B$ is unique. No finiteness, symmetry or field-specific hypothesis beyond linearity is used.
+\end{theorem}
+\begin{proof}
+(a)$\Rightarrow$(b) is immediate. (b)$\Rightarrow$(c): let $k\in K$. Then $\Pi k=\Pi 0$, so for every $Y$, $B(k,Y)=B(0,Y)=0$; hence $k\in\Rad_L$; symmetrically $k\in\Rad_R$.
+(c)$\Rightarrow$(a): for fixed $Y$ the linear functional $B(\cdot,Y)$ vanishes on $K$, so by Lemma~\ref{lem:universal} there is a unique linear functional $\beta_Y$ on $O$ with $B(X,Y)=\beta_Y(\Pi X)$. For fixed $o\in O$ pick $X$ with $\Pi X=o$; then $Y\mapsto\beta_Y(o)=B(X,Y)$ is linear and vanishes on $K$ because $K\subseteq\Rad_R$; so it factors through $\Pi$ as $\Pi Y\mapsto\bar B(o,\Pi Y)$. Linearity of $\bar B$ in $o$ follows from that of $B$ in $X$. Uniqueness: $\Pi$ is onto.
+\end{proof}
+\status{standard (universal property of quotients applied to bilinear maps~\cite{Lan02,Rom08,Mac71}); stated and proved here in the generality used below.}
+
+\begin{corollary}\label{cor:sym}
+If $B$ is symmetric or antisymmetric, $B$ descends to $\Pi$ iff $K\subseteq\Rad(B)$, i.e.\ iff the single condition $B(k,\cdot)=0$ holds for all observable-null $k$.
+\end{corollary}
+
+\begin{proposition}[One-sided descent]\label{prop:onesided}
+$B(X,Y)=\tilde B(\Pi X,Y)$ for a bilinear $\tilde B\colon O\times V\to\RR$ iff $K\subseteq\Rad_L(B)$; analogously for the second slot with $\Rad_R(B)$.
+\end{proposition}
+\begin{proof}
+Lemma~\ref{lem:universal} applied to $X\mapsto B(X,Y)$ for each $Y$.
+\end{proof}
+Proposition~\ref{prop:onesided} shows that \emph{both} radicals are needed in Theorem~\ref{thm:quot}:
+
+\begin{example}[One-sided descent only]\label{ex:onesided}
+$V=\RR^2$, $\Pi(x,y)=x$, $B(X,Y)=x\,y'$. Then $K=\spn\{(0,1)\}$, $B(k,\cdot)=0$ for $k\in K$ so $K\subseteq\Rad_L$, but $B(\cdot,k)=x\neq0$ so $K\not\subseteq\Rad_R$. $B$ depends on its first argument only through $\Pi$, but on the second through $y'$; it does not descend.
+\end{example}
+
+\subsection{Resolution ordering}
+\begin{proposition}[Interaction quotient and resolution]\label{prop:resolution}
+Let $q_L\colon V\to V/\Rad_L(B)$ and $q_R\colon V\to V/\Rad_R(B)$. Then $B$ factors canonically as $B=\hat B(q_L\cdot,q_R\cdot)$ with $\hat B$ nondegenerate, and
+\[ B\text{ descends to }\Pi\iff q_L\text{ and }q_R\text{ both factor through }\Pi. \]
+\end{proposition}
+\begin{proof}
+Nondegeneracy of $\hat B$ is the definition of the radicals. $q_L$ factors through $\Pi$ iff $K\subseteq\ker q_L=\Rad_L$ (Lemma~\ref{lem:universal}); likewise for $q_R$. Apply Theorem~\ref{thm:quot}.
+\end{proof}
+In words: \emph{the observable resolution must dominate the interaction resolution}. If $\Pi$ is coarser than $q_L$ or $q_R$ in the quotient-refinement order, some interaction information is invisible to $\Pi$.
+
+\subsection{Relational deficit}
+\begin{definition}[Relational deficit]\label{def:deficit}
+$\defic(\Pi,B):=\dim\bigl(K/(K\cap\Rad(B))\bigr)\in\{0,1,2,\dots\}\cup\{\infty\}$ (cardinal dimension in general).
+For finite-dimensional data define also the left and right obstruction ranks
+$\rho_L=\dim K/(K\cap\Rad_L(B))=\rk\bigl(X\mapsto B(X,\cdot)\big|_K\bigr)$ and $\rho_R$ analogously.
+\end{definition}
+
+\begin{proposition}[Properties of the deficit]\label{prop:deficit}
+\begin{enumerate}[label=(\roman*)]
+\item $\defic=0$ iff $B$ descends to $\Pi$.
+\item $\max(\rho_L,\rho_R)\le\defic\le\rho_L+\rho_R$; if $B$ is symmetric or antisymmetric, $\defic=\rho_L=\rho_R$.
+\item (Matrix formula.) In bases, let the columns of $\mathsf K$ span $\ker\Pi$ and let $\mathsf B_{ij}=B(e_i,e_j)$. Then
+\[ \defic=\rk\begin{pmatrix}\mathsf B\mathsf K\\ \mathsf B^{\!\top}\mathsf K\end{pmatrix},\qquad \rho_L=\rk(\mathsf B^{\!\top}\mathsf K),\qquad\rho_R=\rk(\mathsf B\mathsf K). \]
+\item (Minimal completion.) Let $\Psi\colon V\to W$ be linear. $B$ descends to $(\Pi,\Psi)\colon V\to O\oplus W$ iff $K\cap\ker\Psi\subseteq\Rad(B)$. If $\defic<\infty$, the least $\dim W$ for which such a $\Psi$ exists equals $\defic$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(i) is Theorem~\ref{thm:quot} in the form $K\subseteq\Rad(B)$.
+(ii) Since $K\cap\Rad\subseteq K\cap\Rad_L$, $\rho_L\le\defic$; likewise $\rho_R\le\defic$. The map $K/(K\cap\Rad)\to K/(K\cap\Rad_L)\oplus K/(K\cap\Rad_R)$, $k\mapsto([k],[k])$ is injective, giving $\defic\le\rho_L+\rho_R$. For symmetric/antisymmetric $B$ all radicals coincide.
+(iii) Write $k=\mathsf Kc$. Then $k\in\Rad_L$ iff $k^{\!\top}\mathsf B=0$ iff $\mathsf B^{\!\top}\mathsf Kc=0$, and $k\in\Rad_R$ iff $\mathsf B\mathsf Kc=0$. So $K\cap\Rad(B)$ corresponds to the null space of the stacked matrix and $\defic=\dim K-\dim\ker=\rk$.
+(iv) The kernel of $(\Pi,\Psi)$ is $K\cap\ker\Psi$; apply Theorem~\ref{thm:quot}. If $K\cap\ker\Psi\subseteq\Rad(B)$ then $\Psi|_K$ has kernel inside $K\cap\Rad$, so $\dim W\ge\dim K/(K\cap\Rad)=\defic$. Conversely let $\Psi_0\colon K\to K/(K\cap\Rad)$ be the quotient map and extend it linearly to $V$ (choose a complement of $K$); then $K\cap\ker\Psi=K\cap\Rad$ and $\dim W=\defic$.
+\end{proof}
+\status{elementary; the deficit and the minimal-completion statement are formulations introduced here. Verified numerically on 300 random instances (Appendix~\ref{app:tests}).}
+
+Informally, $\defic$ counts the independent pieces of generative structure that are invisible to the observable representation yet visible to the interaction. In the example of \S\ref{sec:smallest}, $K=\spn\{(0,1)\}$, $\Rad(B)=0$, hence $\defic=1$: one extra observable ($y$) is exactly what is needed.
+
+\subsection{Self-interaction and representatives}\label{sec:represent}
+Two further statements explain why the obstruction cannot be detected from the wrong data, and why the pairing induced on observables is not canonical.
+
+\begin{proposition}[Self-interaction]\label{prop:self}
+Let $B$ be symmetric and $Q(X)=B(X,X)$. Then $Q(X)=\bar Q(\Pi X)$ for some function $\bar Q$ on $O$ iff $B$ descends to $\Pi$.
+\end{proposition}
+\begin{proof}
+If $B$ descends, $Q(X)=\bar B(\Pi X,\Pi X)$. Conversely let $k\in K$, $X\in V$, $t\in\RR$. Then $0=Q(X+tk)-Q(X)=2tB(X,k)+t^2B(k,k)$ for all $t$, so $B(X,k)=0$ for all $X$ and $B(k,k)=0$. Hence $K\subseteq\Rad_R(B)=\Rad(B)$ by symmetry.
+\end{proof}
+The self-interaction is a function of the observable \emph{only} if it is constant on every fibre $X+K$. A refinement $T$ with $B(TX,TX)=B(X,X)$ (a consequence of joint invariance) tests constancy on the two-point set $\{X,TX\}\subseteq X+K$ only. In the hidden-sector model of \S\ref{sec:modelH}, $Q(X+k)-Q(X)=-\tfrac12h_k\!\cdot h_k-h_k\!\cdot h_X$, which vanishes at $k=-2h_X$ (the refinement partner, where $h_{X+k}=-h_X$) but not for general $k\in K$. Joint invariance is therefore the wrong test for observable adequacy.
+
+\begin{proposition}[Representatives]\label{prop:sections}
+Let $\sigma\colon O\to V$ be a linear section of $\Pi$ ($\Pi\sigma=\id_O$) and put $B_\sigma(o,o')=B(\sigma o,\sigma o')$.
+\begin{enumerate}[label=(\alph*)]
+\item Every other linear section is $\sigma'=\sigma+\kappa$ with $\kappa\colon O\to K$ linear, and
+\[ B_{\sigma'}(o,o')-B_\sigma(o,o')=B(\sigma o,\kappa o')+B(\kappa o,\sigma o')+B(\kappa o,\kappa o'). \]
+\item If $B$ descends, $B_\sigma=\bar B$ for every $\sigma$.
+\item If $B$ is symmetric and $B_\sigma$ does not depend on $\sigma$, then $B$ descends.
+\end{enumerate}
+In the hidden-sector model, the linear sections are $\sigma_H(s)=(s,Hs)$ in $(s,h)$-coordinates with $H\in\RR^{3\times3}$ arbitrary, and
+\[ B_{\sigma_H}(s,s')=-\tfrac12\,s^{\!\top}(\mathsf I+H^{\!\top}H)\,s'. \]
+\end{proposition}
+\begin{proof}
+(a) $\kappa=\sigma'-\sigma$ lands in $K$ because $\Pi\sigma'=\Pi\sigma$; the formula is bilinearity. (b) is Theorem~\ref{thm:quot}. (c) Let $k\in K$, $0\ne\varphi\in O^*$, and apply (a) with $\kappa=t\,\varphi(\cdot)k$. The coefficient of $t^2$ is $\varphi(o)\varphi(o')B(k,k)$, forcing $B(k,k)=0$. The coefficient of $t$ is $\varphi(o')B(\sigma o,k)+\varphi(o)B(\sigma o',k)$ (using symmetry); taking $o=o'$ with $\varphi(o)\neq0$ gives $B(\sigma o,k)=0$ on a set that spans $O$, hence for all $o$. Finally every $X\in V$ is $X=\sigma\Pi X+k'$ with $k'\in K$, and polarising $B(k,k)=0$ on the subspace $K$ gives $B(K,K)=0$; so $B(X,k)=0$ for all $X$ and $K\subseteq\Rad(B)$. The displayed formula is the model-$H$ pairing evaluated on $\sigma_H(s)=(s,Hs)$.
+\end{proof}
+\status{elementary. The model-$H$ formula is reproduced numerically (Appendix~\ref{app:tests}).}
+Thus the pairing one would \emph{read off} on observables by choosing a representative of each observable value is canonical exactly when the interaction descends. In the hidden-sector model every choice of $H$ gives a legitimate but different observable pairing, from $-\tfrac12s\!\cdot s'$ at $H=0$ to arbitrarily large magnitudes; the observation map alone does not select among them.
+
+%=====================================================================
+\section{The Quotient Obstruction}\label{sec:obstruction}
+%=====================================================================
+We now give three families in which the obstruction is present although every ``natural'' symmetry is respected.
+
+\subsection{The hidden-sector model}\label{sec:modelH}
+Let $V=\RR^3\oplus\RR^3$ with elements $X=(u,v)$. Define the observable and internal components
+\[ s=u+v,\qquad h=u-v, \]
+the observation map $\Pi(X)=s_X\in\RR^3$, the pairing
+\begin{equation}\label{eq:BH}
+B(X,Y)=-\tfrac12\bigl(s_X\!\cdot s_Y+h_X\!\cdot h_Y\bigr),
+\end{equation}
+and the refinement $T(u,v)=(v,u)$, which in the new coordinates reads
+\begin{equation}\label{eq:Th}
+T(s,h)=(s,-h).
+\end{equation}
+\begin{proposition}[Properties of the hidden-sector model]\label{prop:H}
+\begin{enumerate}[label=(\alph*)]
+\item $B(X,Y)=-(u_X\!\cdot u_Y+v_X\!\cdot v_Y)$; $B$ is symmetric, negative definite, $\Rad(B)=0$.
+\item $\Pi T=\Pi$, $h_{TX}=-h_X$ (observable component unchanged, internal component reversed).
+\item Joint invariance: $B(TX,TY)=B(X,Y)$.
+\item $B(TX,Y)=B(X,Y)+h_X\!\cdot h_Y$; hence independent invariance fails.
+\item $K=\{(u,-u)\}=\{s=0\}$, $\dim K=3$, and $\spn\{X-TX\}=K$.
+\item $\defic(\Pi,B)=3$. In particular $B$ does \emph{not} descend to $\Pi$: for $k=(u,-u)$ and every $Y$, $B(k,Y)=-\tfrac12h_k\!\cdot h_Y=-u\!\cdot h_Y$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(a) $s\!\cdot\!s'+h\!\cdot\!h'=(u{+}v)\!\cdot\!(u'{+}v')+(u{-}v)\!\cdot\!(u'{-}v')=2(u\!\cdot\!u'+v\!\cdot\!v')$.
+(b) $s_{TX}=v+u=s_X$, $h_{TX}=v-u=-h_X$.
+(c) $B(TX,TY)=-\tfrac12(s_X\!\cdot s_Y+(-h_X)\!\cdot(-h_Y))$.
+(d) $B(TX,Y)=-\tfrac12(s_X\!\cdot s_Y-h_X\!\cdot h_Y)=B(X,Y)+h_X\!\cdot h_Y$.
+(e) $s=0\iff v=-u$. $X-TX=(u-v,v-u)\in K$ and every $(w,-w)$ arises with $u=w/2$, $v=-w/2$.
+(f) $K\cap\Rad(B)=0$ as $\Rad(B)=0$, so $\defic=\dim K=3$; the displayed value of $B(k,Y)$ follows from~\eqref{eq:BH} with $s_k=0$, $h_k=2u$.
+\end{proof}
+\begin{example}[Concrete witness]\label{ex:witness}
+Let $\mathbf e_x=(1,0,0)$ and take $X=(\mathbf e_x,\mathbf 0)$, $X'=TX=(\mathbf 0,\mathbf e_x)$. Then $\Pi X=\Pi X'=\mathbf e_x$, but with $Y=X$: $B(X,X)=-1$ and $B(X',X)=0$.
+Moreover $B(X,X)=B(X',X')=-1$, so the two routes agree on observable value and on self-interaction, and differ in their mutual interaction with $X$.
+\end{example}
+This is exactly the structure of the minimal example of \S\ref{sec:smallest}, with a three-dimensional hidden sector.
+
+\subsection{The Legendre family on the route space of directions}\label{sec:legendre}
+Let $V=F(S^2)$ with $\Pi(r(\mathbf a))=\mathbf a\in\RR^3$ (Example~\ref{ex:free}), and let $P_\ell$ be the Legendre polynomial of degree $\ell$. For $\ell\ge1$ define $B_\ell$ on generators by
+\begin{equation}\label{eq:Bell}
+B_\ell\bigl(r(\mathbf a),r(\mathbf b)\bigr)=-P_\ell(\mathbf a\cdot\mathbf b),
+\end{equation}
+extended bilinearly. In particular $B_1(r(\mathbf a),r(\mathbf b))=-\mathbf a\cdot\mathbf b$ and $B_3=-P_3(\mathbf a\cdot\mathbf b)$ with $P_3(x)=\tfrac12(5x^3-3x)$.
+
+\begin{theorem}[The Legendre family]\label{thm:legendre}
+\begin{enumerate}[label=(\roman*)]
+\item (Admissibility profile.) $B_\ell$ is symmetric, satisfies $B_\ell(r(\mathbf a),r(\mathbf a))=-1$, and $-B_\ell$ is positive semidefinite on $V$; it is covariant under rotations,
+\[ B_\ell\bigl(r(R\mathbf a),r(R\mathbf b)\bigr)=B_\ell\bigl(r(\mathbf a),r(\mathbf b)\bigr),\qquad R\in O(3), \]
+and, for odd $\ell$, $B_\ell(r(-\mathbf a),r(\mathbf b))=-B_\ell(r(\mathbf a),r(\mathbf b))$.
+\item $B_1$ descends to $\Pi$: $B_1(X,Y)=-\Pi X\cdot\Pi Y$; $\defic(\Pi,B_1)=0$.
+\item For every $\ell\ge2$, $B_\ell$ does not descend to $\Pi$, and $\defic(\Pi,B_\ell)=\rho_L=\rho_R=2\ell+1$.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(i) Rotation invariance of $\mathbf a\cdot\mathbf b$; $P_\ell(1)=1$; $P_\ell(-x)=(-1)^\ell P_\ell(x)$. Let $S_{\ell m}$, $m=1,\dots,2\ell+1$, be real orthonormal spherical harmonics of degree $\ell$. The addition theorem~\cite{AAR99} gives
+\begin{equation}\label{eq:addition}
+P_\ell(\mathbf a\cdot\mathbf b)=\frac{4\pi}{2\ell+1}\sum_{m=1}^{2\ell+1}S_{\ell m}(\mathbf a)S_{\ell m}(\mathbf b).
+\end{equation}
+Define linear functionals $f_m\colon V\to\RR$ by $f_m(r(\mathbf a))=S_{\ell m}(\mathbf a)$. Then
+\begin{equation}\label{eq:Bf}
+B_\ell(X,Y)=-c_\ell\sum_m f_m(X)f_m(Y),\qquad c_\ell=\tfrac{4\pi}{2\ell+1}>0,
+\end{equation}
+so $-B_\ell(X,X)=c_\ell\sum f_m(X)^2\ge0$.
+(ii) $P_1(x)=x$ and $B_1(r(\mathbf a),r(\mathbf b))=-\Pi r(\mathbf a)\cdot\Pi r(\mathbf b)$; both sides are bilinear and agree on generators.
+(iii) The $f_m$ are linearly independent functionals on $V$ because the $S_{\ell m}$ are linearly independent functions on $S^2$ (evaluate on generators). Consequently $F=(f_1,\dots,f_{2\ell+1})\colon V\to\RR^{2\ell+1}$ is onto, and by~\eqref{eq:Bf}, $B_\ell(X,\cdot)=0\iff\sum_mf_m(X)f_m=0\iff F(X)=0$; so $\Rad(B_\ell)=\ker F$ and
+\[ \defic=\dim K/(K\cap\ker F)=\dim F(K). \]
+Suppose $F(K)\neq\RR^{2\ell+1}$. Then there is $c\neq0$ with $c\cdot F(X)=0$ for all $X\in K$, i.e.\ the functional $\varphi=\sum c_mf_m$ vanishes on $K=\ker\Pi$. By Lemma~\ref{lem:universal}, $\varphi=w\circ\Pi$ for some $w\in\RR^3$. Evaluating on generators, $\sum_mc_mS_{\ell m}(\mathbf a)=w\cdot\mathbf a$ for all $\mathbf a\in S^2$. The left side is a spherical harmonic of degree $\ell$, the right a harmonic of degree $1$; for $\ell\neq1$ these are orthogonal in $L^2(S^2)$, so both vanish, and $c=0$ by independence: contradiction. Hence $F(K)=\RR^{2\ell+1}$ and $\defic=2\ell+1$. Symmetry of $B_\ell$ gives $\rho_L=\rho_R=\defic$ (Prop.~\ref{prop:deficit}(ii)).
+\end{proof}
+
+\begin{example}[Explicit witness, $\ell=3$]\label{ex:P3}
+Let $\mathbf n=\tfrac12\mathbf e_x+\tfrac{\sqrt3}2\mathbf e_y$ and
+\[ X=r(\mathbf n)-\tfrac12\,r(\mathbf e_x)-\tfrac{\sqrt3}2\,r(\mathbf e_y). \]
+Then $\Pi X=\mathbf n-\tfrac12\mathbf e_x-\tfrac{\sqrt3}2\mathbf e_y=0$, so $X\in K$. Using $P_3(\tfrac12)=-\tfrac7{16}$, $P_3(1)=1$, $P_3(0)=0$:
+\[ B_1\bigl(X,r(\mathbf e_x)\bigr)=-\tfrac12+\tfrac12=0,\qquad
+ B_3\bigl(X,r(\mathbf e_x)\bigr)=\tfrac7{16}+\tfrac12=\tfrac{15}{16}. \]
+Hence $X\notin\Rad_L(B_3)$ although $\Pi X=0$. The same $X$ gives, for $\ell=5$ ($P_5(\tfrac12)=\tfrac{23}{256}$), $B_5(X,r(\mathbf e_x))=\tfrac{105}{256}$.
+\end{example}
+
+\begin{example}[A four-route table]\label{ex:four}
+Restrict to the four elementary routes $r_1=r(\mathbf e_x)$, $r_2=r(\mathbf e_y)$, $r_3=r(\mathbf e_z)$, $r_4=r(\mathbf n)$, with $\mathbf n=(\tfrac12,\tfrac{\sqrt3}2,0)$. Then the route space is $V_4=\RR^4$, $\Pi$ has matrix $(\mathbf e_x\ \mathbf e_y\ \mathbf e_z\ \mathbf n)$, $K=\spn\{k\}$ with $k=(-\tfrac12,-\tfrac{\sqrt3}2,0,1)^{\!\top}$, and the Gram matrices of $B_1$ and $B_3$ are
+\[
+G_1=-\begin{pmatrix}1&0&0&\tfrac12\\0&1&0&\tfrac{\sqrt3}2\\0&0&1&0\\\tfrac12&\tfrac{\sqrt3}2&0&1\end{pmatrix},\qquad
+G_3=\begin{pmatrix}-1&0&0&\tfrac7{16}\\0&-1&0&-\tfrac{3\sqrt3}{16}\\0&0&-1&0\\\tfrac7{16}&-\tfrac{3\sqrt3}{16}&0&-1\end{pmatrix},
+\]
+using $P_3(\tfrac{\sqrt3}2)=\tfrac{3\sqrt3}{16}$. Then
+\[ G_1k=0,\qquad G_3k=\Bigl(\tfrac{15}{16},\ \tfrac{5\sqrt3}{16},\ 0,\ -\tfrac{15}{16}\Bigr)^{\!\top}\neq0, \]
+so $\defic=0$ for $B_1$ and $\defic=1$ for $B_3$ on this four-route space: the single observable-null route $k$ interacts nontrivially with $r_1$, $r_2$ and $r_4$ under $B_3$ and with nothing under $B_1$. Every entry is verified in exact arithmetic over $\mathbb Q(\sqrt3)$ (Appendix~\ref{app:tests}).
+\end{example}
+
+\begin{table}[t]
+\centering\small
+\renewcommand{\arraystretch}{1.55}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & $\ell=1$ & $\ell=3$ & $\ell=5$\\
+\midrule
+$C=B_\ell(r(\mathbf a),r(\mathbf b))$ at $60^\circ$ ($\mathbf a\!\cdot\!\mathbf b=\dfrac12$) & $-\dfrac12$ & $+\dfrac7{16}$ & $-\dfrac{23}{256}$\\
+$\dfrac14(1+C)$ & $\dfrac18=0.125$ & $\dfrac{23}{64}=0.359375$ & $\dfrac{233}{1024}$\\
+$B_\ell(X,r(\mathbf e_x))$ for the $X\in K$ of Ex.~\ref{ex:P3} & $0$ & $\dfrac{15}{16}$ & $\dfrac{105}{256}$\\
+$\defic(\Pi,B_\ell)$ & $0$ & $7$ & $11$\\
+\bottomrule
+\end{tabular}
+\caption{Values (exact fractions, reproduced by the verification script of \S\ref{sec:repro}). The second row applies the binary joint-event representation $P(A,B\mid\mathbf a,\mathbf b)=\tfrac14(1+AB\,C)$ proved in GCT v002~\cite{G2} purely as arithmetic on the first row; no probabilistic claim is made in this paper.}\label{tab:legendre}
+\end{table}
+
+\begin{remark}[Antipodal quotient]
+If one prefers a route space in which $r(-\mathbf a)=-r(\mathbf a)$, replace $F(S^2)$ by its quotient by $\spn\{r(\mathbf a)+r(-\mathbf a)\}$. For odd $\ell$, $\Pi$ and $B_\ell$ are well defined on the quotient, the witness of Example~\ref{ex:P3} lives there unchanged, and the proof of Theorem~\ref{thm:legendre}(iii) goes through verbatim because $S_{\ell m}$ are odd for odd $\ell$. The obstruction is therefore not an artefact of freeness.
+\end{remark}
+
+\begin{remark}[Relation to the GCT v002 underdetermination theorem]\label{rem:gct}
+The v002 lock freezes the conditions $C(\mathbf a,\mathbf b)=c(a-b)$, $c(-d)=c(d)$, $c(0)=-1$, $c(d+\pi)=-c(d)$ together with $|c|\le1$~\cite{G8,G2}. For planar directions the kernels $c_\ell(d)=-P_\ell(\cos d)$, $\ell$ odd, satisfy all of them (checked in Appendix~\ref{app:tests} for $\ell=3$). In route-space language, \emph{what distinguishes $B_1$ from $B_3$ among these admissible pairings is precisely whether the pairing descends to the observable vector}: $\defic=0$ versus $\defic=7$. The descent condition $K\subseteq\Rad(B)$ is therefore a \emph{selection criterion} within the admissible class. It is not a derivation: whether UNNS recursion supplies it independently is open (\S\ref{sec:discussion}).
+\end{remark}
+
+\subsection{Illustration: many routes, one observable}
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth,font=\small]
+ % route space
+ \draw[rounded corners=6pt,thick,fill=cHid!6] (0,0) rectangle (5.4,5.7);
+ \node[cHid,anchor=north west,font=\footnotesize] at (0.15,5.6) {routes (generative identity)};
+ \draw[dashed,cGrey,rounded corners=8pt,fill=white] (0.35,3.25) rectangle (5.05,4.95);
+ \node[cGrey,font=\scriptsize,align=center] at (2.7,3.62) {fibre\\$\Pi^{-1}(\mathbf s)$};
+ \node[draw,circle,fill=white,inner sep=2.4pt] (x1) at (1.25,4.3) {};
+ \node[draw,circle,fill=white,inner sep=2.4pt] (x2) at (4.15,4.3) {};
+ \node[font=\scriptsize,cGrey] at (2.7,4.3) {$\cdots$};
+ \node[above=3pt of x1] {$X$}; \node[above=3pt of x2] {$X'=TX$};
+ \node[draw,circle,fill=white,inner sep=2.4pt] (y) at (2.7,0.9) {};
+ \node[below=3pt of y] {$Y=X$};
+ \draw[->,thick,cRel] (x1) -- (y) node[pos=0.62,left=1pt,font=\scriptsize,cRel,fill=cHid!6,inner sep=1pt] {$B(X,Y)=-1$};
+ \draw[->,thick,cRel] (x2) -- (y) node[pos=0.62,right=1pt,font=\scriptsize,cRel,fill=cHid!6,inner sep=1pt] {$B(X',Y)=0$};
+ % observation
+ \draw[->,thick,cObs] (5.05,4.1) -- (7.3,4.1) node[midway,above] {$\Pi$};
+ \draw[rounded corners=6pt,thick,fill=cObs!8] (7.3,3.3) rectangle (10.0,4.9);
+ \node[cObs,anchor=north west,font=\scriptsize] at (7.4,4.85) {observable space};
+ \fill[cObs] (8.65,4.1) circle (2.2pt);
+ \node[cObs,font=\scriptsize,below=2pt] at (8.65,4.1) {$\mathbf s=(1,0,0)$};
+ \node[cObs,font=\scriptsize,align=center] at (8.65,2.55) {one observable value\\for every route of the fibre};
+\end{tikzpicture}
+\caption{Many routes, one observable. The hidden-sector model of \S\ref{sec:modelH} (Example~\ref{ex:witness}): $X$ and $X'=TX$ lie in one fibre of $\Pi$ and have the same self-interaction $B(X,X)=B(X',X')=-1$, but different pairings with $Y=X$.}\label{fig:many}
+\end{figure}
+
+%=====================================================================
+\section{Refinement and Relational Invariance}\label{sec:refinement}
+%=====================================================================
+The hidden-sector model of \S\ref{sec:modelH} has a refinement $T$ for which the interaction is invariant under the simultaneous refinement of both arguments. This section isolates what that does and does not imply.
+
+\subsection{Joint refinement invariance does not eliminate hidden interactions}\label{sec:joint}
+\begin{theorem}[Result II]\label{thm:joint}
+There exist a linear route system $(V,\Pi,B,\{T\})$ with $\Pi T=\Pi$, $\spn\{X-TX\}=\ker\Pi$, and $B$ symmetric, nondegenerate and jointly invariant, $B(TX,TY)=B(X,Y)$, such that $B$ does not descend to $\Pi$ and $\defic(\Pi,B)=\dim\ker\Pi>0$.
+\end{theorem}
+\begin{proof}
+The hidden-sector model, Proposition~\ref{prop:H}(b)--(f).
+\end{proof}
+Thus joint refinement invariance need not eliminate interactions involving individually unobserved structural distinctions: $B(TX,Y)-B(X,Y)=h_X\!\cdot h_Y$ is nonzero whenever the internal components of $X$ and $Y$ overlap, even though the same distinction cancels when \emph{both} routes are refined.
+
+\subsection{Involutive refinements: a block decomposition}\label{sec:invol}
+\begin{proposition}[Involutive refinement]\label{prop:invol}
+Let $T$ be a refinement ($\Pi T=\Pi$) with $T^2=\id$. Put $V_\pm=\{X:\ TX=\pm X\}$, so $V=V_+\oplus V_-$, and assume $\ker\Pi=V_-$ (so that $\Pi|_{V_+}$ is injective). Then:
+\begin{enumerate}[label=(\alph*)]
+\item $B$ is jointly invariant iff $B(V_+,V_-)=B(V_-,V_+)=0$, i.e.\ $B=B|_{V_+}\oplus B|_{V_-}$.
+\item $B$ is left-invariant iff $V_-\subseteq\Rad_L(B)$; right-invariant iff $V_-\subseteq\Rad_R(B)$.
+\item Under joint invariance, $B$ descends to $\Pi$ iff $B|_{V_-\times V_-}=0$. In that case $B=B|_{V_+}$ and $\defic=0$; in general $\defic=\dim V_-/\bigl(V_-\cap\Rad(B|_{V_-})\bigr)$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+We use that the characteristic of $\RR$ is not $2$. (a) For $x\in V_+$, $y\in V_-$: joint invariance gives $B(x,y)=B(Tx,Ty)=-B(x,y)$, hence $B(x,y)=0$; similarly for $B(y,x)$. Conversely if $B$ is block diagonal, write $X=x_++x_-$, $Y=y_++y_-$ and compute $B(TX,TY)=B(x_+,y_+)+B(x_-,y_-)=B(X,Y)$.
+(b) $B(TX,Y)-B(X,Y)=-2B(x_-,Y)$.
+(c) $K=V_-\subseteq\Rad(B)$ iff $B(V_-,V_-)=0$ in view of the block structure; the formula for $\defic$ follows because $B(V_-,V_+)=0$.
+\end{proof}
+The hidden-sector model is the case $V_+=\{h=0\}$, $V_-=\{s=0\}$ with $B|_{V_-}=-\tfrac12h\!\cdot h'$ nondegenerate. Joint invariance is exactly the statement that no interaction couples the observable and the internal sector; it says nothing about the internal sector's \emph{own} interaction, which survives all refinements of both arguments.
+
+\subsection{Diagonal versus factorwise coinvariants}\label{sec:coinv}
+Let a group $G$ act on $V$ by refinements (so $\Pi g=\Pi$ for all $g\in G$) and write $V_G=V/\spn\{X-gX\}$ for the coinvariants~\cite{Bro82}.
+\begin{proposition}[Joint versus independent invariance]\label{prop:coinv}
+\begin{enumerate}[label=(\alph*)]
+\item Bilinear forms that are \emph{independently} invariant (left and right) under $G$ are exactly the bilinear forms on $V$ that factor through $V_G\times V_G$, i.e.\ $(V_G\otimes V_G)^*$.
+\item Bilinear forms that are \emph{jointly} invariant under $G$ are exactly $((V\otimes V)_G)^*$, coinvariants for the diagonal action $g\mapsto g\otimes g$.
+\item The natural surjection $(V\otimes V)_G\twoheadrightarrow V_G\otimes V_G$ has kernel $N$, and the gap between joint and independent invariance is the space of functionals on $(V\otimes V)_G$ that do not vanish on $N$.
+\end{enumerate}
+For $G=\mathbb Z_2=\{1,T\}$ acting on $V=V_+\oplus V_-$ (over $\RR$): $V_G=V_+$, $(V\otimes V)_G=V_+\otimes V_+\oplus V_-\otimes V_-$, so $N=V_-\otimes V_-$.
+\end{proposition}
+\begin{proof}
+(a) Left- and right-invariance say $B$ vanishes on $\spn\{X-gX\}\times V$ and $V\times\spn\{X-gX\}$, i.e.\ $B$ factors through $V_G\times V_G$ (universal property for each slot, as in Theorem~\ref{thm:quot}).
+(b) Joint invariance says that the linear functional $\tilde B$ on $V\otimes V$ vanishes on $X\otimes Y-gX\otimes gY$.
+(c) The natural map $V\otimes V\to V_G\otimes V_G$ sends the span of $X\otimes Y-gX\otimes gY$ into the span of $\{X-gX\}\otimes V+V\otimes\{Y-gY\}$ because $X\otimes Y-gX\otimes gY=(X-gX)\otimes Y+gX\otimes(Y-gY)$; so it descends. For $\mathbb Z_2$: $T\otimes T$ acts by $+1$ on $V_\pm\otimes V_\pm$ and $-1$ on $V_+\otimes V_-$ and $V_-\otimes V_+$, whose coinvariants vanish in characteristic $\ne2$.
+\end{proof}
+For the hidden-sector model, $\dim N=\dim V_-\otimes V_-=9$, and the hidden interaction $-\tfrac12h\!\cdot h'$ is a functional on $(V\otimes V)_G$ that is supported on $N$, hence invisible to $V_G\otimes V_G$. This is the algebraic reason that the joint/independent distinction is real: \emph{the diagonal coinvariants are strictly larger than the tensor square of the single-argument coinvariants}.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth,font=\small]
+ \draw[->,thick] (0,0) -- (6.2,0) node[right] {$s$ (observable)};
+ \draw[->,thick] (0,-2.7) -- (0,2.9) node[above] {$h$ (internal)};
+ \draw[dashed,cGrey] (-0.3,0) -- (6.0,0);
+ % X, TX
+ \fill[cHid] (4.8,1.9) circle (2.6pt) node[above right] {$X=(s_X,h_X)$};
+ \fill[cHid] (4.8,-1.9) circle (2.6pt) node[below right] {$TX=(s_X,-h_X)$};
+ % Y, TY
+ \fill[cObs] (2.3,1.0) circle (2.6pt) node[above right] {$Y=(s_Y,h_Y)$};
+ \fill[cObs] (2.3,-1.0) circle (2.6pt) node[below right] {$TY=(s_Y,-h_Y)$};
+ \draw[<->,cGrey] (4.8,1.75) -- (4.8,-1.75) node[midway,right,font=\scriptsize] {$T$};
+ \draw[<->,cGrey] (2.3,0.85) -- (2.3,-0.85) node[midway,left,font=\scriptsize] {$T$};
+ \draw[dotted,cGrey] (4.8,0) -- (4.8,1.8); \draw[dotted,cGrey] (2.3,0) -- (2.3,1.0);
+ % boxes
+ \node[draw,rounded corners=4pt,fill=cRel!8,align=left,font=\footnotesize,anchor=west] at (7.4,1.5)
+   {\textbf{joint:}\ $B(TX,TY)$\\[1pt]
+    $=-\tfrac12(s_X\!\cdot s_Y+h_X\!\cdot h_Y)$\\[1pt]
+    $=B(X,Y)$\ \ \textcolor{cRel}{$\checkmark$}};
+ \node[draw,rounded corners=4pt,fill=cHid!8,align=left,font=\footnotesize,anchor=west] at (7.4,-1.3)
+   {\textbf{independent:}\ $B(TX,Y)$\\[1pt]
+    $=-\tfrac12(s_X\!\cdot s_Y-h_X\!\cdot h_Y)$\\[1pt]
+    $=B(X,Y)+h_X\!\cdot h_Y$\ \ \textcolor{cHid}{$\times$}};
+\end{tikzpicture}
+\caption{Refinement and relational preservation (one scalar internal coordinate drawn). $T$ reflects the internal coordinate and fixes the observable one. Reflecting \emph{both} routes preserves the interaction; reflecting only one changes it by $h_X\!\cdot h_Y$.}\label{fig:refine}
+\end{figure}
+
+%=====================================================================
+\section{The Observable-Null Compatibility Theorem}\label{sec:compat}
+%=====================================================================
+
+\subsection{Hypotheses}
+Let $\{T_i\}_{i\in I}$ be a family of refinements of $(V,\Pi)$. We use two hypotheses.
+\begin{description}[leftmargin=0pt,style=unboxed,itemsep=2pt]
+\item[(H1) Observable preservation.] $\Pi T_i=\Pi$ for all $i$.
+\item[(H2) Kernel generation.] $\ker\Pi=\spn\{X-T_iX:\ X\in V,\ i\in I\}$.
+\end{description}
+(H1) implies $\spn\{X-T_iX\}\subseteq\ker\Pi$; (H2) asserts that refinement differences exhaust the observable-null directions. Equivalently, $\Pi$ is (isomorphic to) the quotient of $V$ by the span of refinement differences: observable identity \emph{is} identity up to refinement.
+
+\subsection{The theorem}
+\begin{theorem}[Refinement-Compatibility Theorem --- Result III]\label{thm:compat}
+Assume (H1) and (H2). Let $B$ be bilinear on $V$ satisfying independent invariance for every $i\in I$:
+\[ B(T_iX,Y)=B(X,Y),\qquad B(X,T_iY)=B(X,Y)\qquad(X,Y\in V). \]
+Then $\ker\Pi\subseteq\Rad_L(B)\cap\Rad_R(B)$; consequently $B$ factors through $\Pi$: $B(X,Y)=\bar B(\Pi X,\Pi Y)$ for a unique bilinear $\bar B$.
+Conversely, (H1) alone shows that any $B$ which factors through $\Pi$ is independently invariant under every $T_i$. Hence, under (H1)--(H2),
+\[ B\text{ independently invariant}\iff B\text{ factors through }\Pi\iff \ker\Pi\subseteq\Rad(B). \]
+\end{theorem}
+\begin{proof}
+For each $X$ and $i$, left-invariance gives $B(X-T_iX,Y)=0$ for all $Y$, i.e.\ $X-T_iX\in\Rad_L(B)$; right-invariance gives $B(Y,X-T_iX)=0$, i.e.\ $X-T_iX\in\Rad_R(B)$. Radicals are subspaces, so by (H2) $\ker\Pi=\spn\{X-T_iX\}\subseteq\Rad_L\cap\Rad_R$. Apply Theorem~\ref{thm:quot}.
+For the converse, if $B=\bar B(\Pi\cdot,\Pi\cdot)$ then $B(T_iX,Y)=\bar B(\Pi T_iX,\Pi Y)=\bar B(\Pi X,\Pi Y)=B(X,Y)$ by (H1), and likewise in the second slot.
+\end{proof}
+\status{elementary corollary of Theorem~\ref{thm:quot}, equivalently the universal property of the coinvariants $V_G\cong O$ applied to bilinear forms (Prop.~\ref{prop:coinv}(a)). What is new is the explicit separation of the hypotheses, below.}
+
+\begin{corollary}[Hierarchy]\label{cor:hier}
+Under (H1) the following implications hold and none can be reversed in general:
+\begin{center}
+independent invariance $\Longrightarrow$ joint invariance, \qquad factoring through $\Pi$ $\Longrightarrow$ independent invariance.
+\end{center}
+Under (H1)--(H2) additionally independent invariance $\Longrightarrow$ factoring through $\Pi$. Joint invariance $\not\Longrightarrow$ factoring, even under (H1)--(H2) (hidden-sector model).
+\end{corollary}
+
+\subsection{Sharpness of the hypotheses}\label{sec:sharp}
+Each hypothesis of Theorem~\ref{thm:compat} is necessary in the following sense.
+\begin{example}[Independent invariance without (H2)]\label{ex:noH2}
+$V=\RR^2$, $\Pi(x,y)=x$, $\mathcal T=\{\id\}$, $B(X,Y)=yy'$. (H1) holds, $B$ is trivially independently invariant under $\id$, but $\spn\{X-X\}=0\subsetneq K=\spn\{(0,1)\}$, and $B$ does not descend ($\defic=1$). Refinements must be \emph{rich enough} to generate the observable-null directions.
+\end{example}
+\begin{example}[One-sided invariance]\label{ex:oneside}
+$V=\RR^2$, $\Pi(x,y)=x$, $T(x,y)=(x,-y)$ (so (H1), (H2) hold) and $B(X,Y)=x\,y'$ (Example~\ref{ex:onesided}). $B$ is left-invariant, $B(TX,Y)=B(X,Y)$, but not right-invariant, and does not descend. \emph{Both} slots must be refined independently.
+\end{example}
+\begin{example}[Joint invariance only]
+The hidden-sector model (Prop.~\ref{prop:H}) satisfies (H1), (H2), joint invariance and fails independent invariance and descent.
+\end{example}
+
+\begin{example}[Permutation refinements and a sum observable]\label{ex:perm}
+Let $V=\RR^n$ ($n\ge2$), $\Pi(x)=\sum_ix_i\in\RR$, and let $\mathcal T=\{T_i\}$ be the adjacent transpositions $(i\ i{+}1)$, acting by permuting coordinates.
+(H1) holds. $X-T_iX=(x_i-x_{i+1})(e_i-e_{i+1})$, so $\spn\{X-T_iX\}=\spn\{e_i-e_{i+1}\}=\{\sum x_i=0\}=\ker\Pi$: (H2) holds.
+The space of bilinear forms invariant under all $T_i$ \emph{jointly} is two dimensional, spanned by $\langle x,y\rangle=\sum x_iy_i$ and $(\sum x_i)(\sum y_i)$; the space of \emph{independently} invariant forms is one dimensional, spanned by $(\sum x_i)(\sum y_i)$ --- exactly the forms that factor through $\Pi$, as Theorem~\ref{thm:compat} predicts. For $B=a\langle x,y\rangle+b(\sum x)(\sum y)$ with $a\ne0$, $K\cap\Rad(B)=0$ and $\defic=n-1$.
+\end{example}
+\begin{proof}[Verification]
+Joint invariance under all transpositions makes $B$ an $S_n$-equivariant endomorphism of the permutation module $\RR^n=\mathbf 1\oplus\{\sum=0\}$, which has exactly two irreducible summands (non-isomorphic for $n\ge2$) --- a two-dimensional commutant. Independent invariance forces the $\{\sum=0\}$ block to vanish by Theorem~\ref{thm:compat} (equivalently, $B(e_i-e_{i+1},\cdot)=0$ for all $i$). The dimension counts are reproduced numerically for $n=5$ in Appendix~\ref{app:tests}.
+\end{proof}
+The example shows the theorem at work in a coarse-graining setting: a macroscopic sum is a complete observable for interactions that are invariant under \emph{each} micro-relabelling separately, and incomplete for interactions that are invariant only under simultaneous relabelling.
+
+\subsection{The compatibility hierarchy}
+Figure~\ref{fig:hier} summarises Theorem~\ref{thm:compat} and Corollary~\ref{cor:hier}, together with the examples that block each reverse arrow.
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth,font=\small,
+  box/.style={draw,rounded corners=5pt,thick,align=center,inner sep=5pt,minimum width=4.6cm}]
+ \node[box,fill=cRel!10] (sep) at (0,3.4) {independent invariance\\{\footnotesize $B(T_iX,Y)=B(X,Y)=B(X,T_iY)$}};
+ \node[box,fill=cObs!10] (fac) at (9.0,3.4) {$B$ factors through $\Pi$\\{\footnotesize $\ker\Pi\subseteq\Rad_L(B)\cap\Rad_R(B)$}};
+ \node[box,fill=gray!10] (joint) at (0,0) {joint invariance\\{\footnotesize $B(T_iX,T_iY)=B(X,Y)$}};
+ \node[box,fill=cHid!10] (def) at (9.0,0) {relational deficit $\defic>0$\\{\footnotesize hidden interaction survives}};
+ \draw[->,thick,cRel] ([yshift=5pt]sep.east) -- ([yshift=5pt]fac.west)
+   node[midway,above,font=\footnotesize] {(H1)+(H2)};
+ \draw[->,thick] ([yshift=-5pt]fac.west) -- ([yshift=-5pt]sep.east)
+   node[midway,below,font=\footnotesize] {(H1)};
+ \draw[->,thick] (sep) -- (joint) node[midway,left,font=\footnotesize] {always};
+ \draw[->,thick,dashed,cHid] (joint) -- (def)
+   node[midway,above,align=center,font=\scriptsize,cHid] {can occur even\\under (H1)+(H2)}
+   node[midway,below,align=center,font=\scriptsize,cHid] {Prop.~\ref{prop:H},\\Thm.~\ref{thm:joint}};
+ \node[font=\scriptsize,cGrey,align=center] at (4.5,1.75)
+   {without (H2): Ex.~\ref{ex:noH2}\\one slot only: Ex.~\ref{ex:oneside}};
+\end{tikzpicture}
+\caption{The refinement-compatibility hierarchy. Independent invariance is the only refinement condition that reaches factorisation, and only together with (H1) and the kernel-generation hypothesis (H2). Joint invariance, however strong the symmetry, stops short: the converse of the left-hand vertical arrow fails.}\label{fig:hier}
+\end{figure}
+
+\subsection{Quantitative form}
+\begin{proposition}\label{prop:quant}
+Assume (H1)--(H2) with $V$ of finite dimension. For any bilinear $B$, $\defic(\Pi,B)=\dim\,q\bigl(\spn\{X-T_iX\}\bigr)$, where $q\colon V\to V/\Rad(B)$ is the quotient map; i.e.\ the deficit is the dimension of the image of the refinement differences in the interaction quotient. In particular $\defic=0$ iff $B$ is independently refinement invariant.
+\end{proposition}
+\begin{proof}
+$\defic=\dim K/(K\cap\Rad)=\dim q(K)$, and $K=\spn\{X-T_iX\}$ by (H2). The last statement is Theorem~\ref{thm:compat}.
+\end{proof}
+
+%=====================================================================
+\section{Reproducible Constructions}\label{sec:repro}
+%=====================================================================
+Every example above is finite-dimensional or reduces to a finite computation, and has been checked by a single deterministic script, \path{verify_ri.py}, delivered with this manuscript. This section records the design of the checks and their outcome; the full output is reproduced in Appendix~\ref{app:tests}.
+
+\subsection{Design}
+\begin{itemize}
+\item \textbf{Exact arithmetic where the statement is exact.} The Legendre witnesses (Example~\ref{ex:P3}, Table~\ref{tab:legendre}) are computed with rational arithmetic (\texttt{fractions.Fraction}), and the four-route table (Example~\ref{ex:four}) in $\mathbb Q(\sqrt3)$ by a small exact class; the identities $P_3(\tfrac12)=-\tfrac7{16}$, $B_3(X,r(\mathbf e_x))=\tfrac{15}{16}$, $B_5(X,r(\mathbf e_x))=\tfrac{105}{256}$ are tested for equality, not for tolerance.
+\item \textbf{Seeded randomised tests for the general theorems.} Theorem~\ref{thm:quot}, Proposition~\ref{prop:deficit}, Proposition~\ref{prop:invol}, and Theorem~\ref{thm:compat} are tested on random finite-dimensional instances (NumPy generator seeded with a fixed integer), in both ``factoring'' and ``generic'' regimes, with the criterion $K\subseteq\Rad_L\cap\Rad_R$ compared against a direct least-squares test for $B=\mathsf P^{\!\top}\bar{\mathsf B}\mathsf P$.
+\item \textbf{Rank computation for the obstruction.} For $N=120$ generic points of $S^2$ (fixed seed) the matrix of $B_\ell$ restricted to $\ker\Pi\times V$ is formed and its numerical rank (tolerance $10^{-8}$) is compared with $2\ell+1$, $\ell=1,\dots,7$.
+\item \textbf{Quarantine of the scope.} No check uses a probability, a quantum state or a Bell inequality, apart from the arithmetic $\frac14(1+C)$ in Table~\ref{tab:legendre}.
+\end{itemize}
+
+\subsection{Checks and outcomes}
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.25\textwidth}@{}}
+\toprule
+Group & Statement checked & Outcome\\
+\midrule
+H & Prop.~\ref{prop:H}(a)--(f): $B=-(uu'+vv')$, $\Pi T=\Pi$, $h_{TX}=-h_X$, joint invariance, failure of independent invariance, $\rk\spn\{X-TX\}=3$, witness $B(k,Y)=-2$ & all pass (max float error $<2\times10^{-15}$)\\
+Q & Thm.~\ref{thm:quot}: criterion $\Leftrightarrow$ direct factorisation, 300 random instances; one-sided counterexample & 150 factoring, 150 non-factoring; all agree\\
+D & Prop.~\ref{prop:deficit}: bounds, matrix formula, minimal completion with $\defic$ rows (and failure with $\defic-1$) & 300 random cases pass\\
+L & Thm.~\ref{thm:legendre}: exact witnesses $\ell=1,3,5$; ranks for $\ell\le7$; positivity of $-B_\ell$; odd-$\ell$ sign reversal & ranks $0,5,7,9,11,13,15$ $=2\ell+1$ for $\ell\ge2$; $-B_\ell\succeq0$\\
+I & Prop.~\ref{prop:invol} and Thm.~\ref{thm:compat}: 200 random involutions, block structure and compatibility; coinvariant gap $\dim V_-^{\otimes2}=9$ & all pass\\
+P & Example~\ref{ex:perm}, $n=5$: dimension of joint-invariant forms $=2$, independent-invariant forms $=1$; (H2); $\defic=4$ & $2,\,1$; pass; $4$\\
+C & \S\ref{sec:closure}: ideal Helmholtz projector per Fourier mode ($\mathbf k=(1,2)$) & idempotent; $R$ involution; joint but not independent invariance; $\defic=1$\\
+G & Remark~\ref{rem:gct}: $c_3(d)=-P_3(\cos d)$ satisfies $c(0)=-1$, evenness, $c(d+\pi)=-c(d)$, $|c|\le1$ & pass (41 sample angles)\\
+F & Example~\ref{ex:four}: Gram matrices of $B_1,B_3$ on four routes; $G_1k=0$, $G_3k=(\tfrac{15}{16},\tfrac{5\sqrt3}{16},0,-\tfrac{15}{16})^{\!\top}$ & exact over $\mathbb Q(\sqrt3)$; pass\\
+S & Prop.~\ref{prop:self}: $Q$ descends iff $B$ descends (100 random symmetric forms); Prop.~\ref{prop:sections}: induced pairing $-\tfrac12s^{\!\top}(\mathsf I+H^{\!\top}H)s'$ & pass\\
+\bottomrule
+\end{tabularx}
+\caption{Summary of the verification. All 43 checks pass; the script exits with status $0$. Raw output: Appendix~\ref{app:tests}.}\label{tab:checks}
+\end{table}
+
+\subsection{What was not re-run}
+The GCT repository contains its own regression suites (for instance \path{tests/test_gct_joint_origin_v002.py}). Those were not executed as part of this work and are not relied upon. The route-test analysis that first produced the Legendre counterexample and the $(s,h)$ decomposition is available to us as a transcript~\cite{G9}; the package of tests that it reports for its own two-state recurrent realisation was \emph{not} among the files provided, so no claim about that realisation is verified here. The models of this paper are the abstract algebraic ones defined above, and the verification concerns them only.
+
+%=====================================================================
+\section{Implications for UNNS}\label{sec:unns}
+%=====================================================================
+This section is interpretive. It states what the formal results suggest for the way UNNS-style systems are \emph{formulated}; it asserts no property of canonical UNNS recursion.
+
+\subsection{Structural identity}
+The three equivalences of Definition~\ref{def:three} correspond to three levels at which a UNNS-style description can speak about a generated occurrence:
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Equivalence & Meaning in the route language & Substitution requires\\
+\midrule
+Generative & same structural identity under declared canonicalisation & nothing (strongest)\\
+Observable & same projected observable & $K\subseteq\Rad(B)$ to replace interaction equivalence\\
+Interaction & identical pairings with all other routes & $\Rad(B)\subseteq K$ to replace observable equivalence\\
+\bottomrule
+\end{tabularx}
+\end{center}
+The point is not that a particular substitution is false but that \emph{none is automatic}. A description that treats ``same observable'' as ``same structure'' is making a compatibility assumption, and Theorem~\ref{thm:quot} states exactly which one.
+
+\subsection{Projection and admissibility}
+A projection $\Pi$ is part of the specification of an observable realisation. Two disciplines follow.
+\begin{enumerate}[label=(D\arabic*)]
+\item \emph{Declare the observation map together with each pairing.} For every interaction $B$ used, either prove $\ker\Pi\subseteq\Rad(B)$ (observable-null compatibility), or report $\defic(\Pi,B)$.
+\item \emph{Do not infer compatibility from joint symmetry.} Joint refinement invariance is what an exchange or relabelling symmetry of \emph{both} arguments delivers; Theorem~\ref{thm:joint} shows that it leaves the internal sector's own interaction untouched. Independent invariance under a family satisfying (H2) is the condition that does the work (Theorem~\ref{thm:compat}).
+\end{enumerate}
+In the language of the GCT analysis, the \emph{observable-null refinement condition} --- a route combination with no net observable cannot contribute to joint pairings --- was identified as an additional principle not forced by the route and admissibility rules examined there~\cite{G9}. In the present formulation it is precisely $K\subseteq\Rad(B)$, equivalently (under (H2)) independent refinement invariance. Whether canonical UNNS admissibility entails it remains open (Problem~\ref{prob:entail}); this paper supplies the exact form of the question and examples showing that it is not vacuous.
+
+\subsection{Illustration: Operator XVI closure as an observation-like projection}\label{sec:closure}
+Chamber XVI states the Closure hypothesis as a Helmholtz decomposition that seals flux divergence in an evolved $\tau$-field~\cite{G7}. We use only the \emph{ideal} $L^2$ projector on a periodic domain, not the Chamber's discrete implementation (whose source audit records a hybrid discrete/spectral symbol and a closure diagnostic that is not a direct projector-idempotence test~\cite{G5}).
+Per nonzero Fourier wavevector $\mathbf k\in\RR^2$, the solenoidal projector is $\mathsf P_{\mathbf k}=\mathsf I-\mathbf k\mathbf k^{\!\top}/|\mathbf k|^2$ on the amplitude space $V_{\mathbf k}=\RR^2$; it is idempotent with kernel $K=\spn\{\mathbf k\}$ (longitudinal, i.e.\ gradient, amplitudes). Take $\Pi=\mathsf P_{\mathbf k}$ as the ``observable'' map, the involution $\mathsf R=2\mathsf P_{\mathbf k}-\mathsf I$ (which reverses the longitudinal part), and the $L^2$ pairing $B(X,Y)=X\cdot Y$. Then $\mathsf R$ preserves $\Pi$, $B(\mathsf RX,\mathsf RY)=B(X,Y)$, $B(\mathsf RX,Y)\ne B(X,Y)$ in general, $\Rad(B)=0$ and $\defic=1$.
+This is the structure of Proposition~\ref{prop:invol} with $V_+$ the solenoidal and $V_-$ the longitudinal part. In words: the $L^2$ pairing of two fields is invariant under reflecting the compressive component of \emph{both}, but a pairing that depended on the closed field alone would have to ignore the compressive component entirely. This is a formal illustration of the abstract structure; it makes no statement about the numerical behaviour of Chamber XVI.
+
+\subsection{Relational information}
+Define the \emph{relational residue} of $(\Pi,B)$ as the quotient $\mathcal R(\Pi,B)=K/(K\cap\Rad B)$, with $\dim\mathcal R=\defic$. It is the part of the generative description that is invisible to $\Pi$ but visible to $B$; in the algebraic sense used here, ``relational information'' that is lost by observation is exactly this residue. We use the word information only in this algebraic sense; no entropy or probability is defined. The compatibility hierarchy (Figure~\ref{fig:hier}) says that under (H1)--(H2) the residue vanishes if and only if the interaction is independently refinement invariant.
+
+\subsection{Possible applications (not validated)}
+Questions of the same form --- does an interaction between microscopic configurations depend on them only through a macroscopic variable? --- occur in coarse-grained dynamical systems, multiscale modelling, structural representations and accounts of emergent observables. Example~\ref{ex:perm} is the prototype: a sum observable is complete for interactions invariant under each relabelling separately and incomplete otherwise. We offer the criteria of Theorems~\ref{thm:quot} and~\ref{thm:compat} as candidate tests in such settings, and present these as \emph{possible} applications. No empirical claim is made, and no physical system is analysed.
+
+%=====================================================================
+\section{Discussion and Limitations}\label{sec:discussion}
+%=====================================================================
+
+\subsection{Relation to existing theory}
+\textbf{Quotient spaces and bilinear algebra.} Theorem~\ref{thm:quot} is the universal property of quotients for bilinear maps; radicals of bilinear forms and the nondegenerate quotient pairing are classical~\cite{Lan02,Rom08,Gre75}. Theorem~\ref{thm:compat} is the universal property of coinvariants~\cite{Bro82} applied to bilinear forms, plus the observation that coinvariant-generation (H2) is a hypothesis on the observation map rather than on the interaction. We claim no novelty of technique.
+\par\smallskip\noindent
+\textbf{Coarse-graining.} Descent criteria of this type recur in coarse-graining. For linear dynamics, strong lumpability of a Markov chain with respect to a partition~\cite{KS60} is the statement that the aggregation map $\Pi$ on measures satisfies $A(\ker\Pi)\subseteq\ker\Pi$ for the transition operator $A$; for bilinear pairings the analogous descent condition is $\ker\Pi\subseteq\Rad(B)$. The two conditions are of the same kind (a structure descends to the quotient iff it respects the kernel) but are not equivalent and should not be conflated.
+\par\smallskip\noindent
+\textbf{Hidden-state models.} The decomposition $V=O\oplus H$ is formally a hidden-state structure. We use it only as algebra: there is no probability measure on $H$, no dynamics, no notion of locality, and nothing here constrains correlations. In particular nothing in this paper bears on Bell-type inequalities~\cite{Bel64,CHSH69,Tsi80}, and any account of experimental correlations built on relational invariants would have to satisfy no-signalling and the established Bell constraints independently.
+
+\subsection{Limitations}\label{sec:limits}
+\begin{enumerate}[label=(L\arabic*)]
+\item All structures are linear and all interactions bilinear. Nonlinear route composition, or interactions of higher order (trilinear, tensor), are outside the scope.
+\item The field is $\RR$ throughout; the characteristic-$\neq2$ hypothesis is used in Propositions~\ref{prop:invol} and~\ref{prop:coinv}.
+\item The analysis is algebraic. In infinite dimensions no topology or continuity is imposed, so ``kernel'' and ``radical'' are algebraic subspaces; a Hilbert-space version would require closed kernels and bounded forms.
+\item The route spaces are \emph{constructed}; they are not derived from canonical UNNS grammar. All hypotheses (linearity, bilinearity, the form of $\Pi$, the refinements) are hypotheses of a proposed model.
+\item The Legendre family is a specific example family with $O(3)$ covariance; the obstruction rank $2\ell+1$ is a property of that family, not a general law.
+\item The verification (\S\ref{sec:repro}) concerns the abstract models; it does not test any UNNS engine.
+\end{enumerate}
+
+\subsection{What is and is not established}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.32\textwidth}@{}}
+\toprule
+Statement & Status\\
+\midrule
+$\Pi X=\Pi X'\not\Rightarrow B(X,Y)=B(X',Y)$ in the models above & proved (Thm.~\ref{thm:joint}, Thm.~\ref{thm:legendre}), machine-checked\\
+Exact descent criterion $K\subseteq\Rad_L\cap\Rad_R$ & proved (standard)\\
+Joint invariance does not imply independent invariance or descent & proved by explicit model\\
+Independent invariance $\Leftrightarrow$ descent under (H1)--(H2) & proved\\
+Canonical UNNS recursion satisfies (H2) with independent refinement invariance & \textbf{open}\\
+Canonical UNNS admissibility entails $K\subseteq\Rad(B)$ & \textbf{open}\\
+Any physical system realises the structure & \textbf{not claimed}\\
+Any consequence for quantum correlations & \textbf{not claimed}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Open problems}
+\begin{problem}\label{prob:entail}
+Determine whether the independently defined route-composition and admissibility rules of canonical UNNS entail $\ker\Pi\subseteq\Rad(B)$ for the interactions they define, or whether they admit a model of the type of Proposition~\ref{prop:H}.
+\end{problem}
+\begin{problem}
+Identify natural refinement families $\{T_i\}$ in UNNS-style grammars for which (H2) holds, i.e.\ for which observable identity coincides with identity up to refinement.
+\end{problem}
+\begin{problem}
+Extend Theorems~\ref{thm:quot}--\ref{thm:compat} to multilinear interactions and to topological vector spaces, with a robust version in which the deficit is replaced by a norm-distance from the descended subspace.
+\end{problem}
+\begin{problem}
+Characterise all $O(3)$-covariant, sign-reversing, normalised pairings on $F(S^2)$ (the admissibility profile of \S\ref{sec:legendre}); the family $B_\ell$ and the positive-definiteness of $-B_\ell$ suggest a Schoenberg-type description by positive-definite zonal kernels, which we have not attempted.
+\end{problem}
+
+\subsection{Conclusion}
+Observable representation, structural identity and interaction are three distinct equivalences on a generative route space, and each implication between them is an inclusion between subspaces. Under the stated hypotheses the descent of an interaction to an observable quotient is governed by one criterion, $\ker\Pi\subseteq\Rad_L(B)\cap\Rad_R(B)$; refinement invariance reaches that criterion only when the refinements are applied to each argument independently and generate the observable-null directions. Simultaneous refinement invariance does not suffice, and the cost of mistaking it for sufficiency is measured by an explicit, computable deficit. These are results about a proposed mathematical realisation; whether and where canonical UNNS recursion satisfies the compatibility conditions is the question this paper makes precise rather than answers.
+
+\appendix
+%=====================================================================
+\section{Detailed Algebra}\label{app:algebra}
+%=====================================================================
+
+\subsection{Coordinates of the hidden-sector model}
+The map $(u,v)\mapsto(s,h)=(u+v,\,u-v)$ on $\RR^3\oplus\RR^3$ is linear with block matrix $\begin{psmallmatrix}\mathsf I&\mathsf I\\ \mathsf I&-\mathsf I\end{psmallmatrix}$ of determinant $(-2)^3\neq0$ (each $2\times2$ block pair $\begin{psmallmatrix}1&1\\1&-1\end{psmallmatrix}$ has determinant $-2$, and there are three), so it is an isomorphism with inverse $u=\tfrac12(s+h)$, $v=\tfrac12(s-h)$. In these coordinates:
+\begin{align*}
+\Pi(s,h)&=s,\qquad K=\{(0,h)\},\\
+T(u,v)=(v,u)&\ \Longleftrightarrow\ s\mapsto v+u=s,\quad h\mapsto v-u=-h,\\
+B&=-\tfrac12\bigl(s\!\cdot s'+h\!\cdot h'\bigr)=-\bigl(u\!\cdot u'+v\!\cdot v'\bigr).
+\end{align*}
+The Gram matrix of $B$ in $(s,h)$-coordinates is $-\tfrac12\mathsf I_6$, so $B$ is nondegenerate and negative definite; $\Rad(B)=0$.
+The left defect of independent invariance is
+\[ B(TX,Y)-B(X,Y)=-\tfrac12\bigl(s\!\cdot s'-h\!\cdot h'\bigr)+\tfrac12\bigl(s\!\cdot s'+h\!\cdot h'\bigr)=h\!\cdot h', \]
+which is the bilinear form of rank $3$ with null space $\{h=0\}$ in each slot, matching $\defic=3$.
+
+\subsection{Matrix form of the deficit}
+Let $\mathsf B$ be the Gram matrix of $B$ in a basis of $V$ and let the columns of $\mathsf K$ be a basis of $\ker\Pi$. Then $B(\mathsf Kc,\cdot)$ has coordinate row $c^{\!\top}\mathsf K^{\!\top}\mathsf B$, and $B(\cdot,\mathsf Kc)$ has coordinate column $\mathsf B\mathsf Kc$. Thus $\mathsf Kc\in\Rad_L$ iff $\mathsf B^{\!\top}\mathsf Kc=0$ and $\mathsf Kc\in\Rad_R$ iff $\mathsf B\mathsf Kc=0$, whence
+\[ \defic=\dim K-\dim\ker\begin{pmatrix}\mathsf B\mathsf K\\\mathsf B^{\!\top}\mathsf K\end{pmatrix}=\rk\begin{pmatrix}\mathsf B\mathsf K\\\mathsf B^{\!\top}\mathsf K\end{pmatrix}. \]
+\emph{Worked examples.}
+(a) \S\ref{sec:smallest}: $\mathsf B=\mathsf I_2$, $\mathsf K=(0,1)^{\!\top}$, stacked matrix $\begin{psmallmatrix}0&1&0&1\end{psmallmatrix}^{\!\top}$ of rank $1$; $\defic=1$.
+(b) Example~\ref{ex:onesided}: $\mathsf B=\begin{psmallmatrix}0&1\\0&0\end{psmallmatrix}$, $\mathsf K=(0,1)^{\!\top}$: $\mathsf B\mathsf K=(1,0)^{\!\top}$, $\mathsf B^{\!\top}\mathsf K=(0,0)^{\!\top}$; $\rho_R=1$, $\rho_L=0$, $\defic=1$, showing $\max(\rho_L,\rho_R)\le\defic\le\rho_L+\rho_R$ with equality at the lower bound.
+(c) Permutation module, $\mathsf B=a\mathsf I+b\mathsf J$ ($\mathsf J$ all ones), $\mathsf K$ any basis of $\{\sum x_i=0\}$: $\mathsf J\mathsf K=0$, so $\mathsf B\mathsf K=a\mathsf K$ and the stacked matrix has rank $n-1$ if $a\neq0$.
+
+\subsection{Spherical-harmonic facts used in Theorem~\ref{thm:legendre}}
+We use three classical facts~\cite{AAR99}: (1) the real spherical harmonics $S_{\ell m}$ ($m=1,\dots,2\ell+1$) of degree $\ell$ form an orthonormal basis of the degree-$\ell$ harmonic polynomials restricted to $S^2$; (2) harmonics of different degrees are $L^2(S^2)$-orthogonal; (3) the addition theorem~\eqref{eq:addition}. The restriction to $S^2$ of a linear function $\mathbf a\mapsto w\cdot\mathbf a$ is a degree-$1$ harmonic. Linear independence of $\{S_{\ell m}\}_m$ as functions on $S^2$ follows from orthonormality, and gives linear independence of the functionals $f_m$ on $F(S^2)$: if $\sum_mc_mf_m=0$ then evaluating on every generator $r(\mathbf a)$ gives $\sum c_mS_{\ell m}\equiv0$.
+
+\subsection{Exact Legendre values}
+\begin{center}\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+$x$ & $P_1(x)$ & $P_3(x)=\tfrac12(5x^3-3x)$ & $P_5(x)=\tfrac18(63x^5-70x^3+15x)$\\
+\midrule
+$0$ & $0$ & $0$ & $0$\\
+$\tfrac12$ & $\tfrac12$ & $-\tfrac7{16}$ & $\tfrac{23}{256}$\\
+$1$ & $1$ & $1$ & $1$\\
+\bottomrule
+\end{tabular}
+\end{center}
+For the witness $X=r(\mathbf n)-\tfrac12r(\mathbf e_x)-\tfrac{\sqrt3}2r(\mathbf e_y)$ of Example~\ref{ex:P3}, since $\mathbf n\cdot\mathbf e_x=\tfrac12$, $\mathbf e_x\cdot\mathbf e_x=1$ and $\mathbf e_y\cdot\mathbf e_x=0$,
+\[ B_\ell\bigl(X,r(\mathbf e_x)\bigr)=-P_\ell(\tfrac12)+\tfrac12P_\ell(1)+\tfrac{\sqrt3}2P_\ell(0)=\tfrac12-P_\ell(\tfrac12)\quad(\ell\text{ odd}), \]
+giving $0$, $\tfrac{15}{16}$, $\tfrac{105}{256}$ for $\ell=1,3,5$.
+
+\subsection{The \texorpdfstring{$\mathbb Z_2$}{Z2} coinvariants}
+Let $T^2=\id$ on $V$ (characteristic $\neq2$), $V_\pm$ its $\pm1$ eigenspaces. The span of $\{X-TX\}$ is $2V_-\!=V_-$, so $V_G=V/V_-\cong V_+$. For the diagonal action, $T\otimes T$ acts as $+1$ on $V_+\!\otimes V_+$ and $V_-\!\otimes V_-$ and as $-1$ on the mixed summands; $\spn\{w-(T\otimes T)w\}$ equals $2\cdot(\text{mixed summands})$, so $(V\otimes V)_G\cong V_+\!\otimes V_+\oplus V_-\!\otimes V_-$. The natural map to $V_G\otimes V_G=V_+\otimes V_+$ kills $V_-\otimes V_-=N$.
+
+\subsection{The permutation example}
+Let $\mathsf P$ be a permutation matrix and $\mathsf B$ the Gram matrix of $B$ in the standard basis. Joint invariance is $\mathsf P^{\!\top}\mathsf B\mathsf P=\mathsf B$, i.e.\ $\mathsf B\mathsf P=\mathsf P\mathsf B$ since $\mathsf P^{\!\top}=\mathsf P^{-1}$. For $S_n$ acting on $\RR^n$ the commutant is spanned by $\mathsf I$ and $\mathsf J$. Independent invariance additionally requires $\mathsf P^{\!\top}\mathsf B=\mathsf B$: applied to $\mathsf B=a\mathsf I+b\mathsf J$ with $\mathsf P\ne\mathsf I$ this reads $a(\mathsf P^{\!\top}-\mathsf I)=0$, so $a=0$.
+
+%=====================================================================
+\section{Computational Tests}\label{app:tests}
+%=====================================================================
+The script \path{verify_ri.py} (Python~3, NumPy; no other dependency) is delivered with the manuscript. It is deterministic: random instances come from a NumPy generator (\path{default_rng}, seed $20261021$) and a fixed seed for the point set on $S^2$; exact statements use rational arithmetic. Run:
+\begin{center}\path{python3 verify_ri.py}\end{center}
+It prints one line per check, writes \path{verify_ri_report.json}, and exits with status $0$ iff all 43 checks pass. Output of the run reported here:
+
+\begin{lstlisting}[numbers=none,xleftmargin=0pt,basicstyle=\ttfamily\tiny,breaklines=true]
+PASS H.B_equals_minus_uu_plus_vv  [max err 1.78e-15]
+PASS H.T_preserves_Pi
+PASS H.T_reverses_h
+PASS H.joint_invariance_B(TX,TY)=B(X,Y)
+PASS H.separate_invariance_FAILS  [max |B(TX,Y)-B(X,Y)| = 11.194]
+PASS H.span{X-TX}_has_dim_3=dim_kerPi  [rank 3]
+PASS H.span{X-TX}_inside_kerPi
+PASS H.witness_Pi(k)=0_but_B(k,Y)=-2  [B=-2.0]
+PASS H.obstruction_rank_rho_L=3
+PASS ResultI.criterion_matches_direct_factorization(300 random)  [150 factoring / 150 non-factoring cases]
+PASS ResultI.one_sided_radical_insufficient
+PASS ResultIII+Prop(block-diagonal): 200 random involutions
+PASS Legendre.P3(1/2)=-7/16  [-7/16]
+PASS Legendre.B3(X,r(ex))=15/16 exact  [15/16]
+PASS Legendre.B1(X,r(ex))=0 exact
+PASS Legendre.corr_60deg_B1=-1/2,B3=+7/16
+PASS Legendre.P(++)_B1=1/8
+PASS Legendre.P(++)_B3=23/64=0.359375
+   numeric B_1(X,r(ex)) = 0.000000000000
+   numeric B_3(X,r(ex)) = 0.937500000000
+PASS Legendre.numeric_matches
+PASS Legendre.odd_l_sign_reversal
+   l=1: rank(B_l|ker Pi)=0   (-B_l PSD: True)
+   l=2: rank(B_l|ker Pi)=5   (-B_l PSD: True)
+   l=3: rank(B_l|ker Pi)=7   (-B_l PSD: True)
+   l=4: rank(B_l|ker Pi)=9   (-B_l PSD: True)
+   l=5: rank(B_l|ker Pi)=11   (-B_l PSD: True)
+   l=6: rank(B_l|ker Pi)=13   (-B_l PSD: True)
+   l=7: rank(B_l|ker Pi)=15   (-B_l PSD: True)
+PASS Legendre.B1_factors(rank 0)
+PASS Legendre.B_l_l>=2_do_not_factor
+PASS Legendre.obstruction_rank=2l+1 (generic N=120)  [{1: 0, 2: 5, 3: 7, 4: 9, 5: 11, 6: 13, 7: 15}]
+PASS GCTv002.Thm3_symmetry_conditions_hold_for_c3
+PASS Coinvariant.dim_gap=dim(V-)^2 for model H
+PASS Fig1.same_observable_s=(1,0,0)
+PASS Fig1.B(X,X)=-1,B(TX,X)=0,B(TX,TX)=-1
+PASS Minimal2D.values
+PASS OneSided2D.K_in_RadL_not_RadR
+PASS Legendre.l=5_exact  [C=-23/256, B5(X,ex)=105/256, P(++)=233/1024]
+PASS Deficit.bounds+formula+minimal_completion (300 random)  [300 cases]
+PASS Perm.joint_invariant_forms_dim=2,separate=1  [joint 2, separate 1]
+PASS Perm.deficit=n-1=4
+PASS Perm.H2_span{X-T_iX}=ker(sum) (dim 4)
+PASS Closure.ideal_Helmholtz_per_mode: P idem, R involution, joint-inv, not separate
+PASS Closure.deficit=1_per_mode
+PASS FourRoute.k_in_kerPi
+PASS FourRoute.G1*k=0
+PASS FourRoute.G3*k=(15/16,5sqrt3/16,0,-15/16)  [[(15/16+0*sqrt3), (0+5/16*sqrt3), (0+0*sqrt3), (-15/16+0*sqrt3)]]
+PASS FourRoute.G3_entries
+PASS FourRoute.deficit_B3=1,B1=0
+PASS SelfInteraction.Q_descends_iff_B_descends (100 random symmetric)
+PASS Sections.model_H_induced_pairing=-1/2(I+H^T H)
+
+ALL PASS
+\end{lstlisting}
+
+\subsection{Script listing}
+\begin{lstlisting}[basicstyle=\ttfamily\tiny,breaklines=true,numbers=left,xleftmargin=1.4em]
+#!/usr/bin/env python3
+"""Deterministic verification for 'Observable Equivalence and Relational Invariants'.
+Exact rational arithmetic (fractions) for model H and the Legendre counterexample;
+seeded floating-point checks (numpy) for the general theorems. Prints a report."""
+import json, sys
+from fractions import Fraction as Fr
+import numpy as np
+
+out = {}
+ok_all = True
+def check(name, cond, detail=""):
+    global ok_all
+    ok_all &= bool(cond)
+    out[name] = {"pass": bool(cond), "detail": detail}
+    print(("PASS " if cond else "FAIL ") + name + (("  [" + detail + "]") if detail else ""))
+
+# ---------- Model H: R = R^3 (+) R^3, X=(u,v) ----------
+rng = np.random.default_rng(20261021)
+def Pi(X): return X[:3] + X[3:]            # s = u+v
+def h(X):  return X[:3] - X[3:]            # h = u-v
+def B(X, Y): return -0.5 * (Pi(X) @ Pi(Y) + h(X) @ h(Y))
+def T(X): return np.concatenate([X[3:], X[:3]])
+
+# identity B = -(u.u' + v.v')
+errs = []
+for _ in range(200):
+    X, Y = rng.normal(size=6), rng.normal(size=6)
+    errs.append(abs(B(X, Y) + (X[:3] @ Y[:3] + X[3:] @ Y[3:])))
+check("H.B_equals_minus_uu_plus_vv", max(errs) < 1e-12, f"max err {max(errs):.2e}")
+check("H.T_preserves_Pi", all(np.allclose(Pi(T(X)), Pi(X)) for X in rng.normal(size=(50, 6))))
+check("H.T_reverses_h", all(np.allclose(h(T(X)), -h(X)) for X in rng.normal(size=(50, 6))))
+check("H.joint_invariance_B(TX,TY)=B(X,Y)",
+      max(abs(B(T(X), T(Y)) - B(X, Y)) for X, Y in rng.normal(size=(200, 2, 6))) < 1e-12)
+sep = max(abs(B(T(X), Y) - B(X, Y)) for X, Y in rng.normal(size=(200, 2, 6)))
+check("H.separate_invariance_FAILS", sep > 0.1, f"max |B(TX,Y)-B(X,Y)| = {sep:.3f}")
+# kernel of Pi = {(u,-u)}; span{X-TX} equals it (dimension 3)
+D = np.array([X - T(X) for X in rng.normal(size=(40, 6))])
+rk = np.linalg.matrix_rank(D, tol=1e-9)
+check("H.span{X-TX}_has_dim_3=dim_kerPi", rk == 3, f"rank {rk}")
+check("H.span{X-TX}_inside_kerPi", max(np.abs(Pi(d)).max() for d in D) < 1e-12)
+# witness: k=(u,-u), Y arbitrary => B(k,Y) = -1/2 h_k.h_Y != 0
+k = np.concatenate([[1., 0, 0], [-1., 0, 0]]); Y = np.concatenate([[1., 0, 0], [-1., 0, 0]])
+check("H.witness_Pi(k)=0_but_B(k,Y)=-2", np.allclose(Pi(k), 0) and abs(B(k, Y) + 2) < 1e-12, f"B={B(k,Y)}")
+# obstruction ranks: rho_L = rank of X-> B(X,.) on ker Pi
+K = np.array([np.concatenate([e, -e]) for e in np.eye(3)])
+Gram = np.array([[B(k_, np.eye(6)[j]) for j in range(6)] for k_ in K])
+check("H.obstruction_rank_rho_L=3", np.linalg.matrix_rank(Gram) == 3)
+
+# ---------- Result I: factorization criterion (random finite-dim) ----------
+def factors(Bm, P, tol=1e-9):
+    """does Bm = P^T Bbar P for some Bbar ? test via kernel-in-radicals AND direct lstsq"""
+    n = Bm.shape[0]
+    Kk = np.linalg.svd(P)[2][P.shape[0]:].T if P.shape[0] < n else np.zeros((n, 0))
+    krit = (Kk.size == 0) or (np.abs(Bm @ Kk).max() < tol and np.abs(Bm.T @ Kk).max() < tol)
+    # direct: solve Bm = P^T Bbar P  (P full row rank)
+    Pp = np.linalg.pinv(P)
+    Bbar = Pp.T @ Bm @ Pp
+    direct = np.abs(P.T @ Bbar @ P - Bm).max() < tol
+    return krit, direct
+agree = True; n_fact = n_nonfact = 0
+for trial in range(300):
+    n, m = int(rng.integers(3, 8)), int(rng.integers(1, 3)) + 1
+    m = min(m, n - 1)
+    P = rng.normal(size=(m, n))
+    if trial % 2 == 0:   # construct a factoring B
+        Bm = P.T @ rng.normal(size=(m, m)) @ P
+    else:                # generic non-factoring B
+        Bm = rng.normal(size=(n, n))
+    a, b = factors(Bm, P)
+    agree &= (a == b); n_fact += a; n_nonfact += (not a)
+check("ResultI.criterion_matches_direct_factorization(300 random)", agree,
+      f"{n_fact} factoring / {n_nonfact} non-factoring cases")
+# one-sided counterexample: kernel in Rad_L but not Rad_R => NOT factoring
+n = 4; P = np.array([[1., 0, 0, 0], [0, 1, 0, 0]]); k = np.array([0, 0, 1., 0])
+Bm = np.zeros((n, n)); Bm[0, 0] = 1; Bm[0, 2] = 1  # B(e0,e2)=1: e2 in ker; B(e2,.)=0 so in Rad_L; B(.,e2)!=0 so not Rad_R
+check("ResultI.one_sided_radical_insufficient",
+      np.abs(Bm.T @ k).max() < 1e-12 and np.abs(Bm @ k).max() > 0.5 and not factors(Bm, P)[1])
+
+# ---------- Result III: involution / coinvariant, random ----------
+ok = True
+for trial in range(200):
+    d1, d2 = int(rng.integers(1, 4)), int(rng.integers(1, 4))
+    n = d1 + d2
+    Tm = np.diag([1.]*d1 + [-1.]*d2)                 # involution, V+ (+) V-
+    Q, _ = np.linalg.qr(rng.normal(size=(n, n)))      # random basis change
+    Ti = Q @ Tm @ Q.T
+    Pm = (np.eye(n) + Ti) / 2                         # projection onto V+ (observable)
+    # ker Pi = V-, span{X-TX} = V-
+    Bm = rng.normal(size=(n, n))
+    # separately invariant projection: B -> Pm^T B Pm  (the only separately invariant ones factor)
+    Bs = Pm.T @ Bm @ Pm
+    sepinv = np.abs(Ti.T @ Bs - Bs).max() < 1e-9 and np.abs(Bs @ Ti - Bs).max() < 1e-9
+    # general joint-invariant: average
+    Bj = (Bm + Ti.T @ Bm @ Ti) / 2
+    jointinv = np.abs(Ti.T @ Bj @ Ti - Bj).max() < 1e-9
+    # block diagonality: B(V+,V-)=0
+    Vp = Q[:, :d1]; Vm = Q[:, d1:]
+    blockdiag = np.abs(Vp.T @ Bj @ Vm).max() < 1e-9 and np.abs(Vm.T @ Bj @ Vp).max() < 1e-9
+    # Result III: sep-inv => factors through Pi
+    Pi_rows = Vp.T                                    # Pi: V -> V+ coordinates
+    f_sep = factors(Bs, Pi_rows)[0]
+    # joint-inv with nonzero V- block does NOT factor
+    nz = np.abs(Vm.T @ Bj @ Vm).max() > 1e-6
+    f_joint = factors(Bj, Pi_rows)[0]
+    ok &= sepinv and jointinv and blockdiag and f_sep and ((not f_joint) == nz)
+check("ResultIII+Prop(block-diagonal): 200 random involutions", ok)
+
+# ---------- Legendre family on the free space over S^2 ----------
+def P(l, x):
+    from numpy.polynomial import legendre as L
+    c = np.zeros(l + 1); c[l] = 1; return L.legval(x, c)
+# exact rational P3
+P3 = lambda x: (5 * x**3 - 3 * x) / 2
+half, sq3h_sq = Fr(1, 2), Fr(3, 4)
+# exact: B3(X,r(ex)) = -P3(1/2) + (1/2) P3(1) + (sqrt3/2) P3(0);  P3(0)=0 => sqrt3 term vanishes
+B3_exact = -P3(half) + half * P3(Fr(1)) + 0
+check("Legendre.P3(1/2)=-7/16", P3(half) == Fr(-7, 16), str(P3(half)))
+check("Legendre.B3(X,r(ex))=15/16 exact", B3_exact == Fr(15, 16), str(B3_exact))
+B1_exact = -half + half * 1 + 0
+check("Legendre.B1(X,r(ex))=0 exact", B1_exact == 0)
+check("Legendre.corr_60deg_B1=-1/2,B3=+7/16", -half == Fr(-1, 2) and -P3(half) == Fr(7, 16))
+check("Legendre.P(++)_B1=1/8", (1 + Fr(-1, 2)) / 4 == Fr(1, 8))
+check("Legendre.P(++)_B3=23/64=0.359375", (1 + Fr(7, 16)) / 4 == Fr(23, 64) and float(Fr(23, 64)) == 0.359375)
+# numerical cross-check with unit vectors
+n = np.array([.5, np.sqrt(3) / 2, 0]); ex = np.array([1., 0, 0]); ey = np.array([0, 1., 0])
+Xv = [(1, n), (-.5, ex), (-np.sqrt(3) / 2, ey)]
+for l in (1, 3):
+    val = sum(-c * P(l, v @ ex) for c, v in Xv)
+    print(f"   numeric B_{l}(X,r(ex)) = {val:.12f}")
+check("Legendre.numeric_matches", abs(sum(-c*P(3, v@ex) for c, v in Xv) - 15/16) < 1e-12 and abs(sum(-c*P(1, v@ex) for c, v in Xv)) < 1e-12)
+# oddness of P_l(l odd): sign reversal property
+check("Legendre.odd_l_sign_reversal", all(abs(P(l, -x) + P(l, x)) < 1e-12 for l in (1, 3, 5, 7) for x in np.linspace(-1, 1, 11)))
+# obstruction rank on N generic points of S^2
+def sphere_points(N, seed):
+    r = np.random.default_rng(seed); Z = r.normal(size=(N, 3)); return Z / np.linalg.norm(Z, axis=1, keepdims=True)
+N = 120; pts = sphere_points(N, 7)
+Gm = pts @ pts.T
+Pm_ = pts.T                                          # 3 x N : Pi on coordinates r(a_i) -> a_i
+Kb = np.linalg.svd(Pm_)[2][3:].T                     # N x (N-3) basis of ker Pi
+ranks = {}
+for l in range(1, 8):
+    Bl = -P(l, np.clip(Gm, -1, 1))
+    # sanity: PSD of -B
+    ev = np.linalg.eigvalsh(-Bl); psd = ev.min() > -1e-9
+    rho = np.linalg.matrix_rank(Kb.T @ Bl, tol=1e-8)
+    ranks[l] = int(rho)
+    print(f"   l={l}: rank(B_l|ker Pi)={rho}   (-B_l PSD: {psd})")
+check("Legendre.B1_factors(rank 0)", ranks[1] == 0)
+check("Legendre.B_l_l>=2_do_not_factor", all(ranks[l] > 0 for l in range(2, 8)))
+check("Legendre.obstruction_rank=2l+1 (generic N=120)", all(ranks[l] == 2 * l + 1 for l in range(2, 8)), str(ranks))
+out["obstruction_ranks_N120"] = ranks
+
+# ---------- GCT v002 Theorem-3 symmetry conditions for c3(d) = -P3(cos d) ----------
+ds = np.linspace(-np.pi, np.pi, 41)
+c3 = lambda d: -P(3, np.cos(d))
+cond = (abs(c3(0) + 1) < 1e-12 and all(abs(c3(-d) - c3(d)) < 1e-12 and abs(c3(d + np.pi) + c3(d)) < 1e-12 and abs(c3(d)) <= 1 + 1e-12 for d in ds))
+check("GCTv002.Thm3_symmetry_conditions_hold_for_c3", cond)
+
+# ---------- coinvariants: diagonal vs factorwise (Z2) ----------
+# (V (x) V)_G has dim = dim(V+ (x) V+) + dim(V- (x) V-);  V_G (x) V_G has dim = (dim V+)^2.
+d1, d2 = 3, 3
+check("Coinvariant.dim_gap=dim(V-)^2 for model H", (d1*d1 + d2*d2) - d1*d1 == d2*d2 == 9)
+
+
+# ---------- Fig.1 concrete numbers (model H) ----------
+Xa = np.array([1., 0, 0, 0, 0, 0]); Xb = T(Xa)
+check("Fig1.same_observable_s=(1,0,0)", np.allclose(Pi(Xa), [1, 0, 0]) and np.allclose(Pi(Xb), [1, 0, 0]))
+check("Fig1.B(X,X)=-1,B(TX,X)=0,B(TX,TX)=-1",
+      abs(B(Xa, Xa) + 1) < 1e-12 and abs(B(Xb, Xa)) < 1e-12 and abs(B(Xb, Xb) + 1) < 1e-12)
+# 2-D minimal example of Sec.1
+Pi2 = lambda X: X[0]; T2 = lambda X: np.array([X[0], -X[1]]); B2 = lambda X, Y: X @ Y
+X1, X2, Y1 = np.array([1., 1]), np.array([1., -1]), np.array([0., 1])
+check("Minimal2D.values", Pi2(X1) == Pi2(X2) and B2(X1, Y1) == 1 and B2(X2, Y1) == -1 and B2(X1, X1) == B2(X2, X2) == 2)
+# one-sided 2-D example B(X,Y)=x*y'
+B3 = np.array([[0., 1], [0, 0]])  # B(X,Y)=X^T B3 Y = x*y'
+Kk2 = np.array([[0.], [1.]])
+check("OneSided2D.K_in_RadL_not_RadR", np.abs(Kk2.T @ B3).max() == 0 and np.abs(B3 @ Kk2).max() > 0)
+
+# ---------- ell=5 exact ----------
+P5 = lambda x: (63 * x**5 - 70 * x**3 + 15 * x) / 8
+check("Legendre.l=5_exact", -P5(half) == Fr(-23, 256) and -P5(half) + half * P5(Fr(1)) == Fr(105, 256) and (1 + (-P5(half))) / 4 == Fr(233, 1024),
+      f"C={-P5(half)}, B5(X,ex)={-P5(half)+half}, P(++)={(1-P5(half))/4}")
+
+# ---------- relational deficit: formula and minimal completion (random) ----------
+def deficit_formula(Bm, K):
+    S = np.vstack([Bm @ K, Bm.T @ K]); return np.linalg.matrix_rank(S, tol=1e-9)
+okd = True; cnt = 0
+for trial in range(300):
+    n = int(rng.integers(4, 9)); m = int(rng.integers(1, 3)) + 1
+    Pm = rng.normal(size=(m, n)); Kk = np.linalg.svd(Pm)[2][m:].T
+    Bm = rng.normal(size=(n, n))
+    mode = trial % 3
+    if mode == 1:   # make part of K radical on both sides
+        c = Kk[:, 0]; Bm = Bm - np.outer(Bm @ c, c) / (c @ c) - np.outer(c, c @ Bm) / (c @ c) + (c @ Bm @ c) * np.outer(c, c) / (c @ c)**2
+    if mode == 2:   # symmetric
+        Bm = (Bm + Bm.T) / 2
+    d = deficit_formula(Bm, Kk)
+    rhoL = np.linalg.matrix_rank(Kk.T @ Bm, tol=1e-9); rhoR = np.linalg.matrix_rank(Bm @ Kk, tol=1e-9)
+    okd &= (max(rhoL, rhoR) <= d <= rhoL + rhoR)
+    if mode == 2: okd &= (d == rhoL == rhoR)
+    # minimal completion Psi with delta rows
+    S = np.vstack([Bm @ Kk, Bm.T @ Kk]); U, sv, Vt = np.linalg.svd(S, full_matrices=False)
+    Q = Vt[:d]                                  # d x dim K
+    Psi = Q @ np.linalg.pinv(Kk)                # d x n
+    Pfull = np.vstack([Pm, Psi])
+    okd &= factors(Bm, Pfull)[1]
+    if d > 0 and Psi.shape[0] > 1:              # delta-1 rows must fail
+        okd &= not factors(Bm, np.vstack([Pm, Psi[:-1]]))[1]
+    cnt += 1
+check("Deficit.bounds+formula+minimal_completion (300 random)", okd, f"{cnt} cases")
+
+# ---------- permutation example: joint vs separate invariant forms on R^n ----------
+n = 5
+def invariant_dim(joint):
+    rows = []
+    for i in range(n - 1):
+        Pm = np.eye(n); Pm[[i, i + 1]] = Pm[[i + 1, i]]
+        # constraint on vec(B): joint: P^T B P = B ; separate: P^T B = B and B P = B
+        I = np.eye(n)
+        if joint: rows.append(np.kron(Pm.T, Pm.T) - np.eye(n * n))   # vec(P^T B P)=(P^T (x) P^T)vec(B) for row-major
+        else:
+            rows.append(np.kron(Pm.T, I) - np.eye(n * n)); rows.append(np.kron(I, Pm.T) - np.eye(n * n))
+    A = np.vstack(rows); return n * n - np.linalg.matrix_rank(A, tol=1e-9)
+check("Perm.joint_invariant_forms_dim=2,separate=1", invariant_dim(True) == 2 and invariant_dim(False) == 1,
+      f"joint {invariant_dim(True)}, separate {invariant_dim(False)}")
+Pm = np.ones((1, n)); Kk = np.linalg.svd(Pm)[2][1:].T
+Bperm = np.eye(n) + 0.3 * np.ones((n, n))
+check("Perm.deficit=n-1=4", deficit_formula(Bperm, Kk) == n - 1)
+# span of {X - T_i X} = sum-zero hyperplane (H2)
+D = []
+for i in range(n - 1):
+    Pt = np.eye(n); Pt[[i, i + 1]] = Pt[[i + 1, i]]
+    D += [(np.eye(n) - Pt)[:, j] for j in range(n)]
+check("Perm.H2_span{X-T_iX}=ker(sum) (dim 4)", np.linalg.matrix_rank(np.array(D), tol=1e-9) == n - 1)
+
+# ---------- Closure illustration: ideal Helmholtz projector per Fourier mode ----------
+kv = np.array([1., 2.]); Pk = np.eye(2) - np.outer(kv, kv) / (kv @ kv); Rk = 2 * Pk - np.eye(2)
+Bk = np.eye(2)
+okc = np.allclose(Pk @ Pk, Pk) and np.allclose(Pk @ kv, 0) and np.allclose(Rk @ Rk, np.eye(2)) and np.allclose(Pk @ Rk, Pk)
+okc &= np.allclose(Rk.T @ Bk @ Rk, Bk) and not np.allclose(Rk.T @ Bk, Bk)
+check("Closure.ideal_Helmholtz_per_mode: P idem, R involution, joint-inv, not separate", okc)
+check("Closure.deficit=1_per_mode", deficit_formula(Bk, kv.reshape(2, 1)) == 1)
+
+
+# ---------- four-route table (Example 5.x): exact arithmetic in Q(sqrt3) ----------
+class QS:
+    """a + b*sqrt(3), a,b rational (Fractions)."""
+    def __init__(s, a=0, b=0): s.a, s.b = Fr(a), Fr(b)
+    def __add__(s, o): o = o if isinstance(o, QS) else QS(o); return QS(s.a + o.a, s.b + o.b)
+    __radd__ = __add__
+    def __neg__(s): return QS(-s.a, -s.b)
+    def __sub__(s, o): return s + (-(o if isinstance(o, QS) else QS(o)))
+    def __mul__(s, o): o = o if isinstance(o, QS) else QS(o); return QS(s.a * o.a + 3 * s.b * o.b, s.a * o.b + s.b * o.a)
+    __rmul__ = __mul__
+    def __eq__(s, o): o = o if isinstance(o, QS) else QS(o); return s.a == o.a and s.b == o.b
+    def __repr__(s): return f"({s.a}+{s.b}*sqrt3)"
+Z, O1, H2, S3 = QS(0), QS(1), QS(Fr(1, 2)), QS(0, Fr(1, 2))      # 0, 1, 1/2, sqrt3/2
+dirs4 = [[O1, Z, Z], [Z, O1, Z], [Z, Z, O1], [H2, S3, Z]]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1] + u[2] * v[2]
+P3q = lambda t: (5 * t * t * t - 3 * t) * Fr(1, 2)
+G1 = [[-dot(dirs4[i], dirs4[j]) for j in range(4)] for i in range(4)]
+G3 = [[-P3q(dot(dirs4[i], dirs4[j])) for j in range(4)] for i in range(4)]
+kq = [QS(-Fr(1, 2)), QS(0, -Fr(1, 2)), Z, O1]                    # (-1/2, -sqrt3/2, 0, 1)
+matvec = lambda G, v: [sum((G[i][j] * v[j] for j in range(4)), QS(0)) for i in range(4)]
+Pik = [sum((dirs4[j][c] * kq[j] for j in range(4)), QS(0)) for c in range(3)]
+check("FourRoute.k_in_kerPi", all(p == 0 for p in Pik))
+check("FourRoute.G1*k=0", all(v == 0 for v in matvec(G1, kq)))
+g3k = matvec(G3, kq)
+exp3 = [QS(Fr(15, 16)), QS(0, Fr(5, 16)), QS(0), QS(-Fr(15, 16))]
+check("FourRoute.G3*k=(15/16,5sqrt3/16,0,-15/16)", all(g3k[i] == exp3[i] for i in range(4)), str(g3k))
+check("FourRoute.G3_entries", G3[0][3] == QS(Fr(7, 16)) and G3[1][3] == QS(0, -Fr(3, 16)) and G3[0][1] == 0 and G3[2][3] == 0
+      and all(G3[i][i] == QS(-1) for i in range(4)))
+
+G3f = np.array([[float(G3[i][j].a) + float(G3[i][j].b) * np.sqrt(3) for j in range(4)] for i in range(4)])
+G1f = np.array([[float(G1[i][j].a) + float(G1[i][j].b) * np.sqrt(3) for j in range(4)] for i in range(4)])
+kf = np.array([float(v.a) + float(v.b) * np.sqrt(3) for v in kq]).reshape(4, 1)
+check("FourRoute.deficit_B3=1,B1=0", deficit_formula(G3f, kf) == 1 and deficit_formula(G1f, kf) == 0)
+
+# ---------- self-interaction descends iff symmetric B descends ----------
+okq = True
+for trial in range(100):
+    n = int(rng.integers(4, 8)); m = int(rng.integers(1, 3)) + 1
+    Pm = rng.normal(size=(m, n)); Kk = np.linalg.svd(Pm)[2][m:].T
+    if trial % 2 == 0: Bm = Pm.T @ rng.normal(size=(m, m)) @ Pm; Bm = (Bm + Bm.T) / 2   # factoring, symmetric
+    else:              Bm = rng.normal(size=(n, n)); Bm = (Bm + Bm.T) / 2
+    Q = lambda z: z @ Bm @ z
+    Xs = rng.normal(size=(8, n)); ks = (Kk @ rng.normal(size=(Kk.shape[1], 8))).T
+    qdesc = all(abs(Q(xv + kv) - Q(xv)) < 1e-9 for xv, kv in zip(Xs, ks))
+    okq &= (qdesc == factors(Bm, Pm)[1])
+check("SelfInteraction.Q_descends_iff_B_descends (100 random symmetric)", okq)
+
+# ---------- representatives: induced pairing on O depends on the section unless K subset Rad ----------
+okr = True
+for trial in range(100):
+    H = rng.normal(size=(3, 3))
+    # section sigma_H(s) = (s, H s) in (s,h) coordinates of model H; B in (s,h)-coords = -1/2 (s.s' + h.h')
+    BsH = -0.5 * (np.eye(3) + H.T @ H)
+    X = np.concatenate([[1., 2, 3], H @ np.array([1., 2, 3])]); Y = np.concatenate([[0., 1, -1], H @ np.array([0., 1, -1])])
+    okr &= abs(-0.5 * (X[:3] @ Y[:3] + X[3:] @ Y[3:]) - (np.array([1., 2, 3]) @ BsH @ np.array([0., 1, -1]))) < 1e-10
+check("Sections.model_H_induced_pairing=-1/2(I+H^T H)", okr)
+json.dump(out, open("verify_ri_report.json", "w"), indent=1)
+print("\nALL PASS" if ok_all else "\nSOME FAILED"); sys.exit(0 if ok_all else 1)
+\end{lstlisting}
+
+%=====================================================================
+\section{Source Provenance}\label{app:prov}
+%=====================================================================
+\subsection{Files consulted}
+The following files of the \path{UNNS_ENTANGLE_I} project were read and are cited; none was modified. SHA-256 digests are of the files as read on 21 October 2026.
+
+\begin{center}\footnotesize
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{1.5in}>{\ttfamily\tiny}p{2.95in}@{}}
+\toprule
+Key & File & SHA-256\\
+\midrule
+G1 & \path{docs/GCT_AXIOMS_v001.md} & 5df0c5478a8fe294053fb6613f315a44c280bc1a16ee37978828f9349ded33ac\\
+G2 & \path{docs/GCT_JOINT_THEOREM_v002.md} & 2f54d4aba6dafebb5e3a1d3fd4effd819e72e0c3307cd648ea40e117e77e28bf\\
+G3 & \path{docs/GCT_GENERATIVE_CONSTRUCTION_v002.md} & 833fdf0a2aa73012bda38616b7571ae415d79f468d7537125e74a1f214c2acb8\\
+G4 & \path{docs/GCT_VERDICT_v002.md} & 9d291c4c10244fbcae086c9980a57699f6ee8ca3367e4d4e79554b4344cb90d7\\
+G4 & \path{docs/GCT_ADVERSARIAL_AUDIT_v002.md} & c3815356a8783805465e077710ea27661dac76265e0d558d5de9559a6bb13dd5\\
+G5 & \path{docs/XVI_SOURCE_AUDIT_v001.md} & 1cc02785a885784af73f15cdb371a9d3897fe99c93157eb7e94f42981fc82853\\
+G6 & \path{docs/GCT_VERDICT_v001.md} & 2879e300093937d2a90939b1bde1be477d71f3bacb9dc769121a2755bc75072f\\
+G7 & \path{docs/sources/XVI_ENGINE_v084.html} & da4f217eaba86eba02517e6f6c2d70d8e5da43b189158b3ad22b93399d47d44d\\
+G8 & \path{config/GCT_LOCK_v002.json} & 014a58c3b9fef6ca3391bac965c73537d661af82eb2edbc00401c63c884c7d66\\
+G9 & \path{relational_invariants.pdf} & 3dd3b21a12e3d59101b89ffb3aa505bb9ebbbba4064ab08e4eb9934056e6e9b4\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Also read but not cited: \path{docs/GCT_THEOREM_v001.md}, \path{docs/GCT_BELL_AUDIT_v001.md}, \path{docs/OPERATOR_MAP.md}, \path{docs/CONTEXT.md}, \path{GCT_README_v002.md}. The Chamber~XVI HTML supplied with this task (\path{UNNS-Chamber_XVI_v0.8.4_STABLE.html}) has the same SHA-256 digest as G7, so the two are byte-identical.
+
+\subsection{What each source contributed}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+Source & Used for\\
+\midrule
+G1, G6 & the v001 frozen assumptions and the no-go verdict under Bell-local factorisation (context only)\\
+G2, G8 & binary joint-event representation; symmetry conditions on the kernel; the underdetermination family (context; Remark~\ref{rem:gct}; arithmetic in Table~\ref{tab:legendre})\\
+G3 & vocabulary: alphabet, generation, constraints, ordering; the weak sense of admissibility; the statement that the grammar is a candidate, not canonical\\
+G4 & the v002 verdict and the stopping rule\\
+G5, G7 & description of Operator XVI as a Helmholtz decomposition; audit notes on the discrete implementation (\S\ref{sec:closure})\\
+G9 & the route-composition analysis in which the Legendre counterexample, the observable-null refinement condition and the $(s,h)$ decomposition first appear\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Introduced versus adopted, and limits of the record}
+All formal definitions and results of Sections~\ref{sec:routes}--\ref{sec:compat} are statements about the linear route systems of Definition~\ref{def:system}. The Legendre counterexample and the hidden-sector decomposition are \emph{reconstructed and verified independently} here from their defining formulae as they appear in G9; the theorem statements, the deficit, the Refinement-Compatibility Theorem with its hypotheses, the permutation example and all proofs were written for this manuscript. The test package that G9 reports for its own two-state recurrent route realisation (``GCT v003'') is not part of the files provided and is neither reproduced nor relied upon (\S\ref{sec:repro}). No reference to the UNNS program bibliography is made, because none of its entries is needed for the mathematics.
+
+%=====================================================================
+\begin{thebibliography}{99}\small
+%=====================================================================
+\bibitem{AAR99} G.~E.~Andrews, R.~Askey, R.~Roy, \emph{Special Functions}, Cambridge University Press, 1999.
+\bibitem{Bel64} J.~S.~Bell, On the Einstein Podolsky Rosen paradox, \emph{Physics} \textbf{1} (1964), 195--200.
+\bibitem{Bro82} K.~S.~Brown, \emph{Cohomology of Groups}, Graduate Texts in Mathematics 87, Springer, 1982.
+\bibitem{CHSH69} J.~F.~Clauser, M.~A.~Horne, A.~Shimony, R.~A.~Holt, Proposed experiment to test local hidden-variable theories, \emph{Phys.\ Rev.\ Lett.} \textbf{23} (1969), 880--884.
+\bibitem{Gre75} W.~H.~Greub, \emph{Linear Algebra}, 4th ed., Graduate Texts in Mathematics 23, Springer, 1975.
+\bibitem{KS60} J.~G.~Kemeny, J.~L.~Snell, \emph{Finite Markov Chains}, Van Nostrand, 1960.
+\bibitem{Lan02} S.~Lang, \emph{Algebra}, revised 3rd ed., Graduate Texts in Mathematics 211, Springer, 2002.
+\bibitem{Mac71} S.~Mac Lane, \emph{Categories for the Working Mathematician}, Graduate Texts in Mathematics 5, Springer, 1971.
+\bibitem{Rom08} S.~Roman, \emph{Advanced Linear Algebra}, 3rd ed., Graduate Texts in Mathematics 135, Springer, 2008.
+\bibitem{Tsi80} B.~S.~Tsirelson, Quantum generalizations of Bell's inequality, \emph{Lett.\ Math.\ Phys.} \textbf{4} (1980), 93--100.
+\medskip
+\bibitem{G1} UNNS Entanglement project (\path{UNNS_ENTANGLE_I}), \emph{GCT Axioms v001}, \path{docs/GCT_AXIOMS_v001.md}.
+\bibitem{G2} \emph{GCT Joint Correlation Representation Theorem v002}, \path{docs/GCT_JOINT_THEOREM_v002.md}.
+\bibitem{G3} \emph{GCT v002 --- Joint Generative Structure}, \path{docs/GCT_GENERATIVE_CONSTRUCTION_v002.md}.
+\bibitem{G4} \emph{GCT v002 Scientific Verdict} and \emph{Adversarial Audit and Frozen Stopping Rule}, \path{docs/GCT_VERDICT_v002.md}, \path{docs/GCT_ADVERSARIAL_AUDIT_v002.md}.
+\bibitem{G5} \emph{Canonical XVI source reconciliation}, \path{docs/XVI_SOURCE_AUDIT_v001.md}.
+\bibitem{G6} \emph{GCT Verdict v001}, \path{docs/GCT_VERDICT_v001.md}.
+\bibitem{G7} \emph{UNNS Laboratory --- Chamber XVI (Closure)}, Operator XVI, engine v0.8.4, \path{docs/sources/XVI_ENGINE_v084.html}.
+\bibitem{G8} \emph{GCT v002 lock}, \path{config/GCT_LOCK_v002.json}.
+\bibitem{G9} \emph{GCT-III --- Generative Bilinearity: The Route Test} and the follow-up analysis of observable identity, transcript \path{relational_invariants.pdf} (15 pp.), provided with this task.
+\end{thebibliography}
+
+\end{document}
