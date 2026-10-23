@@ -13,7 +13,7 @@
 | FIELD-I | [`sources/FIELD-I/`](sources/FIELD-I/) | 152 | Complete base and releases `v001`–`v012`, including code, proofs, logs, manifests and launchers |
 | UNNS_RELATIONAL_I | [`sources/UNNS_RELATIONAL_I/`](sources/UNNS_RELATIONAL_I/) | 44 | Supporting research and manuscript source records |
 | UNNS_ENTANGLE_I | [`sources/UNNS_ENTANGLE_I/`](sources/UNNS_ENTANGLE_I/) | 222 | Supporting exploratory research and recorded tests |
-| **Total** | [`sources/`](sources/) | **440** | All source files retained byte-for-byte |
+| **Total** | [`sources/`](sources/) | **440** | All source files retained: 401 byte-identical to the original files; 39 text files stored with LF line endings (see [`NEWLINE_LEDGER.tsv`](NEWLINE_LEDGER.tsv)) |
 
 **Important SELECT-II distinction:** [`sources/SELECT-II/v002/`](sources/SELECT-II/v002/) is the earlier `select2.py` snapshot; [`sources/SELECT-II/v002b/`](sources/SELECT-II/v002b/) contains the separate `select2b.py` extension and its note/output. These three v002b files were present in the user's earlier source archive but absent from the latest 437-file upload. Both are preserved, **not silently merged or substituted**.
 
@@ -32,14 +32,14 @@ For complete background, see [REFERENCE_INDEX.md](REFERENCE_INDEX.md), [BASELINE
 
 ## Preservation and audit
 
-- **440 individual source files** have unchanged SHA-256 content; only the parent directory paths are normalized for clean internal navigation and working version-relative paths.
-- The unchanged **437-file upload** is additionally kept verbatim as [`archives/ORIGINAL_USER_UPLOAD.zip`](archives/ORIGINAL_USER_UPLOAD.zip).
+- **440 individual source files** have unchanged content. Their original SHA-256 hashes are reproduced exactly for 401 files, and for 39 text files after restoring the original CRLF line endings (GitHub stores text with LF; see [`NEWLINE_LEDGER.tsv`](NEWLINE_LEDGER.tsv)). Only the parent directory paths are normalized for clean internal navigation and working version-relative paths.
+- The original **437-file upload ZIP** (SHA-256 `e1a204297ed30cbab1096dd0edaf5bd6894386edcdcb4814a31efe5941a222b4`) is **not included** in this repository; its hash is kept in [`SHA256_ARCHIVES.sha256`](SHA256_ARCHIVES.sha256) as a historical record only.
 - The three recovered historical files are explicitly identified in [`SOURCE_MAP.tsv`](SOURCE_MAP.tsv).
-- [`SHA256_SOURCES.sha256`](SHA256_SOURCES.sha256) checks each research file; [`SHA256_ARCHIVES.sha256`](SHA256_ARCHIVES.sha256) checks the exact original ZIP.
+- [`SHA256_SOURCES.sha256`](SHA256_SOURCES.sha256) checks each research file; [`NEWLINE_LEDGER.tsv`](NEWLINE_LEDGER.tsv) records the newline form of each original file so that the check is independent of the git line-ending setting.
 - [`RUN_VERIFY.bat`](RUN_VERIFY.bat) performs a **read-only integrity/path check**. It does *not* run or modify research experiments.
 
 Existing research launchers inside `sources/` are retained *as historical research evidence*. This repository copy is for mathematical references, not for ongoing computations. If you choose to run a historical script, do so in a separate working copy because its output may overwrite recorded files.
 
 ## Citation policy
 
-Once committed, cite exact GitHub commit URLs or a frozen repository tag, rather than an unfrozen `main` branch. See [CITATION.md](CITATION.md). All mathematical conclusions are model-specific; the SELECT-II successor graph and FIELD-I collective map are **explicitly chosen rules**, not uniquely forced by original nest arithmetic. Existing errata take precedence over superseded interpretations.
+Cite exact GitHub commit URLs, not an unfrozen `main` branch. Reference Collection v001 is commit `bb8b12d753c600c597feb00df17fe139c7cc65fa`. See [CITATION.md](CITATION.md). All mathematical conclusions are model-specific; the SELECT-II successor graph and FIELD-I collective map are **explicitly chosen rules**, not uniquely forced by original nest arithmetic. Existing errata take precedence over superseded interpretations.

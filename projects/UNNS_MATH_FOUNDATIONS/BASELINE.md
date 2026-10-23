@@ -15,7 +15,7 @@
 | UNNS_RELATIONAL_I | `sources/UNNS_RELATIONAL_I/` | Supporting references; no automatic theorem promotion |
 | UNNS_ENTANGLE_I | `sources/UNNS_ENTANGLE_I/` | Supporting references; no automatic theorem promotion |
 
-**Every one of the 437 files in the latest upload is included without byte changes.** The three recovered v002b files are additional and explicitly recorded. There are 440 preserved source files total.
+**Every one of the 437 files in the latest upload is included without content changes** (the preserved files are byte-identical to the originals except 39 text files whose line endings are stored as LF; see `NEWLINE_LEDGER.tsv`). The three recovered v002b files are additional and explicitly recorded. There are 440 preserved source files total.
 
 File paths for FIELD-I directories were normalized from variants `FIELD-I v00x` / `FIELD-I_v00x` to `v00x` in order to restore references such as `..\v010\field10.py` in the Windows launchers; *no* original research text was edited. Source-to-destination mapping, original paths and hashes are in `SOURCE_MAP.tsv`.
 
