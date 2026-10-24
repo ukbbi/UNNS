@@ -1,0 +1,29 @@
+\chapter{Exact arithmetic algorithms and reproducibility}\label{app:algo}
+
+Every numerical statement of this volume is produced by exact integer or rational arithmetic (Python integers and \texttt{fractions.Fraction}); no floating-point value enters a statement, a table entry or a certificate. Floating point is used only to draw the figures from exact data. The package contains the full source (\texttt{engine.py}, \texttt{engine\_seeds.py}, \texttt{check\_volume\_ii.py}, \texttt{mkfigs2.py}, \texttt{gen\_tables.py}) and the data files, so that every result can be re-run.
+
+\section{Algorithms}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+\item[Direct iteration (\texttt{direct}, \texttt{Gof}, \texttt{Lof}, \texttt{fibre}).] Compute \(\Dx(x)\) for \(x=a/b\) by testing the divisors \(d\) of the square-root part of \(a\) with \(d\equiv1\ (\mathrm{mod}\ b)\) (Lemma~\ref{lem:sqrtpart}); then \(G\), \(L\), and \(C(x)=x+L^2/G\) in \texttt{Fraction}. This is the reference implementation: every other algorithm is validated against it.
+\item[Residue machine (\texttt{mstep}, \texttt{normalise}, \texttt{state\_to\_x}).] A persistent state is the triple \((g,\gamma,E)\) with \(x=\gamma L^2/g\), \(L=\prod p^{e_p}\). One step applies Theorem~\ref{thm:onestep}: it computes \(w=\gamma+1\), \(h\), \(b'\), the exponent ceilings \(s'_p\), the set of \(d\mid\sigma'\) with \(d\equiv1\ (\mathrm{mod}\ b')\) via residues of \(p^k\) modulo \(g\), and returns \((\gamma',E')\) or reports loss of persistence. Cost per step is polynomial in \(\sum_po_p\) over the primes with \(p^2\mid w\) or already in \(L\). Class repetition (Theorem~\ref{thm:closure}) is detected by hashing the class vector, which proves eternal periodicity (\texttt{min\_period}, \texttt{cyc\_gaps}).
+\item[Carry-level predictor (\texttt{avail}, \texttt{next\_M}).] From a reset state, test each candidate \(M\ge2\) (with \(M^2<g\) or \(<4g\)) for availability: whether \(\prod_{p\mid M}p^{e_p+j_p}\cdot a\equiv1\ (\mathrm{mod}\ g)\) for some \(a\) in the residue set of the remaining divisors (Theorem~\ref{thm:predictor}). The smallest available \(M\) is the next carry. Cost: \(O(\sqrt g)\) candidates, each a subset-product test of size \(\le\prod(e_q+1)\), done in the quotient group of Theorem~\ref{thm:quotient}.
+\item[Odometer data (\texttt{abs\_set}, \texttt{pend\_j}).] \(\Abs_p\), the pending exponent \(j_p\) and the worst-case carry \(m_p\) of a state (Theorems~\ref{thm:odometer},~\ref{thm:scheduler}).
+\item[Static certificate (S3)--(S5).] For a reset state \(E\) with an apparent survivor \(r\): compute \(\Abs_r\), \(m=r^{d_r}\), test \(m^2<g\), test that no \(M<m\) coprime to \(r\) is available (\texttt{avail}), and that no prime factor of \(g\) is \(\le m^2\). A positive answer proves the whole future of the orbit (Theorem~\ref{thm:certificate}).
+\item[Transient data (\texttt{kappa}, \texttt{Hclass}, \texttt{Kpoly}, \texttt{kappa3}).] Exact evaluation of \(\kappa\), \(H(g)\), \(K_{\mathrm{poly}}(g)\) and \(\kappa_3\) from Definition~\ref{def:transient}; the recursion \(\mathcal R\) of Theorem~\ref{thm:dynG} is evaluated by memoised recursion over the divisors of \(g\).
+\end{description}
+
+\section{Verification}
+
+The script \texttt{check\_volume\_ii.py} recomputes every statement of the table of checks at the end of this appendix from the definitions, independently of the source-record scripts, on exact finite instances: random seeds, adversarial reset states, the explicit families of Chapters~\ref{ch:persist} and~\ref{ch:gamma}, the sharp witnesses of Table~\ref{tab:kappa}, and the six composite or even cycles. Its results are consistency tests of finite instances. They do not replace the proofs of the text, and they do not certify a universal statement by sampling; where a universal statement is proved by a finite computation, that is stated in the theorem (class closure, Theorem~\ref{thm:closure}; the divisor checks of Theorem~\ref{thm:qcarry}). The run recorded with this volume passes all checks (the count is given at the end of this appendix).
+
+\paragraph{Running the package.}
+\texttt{python3 check\_volume\_ii.py} runs the full check suite with fixed sample sizes and writes \texttt{checks\_volume\_ii.run.json}; \texttt{--quick} runs a smaller sample, and \texttt{--record} writes the archived \texttt{checks\_volume\_ii.json} instead; \texttt{python3 mkfigs2.py} regenerates all figures and \texttt{figs/figdata.json} from the registry file and the engine; \texttt{python3 gen\_tables.py} regenerates the crosswalk, dependency, audit and check tables of the appendices and the two \texttt{.tsv} files.
+
+\paragraph{Provenance of the figures.} Each figure is computed from an exact orbit or exact table: Figure~\ref{fig:growth} from the orbits listed in its caption; Figure~\ref{fig:gchain} from the orbit of \(2025/11\); Figure~\ref{fig:regimeI} from all \(t\le2000\); Figures~\ref{fig:gamma}--\ref{fig:wheel},~\ref{fig:ratios} from the residue machine, with the first steps checked against direct iteration; Figure~\ref{fig:competition} from an orbit at \(g=53\); Figure~\ref{fig:selection} from the state of Example~\ref{ex:cert127}; Figures~\ref{fig:kappa},~\ref{fig:bounds} from \texttt{witnesses.json} and 150 random reset states; Figure~\ref{fig:reach} from 75 exact steps of three orbits; Figure~\ref{fig:dag} from the registry dependency lists. The numerical data behind the figures are stored in \texttt{figs/figdata.json}.
+
+\section*{Table of checks}
+
+One line per check; \emph{Result} is \textsf{pass} when every instance satisfied the statement.
+
+\input{checks_table}
