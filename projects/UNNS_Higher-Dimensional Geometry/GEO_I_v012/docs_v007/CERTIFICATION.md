@@ -1,0 +1,17 @@
+# GEO-I v007 — Programme D: certificates and cost accounting
+
+All certificates live in `certificates/` and are checked by **`certificates/checker.py`**, a standalone program (Python standard library only; imports nothing from this release; `python3 -I certificates/checker.py FILE.json …`; exit status 0 iff every certificate is VALID). `verify.py` runs it in isolated mode and also runs the in-release implementations; the two paths are independent code.
+
+| Kind | File | Content | What the checker recomputes |
+|---|---|---|---|
+| **D1_coverage** | `D1_coverage.json` (6 boxes, e.g. `(5,2,(7,10))`, `(13,5,(20,26))`, `(4,3,(12,8))`) | `d,s,Q`, list of cells `[u,g,h]`, and an explicit finite **subdivision** of `conv(F)`: convex pieces (exact rational vertices), each tagged with the cell that contains it | `F`; every cell's corners in `F` and `g,h` independent **Graver** (conformal minimality recomputed); every piece convex, inside its cell and inside `conv(F)`; pieces pairwise interior-disjoint (exact clipping); `Σ area(pieces) = area(conv F)` — hence `conv(F) ⊆ ∪cells ⊆ U` |
+| **D2_rank** | `D2_rank.json` (parity 4, `1,1,1,2,3`, `1,1,2,2,3,3`, `1,1,2,2,3,4,7`, `1,1,2,2,4,4,7,7`) | binary columns, claimed min/max witness rank | codewords, circuits, all cells as (circuit family, coset) by an own implementation; non-embedded (collision exists); every coordinate deletion embedded (**minimality**); every collision's witness rank (exact rational elimination), `min`/`max` equal the claim; the exact shared point `z` (½ on `U`, `x` outside) lies in both cells (explicit parameters ½) |
+| **D3_hollow** | `D3_hollow.json` (8 classes incl. `s = −1`, `d` up to 21) | `(d,s)` | `F`, triangles, area `d`, primitivity, Graver boundary edges, no 1-cell and no 2-cell meets an open triangle (exact), hence `β₁ ≥ 2` |
+| **D4** | `D4_symbolic_records.json` | statement / status / proof pointer / machine-checked range for each registry item | consistency of statuses with the allowed vocabulary (checked by `verify.py`). **These are records, not machine proofs.** The proofs are in COVERAGE.md, HOLLOW_TOPOLOGY.md, BINARY_RANK.md. |
+| **D5** | `D5_cost.json` | cell counts and wall-clock for the strip-cell certificate vs. the generic cell enumeration, and the standalone check time | — |
+
+**Failure behaviour.** Each checker rejects with a reason (tests in `tests/test_geo7.py`: a certificate with a missing piece, with a non-Graver generator, an embedded box, a non-minimal box, a wrong claimed rank, a non-unit `s`).
+
+**Cost accounting (D5, benchmark boxes).** `(7,3,(9,14))`: 21 fibre points, 16 strip cells vs 111 generic 2-cells; `(11,4,(13,22))`: 29 points, 19 vs 218; `(13,5,(20,26))`: 43 points, 30 vs 461 (7–15× fewer). The strip-cell family has `O(|F|)` cells for **every** box with `Q₂ ≥ 2d` (COVERAGE.md); the generic enumeration grows with the number of Graver cells. Wall-clock in `D5_cost.json` is machine-dependent and informational.
+
+**What is and is not certified.** The D1 certificates certify `U = conv(F)` for the listed boxes only; Theorem A-COL (proof, not certificate) covers all boxes with `max(Q) ≥ 2d`. No D1 certificate is claimed for the squareless small boxes; their status is the adversarial search record (COVERAGE.md §6). A D2 certificate certifies one minimal box; G7-C2 is a statement about all of them (OPEN). Resource exhaustion in any generator is reported UNAVAILABLE, never VALID.

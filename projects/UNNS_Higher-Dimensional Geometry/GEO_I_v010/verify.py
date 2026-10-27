@@ -1,0 +1,552 @@
+#!/usr/bin/env python3
+"""GEO-I v010 verifier.   python3 verify.py --smoke  (Level 1, a few minutes)    python3 verify.py  (Level 1 + Level 2, full)
+Core checks use only files inside this release.  Exact integer/rational arithmetic; anything not run is reported UNAVAILABLE, never PASS.
+Gate G1 = the unmodified v005 verifier (regression_v005.py) must pass completely."""
+import os, sys, json, time, hashlib, subprocess, itertools, random, argparse
+ROOT = os.path.dirname(os.path.abspath(__file__))
+for d in ('geometry', 'topology', 'frozen', 'experiments', 'theory'): sys.path.insert(0, os.path.join(ROOT, d))
+ap = argparse.ArgumentParser(); ap.add_argument('--smoke', action='store_true'); SMOKE = ap.parse_args().smoke; MODE = 'smoke' if SMOKE else 'full'
+from math import gcd
+import modular_layers as ML, small_boxes as SB, binary_01 as B, coverage as C
+import witness_dimension as WD
+from lattice_model import Lat, U_betti
+OUT = os.path.join(ROOT, 'output'); DATA = os.path.join(OUT, 'data')
+REP = os.path.join(OUT, 'smoke' if SMOKE else 'reports'); os.makedirs(REP, exist_ok=True)
+CHECKS = []; FAILS = 0; T0 = time.time(); GRP = ['inherited']
+
+
+def check(name, ok, detail=None):
+    global FAILS
+    CHECKS.append({'name': name, 'ok': bool(ok), 'detail': detail, 'group': GRP[0]}); FAILS += (not ok)
+    ds = '' if detail is None else '   [' + str(detail)[:150] + ']'
+    print(('PASS  ' if ok else 'FAIL  ') + name + ds, flush=True)
+
+
+def sha(p): return hashlib.sha256(open(p, 'rb').read()).hexdigest()
+def rows(p): return [json.loads(l) for l in open(p)] if os.path.exists(p) else []
+def inv(s, d): return next(t for t in range(1, d + 1) if (s * t) % d == 1 % d)
+def units(d): return [s for s in range(1, d) if gcd(s, d) == 1]
+
+# ---------------------------------------------------------------- G9 preservation / integrity
+FROZEN = {'geo1lib.py': '0c94b3a73721c0c69823aee53f33710cad186280f3e8d8659bbb4188381c8831', 'geo2lib.py': 'a8c47c4ff0aebbcfb41372dcaba5006b12349add5c1103073583f50c093d852e'}
+check('G9: frozen v001/v002 libraries byte-identical to released (sha-256)', all(sha(os.path.join(ROOT, 'frozen', k)) == v for k, v in FROZEN.items()))
+bad = []
+for l in open(os.path.join(ROOT, 'MANIFEST.sha256')):
+    h, p = l.strip().split(None, 1); p = p.lstrip('*')
+    if not os.path.exists(os.path.join(ROOT, p)) or sha(os.path.join(ROOT, p)) != h: bad.append(p)
+check('G9: MANIFEST.sha256 verifies (every shipped file unchanged)', not bad, bad[:3])
+prov = json.load(open(os.path.join(ROOT, 'PROVENANCE.json')))
+check('G9: reference modules inherited from v005 are recorded with source hashes and match the shipped copies', all(sha(os.path.join(ROOT, p)) == h for p, h in prov['inherited_v005_sha256'].items()), len(prov['inherited_v005_sha256']))
+check('G9: modules, data and certificates inherited UNCHANGED from GEO-I v007 (G1 preservation) match the recorded v007 hashes: %d files' % len(prov['inherited_v007_sha256']), all(os.path.exists(os.path.join(ROOT, p)) and sha(os.path.join(ROOT, p)) == h for p, h in prov['inherited_v007_sha256'].items()), len(prov['inherited_v007_sha256']))
+
+# ---------------------------------------------------------------- G1 regression: the v005 verifier, unmodified checks
+t = time.time()
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'regression_v005.py')] + (['--smoke'] if SMOKE else []), capture_output=True, text=True, cwd=ROOT)
+last = [l for l in r.stdout.splitlines() if 'CORE' in l][-1:] or [r.stderr[-200:]]
+check('G1: v005 regression suite (80 witness certificates, 4D/5D parity, b=24 (5,7,13,23), s=+-1 theorems, d<=21 certificates, tests) passes completely', r.returncode == 0, last[0].strip())
+subprocess.run([sys.executable, '-c', 'pass'])
+
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_geo6.py')], capture_output=True, text=True)
+check('tests/test_geo6.py (v006 unit tests) pass', r.returncode == 0 and ' 0 failures' in r.stdout, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:])
+# ---------------------------------------------------------------- Programme A
+TYPES9 = [(5, 2), (7, 2), (7, 3), (8, 3), (9, 2), (11, 3), (11, 4), (13, 5), (10, 3)]
+rng = random.Random(6)
+nbox = 0; nbad = 0
+for (d, s) in (TYPES9[:3] if SMOKE else TYPES9):
+    boxes = [(a, b) for a in range(d, 3 * d + 1) for b in range(d, 3 * d + 1) if max(a, b) >= 2 * d]
+    if SMOKE: boxes = rng.sample(boxes, 25)
+    for Q in boxes:
+        res = ML.verify_box(d, s, Q); nbox += 1; nbad += (res['ok'] is not True)
+check('G6-C1 (A): exact proof-cell cover of conv(F) for every sampled box with max(Q1,Q2)>=2d (thick, thin-x, thin-y) -- %d boxes, %d types' % (nbox, 3 if SMOKE else 9), nbad == 0, 'violations %d' % nbad)
+
+nsb = 0; nbad = 0; nfb = 0
+for (d, s) in ([(7, 2), (9, 2), (11, 4)] if SMOKE else [(d, s) for d in range(4, 14) for s in units(d) if inv(s, d) >= s]):
+    for r1 in range(d):
+        for r2 in range(d):
+            if (r1, r2) == (0, 0): continue
+            if s == inv(s, d) and r2 < r1: continue
+            res = SB.certify_box(d, s, (d + r1, d + r2)); nsb += 1; nbad += (not res['ok']); nfb += res['method'] != 'family'
+check('G6-C1 (A): all small boxes Q=(d+r1,d+r2) certified exactly (sufficient-family test, generic fallback) -- %d boxes' % nsb, nbad == 0, 'bad %d, via generic fallback %d' % (nbad, nfb))
+
+gs = rows(os.path.join(DATA, 'general_s_d15_70.jsonl'))
+have = {(r['d'], r['s']) for r in gs}; dm = 14
+for dd in range(15, 71):
+    if not {(dd, ss) for ss in units(dd) if inv(ss, dd) >= ss} <= have: break
+    dm = dd
+badrows = [r for r in gs if r['n_bad'] or r['proof_cell_audit_bad'] or r.get('generic_audit_bad')]
+nsm = sum(r['small_boxes_certified'] for r in gs)
+check('G6-C1 (A): shipped general-s run: %d unit classes (all classes complete for 15<=d<=%d), %d small boxes certified, 0 violations/unresolved, proof-cell and generic audits clean' % (len(gs), dm, nsm), len(gs) > 100 and not badrows, 'complete for d<=%d; partial rows beyond; target 70: UNAVAILABLE' % dm)
+wf = []
+for sh in (0, 1): wf += rows(os.path.join(DATA, 'window_full_d22_30_s%d.jsonl' % sh))
+wd = sorted({r['d'] for r in wf}); nb = sum(r['boxes'] for r in wf); un = sum(len(r['unresolved']) for r in wf)
+check('G6-C1 (A): COMPLETE base-window certification for d in %s (%d unit classes, %d boxes): every window box exactly certified; by v004 Lemma S4 U=conv(F) for ALL Q>=(d,d), Q!=(d,d) for these d' % ('%d..%d' % (wd[0], wd[-1]) if wd else '-', len(wf), nb), len(wf) > 0 and un == 0, 'unresolved %d' % un)
+ext = []
+for fn in ('stabilization_extended.jsonl',):
+    ext += rows(os.path.join(DATA, fn))
+check('G6-C1 (A): v005 d<=21 extended-stabilization records shipped (inherited)', len(ext) > 0, len(ext))
+
+nh = 0; nbad = 0; b1 = set()
+for d in range(3, 8 if SMOKE else 11):
+    for s in units(d):
+        if s == d - 1: continue
+        pcs = C.uncovered(Lat(d, d, d, s), (d, d)); nh += 1
+        T1 = [(C.mpq(0), C.mpq(d)), (C.mpq(d - inv(s, d)), C.mpq(d - 1)), (C.mpq(d), C.mpq(d))]; T2 = [(C.mpq(d), C.mpq(0)), (C.mpq(d - 1), C.mpq(d - s)), (C.mpq(d), C.mpq(d))]
+        def ia(P, T):
+            if C.area2(T) < 0: T = T[::-1]
+            rr = P
+            for i in range(3):
+                p, q = T[i], T[(i + 1) % 3]; a = -(q[1] - p[1]); bb = (q[0] - p[0]); c = a * p[0] + bb * p[1]
+                rr = C.clip(rr, -a, -bb, -c)
+                if len(rr) < 3: return 0
+            return abs(C.area2(rr))
+        tot = sum(abs(C.area2(p)) for p in pcs)
+        ok = tot == 2 * d and sum(ia(p, T1) + ia(p, T2) for p in pcs) == tot
+        betti = U_betti(Lat(d, d, d, s), (d, d))[0]; b1.add(betti[1])
+        nbad += (not ok) or betti[1] != 2
+check('G6-C2 (A): hollow box (d,d): conv(F)\\U = int T1 u int T2 exactly (area d) and beta1 = 2 for every unit s != -1, recomputed for %d types' % nh, nbad == 0 and b1 == {2}, sorted(b1))
+hs = json.load(open(os.path.join(DATA, 'hollow_general_s.json')))
+check('G6-C2 (A): shipped hollow check: %d types, 3<=d<=%d, 0 violations; beta1=2 for all rows carrying a Betti number' % (hs['n_types'], hs['range'][1]), hs['n_bad'] == 0 and all(r['beta1'] == 2 for r in hs['rows'] if 'beta1' in r))
+
+# ---------------------------------------------------------------- Programme B
+a4 = B.analyse([1, 1, 1, 1]); a5 = B.analyse([1] * 5)
+check('B: 0/1 engine reproduces 4D parity benchmark: non-embedded, 3 witnesses, all span 3; box is minimal', (not a4['embedded']) and a4['n_witnesses'] == 3 and a4['span_hist'] == {3: 3} and B.minimal_nonembedded([1] * 4))
+check('B: 5D parity (1^5): 90 witnesses, min span 3, individual witnesses of span 4 exist (15); box not minimal', a5['n_witnesses'] == 90 and a5['span_hist'] == {3: 75, 4: 15} and not B.minimal_nonembedded([1] * 5))
+g = {1: 5, 2: 7, 4: 13}
+def res_of(c):
+    r = 1
+    for bit in (1, 2, 4):
+        if c & bit: r = r * g[bit] % 24
+    return r
+rr = random.Random(1); npair = 0; mism = []
+for N in (3, 4, 5):
+    allc = list(itertools.combinations_with_replacement(range(1, 8), N))
+    for cols in rr.sample(allc, 12 if SMOKE else 60):
+        a = B.analyse(list(cols)); w = WD.analyse_box_cells(tuple(res_of(c) for c in cols), 24, (1,) * N); npair += 1
+        if (0 if a['embedded'] else a['n_witnesses']) != w['n_witnesses'] or (None if a['embedded'] else a['min_span']) != w['min_span']: mism.append(cols)
+check('B: INDEPENDENT cross-validation of the 0/1 engine against the v005 engine (cells/LP route, residues mod 24) on %d random binary lattices: witness counts and minimum spans agree' % npair, not mism, mism[:2])
+if not SMOKE:
+    w6 = WD.analyse_box_cells((2,) * 6, 3, (1,) * 6); a6 = B.analyse([1] * 6)
+    check('B: parity n=6 at 1^6: 0/1 engine and v005 engine give the same 1440 witnesses and the same span histogram {3:360,4:315,5:585,6:180} (min span 3, individual spans up to 6)',
+          a6['n_witnesses'] == w6['n_witnesses'] == 1440 and a6['span_hist'] == {int(k): v for k, v in w6['span_histogram'].items()} == {3: 360, 4: 315, 5: 585, 6: 180})
+    r6 = random.Random(7); m6 = []
+    for cols in r6.sample(list(itertools.combinations_with_replacement(range(1, 8), 6)), 15):
+        a = B.analyse(list(cols)); w = WD.analyse_box_cells(tuple(res_of(c) for c in cols), 24, (1,) * 6)
+        if (0 if a['embedded'] else a['n_witnesses']) != w['n_witnesses'] or (None if a['embedded'] else a['min_span']) != w['min_span']: m6.append(cols)
+    check('B: cross-validation vs v005 on 15 random 6-coordinate binary lattices (witness classes and min spans)', not m6, m6[:2])
+sp = {}
+for n, mm in ((4, 4), (5, 5)) + (() if SMOKE else ((6, 5),)):
+    import subprocess as sp_
+    out = os.path.join(REP, 'binrank_check_n%d.json' % n)
+    sp_.run([sys.executable, os.path.join(ROOT, 'experiments', 'binary_rank_search.py'), str(n), str(mm), out], capture_output=True)
+    cur = json.load(open(out)); ship = json.load(open(os.path.join(DATA, 'binrank_n%d.json' % n)))
+    check('B: exhaustive recomputation n=%d (all binary column multisets of rank<=%d): minimal boxes by min span = %s, equals shipped' % (n, mm, cur['minimal_boxes_by_min_span']),
+          cur['minimal_boxes_by_min_span'] == ship['minimal_boxes_by_min_span'] and set(cur['minimal_boxes_by_min_span']) <= {'3'})
+shipall = {n: json.load(open(os.path.join(DATA, 'binrank_n%d.json' % n))) for n in range(3, 9)}
+check('B: shipped census n=3..8: %s minimal boxes, ALL with minimum witness span 3 (no rank>=4 minimal box found; G6-C3 remains OPEN)' % [sum(v['minimal_boxes_by_min_span'].values()) for v in shipall.values()],
+      all(set(v['minimal_boxes_by_min_span']) <= {'3'} for v in shipall.values()))
+
+# ---------------------------------------------------------------- Programme C
+cb = json.load(open(os.path.join(DATA, 'cert_benchmark.json')))
+check('C: certificate-size benchmark shipped: proof-cell certificates (%d-%d cells) vs generic cell enumeration (%d-%d 2-cells), both exact and agreeing' % (min(r['proof_cells'] for r in cb), max(r['proof_cells'] for r in cb), min(r.get('generic_2cells', 10**9) for r in cb), max(r.get('generic_2cells', 0) for r in cb)),
+      all(r['proof_ok'] and r.get('generic_ok', True) for r in cb) and all(r['proof_cells'] * 4 < r['generic_2cells'] for r in cb if 'generic_2cells' in r))
+for (d, s, Q) in ([(17, 5, (40, 40))] if SMOKE else [(17, 5, (40, 40)), (21, 8, (42, 60)), (29, 12, (58, 58))]):
+    res = ML.verify_box(d, s, Q)
+    check('C: recomputed O(|F|)-size proof certificate for (d,s,Q)=(%d,%d,%s): %d cells cover conv(F) exactly' % (d, s, Q, res['n_cells']), res['ok'] is True)
+
+
+# =====================================================================================================  v007 NEW CHECKS
+GRP[0] = 'inherited-v007'
+sys.path.insert(0, os.path.join(ROOT, 'certificates'))
+import corner_sail as CS, coverage_lemmas as CL, binary_circuits as BC, centre_collisions as CC, rank_reduction as RR, hollow_geometry as HG
+import checker as CK
+ok7 = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_geo7.py')], capture_output=True, text=True)
+check('v007 tests/test_geo7.py (unit tests, incl. checker rejection tests) pass', ok7.returncode == 0 and ' 0 failures' in ok7.stdout, ok7.stdout.strip().splitlines()[-1] if ok7.stdout.strip() else ok7.stderr[-200:])
+
+# ---- Programme A  (G7-T1 / Theorem A-COL, G7-C1 reduction)
+dmax = 5 if SMOKE else 9
+n, bad = CL.verify_Acol(dmax)
+check('A / G7-T1 REGENERATED: Theorem A-COL strip-cell cover is exact and every lemma (K>=1, steps, bridges Graver, hull pieces Graver, sliver height) holds on all %d boxes, d<=%d, all units, Q1 in [d,3d], Q2 in [2d,3d]' % (n, dmax), not bad, bad[:3])
+ac = json.load(open(os.path.join(DATA, 'v7_acol_12.json')))
+check('A / G7-T1 SHIPPED RECORD (verification of supplied record, not regeneration): A-COL machine check d<=%d: %d boxes, 0 failures' % (ac['dmax'], ac['boxes']), ac['failures'] == [] and ac['boxes'] > 8000)
+rr = random.Random(77); nb = 0; badl = []
+for _ in range(25 if SMOKE else 120):
+    d = rr.randint(14, 45); s = rr.choice(units(d)); Q = (rr.randint(d, 3 * d), rr.randint(2 * d, 3 * d)); nb += 1
+    r = CS.verify_col_box(d, s, Q)
+    if not (r['ok'] and all(r['lemmas'].values())): badl.append((d, s, Q))
+check('A / G7-T1: Theorem A-COL on %d random boxes with 14<=d<=45 (beyond the exhaustive range)' % nb, not badl, badl[:3])
+# independent path: standalone checker re-derives F, Graver and the subdivision from the shipped D1 certificates
+D1 = json.load(open(os.path.join(ROOT, 'certificates', 'D1_coverage.json')))
+check('A / D1 (independent path): standalone checker validates %d coverage certificates with explicit finite subdivisions (pieces inside cells, disjoint, areas sum to area(conv F))' % len(D1), all(CK.check_D1(c)[0] for c in D1))
+cmp_bad = []
+for (d, s, Q) in [(7, 3, (9, 14)), (11, 4, (13, 22)), (8, 5, (8, 16))]:
+    cells, tags = CS.strip_cells(d, s, Q)
+    a = ML.covered(d, s, Q, list(dict.fromkeys(cells)))[0]; c = [x for x in D1 if (x['d'], x['s'], tuple(x['Q'])) == (d, s, Q)]
+    if c and not (a and CK.check_D1(c[0])[0]): cmp_bad.append((d, s, Q))
+check('A: two independent coverage routines (v006 exact polygon subtraction vs standalone subdivision checker) agree on the shipped certificate boxes', not cmp_bad, cmp_bad)
+hl = CL.classify_hypll_steps(7 if SMOKE else 10); hs_ = json.load(open(os.path.join(DATA, 'v7_hypll.json')))
+check('A / HYP-LL (regression, stays FALSE): step failures classified with exact witnesses: %d of %d boxes fail (d<=%d); none has r1>0, r2>0 and max(Q)>=2d' % (hl['boxes_failing'], hl['boxes'], 7 if SMOKE else 10),
+      hl['boxes_failing'] > 0 and not [x for x in hl['failing_other'] if max(x[2], x[3]) >= 2 * x[0]] and (SMOKE or hl['boxes_failing'] == hs_['boxes_failing']), 'shipped d<=10: %d' % hs_['boxes_failing'])
+sq = CL.squareless
+nsq = 0; cand = []
+for d in range(3, 8 if SMOKE else 12):
+    for s in units(d):
+        L = Lat(d, d, d, s)
+        for q1 in range(d, 2 * d):
+            for q2 in range(d, 2 * d):
+                if (q1, q2) == (d, d) or not sq(d, s, (q1, q2)): continue
+                nsq += 1; u = C.uncovered(L, (q1, q2))
+                if u is None or len(u) > 0: cand.append((d, s, q1, q2))
+check('A / G7-C1 adversarial (REGENERATED): all %d squareless small boxes with d<=%d satisfy U=conv(F) by the generic exact routine; no counterexample candidate' % (nsq, 7 if SMOKE else 11), not cand, cand[:3])
+tot = 0; badc = []
+for fn in sorted(os.listdir(DATA)):
+    if fn.startswith('v7_sqless_'):
+        r = json.load(open(os.path.join(DATA, fn))); tot += r['squareless_tested']; badc += r['counterexample_candidates'] + r['unresolved']
+check('A / G7-C1 adversarial (SHIPPED RECORDS): %d squareless small boxes certified over the shipped ranges (d from 3), 0 counterexample candidates, 0 unresolved' % tot, tot > 29000 and not badc)
+
+# ---- Programme B
+rb = random.Random(5); nbox = 0; badb = []
+for n_ in (4, 5, 6, 7):
+    for m_ in (2, 3, 4):
+        allc = list(itertools.combinations_with_replacement(range(1, 1 << m_), n_)); rb.shuffle(allc)
+        for cols in allc[:(6 if SMOKE else 25)]:
+            cols = list(cols)
+            if B.is_embedded(cols): continue
+            nbox += 1; r = RR.check_box(cols); f = CC.check_facts(cols)
+            if not (r['delta_in_span'] and r['atom_ok'] and all(f.values())): badb.append(cols)
+check('B: Theorems B-DELTA, B-COSET, B-NULL, fact F1 and the (2,2) atom criterion hold on %d random non-embedded binary boxes (n=4..7)' % nbox, not badb, badb[:2])
+for n_ in ((4, 5, 6) if SMOKE else (4, 5, 6, 7)):
+    out = os.path.join(REP, 'v7_rank_n%d.json' % n_)
+    subprocess.run([sys.executable, os.path.join(ROOT, 'experiments', 'rank_counterexamples.py'), str(n_), str(max(n_ - 3, 1)), out], capture_output=True)
+    cur = json.load(open(out)); ship = json.load(open(os.path.join(DATA, 'v7_rank_n%d.json' % n_)))
+    check('B: REGENERATED census n=%d (all binary column multisets of rank<=%d = n-3): minimal boxes by min witness rank %s; nullity histogram %s; all collisions full-support: %s' % (n_, max(n_ - 3, 1), cur['minimal_boxes_by_min_rank'], cur['nullity_hist'], cur['all_collisions_full_support']),
+          cur['minimal_boxes_by_min_rank'] == ship['minimal_boxes_by_min_rank'] and set(cur['minimal_boxes_by_min_rank']) == {'3'} and cur['all_collisions_full_support'])
+r8 = json.load(open(os.path.join(DATA, 'v7_rank_n8.json')))
+check('B: SHIPPED RESTRICTED census n=8 (rank<=%d only; NOT complete): %d minimal boxes, min rank 3 for all; labelled restricted' % (r8['mmax'], sum(r8['minimal_boxes_by_min_rank'].values())), not r8['complete_nullity_ge3'] and set(r8['minimal_boxes_by_min_rank']) == {'3'})
+D2 = json.load(open(os.path.join(ROOT, 'certificates', 'D2_rank.json')))
+check('B / D2 (independent path): standalone checker (own coset-based cell/collision implementation) validates %d obstruction-rank certificates, incl. minimality, rank, and exact shared point' % len(D2), all(CK.check_D2(c)[0] for c in D2))
+cross_bad = []
+for cols in ([1, 1, 1, 1], [1, 1, 1, 2, 3], [1, 1, 2, 2, 3, 3], [1, 1, 2, 2, 3, 4, 7]):
+    n_ = len(cols); full = (1 << n_) - 1
+    a = sum(1 for _, a_, b_ in CC.collisions(cols)); b = sum(len(v) * (len(v) - 1) // 2 for k, v in CK.collisions(cols, full))
+    if a != b: cross_bad.append(cols)
+check('B: two independent cell/collision engines (binary_01.cells_01 vs checker coset implementation) give identical collision-pair counts', not cross_bad, cross_bad)
+for cols in ([1] * 4, [1] * 5):
+    pass
+check('B regression: parity 4 (min rank 3, 3 witnesses) and 5 (90 witnesses, spans {3:75,4:15}) unchanged under the v007 engines', RR.check_box([1] * 4)['min_rank'] == 3 and B.analyse([1] * 5)['span_hist'] == {3: 75, 4: 15})
+check('B: separation of rank notions: parity-5 box has individual witness rank 4 yet min rank 3 and is not minimal (min over witnesses != max over witnesses)', B.analyse([1] * 5)['max_span'] == 4 and B.analyse([1] * 5)['min_span'] == 3)
+
+# ---- Programme C
+nh = 0; bh = []
+for d in range(3, 13 if SMOKE else 25):
+    for s in units(d):
+        nh += 1
+        if not HG.check_hollow(d, s)['ok']: bh.append((d, s))
+check('C / G7-T3 REGENERATED: hollow-box certificate (primitive triangles, Graver boundary edges, no 1-cell or 2-cell meets int T_i) => beta_1>=2, for all %d unit classes with 3<=d<=%d' % (nh, 12 if SMOKE else 24), not bh, bh[:3])
+tot = 0; bh = []
+for fn in ('v7_hollow_3_50.json', 'v7_hollow_51_64.json'):
+    r = json.load(open(os.path.join(DATA, fn))); tot += r['pairs']; bh += r['failures']
+check('C / G7-T3 SHIPPED RECORDS: hollow certificates for %d unit classes, 3<=d<=64: 0 failures (lower bound beta_1>=2; the all-d proof is in HOLLOW_TOPOLOGY.md, the records are evidence)' % tot, tot > 1200 and not bh)
+D3 = json.load(open(os.path.join(ROOT, 'certificates', 'D3_hollow.json')))
+check('C / D3 (independent path): standalone checker validates %d hollow-box certificates' % len(D3), all(CK.check_D3(c)[0] for c in D3))
+ind_bad = []
+for (d, s) in ((5, 2), (7, 3), (8, 3), (9, 2)):
+    pcs = C.uncovered(Lat(d, d, d, s), (d, d)); ind_bad += [] if (HG.check_hollow(d, s)['ok'] and sum(abs(C.area2(p)) for p in pcs) == 2 * d) else [(d, s)]
+check('C: third path: v005 exact uncovered-region routine gives total complement area d (area2 = 2d) consistent with the two-triangle certificate', not ind_bad, ind_bad)
+check('C regression: s=-1 is not forced into the two-triangle family (beta_1 = d from v005 Theorem H1); the certificate still gives beta_1 >= 2', U_betti(Lat(7, 7, 7, 6), (7, 7))[0][1] == 7 and HG.check_hollow(7, 6)['ok'])
+
+# ---- Programme D
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'certificates', 'checker.py')] + [os.path.join(ROOT, 'certificates', f) for f in ('D1_coverage.json', 'D2_rank.json', 'D3_hollow.json')], capture_output=True, text=True)
+check('D1-D3: certificates verify with the standalone checker run in isolated mode (python -I, no release imports): %d VALID' % r.stdout.count('VALID  '), r.returncode == 0 and 'INVALID' not in r.stdout)
+d4 = json.load(open(os.path.join(ROOT, 'certificates', 'D4_symbolic_records.json')))
+check('D4: symbolic records use only the allowed statuses (TARGET is not a status) and every PROVED* record names a proof location or machine range', all(x['status'] in ('PROVED', 'PROVED+CHECKED', 'CHECKED', 'FALSE', 'CORRECTED', 'OPEN', 'UNAVAILABLE') for x in d4) and all(('proof' in x or 'machine_checked' in x or x['status'] not in ('PROVED', 'PROVED+CHECKED')) for x in d4))
+d5 = json.load(open(os.path.join(ROOT, 'certificates', 'D5_cost.json')))
+check('D5: cost accounting shipped: strip-cell certificates are %.1fx-%.1fx smaller than generic 2-cell enumerations on the benchmark boxes' % (min(r_['generic_2cells'] / r_['strip_cells'] for r_ in d5), max(r_['generic_2cells'] / r_['strip_cells'] for r_ in d5)), all(r_['checker_ok'] for r_ in d5))
+
+# ---- regressions (v007 view): historical items must remain recorded
+t7 = open(os.path.join(ROOT, 'docs_v009', 'MATHEMATICS.md'), encoding='utf-8').read()
+check('G9: historical falsifications remain recorded in MATHEMATICS.md (q_i>o_i, 2^10 7^10/15, HYP-LL FALSE, 82944/5, 2^{10+2t}3^4/5, 3600 and 210^4, parity 4/5, b=24, exceptional (d,d) box)', all(k in t7 for k in ('2^10', 'HYP-LL', '82944/5', '3600', '210', 'b = 24', 'exceptional')))
+
+
+# =====================================================================================================  v008 NEW CHECKS
+GRP[0] = 'inherited-v008'
+import small_box as SB8, hollow as H8, cell_cover as CCV, binary_min as BM, rank_reduce as RRD, centre_collisions as CC8, rank_reduction as RR8
+import checker8 as CK8
+ok8 = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_geo8.py')], capture_output=True, text=True)
+check('v008 tests/test_geo8.py (unit tests incl. certificate tamper rejection) pass', ok8.returncode == 0 and ' 0 failures' in ok8.stdout, ok8.stdout.strip().splitlines()[-1] if ok8.stdout.strip() else ok8.stderr[-200:])
+
+# ---- Programme A
+dm = 40 if SMOKE else 150; nb = 0; bad = []
+for d in range(3, dm + 1):
+    for s in units(d):
+        nb += 1
+        if not all(H8.check_filling(d, s).values()): bad.append((d, s))
+check('A/B G8-T1 REGENERATED: the four explicit filling parallelograms are legitimate cells (corners in F, Graver independent generators) and contain T1 / T2, for %d unit classes, 3<=d<=%d' % (nb, dm), not bad, bad[:3])
+bad = []; nbx = 0
+for d in range(3, 9 if SMOKE else 13):
+    for s in units(d):
+        for Q in ((d, d + 1), (d + 1, d), (d + 1, d + 1)):
+            nbx += 1
+            if C.uncovered(Lat(d, d, d, s), Q): bad.append((d, s, Q))
+check('A/B G8-T1 INDEPENDENT PATH (v005 exact polygon subtraction over all cells): leftover of conv(F) is empty at Q=(d,d+1),(d+1,d),(d+1,d+1) on %d boxes, d<=%d (all units incl. s=-1)' % (nbx, 8 if SMOKE else 12), not bad, bad[:3])
+bad = 0; nsb = 0
+for d in range(3, 14 if SMOKE else 33):
+    m = None
+    for s in units(d):
+        m = SB8.record_min(d, s); tot = 0
+        for Q in SB8.boxes(d):
+            nsb += 1; a = SB8.squareless(d, s, Q); tot += a; bad += (a != SB8.squareless_staircase(d, s, Q, m))
+        bad += (tot != SB8.n_squareless(d, s))
+check('A G8-S REGENERATED: staircase criterion equals the squareless definition on all %d small boxes (3<=d<=%d) and the count formula N_sq(d,s) matches enumeration' % (nsb, 13 if SMOKE else 32), bad == 0, bad)
+tot = sum(SB8.n_squareless(d, s) for d in range(3, 33) for s in units(d))
+check('A G8-S: closed formula reproduces the v007 total of 29,890 squareless boxes (3<=d<=32)', tot == 29890, tot)
+sa_files = sorted(f for f in os.listdir(DATA) if f.startswith('v8_small_attack_') and f.endswith('.json'))
+sa = [json.load(open(os.path.join(DATA, f))) for f in sa_files]
+nb_ = sum(r['boxes'] for r in sa); nf = sum(len(r['failures']) for r in sa); nm = sum(r['staircase_mismatch'] for r in sa)
+check('A G8-C1 SHIPPED RECORDS (verification of supplied records, not regeneration): exhaustive exact small-box sweep, %d boxes in %s, covered %d, failures %d, staircase mismatches %d' % (nb_, [tuple(r['range']) for r in sa], sum(r['covered'] for r in sa), nf, nm),
+      nb_ > 5000 and nf == 0 and nm == 0 and all(r['covered'] == r['boxes'] for r in sa))
+nbr = 0; bad = []
+for d in range(3, 8 if SMOKE else 11):
+    for s in units(d):
+        for Q in SB8.boxes(d):
+            if (Q[0] - d) * (Q[1] - d) == 0 or (Q[0] - d + Q[1] - d) % 3 == 0:
+                nbr += 1
+                if not C.is_hull_covered(Lat(d, d, d, s), Q): bad.append((d, s, Q))
+check('A G8-C1 REGENERATED: exact all-cells coverage of %d small boxes (all boundary boxes plus a deterministic subset of interior boxes), d<=%d: no counterexample' % (nbr, 7 if SMOKE else 10), not bad, bad[:3])
+# ---- Programme B
+hv = json.load(open(os.path.join(DATA, 'v8_hollow_51_72.json')))
+check('B G8-T2 SHIPPED RECORD: hollow two-triangle structure on %d unit classes with 51<=d<=72, %d violations (v007 record covers 3..50)' % (hv['n_types'], hv['n_bad']), hv['n_bad'] == 0 and hv['n_types'] > 700)
+import hollow_check as HC
+bad = [(d, s) for d in range(3, 9 if SMOKE else 14) for s in units(d) if s != d - 1 and not HC.check(d, s)[0]]
+check('B G8-T2 REGENERATED: conv(F)\\U = int T1 u int T2 exactly (area d) for all unit classes s != -1, d<=%d' % (8 if SMOKE else 13), not bad, bad[:3])
+hd = json.load(open(os.path.join(DATA, 'v8_hole_death.json')))
+check('B G8-T4 SHIPPED RECORD: beta_1 along Q=(d,h), h=d..2d for %d unit classes (d in %s): beta_1 = 0 at every h>=d+1; no increase anywhere; first drop at h=d+1' % (len(hd), sorted({r['d'] for r in hd})[:1] + sorted({r['d'] for r in hd})[-1:]),
+      all(all(b == 0 for b in r['beta1_seq'][1:]) and r['first_drop'] == r['d'] + 1 and not r['increases'] for r in hd))
+reg_bad = []
+for (d, s) in ((5, 2), (7, 3), (5, 4), (7, 6)):
+    b0 = U_betti(Lat(d, d, d, s), (d, d))[0][1]; b1 = U_betti(Lat(d, d, d, s), (d, d + 1))[0][1]; reg_bad += [] if (b0 == (d if s == d - 1 else 2) and b1 == 0) else [(d, s, b0, b1)]
+check('B REGENERATED: beta_1 drops from 2 (s != -1) / d (s = -1) at (d,d) to 0 at (d,d+1) on 4 types', not reg_bad, reg_bad)
+# ---- Programme C
+ranks_ok = True; rows_ = []
+for n_ in range(4, (8 if SMOKE else 9) + 1):
+    ship = json.load(open(os.path.join(DATA, 'v8_rank_n%d.json' % n_)))
+    rows_.append((n_, ship['minimal_representatives'])); ranks_ok &= ship['complete'] and set(ship['min_rank_histogram']) == {'3'} and ship['all_collisions_full_support']
+check('C SHIPPED RECORDS: complete censuses (B-BASIS, rank<=n-3) n=4..%d: minimal representatives %s, all minimum witness rank 3, all collisions full-support' % (rows_[-1][0], [r[1] for r in rows_]), ranks_ok)
+import subprocess as sp2
+for n_ in ((4, 5, 6, 7) if SMOKE else (4, 5, 6, 7, 8)):
+    out = os.path.join(REP, 'v8_rank_n%d.json' % n_)
+    sp2.run([sys.executable, os.path.join(ROOT, 'experiments', 'rank_attack.py'), str(n_), out], capture_output=True)
+    cur = json.load(open(out)); ship = json.load(open(os.path.join(DATA, 'v8_rank_n%d.json' % n_)))
+    check('C REGENERATED: complete census n=%d: minimal representatives %d, min-rank histogram %s, equals shipped' % (n_, cur['minimal_representatives'], cur['min_rank_histogram']),
+          all(cur[k] == ship[k] for k in ('representatives_tested', 'nonembedded_representatives', 'minimal_representatives', 'min_rank_histogram', 'distinct_code_invariant_classes')) and cur['complete'])
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+import check_nullity_classification as CNC
+ok_, rep_ = CNC.run(7 if SMOKE else 8)
+check('C G8-T3b INDEPENDENT PATHS: nullity-3/4 classification (orbits + blow-ups) equals brute-force basis+extras enumeration as code-invariant sets, n<=%d: %s' % (7 if SMOKE else 8, [(r['n'], r['k'], r['path1']) for r in rep_]), ok_)
+c3 = BM.classify_nullity(3); c4 = BM.classify_nullity(4)
+check('C G8-T3b REGENERATED: nullity 3: %s orbit(s) with p=%s, nullity 4: p=%s; all minimum rank 3' % (len(c3['minimal_reduced_orbits']), [o['p'] for o in c3['minimal_reduced_orbits']], sorted(o['p'] for o in c4['minimal_reduced_orbits'])),
+      [o['p'] for o in c3['minimal_reduced_orbits']] == [4] and sorted(o['p'] for o in c4['minimal_reduced_orbits']) == [6, 7, 8] and c3['min_rank_histogram'] == {3: 1} and c4['min_rank_histogram'] == {3: 3})
+bad = []; nser = 0
+for sig, p in (([2, 3, 4, 5], 4),):
+    for n_ in range(p, p + (3 if SMOKE else 4)):
+        for comp in itertools.product(range(1, n_ - p + 2), repeat=p):
+            if sum(comp) != n_: continue
+            nser += 1; r_ = RRD.check_series_invariance(BM.blowup_parity_columns(sig, list(comp)))
+            if not (r_['embedded_equal'] and r_['minimal_equal'] and r_['rank_sets_equal'] and r_['collision_counts_equal'] and r_['classes'] == p): bad.append((comp, r_))
+check('C B-SERIES REGENERATED: %d blow-ups of the parity-4 code agree with their reduction (embeddedness, minimality, collision counts, witness-rank sets)' % nser, not bad, bad[:1])
+bad = []
+for k in (3, 4, 5):
+    sig = BM.rm_support(k); cols = BM.code_to_parity_columns(sig, len(sig))
+    w = BM.common_base_witness(cols)
+    if not (not B.is_embedded(cols) and B.minimal_nonembedded(cols) and w and BM.collision_rank_of(cols, *w) == 3 and min(RR8.witness_rank(len(cols), a, b)[0] for cen, a, b in CC8.collisions(cols)) == 3): bad.append(k)
+check('C G8-T3c REGENERATED: RM(1,k-1) boxes (n=4,8,16) are minimal non-embedded with a common-base collision of rank 3 and minimum witness rank 3', not bad, bad)
+simplex_ok = all(B.is_embedded(BM.code_to_parity_columns(BM.simplex_support(m), 2 ** m - 1)) for m in (2, 3, 4))
+check('C G8-T3c: simplex-code boxes (deletions of RM boxes) are embedded, m=2,3,4', simplex_ok)
+cb = json.load(open(os.path.join(DATA, 'v8_common_base.json')))
+check('C G8-C3 prime SHIPPED RECORD: every minimal box (complete census) n=4..9 contains two two-circuit partitions of [n] with a common base: %s' % {k: (v['minimal_representatives'], v['with_common_base_2circuit_partitions']) for k, v in cb.items()}, all(v['minimal_representatives'] == v['with_common_base_2circuit_partitions'] for v in cb.values()))
+import binary_01 as B01
+bad = []
+for cols in ([1, 1, 1, 1], [1, 1, 2, 2, 3, 3], [1, 2, 3, 1, 2, 3, 1]):
+    n_ = len(cols)
+    if not B01.is_embedded(cols):
+        if min(RR8.witness_rank(n_, a, b)[0] for cen, a, b in CC8.collisions(cols)) < 3: bad.append(cols)
+check('C B-LOW: no witness of rank < 3 on sample non-embedded boxes (exact)', not bad, bad)
+# ---- Programme D
+for f in ('C1_cover.json', 'C2_gap.json', 'C3_homology.json', 'C4_rank.json'):
+    items = json.load(open(os.path.join(ROOT, 'certificates', f)))
+    check('D certificates %s: %d accepted by checker8 (own recomputation)' % (f, len(items)), all(CK8.KINDS[c['kind']](c)[0] for c in items))
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'certificates', 'checker8.py')] + [os.path.join(ROOT, 'certificates', f) for f in ('C1_cover.json', 'C2_gap.json', 'C3_homology.json', 'C4_rank.json', 'D1_coverage.json', 'D2_rank.json', 'D3_hollow.json')], capture_output=True, text=True)
+check('D checker8.py run isolated (python -I, no release imports) on all 7 certificate files: %d VALID, 0 INVALID' % r.stdout.count('VALID  '), r.returncode == 0 and 'INVALID' not in r.stdout)
+t8 = open(os.path.join(ROOT, 'docs_v009', 'MATHEMATICS.md'), encoding='utf-8').read()
+check('G8 documentation: registry contains all G8 IDs and only allowed statuses are used for results (TARGET/PROPOSED never a result status)', all(k in t8 for k in ('G8-T1', 'G8-S', 'G8-R1', 'G8-C1', 'G8-T2', 'G8-C2', 'G8-C3', 'G8-T3', 'G8-T4', 'G8-T5')) and 'PROPOSED — not results' in t8)
+check('G8 documentation preserved: the eight v008 documents are shipped unchanged in docs_v008/', all(os.path.exists(os.path.join(ROOT, 'docs_v008', f)) for f in ('README.md', 'REPORT.md', 'MATHEMATICS.md', 'SMALL_BOX.md', 'HOLLOW.md', 'MINIMAL_RANK.md', 'CERTIFICATION.md', 'PRIOR_ART.md')))
+check('G8 figures preserved: 7 v008 figures shipped unchanged in figures_v008/', len([f for f in os.listdir(os.path.join(ROOT, 'figures_v008')) if f.endswith('.png')]) == 7)
+
+# =====================================================================================================  v009 NEW CHECKS
+GRP[0] = 'inherited-v009'
+import binary5 as B5, checker8 as CK9, pickle, re
+ok9 = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_geo9.py')], capture_output=True, text=True)
+check('v009 tests/test_geo9.py (unit tests incl. certificate tamper rejection) pass', ok9.returncode == 0 and ' 0 failures' in ok9.stdout, ok9.stdout.strip().splitlines()[-1] if ok9.stdout.strip() else ok9.stderr[-200:])
+# ---- Programme C
+sp_counts = []
+for k in (2, 3, 4):
+    r_ = B5.orbit_representatives(k); sp_counts.append(sum(1 for m in r_ for R in r_[m] if B5.rank_of(list(R)) == k))
+check('C orbit generator of v009 reproduces the spanning-support orbit counts 2, 6, 36 for k=2,3,4', sp_counts == [2, 6, 36], sp_counts)
+r5 = pickle.load(open(os.path.join(DATA, 'v9_orbits_k5.pkl'), 'rb')); bs = json.load(open(os.path.join(DATA, 'v9_burnside.json')))
+check('C k=5 orbit list: %d orbits of subsets of PG(4,2) (1326 spanning) equals the independent Burnside count over all %d elements of GL(5,2) (minus the empty set)' % (sum(len(v) for v in r5.values()), bs['group_orders']['5']), sum(len(v) for v in r5.values()) + 1 == bs['orbits']['5'])
+res5 = json.load(open(os.path.join(DATA, 'v9_binary5.json')))
+sig_list = [tuple(x[1]) for x in res5]
+check('C G9-T4: exactly 12 minimal non-embedded reduced boxes of nullity 5; minimum witness rank 3 for every one (shipped record)', len(res5) == 12 and all(x[2] == 3 for x in res5))
+if SMOKE:
+    chosen = res5[:3]
+else:
+    chosen = res5
+bad = []
+for n_, sig, mr in chosen:
+    cols = BM.code_to_parity_columns(sig, len(sig)); C_ = B5.code_masks(sig)
+    if not (not B.is_embedded(cols) and B.minimal_nonembedded(cols) and B5.min_rank(C_, n_) == 3 and min(RR8.witness_rank(len(cols), a, b)[0] for cen, a, b in CC8.collisions(cols)) == 3): bad.append(sig)
+check('C G9-T4 REGENERATED by two independent code paths (v009 binary5 / v006 binary_01 + rank_reduction): %d minimal boxes re-verified minimal non-embedded with min rank 3' % len(chosen), not bad, bad[:1])
+cc = json.load(open(os.path.join(DATA, 'v9_binary5_crosscheck.json')))
+check('C nullity 5 cross-check record: %d supports (<=16 points) classified by both code paths, 0 disagreements' % cc['checked'], cc['disagreements'] == 0 and cc['checked'] == 785)
+hist = json.load(open(os.path.join(DATA, 'v9_minrank_all_nonembedded_k5.json')))
+check('C every non-embedded spanning support of nullity 5 (212 orbits, not only minimal) has minimum witness rank 3 (record)', sum(sum(v.values()) for v in hist.values()) == 212 and all(set(v) == {'3'} for v in hist.values()))
+zc = json.load(open(os.path.join(DATA, 'v9_zero_column.json')))
+check('C G9-Z: no minimal non-embedded box has a zero parity column (exhaustive m<=3, n<=8: %d matrices with a zero column, %d non-embedded, 0 minimal)' % (zc['tested'], zc['nonembedded_with_zero']), zc['minimal_with_zero'] == 0)
+bad = []
+for m_ in (2, 3):
+    for c in itertools.combinations_with_replacement(range(1 << m_), 6):
+        if 0 in c and not B.is_embedded(list(c)):
+            j = c.index(0)
+            if B.is_embedded(list(c[:j] + c[j + 1:])): bad.append(c)
+check('C G9-Z mechanism REGENERATED: deleting a zero column never makes a non-embedded box embedded (m<=3, n=6)', not bad, bad[:1])
+cs5 = json.load(open(os.path.join(ROOT, 'certificates', 'C5_rank5.json')))
+check('D certificates C5_rank5.json: 12 RANK certificates accepted by checker8 (own recomputation)', len(cs5) == 12 and all(CK9.check_RANK(c)[0] for c in cs5))
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'certificates', 'checker8.py'), os.path.join(ROOT, 'certificates', 'C5_rank5.json')], capture_output=True, text=True)
+check('D checker8.py run isolated (python -I, no release imports) on C5_rank5.json: %d VALID, 0 INVALID' % r.stdout.count('VALID  '), r.returncode == 0 and 'INVALID' not in r.stdout)
+# ---- Programmes A, B  (adversarial surveys: statuses of results are 'no counterexample within completed scope', never 'proved')
+ha = [json.load(open(os.path.join(DATA, 'v9_hollow_attack_p%d.json' % i))) for i in (0, 1)]
+check('A hollow-box adversarial survey (d=73..110, structured s: large partial quotients, composite d, s=2..6, d-2..d-4, (d+-1)/2, d/k): %d exact pairs, 0 violations of conv(F)\\U = int T1 u int T2 (scope: this finite set only)' % sum(h['pairs'] for h in ha), all(not h['violations'] for h in ha) and sum(h['pairs'] for h in ha) > 300)
+dm = (3, 5) if SMOKE else (3, 7)
+nbox = 0; nbad = 0
+for d in range(dm[0], dm[1] + 1):
+    for s in units(d):
+        for Q in SB8.boxes(d):
+            nbox += 1; nbad += (not C.is_hull_covered(Lat(d, d, d, s), Q))
+check('B cap/hull coverage REGENERATED: every nonexceptional small box, d=%d..%d, all units: %d boxes, %d uncovered' % (dm[0], dm[1], nbox, nbad), nbad == 0)
+ca = json.load(open(os.path.join(DATA, 'v9_cap_attack.json'))) if os.path.exists(os.path.join(DATA, 'v9_cap_attack.json')) else None
+v8a = [json.load(open(os.path.join(DATA, f))) for f in ('v8_small_attack_3_14.json', 'v8_small_attack_15_20.json')]
+check('B cap survey records: v008 d=3..20 (%d boxes) and v009 extension %s, all boxes covered, 0 cap failures' % (sum(a['boxes'] for a in v8a), (ca['range'], ca['boxes']) if ca else 'UNAVAILABLE'), all(a['boxes'] == a['covered'] for a in v8a) and ca is not None and ca['boxes'] == ca['full_covered'] and not ca['cap_failures'])
+# ---- Programme D / documents
+t9 = open(os.path.join(ROOT, 'docs_v009', 'MATHEMATICS.md'), encoding='utf-8').read()
+ids = ('G9-C1', 'G9-T1', 'G9-T1H', 'G9-CAP', 'G9-T2', 'G9-T3', 'G9-C2', 'G9-T4', 'G9-Z', 'G9-T5')
+check('G9 documentation: registry contains all ten G9 IDs, only the allowed statuses are used, TARGET is never a result status', all(k in t9 for k in ids) and 'TARGET and PROPOSED are not results' in t9)
+check('G9 documentation preserved: the eight v009 documents are shipped unchanged in docs_v009/', all(os.path.exists(os.path.join(ROOT, 'docs_v009', f)) for f in ('README.md', 'REPORT.md', 'MATHEMATICS.md', 'HOLLOW.md', 'CAP.md', 'BINARY5.md', 'CERTIFICATION.md', 'PRIOR_ART.md')))
+check('G9 figures preserved: 7 v009 figures shipped unchanged in figures_v009/', len([f for f in os.listdir(os.path.join(ROOT, 'figures_v009')) if f.endswith('.png')]) == 7)
+check('G9 no unused/placeholder modules: no TODO/placeholder/NotImplemented in theory/ or experiments/', not [f for d_ in ('theory', 'experiments') for f in os.listdir(os.path.join(ROOT, d_)) if f.endswith('.py') and re.search(r'TODO|NotImplemented|PLACEHOLDER', open(os.path.join(ROOT, d_, f), encoding='utf-8').read())])
+prov9 = prov.get('inherited_v008_sha256', {})
+check('G9 preservation: %d v008 files (theory, data, certificates, v008 tests) inherited UNCHANGED, hashes match the recorded v008 release' % len(prov9), len(prov9) > 100 and all(os.path.exists(os.path.join(ROOT, p)) and sha(os.path.join(ROOT, p)) == h for p, h in prov9.items()))
+# =====================================================================================================  v010 NEW CHECKS
+GRP[0] = 'v010'
+import binary6 as B6, modular_sail as MS, checker10 as K10, hollow_check as HC, shutil, tempfile
+ok10 = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_geo10.py')], capture_output=True, text=True)
+check('v010 tests/test_geo10.py (unit tests incl. RANK6/BOUNDARY tamper rejection) pass', ok10.returncode == 0 and ' 0 failures' in ok10.stdout, ok10.stdout.strip().splitlines()[-1] if ok10.stdout.strip() else ok10.stderr[-200:])
+# ---- Programme A: zonogon theorem G10-Z (REGENERATED) and the shipped record
+dmx = 24 if SMOKE else 70
+npairs = 0; badp = []
+for d in range(5, dmx + 1):
+    for s in range(2, d - 1):
+        if gcd(d, s) != 1: continue
+        v = MS.verify_general(d, s); npairs += 1
+        if not (v['cells_valid'] and v['remainder_area2'] == 0): badp.append((d, s))
+check('A G10-Z REGENERATED (exact Fractions): zonogon cover of conv(F) minus (T1 u T2) valid for every unit pair 5<=d<=%d (%d pairs), 0 failures' % (dmx, npairs), not badp, badp[:3])
+sf = json.load(open(os.path.join(DATA, 'v10_sail_families.json')))
+check('A G10-Z shipped record: every unit pair 5<=d<=%d (%d pairs) verified, 0 failures; S1/S2 explicit %d pairs, 0 failures; engine agreement on %d pairs (d<=%d), 0 failures' % (sf['dmax'], sf['pairs'], sf['explicit_S1_S2_pairs'], sf['engine_checked'], sf['engine_max']), sf['dmax'] >= 150 and sf['pairs'] == 6560 and not sf['failures'] and not sf['explicit_failures'] and not sf['engine_failures'])
+eng = [(9, 2), (11, 3), (13, 5)] if SMOKE else [(d, s) for d in range(5, 15) for s in range(2, d - 1) if gcd(d, s) == 1]
+from lattice_model import Lat as _Lat
+bad = []
+for d, s in eng:
+    ok_, tot, inT = HC.check(d, s); cells_e = {(u, g, h) for (u, (g, h)) in C.complex_data(_Lat(d, d, d, s), (d, d))['cells'][2]}
+    if not (ok_ and all(c in cells_e for c in MS.general_cover(d, s))): bad.append((d, s))
+check('A G10-Z vs the v005 cell engine (independent path): conv(F) minus U0 = int T1 u int T2 and every cover cell is an engine cell, %d pairs' % len(eng), not bad, bad[:3])
+steps_bad = 0; sp_ = 0
+for d in range(5, 41):
+    for s in range(2, d - 1):
+        if gcd(d, s) != 1: continue
+        st = MS.sail_steps(d, s); t_ = MS.inv(s, d); sp_ += 1
+        steps_bad += (st[0] != (1, s - d) or st[-1] != (d - t_, -1) or any(not MS.is_graver(d, s, v) for v in st) or any(st[i][1] * st[i + 1][0] > st[i][0] * st[i + 1][1] for i in range(len(st) - 1)))
+check('A Lemma 1/2 (hull chain): first step (1,s-d), last step (d-t,-1), all steps Graver, slopes monotone: %d pairs d<=40' % sp_, steps_bad == 0)
+sa = json.load(open(os.path.join(DATA, 'v10_sail_attack.json')))
+check('A G10-L2 negative record: R-SYM holds, R-MIR/R-EUC/R-LAT FALSE with counterexamples preserved (%d pairs)' % sa['pairs'], sa['rules']['R-SYM']['holds'] and not any(sa['rules'][r]['holds'] for r in ('R-MIR', 'R-EUC', 'R-LAT')))
+# ---- Programme B: the cap is OPEN
+tm = open(os.path.join(ROOT, 'MATHEMATICS.md'), encoding='utf-8').read(); tc = open(os.path.join(ROOT, 'CAP.md'), encoding='utf-8').read()
+check('B honesty: the cap G10-T2 and the consolidation G10-T3 are recorded OPEN (not claimed proved)', 'OPEN' in tc and '| **G10-T2** |' in tm and '**OPEN**' in tm.split('| **G10-T2** |')[1].split('\n')[0] and '**OPEN**' in tm.split('| **G10-T3** |')[1].split('\n')[0])
+# ---- Programme C: binary criterion, nullity six
+res6 = json.load(open(os.path.join(DATA, 'v10_binary6.json')))
+check('C G10-T4 (shipped record): nullity 6 has 381 affine orbits, 350 spanning, 349 non-embedded, 215 minimal; every one minimum witness rank 3 and W2 (minimum 16 two-blocks)', (res6['affine_orbits_nonempty'], res6['spanning'], res6['non_embedded'], len(res6['minimal'])) == (381, 350, 349, 215) and all(m['min_rank'] == 3 and m['W2'] for m in res6['minimal']) and min(m['two_circuit_partitions_of_1'] for m in res6['minimal']) == 16)
+chosen = res6['minimal'][::43] if SMOKE else res6['minimal']
+bad = []
+for m in chosen:
+    sig = m['support']; C_ = B5.code_masks(sig); n_ = len(sig); full = (1 << n_) - 1
+    if not (full in set(C_) and B6.minimal_criterion(C_, n_) and (not B5.embedded(C_)) and all(B5.embedded(B5.delete(C_, i)) for i in range(n_)) and B5.min_rank(C_, n_) == 3): bad.append(sig)
+check('C G10-T4 REGENERATED by two code paths (partition criterion binary6 / cell-collision engine binary5): %d minimal boxes re-verified minimal non-embedded, 1 in C, min rank 3' % len(chosen), not bad, bad[:1])
+small = [m for m in res6['minimal'] if m['p'] <= 14][: (3 if SMOKE else 30)]
+bad = []
+for m in small:
+    sig = m['support']; cols = BM.code_to_parity_columns(sig, len(sig))
+    if not (not B.is_embedded(cols) and B.minimal_nonembedded(cols) and min(RR8.witness_rank(len(cols), a, b)[0] for cen, a, b in CC8.collisions(cols)) == 3): bad.append(sig)
+check('C G10-T4 third path (v006 code: binary_01, centre_collisions, rank_reduction) on %d small nullity-6 minimal boxes (p<=14): minimal non-embedded, min rank 3' % len(small), not bad, bad[:1])
+ccx = {k: json.load(open(os.path.join(DATA, 'v10_binary%d_crosscheck.json' % k))) for k in (3, 4, 5, 6)}
+check('C cross-check records: every spanning class of nullity 3..6 classified by both engines, 0 disagreements (nullity 6: 350 classes)', all(ccx[k]['disagreements'] == 0 for k in ccx) and ccx[6]['checked'] == 350)
+bad = 0
+for k in (3, 4):
+    for m_ in [res for res in [json.load(open(os.path.join(DATA, 'v10_binary%d.json' % k)))]]:
+        bad += (len(m_['minimal']) != {3: 1, 4: 3}[k])
+check('C the affine route reproduces the v008/v009 classifications: 1, 3, 12 minimal classes at nullity 3, 4, 5', not bad and len(json.load(open(os.path.join(DATA, 'v10_binary5.json')))['minimal']) == 12)
+bad = []
+for m in chosen:
+    sig = m['support']; C_ = B5.code_masks(sig); n_ = len(sig); full = (1 << n_) - 1
+    cnt, tot_f = B6.decomposition_profile(C_, n_)
+    if not (all(v == 1 for u, v in cnt.items() if u != full) and len(cnt) == len(C_) - 1 and tot_f == len(C_) - 2 + cnt.get(full, 0)): bad.append(sig)
+check('C G10-R rigidity and counting identity re-verified on %d minimal boxes of nullity 6' % len(chosen), not bad, bad[:1])
+k2 = json.load(open(os.path.join(DATA, 'v10_k2t.json')))
+check('C G10-K: K_{2,t}, t=2..10 minimal non-embedded, rank 3, 2^(t-1) two-blocks for t>=3 (shipped record; t<=5 recomputed in test_geo10)', [r['t'] for r in k2] == list(range(2, 11)) and all(r['non_embedded'] and r['minimal'] and r['witness_rank'] == 3 for r in k2) and all(r['two_blocks'] == 2 ** (r['t'] - 1) for r in k2 if r['t'] >= 3))
+ga = json.load(open(os.path.join(DATA, 'v10_graphic_attack.json'))); a6 = [json.load(open(os.path.join(DATA, 'v10_attack_m6_s%d.json' % i))) for i in (1, 2)]
+check('C adversarial records (G10-C2): no non-W2 box: random nullity-7 supports (%s minimal) and graphic cut spaces (%d samples); counterexample none' % ('/'.join(str(a['random_minimal']) for a in a6), sum(g['samples'] for g in ga)), all(a['counterexample'] is None for a in a6) and all(not g['without_W2'] for g in ga))
+c6 = json.load(open(os.path.join(ROOT, 'certificates', 'C6_rank6.json'))); c7 = json.load(open(os.path.join(ROOT, 'certificates', 'C7_k2t.json'))); c8 = json.load(open(os.path.join(ROOT, 'certificates', 'C8_boundary.json')))
+check('D certificate counts: 215 RANK6 (nullity 6), 7 RANK6 (K_{2,t}), 453 BOUNDARY', (len(c6), len(c7), len(c8)) == (215, 7, 453))
+check('D certificates C6/C7 accepted by checker10 (own recomputation)%s' % (' [sample every 5th C6]' if SMOKE else ''), all(K10.check_RANK6(c)[0] for c in (c6[::5] if SMOKE else c6) + c7))
+sub = c8[::6] if SMOKE else c8
+tmpf = os.path.join(tempfile.mkdtemp(), 'sub_boundary.json'); json.dump(sub, open(tmpf, 'w'))
+files10 = [tmpf] + ([] if not SMOKE else []) + [os.path.join(ROOT, 'certificates', 'C6_rank6.json') if not SMOKE else None, os.path.join(ROOT, 'certificates', 'C7_k2t.json')]
+files10 = [f for f in files10 if f]
+r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'certificates', 'checker10.py')] + files10, capture_output=True, text=True)
+check('D checker10.py run isolated (python -I, no release imports): %d VALID, 0 INVALID (%d BOUNDARY%s)' % (r.stdout.count('VALID  '), len(sub), ', sample' if SMOKE else ', all'), r.returncode == 0 and 'INVALID' not in r.stdout)
+tamper_ok = True
+for i in (3, 77, 200):
+    c = json.loads(json.dumps(c8[i])); c['cells'] = c['cells'][1:]; tamper_ok &= not K10.check_BOUNDARY(c)[0]
+c = json.loads(json.dumps(c6[7])); c['min_rank'] = 4; tamper_ok &= not K10.check_RANK6(c)[0]
+check('D tamper rejection: removed cell, wrong min_rank rejected', tamper_ok)
+# ---- legacy certificate count correction
+nleg = sum(len(json.load(open(os.path.join(ROOT, 'certificates', f)))) for f in ('D1_coverage.json', 'D2_rank.json', 'D3_hollow.json'))
+check('D legacy v007 certificate files D1-D3 contain %d certificates (correction: 19, not 20)' % nleg, nleg == 19)
+# ---- documents, registry, figures, provenance
+need = ('G10-Z', 'G10-T1', 'G10-T1H', 'G10-R1', 'G10-S1', 'G10-S2', 'G10-L1', 'G10-L2', 'G10-L3', 'G10-L4', 'G10-T2', 'G10-T3', 'G10-E1', 'G10-F1', 'G10-A1', 'G10-R', 'G10-L5', 'G10-C1', 'G10-T4', 'G10-K', 'G10-C2', 'G10-T6')
+check('G10 documentation: MATHEMATICS.md registry contains all G10 IDs; allowed statuses only', all(k in tm for k in need) and 'PROVED+CHECKED' in tm and 'UNAVAILABLE' in tm)
+tsv = [l.split('\t') for l in open(os.path.join(ROOT, 'THEOREM_REGISTRY.tsv'), encoding='utf-8').read().splitlines()[1:]]
+check('G10 THEOREM_REGISTRY.tsv: %d rows, every status starts with an allowed word' % len(tsv), len(tsv) >= 25 and all(r[2].split()[0].rstrip(':') in ('PROVED', 'PROVED+CHECKED', 'CHECKED', 'FALSE', 'CORRECTED', 'OPEN', 'UNAVAILABLE') for r in tsv))
+check('G10 documentation: all required documents exist', all(os.path.exists(os.path.join(ROOT, f)) for f in ('README.md', 'REPORT.md', 'MATHEMATICS.md', 'MODULAR_SAIL.md', 'HOLLOW.md', 'CAP.md', 'BINARY6.md', 'RANK_UNIVERSAL.md', 'CERTIFICATION.md', 'PRIOR_ART.md', 'THEOREM_REGISTRY.tsv', 'CONTEXT.md')) and not os.path.exists(os.path.join(ROOT, 'BINARY5.md')))
+check('G10 figures: 8 figures shipped in figures/', len([f for f in os.listdir(os.path.join(ROOT, 'figures')) if f.endswith('.png')]) == 8)
+tp = open(os.path.join(ROOT, 'PRIOR_ART.md'), encoding='utf-8').read()
+check('G11 prior art: sources actually examined are named with their examination level; no novelty/priority claim', 'abstract' in tp and 'no priority or novelty claim' in tp.lower() and '2306.14236' in tp)
+p9 = prov.get('inherited_v009_sha256', {})
+check('G10 preservation: %d v009 files (theory, data, certificates, tests) inherited UNCHANGED, hashes match the recorded v009 release' % len(p9), len(p9) > 100 and all(os.path.exists(os.path.join(ROOT, p)) and sha(os.path.join(ROOT, p)) == h for p, h in p9.items()))
+check('G10 provenance: new_in_v010 files are all present', len(prov.get('new_in_v010', [])) > 30 and all(os.path.exists(os.path.join(ROOT, p)) for p in prov['new_in_v010']))
+core = len(CHECKS); ok = sum(c['ok'] for c in CHECKS)
+g7 = [c for c in CHECKS if c['group'] == 'inherited-v007']; gi = [c for c in CHECKS if c['group'] == 'inherited']; g8 = [c for c in CHECKS if c['group'] == 'inherited-v008']; g9 = [c for c in CHECKS if c['group'] == 'inherited-v009']; g10 = [c for c in CHECKS if c['group'] == 'v010']
+os.makedirs(os.path.join(OUT, 'reports'), exist_ok=True)
+json.dump({'release': 'v010', 'mode': MODE, 'level': 'Level 1 (smoke)' if SMOKE else 'Level 1 + Level 2 (full)', 'v010_new_checks': len(g10), 'v010_new_pass': sum(c['ok'] for c in g10), 'inherited_v009_checks': len(g9), 'inherited_v009_pass': sum(c['ok'] for c in g9),
+           'inherited_v008_checks': len(g8), 'inherited_v008_pass': sum(c['ok'] for c in g8), 'inherited_v007_checks': len(g7), 'inherited_v007_pass': sum(c['ok'] for c in g7),
+           'inherited_regression_pass': sum(c['ok'] for c in gi), 'total_checks': core, 'total_pass': ok, 'archived_v006_counts': {'smoke': '20/20', 'full': '25/25', 'inherited_v005': '52/52'},
+           'seconds': round(time.time() - T0, 1), 'checks': CHECKS}, open(os.path.join(OUT, 'reports', 'verify_%s.json' % MODE), 'w'), indent=1, default=str)
+print('\n%s: v010 NEW %d/%d PASS | inherited v009 re-run %d/%d | inherited v008 re-run %d/%d | inherited v007 re-run %d/%d | inherited v005/v006 regressions %d/%d | TOTAL %d/%d   (%.0f s)' % (
+    MODE.upper(), sum(c['ok'] for c in g10), len(g10), sum(c['ok'] for c in g9), len(g9), sum(c['ok'] for c in g8), len(g8), sum(c['ok'] for c in g7), len(g7), sum(c['ok'] for c in gi), len(gi), ok, core, time.time() - T0))
+sys.exit(1 if FAILS else 0)

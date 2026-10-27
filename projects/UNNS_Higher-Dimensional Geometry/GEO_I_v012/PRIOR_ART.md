@@ -1,0 +1,3 @@
+# GEO-I v012 — prior art (no priority or novelty claim)
+
+No external literature was consulted for the planar cap in this release; Graver bases, lattice polygons and parallelogram cells are used as defined in this project. Reflection arguments of the type in §2 and Pareto-minimal / best-approximation arguments of the type in §1 are elementary and may be known in some form. The v010/v011 abstract-page references (Frederickson–Michel, arXiv:2306.14236; Mphako, Czechoslovak Math. J. 56 (2006), abstract only) concern the binary programme and are inherited unchanged. No reference is fabricated; no statement of novelty is made for G12-T1…T8.
