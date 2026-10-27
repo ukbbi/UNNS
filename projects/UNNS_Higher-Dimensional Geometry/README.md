@@ -1,7 +1,7 @@
 # GEO-I — Higher-Dimensional Arithmetic Geometry of the UNNS Substrate
 
 **Research archive | GEO-I v001–v012**  
-**Location in the UNNS repository:** `projects/UNNS_Higher-Dimensional_Geometry/`
+**Location in the UNNS repository:** `projects/UNNS_Higher-Dimensional Geometry/`
 
 This directory preserves the twelve successive releases of **GEO-I**, the mathematical investigation of geometric structure arising from **distinct nested occurrences** in the UNNS Substrate. The releases develop exact occurrence-coordinate descriptions, modular relation lattices, Graver-generated cell complexes, embedding obstructions, topology, and universal stabilization theorems.
 
@@ -9,32 +9,33 @@ The archive is a **versioned mathematical research record**, not twelve intercha
 
 ## 1. Mathematical origin and scope
 
-For a positive rational value `x = a/b` in lowest terms, the foundational occurrence arithmetic gives the eligible occurrence indices
+For a positive rational value $x=a/b$ in lowest terms, the foundational occurrence arithmetic gives the eligible occurrence indices
 
-\[
-D(x)=\{d\geq 2 : d^2\mid a,\quad d\equiv 1\pmod b\}.
-\]
+$$
+D(x)=\left\{d\geq 2 : d^2\mid a,\quad d\equiv 1\pmod b\right\}.
+$$
 
-Different nested occurrences of the same numerical value remain distinct occurrences. Factoring the index `d` into prime powers yields an exact exponent-coordinate representation of the arithmetic occurrence fibre:
+Different nested occurrences of the same numerical value remain distinct occurrences. Factoring the index $d$ into prime powers yields an exact exponent-coordinate representation of the arithmetic occurrence fibre:
 
-\[
-F_x=(\Lambda_b\cap[0,q])\setminus\{\mathbf 0\},
-\qquad
-\Lambda_b=\left\{\alpha\in\mathbb Z^k:
-\prod_{i=1}^{k}p_i^{\alpha_i}\equiv1\pmod b\right\},
-\quad q_i=\left\lfloor\frac{v_{p_i}(a)}{2}\right\rfloor.
-\]
+$$
+\begin{aligned}
+F_x &= (\Lambda_b\cap[0,q])\setminus\{\mathbf 0\},\\
+\Lambda_b &= \left\{\alpha\in\mathbb Z^k:
+\prod_{i=1}^{k}p_i^{\alpha_i}\equiv1\pmod b\right\},\\
+q_i &= \left\lfloor\frac{v_{p_i}(a)}{2}\right\rfloor.
+\end{aligned}
+$$
 
-GEO-I then studies **explicitly defined geometric constructions** on these arithmetic coordinates: coordinate and Graver-move cells, an abstract complex `K_abs`, its realized cell union `U`, and embedded subdivisions `K_emb` where defined. These objects must not be conflated: abstract and realized topology can differ. A Graver-cell construction is an additional precisely specified geometric model built from the occurrence arithmetic; not every cell attachment is uniquely forced by the occurrence formula.
+GEO-I then studies **explicitly defined geometric constructions** on these arithmetic coordinates: coordinate and Graver-move cells, an abstract complex $K_{\mathrm{abs}}$, its realized cell union $U$, and embedded subdivisions $K_{\mathrm{emb}}$ where defined. These objects must not be conflated: abstract and realized topology can differ. A Graver-cell construction is an additional precisely specified geometric model built from the occurrence arithmetic; not every cell attachment is uniquely forced by the occurrence formula.
 
 For the principal planar results, the normalized relation lattice is
 
-\[
+$$
 \Gamma_{d,s}=\{(i,j)\in\mathbb Z^2:j\equiv si\pmod d\},
 \qquad \gcd(s,d)=1,
-\]
+$$
 
-with nonzero lattice points `F_{d,s,Q}` in the coordinate box `Q`, convex hull `H_{d,s,Q}`, and source-admissible realized Graver-cell union `U_{d,s,Q}`. The binary 0/1 obstruction model is a **separately defined specialization**, not an unrestricted theorem about all higher-dimensional occurrence geometries.
+with nonzero lattice points $F_{d,s,Q}$ in the coordinate box $Q$, convex hull $H_{d,s,Q}$, and source-admissible realized Graver-cell union $U_{d,s,Q}$. The binary 0/1 obstruction model is a **separately defined specialization**, not an unrestricted theorem about all higher-dimensional occurrence geometries.
 
 ## 2. Release index
 
@@ -44,7 +45,7 @@ with nonzero lattice points `F_{d,s,Q}` in the coordinate box `Q`, convex hull `
 | [`GEO_I_v002/`](GEO_I_v002/) | Exact modular-lattice moves, cubical and Graver cell complexes, dimension and topology experiments. |
 | [`GEO_I_v003/`](GEO_I_v003/) | Distinction between abstract and embedded geometry; crossing criteria and explicit non-embedding families. |
 | [`GEO_I_v004/`](GEO_I_v004/) | Finite obstruction-template/embedding criterion; correction of a false depth-only planar stabilization conjecture. |
-| [`GEO_I_v005/`](GEO_I_v005/) | Uniform planar results for `s = ±1`, exceptional-box topology in those classes, and counterexamples to planar-only obstruction witnesses. |
+| [`GEO_I_v005/`](GEO_I_v005/) | Uniform planar results for $s=\pm1$, exceptional-box topology in those classes, and counterexamples to planar-only obstruction witnesses. |
 | [`GEO_I_v006/`](GEO_I_v006/) | Broader exact modular surveys, two-triangle evidence, and binary 0/1 collision/circuit theory. |
 | [`GEO_I_v007/`](GEO_I_v007/) | Universal large-box planar stabilization (G7-T1); general exceptional-hole lower bound; further binary reductions. |
 | [`GEO_I_v008/`](GEO_I_v008/) | First-enlargement filling of distinguished holes, squareless residue staircase, and minimal binary rank results. |
@@ -59,31 +60,31 @@ Consult each release's `README.md`, `REPORT.md`, and `MATHEMATICS.md` (or its re
 
 ### Exceptional planar geometry — GEO-I v005/v007/v010
 
-For the exceptional square `Q = (d,d)`, the source-defined realized geometry can have bounded complementary holes. For the non-special unit classes `d ≥ 5`, `2 ≤ s ≤ d−2`, GEO-I v010 proves the exact complement consists of the interiors of two specified triangles, with first Betti number `β₁ = 2`. The earlier `s = +1` and `s = −1` results are separate; the `s = −1` family has `β₁ = d` (in its stated range). The exceptional square is **excluded** from the stabilization theorem below.
+For the exceptional square $Q=(d,d)$, the source-defined realized geometry can have bounded complementary holes. For the non-special unit classes $d\ge5$, $2\le s\le d-2$, GEO-I v010 proves the exact complement consists of the interiors of two specified triangles, with first Betti number $\beta_1=2$. The earlier $s=+1$ and $s=-1$ results are separate; the $s=-1$ family has $\beta_1=d$ (in its stated range). The exceptional square is **excluded** from the stabilization theorem below.
 
 ### Universal planar convex stabilization — GEO-I v012
 
-For `d ≥ 2`, every unit `s` modulo `d`, and every box `Q = (Q₁,Q₂)` with
+For $d\ge2$, every unit $s$ modulo $d$, and every box $Q=(Q_1,Q_2)$ with
 
-\[
+$$
 Q_1,Q_2\ge d,\qquad Q\ne(d,d),
-\]
+$$
 
 G12-T8 establishes, within the source-defined planar Graver-cell model,
 
-\[
-\boxed{\ U_{d,s,Q}=\operatorname{conv}(F_{d,s,Q})\ }.
-\]
+$$
+\boxed{U_{d,s,Q}=\operatorname{conv}(F_{d,s,Q})}.
+$$
 
 Its proof uses the v012 arithmetic and Graver-boundary theorems and the **previously established** G5-C1, G7-T1 and G10-R1 results. The cap is covered by explicit admissible cells, including mixed enlargements. Exact finite checks support the construction but are **not** the logical basis for the universal quantifiers.
 
 ### Universal binary minimum obstruction rank — GEO-I v011
 
-Within the **frozen binary 0/1 cell model**, v011 proves W2: every minimal non-embedded box has at least two distinct two-circuit partitions of its all-ones word. For reduced supports of size `p ≥ 9`, the stronger bound `n₂ ≥ p−1` holds. Combined with the inherited rank and minimal-support theorems, this yields
+Within the **frozen binary 0/1 cell model**, v011 proves W2: every minimal non-embedded box has at least two distinct two-circuit partitions of its all-ones word. For reduced supports of size $p\ge9$, the stronger bound $n_2\ge p-1$ holds. Combined with the inherited rank and minimal-support theorems, this yields
 
-\[
-\boxed{\ r_{\min}=3\ }
-\]
+$$
+\boxed{r_{\min}=3}
+$$
 
 for every non-embedded binary 0/1 box. **Minimum witness rank** must not be confused with the rank of an arbitrary individual collision witness.
 
@@ -96,7 +97,7 @@ Each release is intended to be inspected and verified **from its own directory**
 For the final planar release (Python 3.10+ and the dependencies stated in its README, including `gmpy2`):
 
 ```powershell
-cd "D:\GitHub\UNNS\projects\UNNS_Higher-Dimensional_Geometry\GEO_I_v012"
+cd "D:\GitHub\UNNS\projects\UNNS_Higher-Dimensional Geometry\GEO_I_v012"
 python verify.py --smoke
 python verify.py
 ```
