@@ -11,29 +11,29 @@ The archive is a **versioned mathematical research record**, not twelve intercha
 
 For a positive rational value $x=a/b$ in lowest terms, the foundational occurrence arithmetic gives the eligible occurrence indices
 
-$$
-D(x)=\left\{d\geq 2 : d^2\mid a,\quad d\equiv 1\pmod b\right\}.
-$$
+```math
+D(x)=\lbrace d\geq 2 : d^2\mid a,\quad d\equiv 1\pmod b\rbrace.
+```
 
 Different nested occurrences of the same numerical value remain distinct occurrences. Factoring the index $d$ into prime powers yields an exact exponent-coordinate representation of the arithmetic occurrence fibre:
 
-$$
+```math
 \begin{aligned}
 F_x &= (\Lambda_b\cap[0,q])\setminus\{\mathbf 0\},\\
-\Lambda_b &= \left\{\alpha\in\mathbb Z^k:
-\prod_{i=1}^{k}p_i^{\alpha_i}\equiv1\pmod b\right\},\\
+\Lambda_b &= \lbrace \alpha\in\mathbb Z^k:
+\prod_{i=1}^{k}p_i^{\alpha_i}\equiv1\pmod b\rbrace,\\
 q_i &= \left\lfloor\frac{v_{p_i}(a)}{2}\right\rfloor.
 \end{aligned}
-$$
+```
 
 GEO-I then studies **explicitly defined geometric constructions** on these arithmetic coordinates: coordinate and Graver-move cells, an abstract complex $K_{\mathrm{abs}}$, its realized cell union $U$, and embedded subdivisions $K_{\mathrm{emb}}$ where defined. These objects must not be conflated: abstract and realized topology can differ. A Graver-cell construction is an additional precisely specified geometric model built from the occurrence arithmetic; not every cell attachment is uniquely forced by the occurrence formula.
 
 For the principal planar results, the normalized relation lattice is
 
-$$
+```math
 \Gamma_{d,s}=\{(i,j)\in\mathbb Z^2:j\equiv si\pmod d\},
 \qquad \gcd(s,d)=1,
-$$
+```
 
 with nonzero lattice points $F_{d,s,Q}$ in the coordinate box $Q$, convex hull $H_{d,s,Q}$, and source-admissible realized Graver-cell union $U_{d,s,Q}$. The binary 0/1 obstruction model is a **separately defined specialization**, not an unrestricted theorem about all higher-dimensional occurrence geometries.
 
@@ -66,15 +66,15 @@ For the exceptional square $Q=(d,d)$, the source-defined realized geometry can h
 
 For $d\ge2$, every unit $s$ modulo $d$, and every box $Q=(Q_1,Q_2)$ with
 
-$$
+```math
 Q_1,Q_2\ge d,\qquad Q\ne(d,d),
-$$
+```
 
 G12-T8 establishes, within the source-defined planar Graver-cell model,
 
-$$
+```math
 \boxed{U_{d,s,Q}=\operatorname{conv}(F_{d,s,Q})}.
-$$
+```
 
 Its proof uses the v012 arithmetic and Graver-boundary theorems and the **previously established** G5-C1, G7-T1 and G10-R1 results. The cap is covered by explicit admissible cells, including mixed enlargements. Exact finite checks support the construction but are **not** the logical basis for the universal quantifiers.
 
@@ -82,9 +82,9 @@ Its proof uses the v012 arithmetic and Graver-boundary theorems and the **previo
 
 Within the **frozen binary 0/1 cell model**, v011 proves W2: every minimal non-embedded box has at least two distinct two-circuit partitions of its all-ones word. For reduced supports of size $p\ge9$, the stronger bound $n_2\ge p-1$ holds. Combined with the inherited rank and minimal-support theorems, this yields
 
-$$
+```math
 \boxed{r_{\min}=3}
-$$
+```
 
 for every non-embedded binary 0/1 box. **Minimum witness rank** must not be confused with the rank of an arbitrary individual collision witness.
 
