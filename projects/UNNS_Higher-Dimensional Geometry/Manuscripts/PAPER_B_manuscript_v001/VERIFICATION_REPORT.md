@@ -25,3 +25,8 @@ GitHub not fetchable; local release copies and the author-supplied commit were u
 
 ## v001b: Section 20 literature comparison
 Sources read in full: Heden survey (arXiv:1103.1031), Kurz (1708.01113, 2302.08939), Cooper-Okur (2504.08083), Margolis-Saliola-Steinberg (1508.05446, Bohne-Dress statement only), D.S. Kim (0909.0809, Pless identity statement). Others catalogue-level only. New checks in scripts/lit_checks.py (Heden tail bound on 231 classes: 0 violations; E1 vs Cooper-Okur on 2000 random multigraphs: 0 mismatches). Both are consistency checks, not proofs; no proof in the paper uses them.
+
+## Terminology addition
+Added Section 1.1 (relation to arithmetic occurrence geometry) and a notation note; no proof, theorem statement or computation changed.
+
+Terminology revision 2: explicit adoption sentence in Section 1.1; Appendix A corrected (Paper A scope; collision and witness rank defined in Paper B).
