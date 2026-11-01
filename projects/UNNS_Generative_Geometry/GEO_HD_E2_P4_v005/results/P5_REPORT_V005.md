@@ -1,0 +1,5 @@
+# P5 report (v005)
+**Proved:** planar monotonicity P5-P1 (independent derivation, explicit tiling lemma); FIELD-I corollary scope Lambda_x <= Lambda_{C(x)}; coordinate-plane lemma; dilation invariance; falsity of the 3D no-free-coordinate conjecture (explicit, hand-checkable, infinite family); split-target slab theorem and exact criterion.
+**Finite-exact:** BCC counterexample (engine certificate independently verified); planar audit (hard-driven seeds 100-103 plus random seed 7, 0 failures); split criterion vs engine (574 hard cells, 0 disagreements); 3D census (96 targets, 24,178 hard cells, 192 failures, 77/84 non-split targets clean); extended census: 18 of 18 clean non-split targets (index<=4) x sources of index 6-9: 7794 pairs, 19877 hard cells (7152 planar-type, 12725 3-cells), 0 failures, 0 float alarms.
+**Open:** P5-Q1 (non-split targets preserving U); external review; novelty clearance; P4-T3/T4.
+**C3:** not claimed. **Same-author caveat applies.** The finite clean results are samples, not theorems.

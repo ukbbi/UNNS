@@ -1,0 +1,17 @@
+# R3-H  Exact correspondences and obstructions between the two transformation systems
+
+## Levels (never inferred from a weaker one)
+L1 numerical (same endpoint / ratio); L2 equal initial and final occurrence structures; L3 equal reduced event histories (number of `D`-changing steps along the segment vs along the edge); L4 geometric (equal realised complexes along the path); L5 dynamical intertwining.  
+**Caveat on the comparison.** SELECT-II acts on integers with `N | m`. The tower states are non-integers. We therefore ask only whether `x_m = R(N) x_n` with `R(N)=(N+1)²/N` and `N | numerator(x_n)` (a *formal* edge multiplier; no SELECT-II history is claimed). Because `x_m = R(N)x_n`, L1 gives L2 and equal L4 at the endpoints automatically; the content of the test is L3 — the number of `D`-changes along the collective segment compared with the 0 or 1 `D`-change of the formal edge. L5 is unavailable: the domains differ.
+
+## Theorem R3-T7 (classification of multiplier coincidences on the two towers) — PROVED
+Write the iterates of a tower as `x = ρ2^a (j+1) x_0` (`a` = period count, `1 <= j+1 <= P`). Then `x_m/x_n = ρ2^a v/u` with `u,v ∈ [1,P]`; since `(N+1)²/N` is reduced with denominator `N`, `ρ2^a v/u = R(N)` iff `N = u/gcd(u,v)` and `(N+1)² = ρ2^a v/gcd(u,v)`. Solving:
+* **ℓ=11, P=8, ρ²=9.** Exactly: `N=1`: `(u,a,v) ∈ {(1,0,4),(2,0,8)}` (ratio 4); `N=2`: `(2g,1,g)`, `g=1..4` (ratio 9/2); `N=5`: `(5,1,4)` (ratio 36/5); `N=8`: `(8,2,1)` (ratio 81/8). No other pair of iterates (any distance, any period) has a SELECT-II ratio. The full-period ratio 9 is *not* of the form `R(N)` (`N²−7N+1=0`, no integer root; two or more edges multiply to ≥16): baseline obstruction.
+* **ℓ=5, P=3, ρ²=4.** Exactly `N=1`: `(u,1,u)` (the full period, ratio 4) and `N=3`: `(3,2,1)` (ratio 16/3).
+*Event level (L3).* A collective segment crosses one `D`-change per period boundary. ℓ=11: `N=1` pairs have 0 `D`-changes on both sides (the formal `T_1` is **silent** on rational states: `D(4x)=D(x)`, so event saturation B2-T9 fails outside the integers); `N=2` and `N=5` pairs cross exactly one boundary and the formal edge has one `D`-change: **L3 holds**; `N=8`: two boundaries vs one: **L3 fails** although L1 holds. ℓ=5: `N=1` full period: 1 vs 1 holds; `N=3`: 2 vs 1 fails.  
+Verified by brute force over the first 40 (ℓ=11) and 18 (ℓ=5) iterates (builder and independent Z7).
+
+## What is new relative to the baselines
+Baselines: rigid `C³=T₁=4x` on integers; multiplier-9 obstruction. New: (i) the rigid relation also holds on a **G=5 rational tower** (so it is a property of the stage structure `τ=4`, not of `G=1`); (ii) a **phase-shifted correspondence** on the ℓ=11 tower: `C^{8-g}(x)=R(2)x` from `x = 2g·S²/11`, `g=1..4`, L3 holds with the *same* new indices as the edge — although the full period multiplier 9 is unattainable; (iii) **L1 without L3** (`N=8` in ℓ=11, `N=3` in ℓ=5): a numerical coincidence that is not an event correspondence; (iv) failure of event saturation for formal edges on rational states.  
+**σ-track remark (integer side).** For `m = 2S_k²` (`v_2` odd), the true integer edge `T_2(m) = 9S_k²` has `σ(m)=S_k → σ' = 3S_k`: the same `L`-track step as one collective period of the ℓ=11 tower (`L: S_k → 3S_k`), with multiplier `9/2` instead of `9`. So the occurrence/`L`-track of a period can be realised by a genuine SELECT-II edge while the numerical multiplier cannot.  
+No common organizing law is claimed; Level 4 beyond endpoints and Level 5 are not established.

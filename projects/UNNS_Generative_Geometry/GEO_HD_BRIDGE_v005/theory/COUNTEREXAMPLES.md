@@ -1,0 +1,7 @@
+# GEO_HD_BRIDGE v005 — counterexamples and corrected readings
+1. **"Reached activation targets need q∈{2,5}" (v004 reading, O4-3) — COUNTEREXAMPLE.** ℓ=3: q=11 (e.g. ps=(29,647), 938 steps) and q=17 (ps=(47,1613), 2318 steps) are reached; ℓ=5: q=19 (ps=(89,1709), 2239 steps). Data: `data/FAMILY_SCAN_k2_l*.json`; Z6 re-decides a sample.
+2. **"A pierced edge cannot coexist with a β₁ increase" — COUNTEREXAMPLE in the abstract divisor calculus.** D={56,21,32,45}, N={51,15,11}: Betti (1,0)→(2,1), exactly one dead edge. In the census (2,576 events) no dead-edge event had a β₁ increase; that is a census regularity, **not** a theorem; whether it can occur along a real orbit is OPEN. (Z9)
+3. **"Every step-activation changes Betti numbers" — false (inherited, still true):** 1,787 of 2,576 D-events are Type V (complex changes, Betti unchanged). Example ℓ=5, S=36, step 3→4. (Z9)
+4. **"Edge/primitivity persistence"** — false: old edges die when a new occurrence enters their divisor interval (A5-T3.2.2); only *occurrences* persist (Lemma M).
+5. **Wording corrections (not mathematical errors):** the spec's "G=5 tower transition k=5→6" is the orbit step 5→6, i.e. tower index k=1→2 (period 3); β₁ 1→4 there. The earlier "(G=35)" naming of the ℓ=29 example is G=29.
+6. **Intrinsic Graver lemma scope:** "edge ⇔ g conformally minimal" holds for occurrence sets of real states, not for arbitrary divisor sets — K(D) for abstract D is defined by the 1-face-edge rule; the abstract calculus can contain configurations (counterexample 2) that may not arise from states.

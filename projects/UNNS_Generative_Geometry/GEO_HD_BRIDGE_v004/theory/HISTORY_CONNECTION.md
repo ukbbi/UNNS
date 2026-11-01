@@ -1,0 +1,7 @@
+# A4-T7 — K_move and the history-recombination complex
+
+**They are different objects and are not identified.** `K_move(x)` lives on the occurrence set `F(x)` of a state; the history complex (v002/v003) lives on admissible words of SELECT-II labels from a fixed source.
+
+**Obstruction (PROVED).** SELECT-II edges act on integers and end in integers `E`. For an integer, `b=1`, so `K_move(E)` is contractible (MOVE_TOPOLOGY, nerve lemma). Therefore no homological invariant of `K_move(E)` can detect the component structure of histories ending at `E`. Witnesses (Z7, independent code): endpoints `9000, 48000, 392000` have `2, 3, 3` history components (contents `{2,4}∪A`, `A=(5,9),(5,9,3),(5,9,3,6)`; the pair-order bit `[2 before 4]` is constant on components and takes both values) while every `K_move(E)` has Betti `(1,0,…,0)`.
+
+**What connects them.** (i) Only integer states are shared: a C-orbit that reaches an integer (`3025/3` orbit at `12100`) lands where `K_move` is trivial, so the topology gained by activation (`β₁=1` at `12100/3`) is erased when the orbit becomes integral. (ii) Both are controlled by occurrence events, but of different objects (R3-T3 first occurrence event vs D-events of C). No functor, map or inequality between `H_*(K_move)` and `H_*(history complex)` is claimed; the rational extension of SELECT-II needed for a direct comparison is excluded by the frozen rule. **OPEN:** an invariant of rational states that is meaningful for histories without extending SELECT-II.

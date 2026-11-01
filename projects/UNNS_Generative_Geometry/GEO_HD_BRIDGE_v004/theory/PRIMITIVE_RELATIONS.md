@@ -1,0 +1,7 @@
+# Primitive relations and their identity across states
+
+1. **Identity.** A primitive relation is identified by its vector in universal exponent coordinates (ACTIVATION_DEFINITIONS). `e_i−e_j` at `x=P²/ℓ` (box `1^k`, modulus ℓ) and at `y` (box `1^{k+1}`, modulus ℓ) is the *same* relation; `Gr` changes only by adding vectors involving `q`.
+2. **Graver sizes.** `|Gr(x)|=k(k−1)+2` (proved, INFINITE_FAMILIES); `|Gr(y)|=(k+1)(k+2)` FINITE-EXACT for k=2..5 (list: `±(e_i−e_j)`, `±(e_i+e_q)`, `±1^k`, `±(1_{[k]∖i}−e_q)`).
+3. **Positive-primitive vs edge-realised vs dormant** (v003): in `y` all of `Gr(y)` is either positive-primitive (`±` the vertices) or edge-realised (`dormant_y=0`); in `x` the `k(k−1)` roots are dormant.
+4. **Lattice membership is state dependent.** `g∈Λ_b` depends on the reduced denominator `b`. Along the reached orbit `3025/3→…→12100/3` the denominators are `3,54,27,18,27,54,9,9,3`: `e_5−e_{11}` is in `Gr` at `x_0` (b=3), **out** of `Gr` at the intermediate states with b≠3, and in `Gr` and realised at `y` (b=3). This is a *trajectory* activation after an excursion; the last single step (b: 9→3) is a creation-realisation (recorded in `results/EXEMPLARS.json`; verifier Z3).
+5. **Persistence of realised relations (A4-T4, PROVED).** `E_g(x)⊆E_g(C(x))` for every `g` (DYNAMIC_ACTIVATION, Lemma M). Persistence of *primitivity* (`g∈Gr`) fails by item 4; persistence of *move edges* of `K_move` fails (MOVE_TOPOLOGY).

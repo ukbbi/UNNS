@@ -1,0 +1,3 @@
+# Addendum to GEO_I_ERRATUM_001 (new file; the original is unchanged)
+
+The proposed erratum on Paper A's remark "The case d = 1" should also cite **GEO-I v004 §1.5 (d = 1) [P]**, which already states that for Γ = Z² the cell union U omits the corner square and "is not conv(F)", the reason S1 requires d ≥ 2. Hence the correct d = 1 fact is archived; only Paper A's remark (all of H_Q spanned by coordinate parallelograms when both box sides ≥ 2) is incorrect. Witness: x = 1296, box (2,2): the point (1/2,1/2) lies in conv(F) but in no admissible parallelogram. The stabilization theorem (d ≥ 2) is unaffected. Source: GitHub commit 343f9aef2b6697466058165c5fc2ddf0f00e882b, `projects/UNNS_Higher-Dimensional Geometry/GEO_I_v004/MATHEMATICS.md`.
