@@ -1,0 +1,1 @@
+ENGINE/jmap.py: first_ok_faces, kernel, rank_mod_boundaries, J_rank (dim V_X, r_fill, kernel, beta of the facet complex). E41 J-map and m-scan · E42 facet theorem · E43 retraction (RET fails) · E44 sandwich and second lift.

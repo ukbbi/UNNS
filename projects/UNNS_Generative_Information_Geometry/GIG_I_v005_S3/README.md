@@ -1,0 +1,2 @@
+# GIG_I_v005_S3 — H₂ → H₃ lifting
+Pipeline: E28 (certificates) → E29 (lift pairs, filling families, completeness certificates) → E30 (arithmetic census, `python3 E30_arithmetic_census.py 30`, ~3 min) → E31 (regime verification) → E32 (all 32 classes). `python3 EXPERIMENTS/run_all.py`; tests `python3 -m unittest discover -s TESTS` (8 tests, ~10 s). Needs the frozen siblings GIG_I_v001…v005, GIG_I_v005_S2 (or env GIG_V001…GIG_V005, GIG_V005_S2). See PROVENANCE.md, RESULTS/report.md, THEORY/.

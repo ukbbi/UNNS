@@ -1,0 +1,9 @@
+# GIG-I v002 — Open problems
+
+1. **GIG-Q3 (existence).** T15 reduces the question to `β_j`, `j≥2`: a graph-isomorphic, homologically different realizable pair must differ in a 3-or-higher-dimensional attachment (e.g. an unfilled 2-sphere in one piece versus a filled 3-cell in the other). The searches record none for the stated domains; no impossibility theorem is claimed.
+2. **Does the uncoloured graph determine the whole face poset of every realizable `K_A`?** (T15 proves it for dimensions ≤ 2.) Evidence: in every searched domain the f-vector is constant on exact isomorphism classes, including classes that contain several symmetry-inequivalent colourings. Kalai-type characterisations of faces of simple polytopes by induced regular subgraphs fail for the Petrie cycle; a realizable analogue for 3-faces (cube, hexagonal prism, truncated octahedron) is not proved.
+3. **Extension of the 6-cycle classification and of T15 to all `k`.** Verified for `k≤8` by exhaustive enumeration of the closed reduced words; a uniform proof (support decomposition into Dynkin components) is not written out.
+4. **Shortest unfilled cycle.** Among 80 isomorphism-class representatives with β₁>0 (k=6, L≤10), 19 have a shortest unfilled cycle of length exactly 12 and none has one shorter; the other 61 have none of length ≤12. No theorem.
+5. **Repeated labels / complete-history sources.** The permutohedral cell rule is defined only for distinct labels; T11 and T12 hold verbatim for the underlying admissibility (T11 for any pair of distinct adjacent labels), but the complex is not defined for repeated labels.
+6. **GIG-C2** (separating radius unbounded in `k`): see the k=6 data; still open.
+7. **Arithmetic characterisation of the closure lattice**: sizes and shapes of the closure system `{A_C(m)}` as a function of the content (dimension of the lattice of exponent patterns).

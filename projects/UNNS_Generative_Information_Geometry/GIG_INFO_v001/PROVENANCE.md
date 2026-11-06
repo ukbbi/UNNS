@@ -1,0 +1,2 @@
+Parents unchanged (v001–v007); engines imported read-only: v001 history_complex/swap_graph/information, v002 graph_iso, v005_S3 pk, v006 fi/cert, v007 jmap (rank helper). Anchored hole state replaces the cycle-specific v004 machinery so the same definition serves both anchors. Cloud Python 3.13; device check Python 3.10.12. No remote GitHub modification.
+Uniform t=1..60 is an experimental convention. Y='NA' is used when the anchor complex is not contained in A(m); the binary convention counts NA as 0 and is flagged wherever it matters.

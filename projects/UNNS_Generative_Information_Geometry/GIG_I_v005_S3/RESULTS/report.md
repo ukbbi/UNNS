@@ -1,0 +1,7 @@
+# GIG_I_v005_S3 — report
+1. **A generative rule for the H₃ examples.** The two-sided suspension L_{c_a,c_b}(z)=Λ(z)+first(c_a)+last(c_b) of the Stage-1 96-face cycle z, built from fillings through two different minimal families, reproduces all four certified H₃ examples: same prefix requirements (91 sets), same four minimal filling families, homologous cycle in each regime complex (H3-2,4 by (B0,B1), H3-1,3 by (B1,B0)). Obstruction cochain: φ₂ lifted by inserting rank 6 into the common block; φ₃(lift)=φ₂(z)=1 [proved]; its 6 obstructed 4-faces are the 6 octahedra with rank 6 added.
+2. **Sharp obstruction.** The diagonal lift (same filling twice) is ∂Λ(c): it never carries a hole [proved]. So an H₃ hole needs two different fillings: H₃ = "two fillings of the H₂ hole glued".
+3. **Filling families lift in structure but not by a simple formula.** P₇ filling families (127 prefix sets, exact, certified complete) for the 12 off-diagonal lifts have sizes like [1,3,31,33] (vs [1,3,15,17] in P₆) … [1,3,3,5]; they are tabulated, not derived.
+4. **Across mechanisms.** All 700 lifts of the 32 Stage-2 classes are cycles; all 146 diagonal ones degenerate; all 554 off-diagonal ones non-degenerate.
+5. **Arithmetic and new regimes.** Identity role map, labels ≤ 30: 202 contents with an H₃ hole regime (v004: 4), 214 regimes verified exactly (β₃ up to 4) and 100 predicted negatives verified.
+6. **Not shown.** Proof of non-degeneracy for all cycles; censuses for the other 31 classes and other role maps; a closed formula for the lifted families; H₃ → H₄; T20d.

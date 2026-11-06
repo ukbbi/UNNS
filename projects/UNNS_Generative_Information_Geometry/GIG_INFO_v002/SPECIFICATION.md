@@ -1,0 +1,4 @@
+# Specification
+Systems: (C, regime) with C ⊂ {1..16}, |C|=6, regimes from GIG-I v003 `source_filtration.regimes`. Histories: admissible orderings, N=|mask|. Complex: full subcomplex of the permutohedron P₆ on the admissible vertices; GF(2) homology (v001 engine, re-implemented independently in ENGINE/pair_cert.py for the certified pair).
+Y = 1[β₂>0]. Ensembles: uniform on E_all, E_band, E_distinct. Observables: O0=N; OE=(N,f₁); OX=(N,χ); OF=f-vector; O1a=(N,h₁); O1b=(N,h₂); O1=(N,h₁,h₂), h_r = histogram of swap-graph ball sizes at radius r; O2=graph isomorphism class; O3=labelled set. Outside E_band, N alone identifies Y=0, so the O1 family is recorded as (N,) there (a coarsening that cannot increase information about Y beyond N).
+Entropy: exact rational class counts, 30-digit decimal log₂, no floats in decisions.

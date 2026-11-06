@@ -1,0 +1,5 @@
+# Provenance (do not silently rewrite the frozen record)
+- GIG_I_v004 exists in two identifiable states: (a) as first delivered (MANIFEST.json sha256 26e14d97…adb, 27 files; the copy used for the cloud runs) and (b) after the append-only `CORRECTIONS/V004_PS1_SCOPE.md` was added on the device (28 files, regenerated MANIFEST.json, python field 3.10.12). Proofs, results and certificates are byte-identical in both. GIG_I_v005 (Stage 1) records the hash of whichever v004 manifest was present when its manifest was written: cloud copy → (a); device copy → (b).
+- GIG_I_v005 Stage 1 manifest sha256 (cloud) aea157c8…cf; the device copy was regenerated on the device (python 3.10.12).
+- This package's MANIFEST.json records the hashes of the v001–v005 manifests visible at manifest time. Cloud runs: Python 3.13; device checks: Python 3.10.12.
+- Regression on the cloud copies at the time of delivery: v001 28 tests, v002 27, v003 24, v004 13, v005 7 (all OK; external-engine tests skipped when the frozen GEO-HD-1D source is absent).

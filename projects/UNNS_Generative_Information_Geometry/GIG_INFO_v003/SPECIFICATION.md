@@ -1,0 +1,2 @@
+# Specification
+Systems and Y as in GIG-INFO v002 (six distinct labels <=16, regimes of GIG-I v003, Y=1[beta2>0], GF(2)). Local quantities d, q, s, B2 as in THEORY/THEOREMS.md; exact integer sums over vertices (numpy int64; no floats in any decision). Signature classes are exact tuples. 'Mixed class' = signature class containing both Y values. Non-triviality: random placement of positives among regimes of equal N (numpy default_rng, fixed seeds) as a null. Held-out sets and decision rules are in THEORY/PREREGISTRATION.md, fixed before generation.
