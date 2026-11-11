@@ -1,0 +1,6 @@
+# UNNS_U4_SPEC_v001 — Universality and Structural Obstruction Theorems: specification
+Registry of 47 claims (42 in stages U4.1–U4.6) with origin, status, information class, hypotheses, dependencies and refutation clauses; correspondence matrix to SELECT-I/II, FIELD-I, GIG; prior-art obligations (NOT done); acceptance gates AG0–AG7.
+Contents: manuscript/ (tex, pdf), data/ (registry.json/.csv, provenance, U3 registration record), code/ (build_registry, check_spec, make_figure, build_manuscript, u3_graph engine copy), frozen_RN/ (engine copy), reports/spec_check_report.json, figures/.
+Verify: `python3 code/check_spec.py reports/spec_check_report.json` (relative paths only; needs numpy, networkx, sympy). ALL_PASSED expected.
+Rebuild: build_registry.py → check_spec.py → make_figure.py → build_manuscript.py → pdflatex twice.
+Limitations: new claims are proof sketches with bounded exact probes, not proofs; 'standard' labels rely on recalled textbook results (prior-art review pending); U0–U3 verifications NOT_RERUN (hashes recorded). Reproducibility note: the U3-COR verifier used an absolute path (/home/claude/UNNS_U3) and runs only on its build machine; this package avoids that; U3-COR is unchanged.
