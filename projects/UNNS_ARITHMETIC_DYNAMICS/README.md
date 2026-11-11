@@ -83,7 +83,7 @@ Investigates arithmetic graph distances involving prime numbers and successive F
 Results include the prime-neighbour formula
 
 $$
-\operatorname{Nbr}(p)=\{4p,(p+1)^2\},
+\mathrm{Nbr}(p)=\{4p,(p+1)^2\}.
 $$
 
 certified prime-distance examples, exact finite-distance tables, and computationally validated Fibonacci path families.
@@ -129,7 +129,7 @@ Contains registered selector experiments, information accounting, symbolic contr
 Establishes the exact local-degree structure of the arithmetic graph:
 
 $$
-\deg_G(x)=\tau(x)+\#\{q\ge2:q^2\mid x\}.
+\deg_G(x)=\tau(x)+\left|\{q\ge2:q^2\mid x\}\right|.
 $$
 
 Proves that the largest neighbour of $x$ is $(x+1)^2$, that prime vertices have degree two, and that no vertex has degree three.
@@ -161,9 +161,9 @@ Contains the corrected cycle-theoretic results for the arithmetic graph.
 The graph is triangle-free, with
 
 $$
-\operatorname{girth}(G)=4,
+\mathrm{girth}(G)=4,
 \qquad
-\operatorname{odd\ girth}(G)=5.
+\mathrm{girth}_{\mathrm{odd}}(G)=5.
 $$
 
 Includes mathematical corrections, proofs, exact graph checks, and verification records associated with the original U3 release.
