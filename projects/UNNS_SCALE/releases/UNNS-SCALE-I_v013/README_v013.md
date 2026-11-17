@@ -1,0 +1,3 @@
+# UNNS-SCALE-I v013 — Scale Descent and Confined-Route Bounds
+Local only; v001–v012 frozen (hashed). Headlines: proved scale calculus — multiplier embedding (confined length non-increasing along divisibility), generalized square descent (+2), the six-step ladder 10⁶m→m — verified on 86,409 + 3,484 + 612 exact checks with 0 violations; prime-flip composite theorem with uniform six-step first leg; exact data for the forced-excursion family (κ=(p+1)² for all 667 primes tested at B=100, 1000; confined length at the forced height does not grow with p); the seven v012-capped pairs now have certified intervals (n=726925: exactly 14).
+Run: `cd code && python3 verify_all_v013.py [--quick]`. Open: certificate over all n, finiteness of T(B), Gate 4.

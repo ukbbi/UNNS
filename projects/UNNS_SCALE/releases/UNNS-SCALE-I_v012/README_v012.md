@@ -1,0 +1,3 @@
+# UNNS-SCALE-I v012 — Length–Height Trade-off and Arithmetic Routing
+Local only; v001–v011 frozen (hashed). Headlines: exact length–height frontiers on scaled analogues (B = 10², 10³, 10⁴, 10⁶); exact confined distance τ_n(κ) = shortest route with all vertices ≤ B(n+1) is only 2–13 steps on 261 resolved B = 10⁶ pairs (6 for n ≤ 199), so v011's 25–40-step hub routes were 3–4× too long and the vertex-1 hub is a construction artifact; reduction-transfer lemma τ^{Q²} ≤ τ^{Q−1} + 2 (proved, 0 violations); empirical law τ_n(κ) ≈ a + b ln q(n) (R² 0.55–0.86, EXPERIMENTAL).
+Run: `cd code && python3 verify_all_v012.py [--quick]`. Open: growth of max τ_n(κ) in B, the 7 capped pairs, proof of any growth law, Gate 4.

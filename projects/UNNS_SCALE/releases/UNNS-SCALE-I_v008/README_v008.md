@@ -1,0 +1,3 @@
+# UNNS-SCALE-I v008 - Variable-Parameter Midpoint Arithmetic
+Run `python code/verify_all_v008.py [--quick]` with v001-v007 in the parent folder. Theory: `THEORY/UNNS_SCALE_I_THEORY_v008.md`; report: `reports/VERIFICATION_REPORT_v008.md`; correction to v007: `ERRATUM_v007.md`.
+One line: (+-|+-) routes are exactly the integer points of two equations (S1,S2); necessary divisibility/absorption conditions force large labels for large primes; bounded forward labels give finitely many n; v007's finite-covering obstruction held only for P>1 shapes - rho<1 shapes leave 1 uncovered n <= 2e6 (K=40) and 48 <= 2e7 (K=20), all of which still have exact routes; D_{10^6} stays open.

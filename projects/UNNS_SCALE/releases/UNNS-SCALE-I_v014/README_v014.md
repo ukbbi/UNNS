@@ -1,0 +1,3 @@
+# UNNS-SCALE-I v014 — Scale-Lifted Uniform Routing Certificates
+Local only; v001–v013 frozen (hashed). Headlines: (1) scale transfer, τ^B_n(C) ≤ 2·d_{G_B}(B,A) + τ^A_n(C) (proved); (2) exact all-n sweep of τ⁴_n(10⁶(n+1)): the v013 lift premise "≤ 6 for all n" is false (8,655 exceptions, all n ≥ 304,559, τ⁴ ∈ {7,8}); (3) certified uniform bound τ^{10⁶}_n(10⁶(n+1)) ≤ 18 for all n < 10⁶ (≤ 16 for 99.14 %); sup ∈ [14, 18]; (4) v013 errata (parity condition, T(B) notation).
+Run: `cd code && python3 verify_all_v014.py [--quick]` (expects v001–v013 siblings for the hash baseline). Open: the exact supremum, exception theory, T(B), Gate 4.

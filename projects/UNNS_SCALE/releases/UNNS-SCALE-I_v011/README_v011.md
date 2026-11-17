@@ -1,0 +1,3 @@
+# UNNS-SCALE-I v011 — Window Connectivity and Arithmetic Excursion Barriers
+Local only; v001–v010 frozen (hashed). Headlines: (1) parity barrier theorem ⇒ for every prime p > B every route of any length from Bp to B(p+1) has a vertex ≥ (p+1)² (excursion ratio ≥ (p+1)/B); (2) exact law κ_B(n)=max(B(n+1),(q(n)+1)²) on 216,683 scaled-analogue pairs; (3) Theorem K: all 999,999 million-spaced pairs are connected inside [1,10¹²] and in fact inside [1,B(n+1)] — excursion is necessary only for short (≤4-step) routes.
+Run: `cd code && python3 verify_all_v011.py [--quick]`. Open: exact length–height trade-off τ(n,h), κ-law for general B, D_{10⁶}.

@@ -1,0 +1,10 @@
+# Erratum to UNNS-SCALE-I v007 (found in v008)
+
+v007 itself is frozen and unchanged. The following statements in `THEORY/UNNS_SCALE_I_THEORY_v007.md` (sections 3, 4, 5, 6) and in the v007 report are **withdrawn / corrected**:
+
+1. *"Classification (PROVED): … Theorem A'' lists all infinite families of this regime."* — **Incorrect as stated.** Theorem A'' as written required Delta = c w' - d v' > 0, i.e. rho = 1 + cd/Delta > 1. The same proof works whenever Delta != 0 and rho = 1 + cd/Delta > 0, which also allows 0 < rho < 1 (Delta < 0, cd < |Delta|). The identity z = z' and its proof are unchanged; only the range of the parameters was too narrow.
+2. *"No finite set of constant-ratio families covers all n"* (v007 section 5) — **Not established.** The lcm argument uses P > Q >= 1, which holds for rho > 1 only. It remains true for the shapes with P > 1 (checked in v008). Shapes with rho = 1/Q (P = 1) carry no congruence condition (only v' | n, w' | n+1), so n = lcm(v'P)·k is not blocked by them. Example: (v',w',c,d) = (3,1,1,1), rho = 1/2 gives a four-step route for **every** multiple of 3.
+3. The coverage table of v007 (section 4) counted only rho > 1 shapes. With rho < 1 shapes added the number of uncovered n <= 2·10^6 is: K=1: 585,051 (unchanged), K=2: 405,526 (unchanged), K=3: 46,086 -> 2,698, K=4: 37,485 -> 2,698, K=6: 26,668 -> 692, K=8: 18,059 -> 387, K=12: 4, K=20: 2 (see v008 results/C1_coverage_with_rho_lt1.json). v007's numbers were correct for what they counted (shapes with Delta > 0).
+4. What stays true in v007: the reviewer's divisor-generated proposition, Theorem A'' for Delta > 0, the 614/614 certified routes, the obstruction for P > 1 shapes (valid statement: "no finite set of shapes with P > 1 covers all n"), and D_{10^6} open.
+
+Consequence: the question whether a finite (or parametrised) set of constant-ratio shapes covers every n is **open**, not closed negatively. The empirical gap between the rho > 1 table and the full table is large, which is why the v007 conclusion "change the construction" was premature.
