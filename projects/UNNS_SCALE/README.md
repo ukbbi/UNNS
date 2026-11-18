@@ -57,6 +57,6 @@ python tools/check_manifests.py
 
 This verifies all fourteen supplied release manifests, including the original root v001 manifest. Full chamber computations need their individual dependencies and may take minutes; run them in a **writable scratch copy** rather than modifying a frozen archive. See [VERIFICATION.md](VERIFICATION.md).
 
-## Scope and rights
+## Scope 
 
-This collection describes arithmetic graph mathematics, **not physical spacetime wormholes**. Independent literature originality and general computational advantage have not been established. A `LICENSE` file was **not included** in the supplied archive; no license is invented here. Select and add one deliberately before publishing if reuse rights are intended.
+This collection describes arithmetic graph mathematics, **not physical spacetime wormholes**. Independent literature originality and general computational advantage have not been established. 
