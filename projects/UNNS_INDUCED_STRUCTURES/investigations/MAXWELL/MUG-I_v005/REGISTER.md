@@ -1,0 +1,14 @@
+# MUG-I v005 register (status: P = proved in notes, V = verified numerically/finite, O = open)
+- R1 [P+V Z2a] G_transport(𝔐_p) = ⊔_{(u,b)} U; edges preserve (u,b).
+- R2 [P+V Z7] Sector census: O, E+ for all u; E− iff u_z ≠ 0; vacuum 2 per u.
+- R3 [P+V Z1] Weighted defect Δ/g′² = Θ(g′) − Θ(g); path totals are endpoint functions.
+- R4 [P+V Z3] Θ_± non-increasing in g; strictly off-axis; forward edges never raise Θ. Θ_+ ≥ max(s,z), Θ_− ≤ z.
+- R5 [P+V Z5a] Mergers: identical endpoint mode, field data and total weighted defect; differ in length and Θ-profile (17 histories, 2 lengths, 17 profiles in the test case).
+- R6 [P+V Z3c,Z4] Axis crossing at g = √p; ordered labels = max/min; edges across the crossing carry defects matching neither analytic branch.
+- R7 [V Z5c,d] Field data vary along fibres in the plasma, constant in vacuum; limits E+→transverse, E−→electrostatic. Monotonicity O.
+- R8 [P+V Z6b] Vector lift acts on shells by r_N², not r_N: shell map does not intertwine.
+- R9 [V Z6c, O] r_N² ≠ r_M for N ≤ 10⁶; proof open.
+- O1 Finite magnetisation / oblique Appleton–Hartree.
+- O2 Walls + dispersion (waveguide cutoffs) in the transport rule.
+- O3 Memory or nonlinear media: do histories matter?
+- O4 Comparison with FUG-I v005 history structure.

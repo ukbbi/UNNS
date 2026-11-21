@@ -1,0 +1,16 @@
+# MUG-I v006 register (P proved in notes, V verified numerically/finite, O open)
+- S1 [P+V A1] Off-axis, p>0: E−<O<E+ strictly; each polarization is a simple real line analytic in g. Normalised gap → 0 as g→∞.
+- S2 [P+V A2] Vacuum and isotropic plasma: constant polarization along rays; every rule path independent.
+- S3 [V A3] Uniaxial plasma polarization rotates along the ray (5.7° → 33° for u=(1,1,1), p=36).
+- S4 [P] No-go: parallel transport on the eigenline bundle (trivial bundle, interval base) and any multiplier-group representation give U_A = U_B on every diamond / merger.
+- S5 [V A4] Matched-polarizer cascade is history dependent in M_p (diamond differences 0.005–0.012; 17-history spread 5.2e-4), zero in vacuum/isotropic plasma. Measurement-defined, not Maxwell evolution.
+- S6 [P+V B1] Scale-invariant vertex sets (torus, PEC box, PEC waveguide) are closed under all admissible edges, multiplicities preserved. No edge removal.
+- S7 [P+V B2] (Fourier-label statement; exact eigenstates are mixed, see v007) Bragg arithmetic: a|g, N|g ⇒ target resonant iff Na | g. Forward-closed when gcd(N,a)=1. 174 976 edges.
+- S8 [V B3] (Fourier-label statement; exact eigenstates are mixed, see v007) Bragg gap order δ^j at g=jq/2 (q=4, slopes 1.0007/2.0010/3.0013).
+- S9 [V B2b,c] (Fourier-label statement; exact eigenstates are mixed, see v007) Equal-endpoint histories differ in resonance trace (diamond a=2: (1,2) fully resonant, (2,1) not; 17 histories visit 3–5 resonant vertices).
+- O5 [answered] Admissibility: negative under k-labelled induction; positive only at label/trace level.
+- O6 Frequency-labelled induction (stop bands remove vertices): definition needed.
+- O7 Bragg-conversion transport (resonant set only), parity sectors, repeat A-NoGo and cascade in the periodic medium.
+- O8 Decide whether a measurement-defined (cascade) rule belongs in the induced structure.
+- O4 FUG-I v005 comparison (still open).
+- Scope note (added before freeze): periodic-medium results S7–S9 are about dominant Fourier labels, not exact eigenstates. B1/S6 (PEC) are exact. Exact-eigenmode induction is v007.

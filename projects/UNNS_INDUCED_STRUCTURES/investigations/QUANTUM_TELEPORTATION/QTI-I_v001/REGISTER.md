@@ -1,0 +1,11 @@
+# QTI-I v001 register (P proved, V verified numerically/finite, O open)
+- Q1 [P+V T1] W(d) ⊆ W(hd) for all positive integers d,h (word-wise lift); verified on 5 400 pairs; strict on 2 973, equal on the rest.
+- Q2 [P+V T1c] Every multiple of 4 has an incoming edge (m=2): raw-unit universality is the h=4 case of Q1.
+- Q3 [P+V T2] F(d) = 1 + Σ F(d(m−1)/m²), m≥2, m²|d; depth ≤ log₄ d; matches brute force for d ≤ 3000.
+- Q4 [V A1,A2] QTEL v001 gap records reproduce from the CSVs (18 647 gaps).
+- Q5 [V B1–B4] Deeper history statistics of the observed counter gaps agree with magnitude-matched integers (|z|<2.5); clock-lift ladder monotone as Q1 requires.
+- Q6 [V B5, exploratory] Small common-direction deficit of P(R≥2) and P(merger) vs controls (pooled z ≈ −1.7, −1.8); needs fresh data/preregistration.
+- O12 Raw files, format, channels (heralding/detection/measurement) not available here.
+- O13 QTI-I/B correspondence φ undefined (candidates in NOTES §4).
+- O14 Preregistered statistic and control families (clock-/rate-/channel-aware).
+- O15 STRUC-I / STRUC-PERC records not in this folder.

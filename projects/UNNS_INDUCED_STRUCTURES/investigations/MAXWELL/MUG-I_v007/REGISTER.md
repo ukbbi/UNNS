@@ -1,0 +1,15 @@
+# MUG-I v007 register (P proved, V verified numerically/finite, O open)
+- E1 [V Y1] Exact states ↔ (g, parity): two per Fourier label inside the label window; dominant weight ≥ 0.83 (g ≤ 24, δ=0.1).
+- E2 [V Y1b] Label window ends at β = δg/q ≈ 1.1 (g* = 113, 75, 45, 22 for δ = 0.04, 0.06, 0.1, 0.2). Empirical.
+- E3 [P+V Y2] Parity partners exactly degenerate iff g ∉ (q/2)ℤ (Bloch class κ vs −κ isospectral); split on (q/2)ℤ with gap ~ δ^j. Splitting nonzero verified g ≤ 14.
+- E4 [V Y3a, partly perturbative] Whole-field content of an exact state = gcd(g, q).
+- E5 [P+V Y3b] Rule E admissibility: N | gcd(g,q), step alphabet Div(q); 71–79% of label edges removed (q = 4, 6, 12; g < 3000).
+- E6 [V Y4] Image of an admissible step lies in N Bloch classes κ′ = (N+1)²κ/N + i q/N (292 states).
+- E7 [V Y5] T_N on exact states is a weighted relation: weight on label image 0.74–0.99 (δ=0.03, g ≤ 16); rest leaks.
+- E8 [P+V Y7] Unblocked histories are path independent exactly (abelian multiplier group).
+- E9 [V Y6] Equal-endpoint histories differ only through blocking: q=6: 17/216 groups differ in survival, 117 fully blocked; q=12: 8/118, 27. Examples recorded in NOTES.
+- O5 [answered, rule-dependent] Exact-eigenmode induction restricts admissibility and makes history matter through blocking; Fourier-label induction does not.
+- O9 Compare rule E with the componentwise rule and with co-dilating medium.
+- O10 Combine with polarization/vector structure (uniaxial plasma inside a periodic medium); 3D Bloch classes.
+- O11 Prove nonvanishing of the harmonics and nonzero splitting at all resonant orders.
+- O4 FUG-I v005 comparison (still open).
