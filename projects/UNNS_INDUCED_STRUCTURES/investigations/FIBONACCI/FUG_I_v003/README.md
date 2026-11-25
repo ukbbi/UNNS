@@ -77,4 +77,4 @@ The multiplier-kernel arithmetic is already studied in GEO-HD; the Fibonacci rea
 
 All computations are exact integers/rationals. The full census is bounded to index 84 and uses the deterministic 64-bit factorization regime of FUG-I v002. The independent verifier checks prime-valuation source thresholds, dynamic-program route counts, exhaustive intersection/transport assertions, witness legality, and controls. The release includes the source-locked v002 files so its outputs can be audited without GitHub access.
 
-**Keep research local. Do not modify or publish the frozen GitHub reference collection without explicit authorization.**
+

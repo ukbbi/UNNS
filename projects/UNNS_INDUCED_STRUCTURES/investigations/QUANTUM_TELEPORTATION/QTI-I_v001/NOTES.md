@@ -33,10 +33,3 @@ The protocol objects are not integers: the teleported qubit state, the Bell-meas
 Requirements for each: the state-resolved data (not timestamps) must carry the information; entanglement or fidelity is not to be inferred from timing; controls must include a product-state/classical-correlation control and a relabelling-invariance test (analogue of T1 for the chosen content).
 Not decided; I am not defining φ here, because the choice determines the whole structure.
 
-## 5. What I need for the next step
-- The raw .pt files (or their location) and the format/channel documentation (the arXiv preprint 2209.06249 and the data README, if available). Without channel identity QTI-I/A cannot use heralding / detection / measurement relationships; the existing files appear to be single-stream totals (unverified).
-- A choice of control families for the preregistered statistic: clock-preserving, rate-preserving (e.g. exponential or inhomogeneous Poisson), channel-aware.
-- Decision on QTI-I/B definition (§4), or approval for me to draft and compare candidates 1–2 on the available data.
-
-## 6. Limits
-Gap CSVs only; raw files and channels not used; heavy-tailed F; B1/B5 controls are my choices (±10% jitter, exponential same-mean); controls and the statistics were chosen after seeing v001 results, so nothing here is preregistered.

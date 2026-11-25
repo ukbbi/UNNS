@@ -4,16 +4,6 @@
 
 **Scope:** Fibonacci indices `1..48`, forward paths of length `1..3` under the explicitly selected integer self-substitution grammar. Intermediate values need not be Fibonacci numbers. The original two-input UNNS arithmetic is not changed.
 
-## Where this folder goes (Windows)
-
-Extract `FUG_I_v001/` inside your existing local project directory:
-
-```text
-D:\UNNS_SUBSTRATE(desktop)\TRANSFER\Bulk_2\REGIME_SYNTHESIS\PROJECTS\
-UNNS_INDUCED_STRUCTURES\investigations\FIBONACCI\FUG_I_v001\
-```
-
-You can keep the existing `FIBONACCI/README.md`, `theory/GEOMETRY.md` and `scripts/verify.py` unchanged. This is a **new, separate versioned study**; no files are uploaded to or modified on GitHub.
 
 ## Scientific purpose
 
@@ -81,4 +71,4 @@ Use `python` instead of `py -3` if necessary. **No third-party Python libraries 
 
 `PROVED` = full mathematical argument on a stated domain. `VERIFIED-EXACT` = exhaustive integer computation on a declared finite range, including cross-check. `PROPOSED` = new construction/terminology. `OPEN` = no proof or completed test.
 
-No GitHub modification is included or implied.
+

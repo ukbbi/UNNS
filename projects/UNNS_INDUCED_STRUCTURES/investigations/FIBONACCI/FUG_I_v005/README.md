@@ -82,4 +82,3 @@ FUG_I_v005/
 
 This is a **mathematical investigation of an induced structure**. The Fibonacci recurrence is independently defined; the selected integer self-substitution grammar comes from the fixed UNNS nesting operation. The finite census, algebraic gate, restricted-vs-unrestricted obstruction, and merger families establish which mathematical configurations are possible and when. They do not justify a claim about physical laws, new electromagnetic mechanisms, substrate universality, or exceptional behavior of Fibonacci relative to matched nulls.
 
-**Provenance:** the baseline records are copied from the validated local FUG-I v004 ZIP. No remote repository is written. The new research artifacts are locally verifiable and versioned separately.
